@@ -1,0 +1,3 @@
+CREATE SCHEMA [royalmail]
+AUTHORIZATION [dbo]
+GO

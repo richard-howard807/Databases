@@ -1,0 +1,3 @@
+CREATE SCHEMA [SBC\ldicki]
+AUTHORIZATION [SBC\ldicki]
+GO

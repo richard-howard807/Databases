@@ -1,0 +1,3 @@
+CREATE SCHEMA [police]
+AUTHORIZATION [SBC\ldicki]
+GO

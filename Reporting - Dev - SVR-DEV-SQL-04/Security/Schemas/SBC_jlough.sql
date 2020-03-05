@@ -1,0 +1,3 @@
+CREATE SCHEMA [SBC\jlough]
+AUTHORIZATION [SBC\jlough]
+GO
