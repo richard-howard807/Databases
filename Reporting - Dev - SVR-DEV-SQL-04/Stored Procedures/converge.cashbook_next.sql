@@ -33,7 +33,7 @@ CREATE PROCEDURE [converge].[cashbook_next]
 )
 AS 
 
--- j alter
+-- this is a change
 -- this is an alter
 -- another alter
     
