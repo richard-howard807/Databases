@@ -5,7 +5,7 @@ GO
 
 
 
-CREATE VIEW [SBC\6237].[source_control_test]
+CREATE VIEW [dbo].[source_control_test]
 
 AS
 
