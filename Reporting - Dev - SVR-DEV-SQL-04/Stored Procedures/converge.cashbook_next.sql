@@ -32,6 +32,9 @@ CREATE PROCEDURE [converge].[cashbook_next]
   
 )
 AS 
+
+
+-- this is an alter
     
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 	---- For testing purposes
