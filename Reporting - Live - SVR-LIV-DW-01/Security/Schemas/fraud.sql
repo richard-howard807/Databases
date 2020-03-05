@@ -1,0 +1,3 @@
+CREATE SCHEMA [fraud]
+AUTHORIZATION [dbo]
+GO

@@ -1,0 +1,33 @@
+CREATE TABLE [dbo].[CoopDssUpdateTimes230718]
+(
+[casdet_uid] [int] NOT NULL IDENTITY(1, 1),
+[case_id] [int] NULL,
+[seq_no] [int] NULL,
+[source_system_id] [int] NULL,
+[effective_start_date] [datetime] NULL,
+[effective_end_date] [datetime] NULL,
+[current_flag] [varchar] (1) COLLATE Latin1_General_BIN NULL,
+[original_cdc_date] [datetime] NULL,
+[operation] [int] NULL,
+[sequence_number] [binary] (10) NOT NULL,
+[deleted_flag] [varchar] (1) COLLATE Latin1_General_BIN NULL,
+[valid_from] [datetime] NULL,
+[case_detail_code] [char] (10) COLLATE Latin1_General_BIN NULL,
+[case_detail_rectyp] [char] (1) COLLATE Latin1_General_BIN NULL,
+[case_date] [datetime] NULL,
+[case_mkr] [char] (1) COLLATE Latin1_General_BIN NULL,
+[case_text] [char] (60) COLLATE Latin1_General_BIN NULL,
+[case_value] [numeric] (13, 2) NULL,
+[must_enter] [char] (1) COLLATE Latin1_General_BIN NULL,
+[cd_proflg] [char] (1) COLLATE Latin1_General_BIN NULL,
+[cd_capact] [char] (10) COLLATE Latin1_General_BIN NULL,
+[cd_capidx] [smallint] NULL,
+[cd_calctd] [char] (1) COLLATE Latin1_General_BIN NULL,
+[cd_clcode] [char] (8) COLLATE Latin1_General_BIN NULL,
+[cd_webrpt] [char] (1) COLLATE Latin1_General_BIN NULL,
+[cd_address] [int] NULL,
+[cd_dettyp] [char] (1) COLLATE Latin1_General_BIN NULL,
+[cd_parent] [int] NULL,
+[dss_update_time] [datetime] NULL
+) ON [PRIMARY]
+GO

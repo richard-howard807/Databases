@@ -1,0 +1,3 @@
+CREATE SCHEMA [Real_Estate]
+AUTHORIZATION [dbo]
+GO

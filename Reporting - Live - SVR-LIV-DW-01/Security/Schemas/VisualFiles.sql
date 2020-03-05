@@ -1,0 +1,3 @@
+CREATE SCHEMA [VisualFiles]
+AUTHORIZATION [SBC\khanse]
+GO

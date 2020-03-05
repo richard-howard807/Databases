@@ -1,0 +1,32 @@
+CREATE TABLE [dbo].[TrainAccountsStage]
+(
+[payrollid] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[firstname] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[surname] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[knownas] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[name] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[DOB] [datetime] NULL,
+[prefix] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[gender] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[email] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[phonenumber] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[username] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[startdate] [datetime] NULL,
+[office] [float] NULL,
+[officename] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[address] [float] NULL,
+[sitetype] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[businessline] [float] NULL,
+[team] [float] NULL,
+[jobrole] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[hrtitle] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[payrollid_BCM] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[ratetype] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[defaultrate] [float] NULL,
+[tkrtype] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[userstatusid] [float] NULL,
+[userstatus] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[leaverdate] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[dss_update_time] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL
+) ON [PRIMARY]
+GO

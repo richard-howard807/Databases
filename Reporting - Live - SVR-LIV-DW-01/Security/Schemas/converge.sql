@@ -1,0 +1,3 @@
+CREATE SCHEMA [converge]
+AUTHORIZATION [dbo]
+GO

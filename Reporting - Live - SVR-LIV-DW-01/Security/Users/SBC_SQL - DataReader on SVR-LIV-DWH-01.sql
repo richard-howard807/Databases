@@ -1,0 +1,5 @@
+IF NOT EXISTS (SELECT * FROM master.dbo.syslogins WHERE loginname = N'SBC\SQL - DataReader on SVR-LIV-DWH-01')
+CREATE LOGIN [SBC\SQL - DataReader on SVR-LIV-DWH-01] FROM WINDOWS
+GO
+CREATE USER [SBC\SQL - DataReader on SVR-LIV-DWH-01] FOR LOGIN [SBC\SQL - DataReader on SVR-LIV-DWH-01]
+GO

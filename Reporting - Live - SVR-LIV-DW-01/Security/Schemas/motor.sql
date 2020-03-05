@@ -1,0 +1,3 @@
+CREATE SCHEMA [motor]
+AUTHORIZATION [dbo]
+GO

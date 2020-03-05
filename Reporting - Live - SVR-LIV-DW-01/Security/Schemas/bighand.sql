@@ -1,0 +1,3 @@
+CREATE SCHEMA [bighand]
+AUTHORIZATION [dbo]
+GO

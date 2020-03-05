@@ -1,0 +1,3 @@
+CREATE SCHEMA [te_3e_prod]
+AUTHORIZATION [dbo]
+GO
