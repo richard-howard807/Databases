@@ -35,6 +35,7 @@ AS
 
 
 -- this is an alter
+-- another alter
     
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 	---- For testing purposes
