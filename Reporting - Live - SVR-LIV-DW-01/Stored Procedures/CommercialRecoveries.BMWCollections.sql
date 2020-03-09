@@ -9,6 +9,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[BMWCollections]
 (
 @StartDate AS DATE
@@ -27,7 +30,7 @@ BEGIN
 
 
 SELECT
-ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [Client/Matter No]	
+clNo +'-' + fileNo AS [Client/Matter No]	
 ,txtCliRef AS [Agreement No]
 ,Defendant AS [Debtor Name]
 ,curClient AS [Amount Recovered (£)]	
@@ -68,6 +71,7 @@ AND cboDefendantNo='1') AS Defendant
 WHERE cboCatDesc ='5'
 AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
+AND cboPayType <>'PAY015' -- Direct Payment Tom asked to be removed from report
 
 AND (CASE WHEN clNo IN ('FW30085','FW22135') THEN 'BMW' 
 WHEN clNo='341077' THEN 'BMW'
@@ -75,7 +79,7 @@ WHEN clNo='FW22352' THEN 'BMW'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'BMW'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'BMW'
 WHEN clNo='FW22613' THEN 'BMW'
-WHEN clNo='W15335' THEN 'BMW'
+WHEN clNo='W15335' THEN 'Alphera'
 WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet'END)=@ClientName
 
 END

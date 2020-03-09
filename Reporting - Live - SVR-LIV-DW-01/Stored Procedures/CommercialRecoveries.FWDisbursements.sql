@@ -9,6 +9,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [CommercialRecoveries].[FWDisbursements]
 (
 @StartDate AS DATE
@@ -30,14 +32,17 @@ SELECT * FROM (
 SELECT txtCliRef AS [Client Account No]
 ,[red_dw].[dbo].[datetimelocal](dtePosted) AS [Date Added]
 ,txtBranchNum AS [Branch No]
-,ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [F&W Reference]
+,clNo +'-' + fileNo AS [F&W Reference]
 ,CASE WHEN CRSystemSourceID LIKE '33694-%'  OR Clno='W15374'THEN 'CarCashPoint Limited'
 WHEN CRSystemSourceID LIKE '33746-%'  OR clno='W15410' THEN 'The Borough Council of Dudley'
 WHEN CRSystemSourceID LIKE '30535-%' OR clNo='FW27456' THEN 'Stratford On Avon District Council' 
 WHEN CRSystemSourceID LIKE '323223-%'  OR CRSystemSourceID LIKE '32469-%' OR Clno='W15354' THEN 'Basildon Borough Council' 
 WHEN CRSystemSourceID LIKE '34485-%' OR clno='W15495' THEN 'M.K.M Building Supplies Limited'
-WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471') AND txtCliRef LIKE '8%' THEN 'LCC - Council Tax'
-WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471') AND txtCliRef NOT LIKE '8%'  AND txtCliRef NOT LIKE 'EN%' THEN 'LCC - Housing Benefit & Sundry Income'
+WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3' ) AND txtCliRef LIKE '8%' THEN 'LCC - Council Tax'
+WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3') AND txtCliRef NOT LIKE '8%'  AND txtCliRef NOT LIKE 'EN%' THEN 'LCC - Housing Benefit & Sundry Income'
+WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC2' ) THEN 'LCC - Section 146'
+WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC1' ) THEN 'LCC - Business Rates'
+
 WHEN CRSystemSourceID LIKE '35163-%'  OR clno='W17055' THEN 'Energas'
 --WHEN CRSystemSourceID LIKE '13329-%' AND ISNULL(txtCliRef,'')<>'8GB' AND ISNULL(txtCliRef,'')<>'9GB' THEN 'UPS Exc COD'
 --WHEN CRSystemSourceID LIKE '13329-%' AND (ISNULL(txtCliRef,'')='8GB' OR ISNULL(txtCliRef,'')='9GB') THEN 'UPS Inc COD' 

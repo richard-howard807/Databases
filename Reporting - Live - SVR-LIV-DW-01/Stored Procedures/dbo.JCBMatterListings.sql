@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[JCBMatterListings]
 AS
 BEGIN
@@ -143,7 +144,7 @@ BEGIN
 		,fact_finance_summary.[damages_paid] AS [Damages Paid] /*1.1 jl*/
 		,date_costs_settled AS [Date Costs Settled] /*1.1 jl*/
 		,fact_finance_summary.[claimants_costs_paid] AS [Claimant Costs Paid] /*1.1 jl*/
-
+		,date_closed_case_management
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -207,9 +208,11 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care
 
 	    AND
 		(
+		(
 		(date_closed_case_management IS NULL AND RTRIM(ISNULL(dim_detail_core_details.present_position, '')) != 'To be closed/minor balances to be clear')
 		)
-
+		OR date_closed_case_management>='2017-07-01' -- added requested by Bob
+		)
 
 
 

@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LCCHosingBenefit]
 AS
 BEGIN
@@ -21,7 +22,7 @@ SET @EndDate =(DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1) )
 
 SELECT dbFile.fileID 
 ,clNo
-,ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [Client/Matter]
+,clNo +'-' + fileNo AS [Client/Matter]
 ,ISNULL(Defendant.Defendant,fileDesc) AS [Debtors Name]
 ,txtCliRef AS [Invoice Number]
 ,txtDeptType

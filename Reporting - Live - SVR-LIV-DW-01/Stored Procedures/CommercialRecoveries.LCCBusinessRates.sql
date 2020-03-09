@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LCCBusinessRates]
 AS
 BEGIN
@@ -18,7 +19,7 @@ SELECT dbFile.fileID
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [Date Inst Rcvd]
 ,txtCliRef AS [GK Account No]
 ,NULL AS [In/Out]
-,ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [F&W Ref]
+,clNo +'-' + fileNo AS [F&W Ref]
 ,txtPubName AS [Pub Name]
 ,ISNULL(Defendant.Defendant,fileDesc) AS [Tenants Name]
 ,curOriginalBal AS [Original Debt]

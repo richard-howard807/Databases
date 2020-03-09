@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+--EXEC [CommercialRecoveries].[LeedsBillingAllClient] '2020-03-06', '2020-03-06'
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedsBillingAllClient]
 (
 @StartDate AS DATE
@@ -63,7 +65,18 @@ AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
 AND clNo <>'30645'
 AND brName='Leeds'
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103) BETWEEN @StartDate AND @EndDate
-
+AND clNo NOT IN 
+(
+'FW22135','FW22613','W15335' --BMW
+,'W15374' --  CarCashPoint Limited
+,'W15410' --  The Borough Council of Dudley
+,'FW27456'--  Stratford On Avon District Council
+,'W15354' --  Basildon Borough Council
+,'W15495' --  M.K.M Building Supplies Limited'
+,'W15471' --  LCC
+,'W17055' --  Energas'
+,'FW13329'--  UPS
+)
 ORDER BY CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) DESC 
 END 
 GO

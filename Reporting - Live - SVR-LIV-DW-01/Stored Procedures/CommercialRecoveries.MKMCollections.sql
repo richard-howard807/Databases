@@ -5,11 +5,7 @@ GO
 
 
 
-
-
-
-
-CREATE PROCEDURE [CommercialRecoveries].[LCCCashCollections] --EXEC [CommercialRecoveries].[LCCCashCollections] '2019-11-01','2020-02-20'
+CREATE PROCEDURE [CommercialRecoveries].[MKMCollections] --EXEC [CommercialRecoveries].[LCCCashCollections] '2019-11-01','2020-02-20'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -43,8 +39,9 @@ AND cboDefendantNo='1') AS Defendant
  WHERE cboCatDesc='5' 
  AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
  AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
- AND (CRSystemSourceID LIKE '3600%' OR clNo='W15471')
+ AND (CRSystemSourceID  LIKE '34485-%' OR clNo='W15495')
  AND cboPayType <>'PAY015' -- Direct Payment Tom asked to be removed from report
+
  ORDER BY [red_dw].[dbo].[datetimelocal](dtePosted)
 END
 GO

@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BMWOldNewContract] --EXEC [CommercialRecoveries].[BMWOldNewContract] '2019-10-01','2019-10-30','Old'
 (@StartDate  AS DATE
 ,@EndDate  AS  DATE
@@ -32,7 +33,7 @@ IF @Contract='Old'
 
 BEGIN
 
-SELECT ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [Ref]
+SELECT clNo +'-' + fileNo AS [Ref]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS Created
 ,txtCliRef AS [Agreement No]	
 ,NULL AS [Invoice No]	
@@ -98,7 +99,7 @@ ELSE
 
 
 BEGIN
-SELECT ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [Ref]
+SELECT clNo +'-' + fileNo AS [Ref]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS Created
 ,txtCliRef AS [Agreement No]	
 ,NULL AS [Invoice No]	
