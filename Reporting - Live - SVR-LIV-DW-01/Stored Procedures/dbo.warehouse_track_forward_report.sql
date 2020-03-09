@@ -67,7 +67,10 @@ with track_forward as (
 		-- select *
 		from #tracker
 		WHERE LOWER(column_name) = LOWER(@Column)
-		AND LOWER(#tracker.table_name) = LOWER(@Table)
+		AND LOWER(#tracker.source_table) = LOWER(@Table)
+
+		--WHERE LOWER(column_name) ='billamt'
+		--AND LOWER(#tracker.source_table) = 'timebill'
 
 		union all
 

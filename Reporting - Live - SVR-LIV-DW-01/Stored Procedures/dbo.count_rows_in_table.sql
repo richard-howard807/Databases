@@ -4,17 +4,17 @@ SET ANSI_NULLS ON
 GO
 
 
-create PROC [dbo].[count_rows_in_table] (@Table NVARCHAR(MAX))
+CREATE PROC [dbo].[count_rows_in_table] (@Table NVARCHAR(MAX))
 
 AS
-
+-- counts rows in red tables -- used for doucmentation reports
 --DROP TABLE #tables
 --DROP TABLE #results
 
 DECLARE @SQL NVARCHAR(250)
 DECLARE @Count INT = 1
 
---DECLARE @table VARCHAR(MAX) = 'fact_bill_activity,dim_bill'
+--DECLARE @table VARCHAR(MAX) = 'dim_be_opportunities_involvement'
 
 
 SELECT *
@@ -24,7 +24,11 @@ FROM dbo.split_delimited_to_rows (@table,',')
 
 -- select * from #tables
 
-SELECT 'this is a table name' tablename, 13849 count_of_rows INTO #results
+
+CREATE TABLE #results
+(tablename VARCHAR(1000),
+count_of_rows int
+)
 
 
 WHILE @Count <= (SELECT MAX(id) FROM #tables)
