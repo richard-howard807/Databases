@@ -4,10 +4,10 @@ SET ANSI_NULLS ON
 GO
 -- =============================================
 -- Author:		Jamie Bonner
--- Create date: 2020-02-03
+-- Create date: 2020-03-05
 -- Description:	MS Alerts Report, 45153
 -- =============================================
-CREATE PROCEDURE [dbo].[MSAlerts_Claims]
+CREATE PROCEDURE [dbo].[MSAlerts_LTA_Summary_Aggregation]
 
 (
 @FedCode AS VARCHAR(MAX)
@@ -22,6 +22,7 @@ BEGIN
 
 
 DROP TABLE IF EXISTS #finacial_calcs
+DROP TABLE IF EXISTS #lta_report
 DROP TABLE IF EXISTS #FedCodeList
 
 CREATE TABLE #FedCodeList  (
@@ -57,10 +58,9 @@ exec sp_executesql @sql
 	
 	END
 
-/*
-	Created a table to deal with the calculated columns
-	for readability with the length of them and the amount of times some are used
-*/	
+--=========================================================================================================================================================================
+--	Created a table to deal with the calculated columns for readability with the length of them and the amount of times some are used
+--=========================================================================================================================================================================	
 
 
 SELECT	
@@ -87,7 +87,7 @@ CREATE INDEX INX_1 ON #finacial_calcs (matter_number) INCLUDE (client_code)
 
 
 --========================================================================================================================================================================
---  Main report query
+--  LTA report temp table
 --========================================================================================================================================================================
 
 
@@ -139,30 +139,41 @@ SELECT
 		ELSE
 			'N/A'
 	  END																					AS [Fixed Fee RAG Status]
-	, ISNULL(fin_sum.defence_costs_reserve, 0)												AS [Defence Costs Reserve]
+	--, ISNULL(fin_sum.defence_costs_reserve, 0)												AS [Defence Costs Reserve]
 	, ISNULL(fin_sum.commercial_costs_estimate, 0)											AS [Current Costs Estimate]
 	, ISNULL(fin_calcs.total_billed_unbilled, 0)											AS [Total of Total Billed + WIP + Unbilled Disbursements]
-	, CASE
-		WHEN RTRIM(LOWER(h_current.fee_arrangement)) = 'hourly rate' THEN
-			ISNULL(fin_calcs.os_def_reserve, 0)	
-		ELSE 
-			NULL
-		END																					AS [Outstanding defence reserve amount]
-	, CASE
-		WHEN RTRIM(LOWER(h_current.fee_arrangement)) = 'hourly rate' THEN
-			CASE 
-				WHEN fin_sum.defence_costs_reserve IS NULL OR fin_sum.defence_costs_reserve = 0 THEN
-					'Red'
-				WHEN fin_calcs.total_billed_unbilled > (fin_sum.defence_costs_reserve * 0.9) THEN
-					'Red'
-				WHEN fin_calcs.total_billed_unbilled > (fin_sum.defence_costs_reserve * 0.75) THEN
-					'Amber'
-				ELSE
-					'Green'
-			END
-		ELSE	
-			'N/A'
-	  END																					AS [Defence Costs Reserve RAG Status]
+	--, CASE
+	--	WHEN RTRIM(LOWER(h_current.fee_arrangement)) = 'hourly rate' THEN
+	--		ISNULL(fin_calcs.os_def_reserve, 0)	
+	--	ELSE 
+	--		NULL
+	--	END																					AS [Outstanding defence reserve amount]
+	--, CASE
+	--	WHEN RTRIM(LOWER(h_current.fee_arrangement)) = 'hourly rate' THEN
+	--		CASE 
+	--			WHEN fin_sum.defence_costs_reserve IS NULL OR fin_sum.defence_costs_reserve = 0 THEN
+	--				'Red'
+	--			WHEN fin_calcs.total_billed_unbilled > (fin_sum.defence_costs_reserve * 0.9) THEN
+	--				'Red'
+	--			WHEN fin_calcs.total_billed_unbilled > (fin_sum.defence_costs_reserve * 0.75) THEN
+	--				'Amber'
+	--			ELSE
+	--				'Green'
+	--		END
+	--	ELSE	
+	--		'N/A'
+	--  END																					AS [Defence Costs Reserve RAG Status]
+	--, ISNULL(fin_calcs.os_costs_est, 0)													AS [Outstanding costs estimate amount]
+	--,CASE 
+	--	WHEN fin_sum.commercial_costs_estimate IS NULL OR fin_sum.commercial_costs_estimate = 0 THEN
+	--		'Red'
+	--	WHEN fin_calcs.total_billed_unbilled > (fin_sum.commercial_costs_estimate * 0.9) THEN
+	--		'Red'
+	--	WHEN fin_calcs.total_billed_unbilled > (fin_sum.commercial_costs_estimate * 0.75) THEN
+	--		'Amber'
+	--	ELSE
+	--		'Green'
+	--  END																					AS [Current Costs Estimate RAG Status]
 	, ISNULL(fin_sum.defence_costs_billed, 0)												AS [Revenue Billed (net of VAT)]
 	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0)						AS [Disbursements Billed (excl VAT)]
 	, ISNULL(fact_bill_detail_summary.vat_amount, 0)										AS [VAT]
@@ -170,6 +181,7 @@ SELECT
 	, ISNULL(fin_sum.wip, 0)																AS [WIP]
 	, ISNULL(fin_sum.disbursement_balance, 0)												AS [Unbilled Disbursements]
 	--, outcome.outcome_of_case																AS [Outcome]
+INTO #lta_report
 --select *
 FROM red_dw.dbo.dim_matter_header_current																							AS h_current
 	INNER JOIN red_dw.dbo.fact_dimension_main																						AS fact_dim_main
@@ -194,11 +206,49 @@ FROM red_dw.dbo.dim_matter_header_current																							AS h_current
 WHERE 
 	h_current.date_closed_practice_management IS NULL
 	AND h_current.reporting_exclusions <> 1
-	AND hierarchy_hist.hierarchylevel2 = 'Legal Ops - Claims'
-	--AND RTRIM(worktype.work_type_name) <> 'Claims Handling' --this excludes outsource cases (mainly Zurich matters, under 200 non Z matters)
+	AND hierarchy_hist.hierarchylevel2 = 'Legal Ops - LTA'
 	AND (outcome.outcome_of_case IS NULL OR RTRIM(outcome.outcome_of_case) <> 'Exclude from reports')
-	AND RTRIM(LOWER(h_current.fee_arrangement)) IN ('fixed fee/fee quote/capped fee', 'hourly rate')
-	AND hierarchy_hist.dim_fed_hierarchy_history_key IN
+	AND RTRIM(LOWER(h_current.fee_arrangement)) = 'fixed fee/fee quote/capped fee'
+
+
+--=================================================================================================================================================================================
+-- Aggregation of lta temp table
+--=================================================================================================================================================================================
+
+SELECT 
+	#lta_report.[Matter Header Current Key]												AS [Matter Header Current Key]
+	, #lta_report.[Business Line]														AS [Business Line]
+	, #lta_report.Department															AS [Department]
+	, #lta_report.Team																	AS [Team]
+	, #lta_report.[Matter Owner]														AS [Matter Owner]
+	, COUNT(*)																			AS [Number of Cases]
+	, SUM(CASE
+			WHEN #lta_report.[Fixed Fee RAG Status] = 'Amber' THEN 
+				1
+			WHEN #lta_report.[Fixed Fee RAG Status] = 'Red' THEN 
+				1
+			ELSE
+				0
+		  END)																			AS [Total Alerts]
+	,SUM(CASE
+			WHEN #lta_report.[Fixed Fee RAG Status] = 'Amber' THEN 
+				1
+			ELSE
+				0
+		 END)																			AS [Fixed Fee Amber]
+	,SUM(CASE
+			WHEN #lta_report.[Fixed Fee RAG Status] = 'Red' THEN 
+				1
+			ELSE
+				0
+		 END)																			AS [Fixed Fee Red]	  
+FROM #lta_report
+	INNER JOIN red_dw.dbo.fact_dimension_main
+		ON fact_dimension_main.dim_matter_header_curr_key = #lta_report.[Matter Header Current Key]
+	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+WHERE
+	red_dw.dbo.dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
               (
                   SELECT (CASE
                               WHEN @Level = 'Firm' THEN
@@ -227,11 +277,17 @@ WHERE
                          )
                   FROM #FedCodeList
               )
-ORDER BY
-	[Business Line]
-	, Department
-	, Team
-	, [Matter Owner]
+GROUP BY 
+	#lta_report.[Matter Header Current Key]
+	, #lta_report.[Business Line]	
+	, #lta_report.Department		
+	, #lta_report.Team			
+	, #lta_report.[Matter Owner]
+ORDER BY 
+	#lta_report.[Business Line]
+	, #lta_report.Department
+	, #lta_report.Team
+	, #lta_report.[Matter Owner]
 
 END
 		

@@ -2,6 +2,13 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+--USE [Reporting]
+----GO
+----/****** Object:  StoredProcedure [dataservices].[claims_files_to_be_closed_New]    Script Date: 05/03/2020 14:57:13 ******/
+--SET ANSI_NULLS ON
+--GO
+--SET QUOTED_IDENTIFIER ON
+--GO
 
 
 /* =============================================
@@ -27,21 +34,19 @@ GO
 
 */
 CREATE PROCEDURE [dataservices].[claims_files_to_be_closed_New]
+(
+    @FEDCode NVARCHAR(500)
+	
+)
+AS
 
-     @ClientName NVARCHAR(500)
-	, @TeamManagersName		NVARCHAR(500)
-	,@CaseManagerName NVARCHAR (500)
-
-  AS
 
   SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
   SET NOCOUNT ON
 
 
 
-	IF @ClientName = 'All'  SET @ClientName = NULL
-	IF @TeamManagersName = 'All' SET @TeamManagersName = NULL
-	IF @CaseManagerName = 'All' SET @CaseManagerName = NULL
+
 
 
 	DECLARE @OpenDate DATE = DATEADD(MONTH,-4,GETDATE()) 
@@ -81,6 +86,7 @@ CREATE PROCEDURE [dataservices].[claims_files_to_be_closed_New]
 		  ,archive_details.[latest_archive_date]
 		,archive_details.[latest_archive_status] 
 		,archive_details.[latest_archive_type]
+		
     FROM red_dw.dbo.fact_dimension_main
         INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
             ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -174,12 +180,18 @@ CREATE PROCEDURE [dataservices].[claims_files_to_be_closed_New]
 		  AND wip <= 50
 
 		  /* Filters Added MT 20200302*/
-		 AND dim_client.client_name = COALESCE(@ClientName, dim_client.client_name) -- removed as was making the query run too slow
+		 
+		 AND CAST(dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS NVARCHAR(MAX)) IN ( @FEDCode)
 
-		  AND dim_fed_hierarchy_history.[worksforname] = COALESCE(@TeamManagersName, dim_fed_hierarchy_history.[worksforname])
 
-		  AND dim_fed_hierarchy_history.name = COALESCE(@CaseManagerName , dim_fed_hierarchy_history.name) 
 		
 	ORDER BY hierarchylevel3hist, fact_dimension_main.master_client_code
-  
+
+
+	--SELECT dim_fed_hierarchy_history.name,  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key FROM red_dw..dim_fed_hierarchy_history
+	-- WHERE  dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+	 
+        
+	---- Geraldine Noonan 45945
+	
 GO

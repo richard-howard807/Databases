@@ -110,6 +110,7 @@ SELECT
 	, worktype.work_type_name																AS [Worktype]
 	, core_details.present_position															AS [Present Position] 
 	, h_current.fee_arrangement																AS [Fee Arrangement]
+	
 	, CASE 
 		WHEN RTRIM(h_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
 			ISNULL(fin_sum.fixed_fee_amount, 0)
@@ -203,35 +204,6 @@ WHERE
 	--AND RTRIM(worktype.work_type_name) <> 'Claims Handling' --this excludes outsource cases (mainly Zurich matters, under 200 non Z matters)
 	AND (outcome.outcome_of_case IS NULL OR RTRIM(outcome.outcome_of_case) <> 'Exclude from reports')
 	AND RTRIM(LOWER(h_current.fee_arrangement)) IN ('fixed fee/fee quote/capped fee', 'hourly rate')
-	AND hierarchy_hist.dim_fed_hierarchy_history_key IN
-              (
-                  SELECT (CASE
-                              WHEN @Level = 'Firm' THEN
-                                  dim_fed_hierarchy_history_key
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM red_dw.dbo.dim_fed_hierarchy_history
-                  UNION
-                  SELECT  (CASE
-                              WHEN @Level IN ( 'Individual' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-                  UNION
-                  SELECT (CASE
-                              WHEN @Level IN ( 'Area Managed' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-              )
 
 
 
@@ -240,11 +212,12 @@ WHERE
 --=============================================================================================================================================
 
 SELECT 
-	#claims_report.[Business Line]		AS [Business Line]
-	, #claims_report.Department			AS [Department]
-	, #claims_report.Team				AS [Team]
-	, #claims_report.[Matter Owner]		AS [Matter Owner]
-	, COUNT(*)							AS [Number of Cases]
+	#claims_report.[Matter Header Current Key]											AS [Matter Header Current Key]
+	, #claims_report.[Business Line]													AS [Business Line]
+	, #claims_report.Department															AS [Department]
+	, #claims_report.Team																AS [Team]
+	, #claims_report.[Matter Owner]														AS [Matter Owner]
+	, COUNT(*)																			AS [Number of Cases]
 	, SUM(CASE
 			WHEN #claims_report.[Fixed Fee RAG Status] = 'Amber' THEN 
 				1
@@ -282,12 +255,52 @@ SELECT
 				0
 		  END)																			AS [Defence Costs Reserve Red]		  
 FROM #claims_report
+	INNER JOIN red_dw.dbo.fact_dimension_main
+		ON fact_dimension_main.dim_matter_header_curr_key = #claims_report.[Matter Header Current Key]
+	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+WHERE 
+	dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
+              (
+                  SELECT (CASE
+                              WHEN @Level = 'Firm' THEN
+                                  dim_fed_hierarchy_history_key
+                              ELSE
+                                  0
+                          END
+                         )
+                  FROM red_dw.dbo.dim_fed_hierarchy_history
+                  UNION
+                  SELECT  (CASE
+                              WHEN @Level IN ( 'Individual' ) THEN
+                                  ListValue
+                              ELSE
+                                  0
+                          END
+                         )
+                  FROM #FedCodeList
+                  UNION
+                  SELECT (CASE
+                              WHEN @Level IN ( 'Area Managed' ) THEN
+                                  ListValue
+                              ELSE
+                                  0
+                          END
+                         )
+                  FROM #FedCodeList
+              )
+
 GROUP BY 
-	#claims_report.[Business Line]	
+	#claims_report.[Matter Header Current Key]
+	, #claims_report.[Business Line]	
 	, #claims_report.Department		
 	, #claims_report.Team			
 	, #claims_report.[Matter Owner]
-
+ORDER BY
+	#claims_report.[Business Line]
+	, #claims_report.Department
+	, #claims_report.Team
+	, #claims_report.[Matter Owner]
 
 END
 		

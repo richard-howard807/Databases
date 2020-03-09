@@ -208,7 +208,7 @@ WHERE
 	AND hierarchy_hist.hierarchylevel2 = 'Legal Ops - LTA'
 	--AND RTRIM(worktype.work_type_name) <> 'Claims Handling' --this excludes outsource cases (mainly Zurich matters, under 200 non Z matters)
 	AND (outcome.outcome_of_case IS NULL OR RTRIM(outcome.outcome_of_case) <> 'Exclude from reports')
-	AND RTRIM(LOWER(h_current.fee_arrangement)) IN ('fixed fee/fee quote/capped fee', 'hourly rate')
+	AND RTRIM(LOWER(h_current.fee_arrangement)) = 'fixed fee/fee quote/capped fee'
 	--AND (h_current.present_position IS NULL OR RTRIM(h_current.present_position) NOT IN ('Final bill sent - unpaid', 'To be closed/minor balances to be clear'))
 	AND hierarchy_hist.dim_fed_hierarchy_history_key IN
               (
@@ -239,7 +239,11 @@ WHERE
                          )
                   FROM #FedCodeList
               )
-
+ORDER BY
+	[Business Line]
+	, Department
+	, Team
+	, [Matter Owner]
 
 END
 		
