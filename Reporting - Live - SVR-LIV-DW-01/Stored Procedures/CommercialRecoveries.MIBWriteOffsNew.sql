@@ -12,6 +12,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBWriteOffsNew]	
  --[CommercialRecoveries].[MIBWriteOffsNew]	'2019-12-01','2019-12-31'		
     @StartDate	DATE	
@@ -83,5 +84,5 @@ AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
 WHERE clNo='M1001'
 AND fileType='2038'
-AND [red_dw].[dbo].[datetimelocal](fileClosed) BETWEEN @StartDate AND @EndDate 
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](fileClosed),103) BETWEEN @StartDate AND @EndDate 
 GO

@@ -4,10 +4,11 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[JCBMatterListings]
 AS
 BEGIN
-BEGIN 
+
 	SELECT
 		case_id
 		, dim_matter_header_current.client_code + '/' + CAST(CAST(dim_matter_header_current.matter_number AS INT) AS VARCHAR)	[Converge Ref]
@@ -89,6 +90,10 @@ BEGIN
 		,CASE WHEN RTRIM(dim_detail_core_details.present_position) IN ('Final bill sent - unpaid', 'To be closed/minor balances to be clear') 
 		      THEN 0 
 			  ELSE ISNULL(fact_finance_summary.[defence_costs_reserve], 0) -  ISNULL(total_amount_billed,0)  
+			  END AS [EL: Own Legal Costs Reserve Original]
+		,CASE WHEN RTRIM(dim_detail_core_details.present_position) IN ('Final bill sent - unpaid', 'To be closed/minor balances to be clear') 
+		      THEN 0 
+			  ELSE ISNULL(fact_finance_summary.[defence_costs_reserve], 0) -  (ISNULL(total_amount_billed,0)  -ISNULL(vat_billed,0))
 			  END AS [EL: Own Legal Costs Reserve]
 	, ISNULL(CASE WHEN dim_detail_outcome.[outcome_of_case] IS NOT NULL
        OR dim_detail_outcome.[date_claim_concluded] IS NOT NULL
@@ -144,7 +149,30 @@ BEGIN
 		,fact_finance_summary.[damages_paid] AS [Damages Paid] /*1.1 jl*/
 		,date_costs_settled AS [Date Costs Settled] /*1.1 jl*/
 		,fact_finance_summary.[claimants_costs_paid] AS [Claimant Costs Paid] /*1.1 jl*/
-		,date_closed_case_management
+
+		
+
+		,[Claim Number] = NULL
+		,[Insured] = [insuredclient_name]
+		,[Policy #] = insurerclient_reference
+		,[Loss Type / coverage code] = NULL
+		,[TPA Office location] = NULL
+		,[Date Received] =  dim_detail_core_details.[date_instructions_received]
+
+		,[Loss Country] = 'UK'
+		,[Currency code] = 'GBP'
+		,[Deductible amount (if applicable)] = NULL
+		,[SIR Amount (if applicable)] = NULL
+
+		,LastBillDate.bill_date  AS LastBillDate
+
+		,CASE  WHEN  date_closed_case_management IS NULL THEN 1 
+			   WHEN  RTRIM(dim_detail_core_details.present_position) != 'To be closed/minor balances to be clear' THEN 1 
+		       WHEN LastBillDate.bill_date > ='2017-07-01'  THEN 1
+		       ELSE 0 END AS OpenorconcludedLast12Months
+
+			   , LastBillDate.bill_date
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -190,11 +218,19 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
  AND fact_detail_claim.matter_number = dim_matter_header_current.matter_number 
 LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care
  ON fact_detail_future_care.client_code = dim_matter_header_current.client_code
- AND fact_detail_future_care.matter_number = dim_matter_header_current.matter_number   
+ AND fact_detail_future_care.matter_number = dim_matter_header_current.matter_number
+ 
+ LEFT JOIN red_dw.[dbo].[dim_client_involvement] ON dim_client_involvement.client_code = dim_matter_header_current.client_code AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 
+ --LEFT JOIN red_dw.[dbo].[dim_bill] ON dim_matter_header_current.client_code = dim_claimant_thirdparty_involvement.client_code
  
- 
- 
+ LEFT JOIN (SELECT 
+ROW_NUMBER() OVER (PARTITION BY dim_matter_header_curr_key ORDER BY bill_date DESC) RN,
+        [dim_matter_header_curr_key]
+        ,bill_date
+  FROM [red_dw].[dbo].[fact_bill_matter_detail_summary]
+  ) LastBillDate ON LastBillDate.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key AND RN = 1  
+
   
 	WHERE 1=1
 	-- standard exclusions for test cases and Money Laundering matters
@@ -206,23 +242,20 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care
 		AND ISNULL(outcome_of_case,'') <> 'Exclude from reports'
 		AND ISNULL(dim_detail_critical_mi.[claim_status], '') != 'Cancelled'
 
-	    AND
-		(
-		(
-		(date_closed_case_management IS NULL AND RTRIM(ISNULL(dim_detail_core_details.present_position, '')) != 'To be closed/minor balances to be clear')
-		)
-		OR date_closed_case_management>='2017-07-01' -- added requested by Bob
-		)
+		--AND dim_matter_header_current.client_code='J26479' AND dim_matter_header_current.matter_number='00001268'
+	
+
+		/* Taken out as required two tabs for open and closed*/
+	 --   AND
+		--(
+		--(date_closed_case_management IS NULL AND RTRIM(ISNULL(dim_detail_core_details.present_position, '')) != 'To be closed/minor balances to be clear')
+		--)
+
 
 
 
 
 ORDER BY dim_matter_header_current.client_code,dim_matter_header_current.matter_number
-
-END
-
-
-
 
 
 

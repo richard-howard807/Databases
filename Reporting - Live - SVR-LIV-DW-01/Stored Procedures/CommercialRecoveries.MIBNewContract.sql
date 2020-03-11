@@ -15,6 +15,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBNewContract] --'2019-01-01','2019-01-31'
 (
 @StartDate AS DATE
@@ -218,7 +219,7 @@ LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM [MS_PROD].dbo.dbCodeLookup WHERE cdTy
 LEFT OUTER JOIN (SELECT fileID,SUM(curClient) AS RecoveredMonth
 ,MIN([red_dw].[dbo].[datetimelocal](dtePosted)) AS PaymentDate FROM [MS_PROD].dbo.udCRLedgerSL
 WHERE cboCatDesc='5'
-AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 GROUP BY fileID) AS Payments
  ON Payments.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT fileID,SUM(curClient) AS TotalRecovered
@@ -230,7 +231,7 @@ LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS RecoverableCostsToDate FROM [MS
 GROUP BY fileID) AS RecoverableCostsAll
  ON RecoverableCostsAll.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS RecoverableCosts,MIN(dtePosted) AS RecoverableCostsDate
-FROM [MS_PROD].dbo.udCRLedgerSL WHERE cboCatDesc='2' AND dtePosted BETWEEN @StartDate AND @EndDate
+FROM [MS_PROD].dbo.udCRLedgerSL WHERE cboCatDesc='2' AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 GROUP BY fileID) AS RecoverableCosts
  ON RecoverableCosts.fileID = dbFile.fileID
 

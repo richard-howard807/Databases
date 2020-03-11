@@ -3,11 +3,12 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [CommercialRecoveries].[DebitCreditPaymentsAwaitingClearance]
 
 AS
 BEGIN
-SELECT clNo,fileNo,fileDesc,clName,MS_Prod.dbo.udCRLedgerSL.dtePosted
+SELECT clNo,fileNo,fileDesc,clName,red_dw.dbo.datetimelocal(dtePosted) AS dtePosted
 ,txtItemDesc
 ,curClient AS [Amount]
 ,txtPayorPaye AS [Payee/Payor]

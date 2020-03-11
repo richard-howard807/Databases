@@ -14,6 +14,7 @@ GO
 
 
 
+
 CREATE	 PROCEDURE [CommercialRecoveries].[MIBRetentionFiles]		
 --EXEC [VisualFiles].[MIBRetentionFiles] '2016-03-01','2016-03-25','MIB'
 (
@@ -79,7 +80,7 @@ LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM [MS_PROD].dbo.dbCodeLookup WHERE cdTy
  ON cboRetReason=Reason.cdCode
 WHERE clNo='M1001'
 AND fileType='2038'
-AND [red_dw].[dbo].[datetimelocal](dteRetained) BETWEEN @StartDate AND @EndDate 
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dteRetained),103) BETWEEN @StartDate AND @EndDate 
 AND dteClosedDate IS NULL
 AND cboWeRetain='Y'
 AND CASE WHEN cboPlacement='ARBITRATION' THEN 'Arbitration'

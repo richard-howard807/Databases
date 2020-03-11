@@ -12,7 +12,9 @@ GO
 
 
 
-CREATE PROCEDURE [CommercialRecoveries].[BMWCollections]
+
+
+CREATE   PROCEDURE [CommercialRecoveries].[BMWCollections]
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -48,6 +50,7 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'R&B'
 WHEN clNo='FW22613' THEN 'Mini'
 WHEN clNo='W15335' THEN 'Alphera'
 WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet'END AS Client
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
 
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
@@ -64,12 +67,13 @@ INNER JOIN [MS_PROD].dbo.udExtAssociate
  ON udExtAssociate.assocID = dbAssociates.assocID
 INNER JOIN [MS_PROD].config.dbContact
  ON dbContact.contID = dbAssociates.contID
-
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
 WHERE cboCatDesc ='5'
-AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
 AND cboPayType <>'PAY015' -- Direct Payment Tom asked to be removed from report
 

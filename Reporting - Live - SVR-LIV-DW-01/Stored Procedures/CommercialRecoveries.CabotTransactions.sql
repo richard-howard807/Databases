@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[CabotTransactions]
 (
 @StartDate AS DATE
@@ -28,6 +29,7 @@ txtAccNumber AS SupplierRef
 ,NULL AS Interest
 ,NULL AS Adjustment
 ,PaymentType.cdDesc AS PaymentMethod
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
 
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
@@ -56,6 +58,8 @@ AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
  LEFT OUTER JOIN (SELECT * FROM MS_PROD.dbo.dbCodeLookup WHERE cdType='PAYTYPEALL') AS PaymentType
  ON udCRLedgerSL.cboPayType=PaymentType.cdCode
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
  
  
 WHERE clNo='W15367'

@@ -12,6 +12,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBInsurerPayments]		
 --EXEC [CommercialRecoveries].[MIBInsurerPayments] '2019-01-01','2019-12-06','MIB'
 (
@@ -146,7 +147,7 @@ LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS CostsIncurred FROM [MS_PROD].db
  ON Ledger.fileID = dbFile.fileID
 WHERE clNo='M1001'
 AND fileType='2038'
-AND [red_dw].[dbo].[datetimelocal](HistoryInfo.DateofPayment) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](HistoryInfo.DateofPayment),103) BETWEEN @StartDate AND @EndDate
 
 END
 

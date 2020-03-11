@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 --EXEC [CommercialRecoveries].[LeedsBillingAllClient] '2020-03-06', '2020-03-06'
 
 CREATE PROCEDURE [CommercialRecoveries].[LeedsBillingAllClient]
@@ -36,7 +37,8 @@ WHEN cboCatDesc='7' THEN 'Unrecoverable Cost' END AS [Disbursment/Cost Type]
 ,curVAT AS [Vat Amount]
 ,cboVATCat AS [Vatable]
 ,ISNULL(AssociateRef,txtCliRef) AS AssociateRef
-
+,ISNULL(UnbilledDisb,0) AS UnbilledDisb
+,LastBillDate AS LastBill
 FROM ms_prod.config.dbFile
 INNER JOIN ms_prod.config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -57,6 +59,16 @@ WHERE assocType='CLIENT'AND assocRef IS NOT NULL
 AND assocOrder=0
 AND fileType='2038') AS AssociateRef
  ON AssociateRef.fileID = dbFile.fileID
+ LEFT OUTER JOIN dbo.ComRecUnbilledDisbs
+ ON  ComRecUnbilledDisbs.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,MAX(InvDate) AS LastBillDate
+FROM TE_3E_Prod.dbo.ARDetail
+INNER JOIN MS_Prod.config.dbFile
+ ON Matter=fileExtLinkID
+WHERE ARList IN ('Bill','BillRev')
+AND fileType='2038'
+GROUP BY fileID) AS LastBill
+ ON LastBill.fileID = dbfile.fileID
 
 
 

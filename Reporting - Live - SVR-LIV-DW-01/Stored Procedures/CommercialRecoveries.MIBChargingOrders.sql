@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBChargingOrders]				
 --	EXEC [CommercialRecoveries].[MIBChargingOrders] 'MIB'
 (
@@ -111,7 +112,7 @@ GROUP BY fileID) AS PaymentsMade
 WHERE clNo='M1001'
 AND fileType='2038'
 AND txtClaimRef <> ''
-AND [red_dw].[dbo].[datetimelocal](dteFinalOrder) <> '1900-01-01'
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dteFinalOrder),103) <> '1900-01-01'
 
        
        

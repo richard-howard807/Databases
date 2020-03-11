@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[FWFixedFees]
 (
 @StartDate AS DATE
@@ -67,7 +68,7 @@ WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
 WHERE cboCatDesc='7'
-AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
 ) AS MainData
 WHERE MainData.Client=@Client

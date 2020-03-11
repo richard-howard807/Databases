@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBNewBatch] 
 --[CommercialRecoveries].[MIBNewBatch] '2016'
 (
@@ -85,7 +86,7 @@ LEFT OUTER JOIN [MS_PROD].dbo.udExtAssociate
 WHERE clNo='M1001'
 AND fileType='2038'
 AND (
-[red_dw].[dbo].[datetimelocal](dbFile.Created) BETWEEN @StartDate AND @EndDate
+CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dbFile.Created),103) BETWEEN @StartDate AND @EndDate
 OR COALESCE([red_dw].[dbo].[datetimelocal](dteClosedDate),[red_dw].[dbo].[datetimelocal](fileClosed)) BETWEEN @StartDate AND @EndDate)
 
 

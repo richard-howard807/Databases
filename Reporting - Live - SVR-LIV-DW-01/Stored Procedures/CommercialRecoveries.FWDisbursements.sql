@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[FWDisbursements]
 (
 @StartDate AS DATE
@@ -73,7 +74,7 @@ WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
 WHERE cboCatDesc IN ('0','1')
-AND [red_dw].[dbo].[datetimelocal](dtePosted) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
 ) AS MainData
 WHERE MainData.Client=@Client

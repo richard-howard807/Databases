@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBComplaints] -- EXEC VisualFiles.MIBComplaints '1900-01-01','2020-01-01'
 (
 @StartDate AS DATE
@@ -77,7 +78,7 @@ LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM [MS_PROD].dbo.dbCodeLookup WHERE cdTy
  ON cboRetReason=Reason.cdCode
 WHERE clNo='M1001'
 AND fileType='2038'
-AND [red_dw].[dbo].[datetimelocal](dteComplaint) BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dteComplaint),103) BETWEEN @StartDate AND @EndDate
 AND [red_dw].[dbo].[datetimelocal](dteClosedDate) IS NULL
 
 

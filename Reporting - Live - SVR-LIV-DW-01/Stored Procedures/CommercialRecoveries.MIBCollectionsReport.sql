@@ -7,6 +7,7 @@ GO
 
 
 
+
 --EXEC [CommercialRecoveries].[MIBCollectionsReport] '2019-12-01','2019-12-02','First Placement'
 
 CREATE PROCEDURE [CommercialRecoveries].[MIBCollectionsReport]
@@ -37,7 +38,7 @@ FROM [MS_PROD].dbo.udCRLedgerSL
 INNER JOIN [MS_PROD].config.dbfile
  ON udCRLedgerSL.FileID=dbfile.FileID
 WHERE fileType='2038' AND cboCatDesc ='5'
-AND CONVERT(DATE,dtePosted,103) BETWEEN @StartDate AND @ENdDate
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @ENdDate
 GROUP BY udCRLedgerSL.fileID) AS udCRLedgerSL
 INNER JOIN [MS_PROD].config.dbfile
  ON dbFile.fileID = udCRLedgerSL.fileID

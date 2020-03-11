@@ -6,10 +6,12 @@ GO
 
 
 
-CREATE PROCEDURE [CommercialRecoveries].[MKMCollections] --EXEC [CommercialRecoveries].[LCCCashCollections] '2019-11-01','2020-02-20'
+
+CREATE PROCEDURE [CommercialRecoveries].[LeedsCashCollections] --EXEC [CommercialRecoveries].[LCCCashCollections] '2019-11-01','2020-02-20'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
+,@Client AS NVARCHAR(100)
 )
 AS
 BEGIN
@@ -21,6 +23,7 @@ clNo +'-' + fileNo AS [Our Referece]
 ,curClient AS [Amount Recovered (£)]	
 ,[red_dw].[dbo].[datetimelocal](dtePosted) AS [Date of Payment]
 ,dtePosted
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
  FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -37,12 +40,13 @@ INNER JOIN [MS_PROD].config.dbContact
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
  WHERE cboCatDesc='5' 
  AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
  AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
- AND (CRSystemSourceID  LIKE '34485-%' OR clNo='W15495')
- AND cboPayType <>'PAY015' -- Direct Payment Tom asked to be removed from report
+ AND clNo=@Client
+ 
+ END
 
- ORDER BY [red_dw].[dbo].[datetimelocal](dtePosted)
-END
 GO

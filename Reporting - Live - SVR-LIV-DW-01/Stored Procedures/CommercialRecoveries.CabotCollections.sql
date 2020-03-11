@@ -6,6 +6,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[CabotCollections]
 (
 @StartDate AS DATE
@@ -23,6 +26,7 @@ dbFile.fileID
 ,txtSubClient AS [Sub Client]
 ,curClient AS [Payment To Weightmans]
 ,[red_dw].[dbo].[datetimelocal](dtePosted) AS [Date of Payment]
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -48,10 +52,13 @@ LEFT OUTER JOIN MS_PROD.dbo.dbContactIndividual
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
 
  
 WHERE clNo='W15367'
 AND cboCatDesc='5'
+
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 
 ORDER BY [red_dw].[dbo].[datetimelocal](dtePosted)

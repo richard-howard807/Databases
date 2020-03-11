@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[B2BFixedCosts]
 (
 @StartDate AS DATE
@@ -27,6 +28,7 @@ txtClientName AS [Client Name]
 ,txtItemDesc AS [Description]
 ,[red_dw].[dbo].[datetimelocal](dtePosted) AS [Date]
 ,ISNULL(txtClientName,clName) AS [Client]
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].dbo.udCRLedgerSL
  ON udCRLedgerSL.fileID = dbFile.fileID
@@ -48,6 +50,8 @@ INNER JOIN MS_PROD.config.dbContact
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
 WHERE fileType='2038'
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 AND clNo=@ClientName

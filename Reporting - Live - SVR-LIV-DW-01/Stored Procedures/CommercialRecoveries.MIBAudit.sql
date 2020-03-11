@@ -10,6 +10,7 @@ GO
 
 
 
+
 --435
 --253
 
@@ -119,7 +120,7 @@ LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM [MS_PROD].dbo.dbCodeLookup WHERE cdTy
 WHERE clNo='M1001'
 AND fileType='2038'
 AND dteAudit <>''
-AND ISNULL([red_dw].[dbo].[datetimelocal](dteAudit),'1900-01-01') <>'1900-01-01'
+AND ISNULL(CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dteAudit),103),'1900-01-01') <>'1900-01-01'
 
 END
 GO

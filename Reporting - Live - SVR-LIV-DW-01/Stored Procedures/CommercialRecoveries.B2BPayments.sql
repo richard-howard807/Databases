@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[B2BPayments] --EXEC [CommercialRecoveries].[B2BPayments] '2019-12-01','2019-12-06','723152'
 (
 @StartDate AS DATE
@@ -26,6 +27,8 @@ dbFile.fileID
 ,txtSubClient AS [Sub Client]
 ,curclient AS [PaymentAmount]
 ,ISNULL(txtClientName,clName) AS [Client]
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
+
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.udCRLedgerSL
  ON udCRLedgerSL.fileID = dbFile.fileID
@@ -49,6 +52,8 @@ AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT * FROM MS_PROD.dbo.dbCodeLookup WHERE cdType='PAYTYPEALL') AS PaymentType
  ON cboPayType=PaymentType.cdCode
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
 WHERE fileType='2038'
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 AND clNo=@ClientName
