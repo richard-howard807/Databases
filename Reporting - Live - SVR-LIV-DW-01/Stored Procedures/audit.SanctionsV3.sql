@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [audit].[SanctionsV3] 
 
 
@@ -19,7 +20,9 @@ INTO #Sanctions
 FROM 
 (
 SELECT 
-CASE WHEN [Group Type]='Individual' THEN RTRIM(ISNULL([Name 1],'')) + ' ' + RTRIM(ISNULL([Name 2],''))  + ' ' + RTRIM(ISNULL([Name 6],''))
+--CASE WHEN [Group Type]='Individual' THEN RTRIM(ISNULL([Name 1],'')) + ' ' + RTRIM(ISNULL([Name 2],''))  + ' ' + RTRIM(ISNULL([Name 6],''))
+--WHEN [Group Type]='Entity' THEN RTRIM([Name 6])  END AS Name
+CASE WHEN [Group Type]='Individual' THEN RTRIM(ISNULL([Name 1],'')) + ' ' + RTRIM(ISNULL([Name 6],''))
 WHEN [Group Type]='Entity' THEN RTRIM([Name 6])  END AS Name
 ,[Group ID] AS GroupID
 ,[Last Updated]
@@ -55,9 +58,9 @@ SELECT DISTINCT  Name AS SanctionNam
 ,[Date Sanctions list reviewed]
 ,[Last Updated]
 ,COALESCE(DateClosed,mg_datcls) AS DateClosed
-,CASE WHEN COALESCE(DateClosed,mg_datcls) IS NULL AND [Date Sanctions list reviewed] IS NULL OR CONVERT(Date,[Last Updated],103) > CONVERT(Date,[Date Sanctions list reviewed],103) THEN 1 ELSE 0 END [Re-Check Needed]
+,CASE WHEN COALESCE(DateClosed,mg_datcls) IS NULL AND [Date Sanctions list reviewed] IS NULL OR CONVERT(DATE,[Last Updated],103) > CONVERT(DATE,[Date Sanctions list reviewed],103) THEN 1 ELSE 0 END [Re-Check Needed]
 ,CASE WHEN COALESCE(DateClosed,mg_datcls) IS NULL AND [Reviewed file against Sanctions list] LIKE '%temporary reviewed%' THEN 1 ELSE 0 END AS AmberCheck
-,CASE WHEN COALESCE(DateClosed,mg_datcls) IS NOT NULL AND  CONVERT(Date,[Last Updated],103) BETWEEN DATEADD(M,-3,GETDATE()) AND GETDATE() THEN 1 ELSE 0 END ExtraRed
+,CASE WHEN COALESCE(DateClosed,mg_datcls) IS NOT NULL AND  CONVERT(DATE,[Last Updated],103) BETWEEN DATEADD(M,-3,GETDATE()) AND GETDATE() THEN 1 ELSE 0 END ExtraRed
 ,ISNULL([Client Balance],0) AS [Client Balance]
 ,MainData.SourceID
 ,[SanctionDOB]
@@ -78,7 +81,7 @@ SELECT Sanctions.Name
 ,Drilldown.CaseID
 ,[Last Updated]
 ,COALESCE(cboLinkedFile,NMI418.case_text) AS [Is this a Linked File]
-,COALESCE(NMI419MS.txtLeadFileNo,NMI419.case_text) collate database_default AS [Linked Case]
+,COALESCE(NMI419MS.txtLeadFileNo,NMI419.case_text) COLLATE DATABASE_DEFAULT AS [Linked Case]
 ,COALESCE(dteDateofBirth,AUD211.case_date,AUD211b.case_date) AS [Date of birth]
 ,COALESCE(AUD212.case_text,cboDoBObtain,AUD212b.case_text) AS [Was DoB obtained?]
 ,COALESCE(cboRevFileSanLi,AUD213.case_text,AUD213b.case_text) AS [Reviewed file against Sanctions list]
@@ -92,7 +95,7 @@ INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER JOIN (SELECT case_id,case_text FROM axxia01.dbo.casdet WHERE case_detail_code='NMI418') AS NMI418
 	   ON Drilldown.CaseID=NMI418.case_id AND Drilldown.SourceID=1
-LEFT OUTER JOIN (SELECT fileID,CASE WHEN cboLinkedFile='Y' THEN 'Yes' WHEN cboLinkedFile='N' THEN 'No' END AS cboLinkedFile  FROm MS_PROD.dbo.udMICoreGeneral
+LEFT OUTER JOIN (SELECT fileID,CASE WHEN cboLinkedFile='Y' THEN 'Yes' WHEN cboLinkedFile='N' THEN 'No' END AS cboLinkedFile  FROM MS_PROD.dbo.udMICoreGeneral
 	   WHERE cboLinkedFile IS NOT NULL) AS NMI418MS
 	   ON Drilldown.CaseID=NMI418MS.fileID AND Drilldown.SourceID=2
 	   
@@ -120,7 +123,7 @@ LEFT OUTER JOIN (SELECT fileID,CASE WHEN cboLinkedFile='Y' THEN 'Yes' WHEN cboLi
 	  LEFT OUTER JOIN (SELECT ms_fileid AS  case_id,case_text FROM axxia01.dbo.casdet INNER JOIN red_dw.dbo.dim_matter_header_current AS b ON casdet.case_id=b.case_id WHERE case_detail_code='NMI419') AS NMI419b
 	   ON Drilldown.CaseID=NMI419b.case_id AND Drilldown.SourceID=2	
 	
-	   LEFT OUTER JOIN (SELECT fileID,txtLeadFileNo  FROm MS_PROD.dbo.udMICoreGeneral
+	   LEFT OUTER JOIN (SELECT fileID,txtLeadFileNo  FROM MS_PROD.dbo.udMICoreGeneral
 	   WHERE txtLeadFileNo IS NOT NULL) AS NMI419MS
 	   ON Drilldown.CaseID=NMI419MS.fileID AND Drilldown.SourceID=2
 	   
@@ -143,13 +146,13 @@ dteDateofBirth  IS NOT NULL
 	   
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses
  WHERE Type='Address') AS Addresses
