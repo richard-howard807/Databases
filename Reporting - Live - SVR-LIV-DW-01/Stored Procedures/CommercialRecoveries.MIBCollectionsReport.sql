@@ -8,6 +8,7 @@ GO
 
 
 
+
 --EXEC [CommercialRecoveries].[MIBCollectionsReport] '2019-12-01','2019-12-02','First Placement'
 
 CREATE PROCEDURE [CommercialRecoveries].[MIBCollectionsReport]
@@ -33,6 +34,7 @@ SELECT  txtDefSur AS defendant
 			WHEN cboPlacement='DEFENDANT' THEN 'Defendant'
 			WHEN cboPlacement='INSURER' THEN 'Insurer'  ELSE 'Missing' END  AS [ADA28]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS DateOpened
+,ISNULL(ComRecClientBalance,0) AS ClientBalance
 FROM (SELECT udCRLedgerSL.fileID,SUM(curClient) AS curClient 
 FROM [MS_PROD].dbo.udCRLedgerSL
 INNER JOIN [MS_PROD].config.dbfile
@@ -52,6 +54,8 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
  ON udCRAccountInformation.fileID = udCRLedgerSL.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.dbUser
  ON filePrincipleID=usrID
+LEFT OUTER JOIN dbo.ComRecClientBalances
+ ON  ComRecClientBalances.fileID = dbFile.fileID
 WHERE clNo='M1001'
 AND CASE WHEN cboPlacement='ARBITRATION' THEN 'Arbitration'
 			WHEN cboPlacement='CLAIMANT' THEN 'Claimant'
