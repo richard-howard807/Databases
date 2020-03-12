@@ -68,7 +68,9 @@ with track_back as (
 	from #tracker
 	WHERE  LOWER(column_name) = LOWER(@Column)
 	AND LOWER(#tracker.table_name) = LOWER(@Table)
-	
+	--WHERE  LOWER(column_name) = 'mib_notes'
+	--AND LOWER(#tracker.table_name) = 'stage_ms_dim_detail_02_client_text'
+
 	union all
 
 	SELECT c.object_key Parent_key, c.col_key parent_col_key, c.column_name Parent_Name, a.object_key, a.col_key, a.table_name, a.column_name, a.data_type, a.source_table, a.source_column, a.transformation, a.connection
@@ -76,7 +78,7 @@ with track_back as (
 	-- select *
 	FROM #tracker a
 	inner join track_back c on LOWER(a.table_name) IN (SELECT LOWER(source_table) FROM #tracker WHERE LOWER(table_name) = LOWER(c.table_name))
-	AND LOWER(a.column_name) = LOWER(c.source_column)
+	AND LOWER(a.column_name) = LOWER(c.source_column) -- AND LOWER(a.table_name) = LOWER(c.source_table)
 	AND a.table_name <> 'dim_date'
 	WHERE level+1 < 99 -- stops loop error
 	)
