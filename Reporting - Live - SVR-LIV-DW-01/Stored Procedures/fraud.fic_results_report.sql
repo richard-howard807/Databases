@@ -11,6 +11,11 @@ GO
 -- Create date: 21/02/2018
 -- Description:	Webby Ticket 295245 (Based on the Fraud Indicator Score report)
 -- =============================================
+-- ES 2020-03-12 42547 Amended the logic to look at the FIC Process task rather than
+--						filter based on the FIC score which is based on case details
+
+--==============================================
+
 CREATE PROCEDURE [fraud].[fic_results_report]
 	
 AS
@@ -47,6 +52,7 @@ BEGIN
 				 ,fic_fraud_transfer [fic_revew]
 				 ,date_received 
 				 ,date_intel_report_sent
+				 ,FICProcess.tskCompleted
 
 
 	FROM 
@@ -59,23 +65,37 @@ BEGIN
 	LEFT OUTER JOIN red_dw..dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
 	LEFT OUTER JOIN red_dw..dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 
+	INNER JOIN (SELECT fileID, tskDesc, tskCompleted 
+				FROM MS_Prod.dbo.dbTasks
+				WHERE tskDesc LIKE 'FIC Process'
+				AND tskCompleted IS NOT NULL 
+				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
+
 	WHERE 
 		dim_matter_header_current.date_closed_case_management IS NULL
 		AND dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
 		AND dim_matter_header_current.date_opened_case_management > '20161231'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
+		--AND fic_fraud_transfer='Yes'
 		-- fic score
-		AND CASE WHEN 
-			ISNULL(dim_detail_fraud.el_points,0)  
-			+ ISNULL(dim_detail_fraud.pl_points,0)
-			+ ISNULL(dim_detail_fraud.motor_freight_liveried_points,0)
-			+ ISNULL(dim_detail_fraud.motor_personal_line_insurance_points,0)
-			+ ISNULL(dim_detail_fraud.disease_points,0)
-			 > 14 
-	  	 OR ISNULL(dim_detail_fraud.rmg_el_points,0) > 5 
-		 OR ISNULL(dim_detail_fraud.rmg_pl_points,0) > 5
-		 THEN 1 ELSE 0 END =1
+		--AND CASE WHEN 
+		--	ISNULL(dim_detail_fraud.el_points,0)  
+		--	+ ISNULL(dim_detail_fraud.pl_points,0)
+		--	+ ISNULL(dim_detail_fraud.motor_freight_liveried_points,0)
+		--	+ ISNULL(dim_detail_fraud.motor_personal_line_insurance_points,0)
+		--	+ ISNULL(dim_detail_fraud.disease_points,0)
+		--	 > 14 
+	 -- 	 OR ISNULL(dim_detail_fraud.rmg_el_points,0) > 5 
+		-- OR ISNULL(dim_detail_fraud.rmg_pl_points,0) > 5
+		-- THEN 1 ELSE 0 END =1
+		
+		--test examples
+		 --AND fact_dimension_main.client_code='Z1001'
+		 --AND fact_dimension_main.matter_number='00080186'
+		 
+		 --AND fact_dimension_main.client_code='N12105'
+		 --AND fact_dimension_main.matter_number='00000627'
 
 		 --aborted process logic below
 		--AND CASE WHEN (dim_detail_fraud.el_points > 15 AND dim_detail_fraud.fic_el  <> '26.00')
