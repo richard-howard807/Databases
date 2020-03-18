@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [audit].[SanctionsV3] 
 
 
@@ -159,7 +160,7 @@ LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,
   ON MainData.EntityCode=Addresses.EntityCode AND MainData.SourceID=Addresses.SourceID
   
  WHERE matter <>'0' 
---AND  (RTRIM(client) + '.' + RTRIM(matter)) ='A2002.14969'
+AND  (RTRIM(client) + '.' + RTRIM(matter)) <>'00337897.00002914'
 
  
 END

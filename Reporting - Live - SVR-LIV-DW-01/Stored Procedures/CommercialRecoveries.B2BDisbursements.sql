@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[B2BDisbursements]
 (
 @StartDate AS DATE
@@ -23,6 +24,7 @@ txtClientName AS [Client Name]
 ,Defendant AS [Debtor Name]
 ,txtCliNumRef AS [Client Reference]
 ,'MBC' + ' / ' + ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [Weightmans Reference]
+,clNo +'-' + fileNo AS [3E Reference]
 ,curOffice AS [Amount]
 ,NULL AS [VAT]
 ,txtItemDesc AS [Description]

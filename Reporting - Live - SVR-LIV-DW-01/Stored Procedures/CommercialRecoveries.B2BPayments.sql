@@ -9,6 +9,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [CommercialRecoveries].[B2BPayments] --EXEC [CommercialRecoveries].[B2BPayments] '2019-12-01','2019-12-06','723152'
 (
 @StartDate AS DATE
@@ -28,6 +30,7 @@ dbFile.fileID
 ,curclient AS [PaymentAmount]
 ,ISNULL(txtClientName,clName) AS [Client]
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
+,clNo +'-' + fileNo AS [3E Reference]
 
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.udCRLedgerSL
