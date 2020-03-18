@@ -32,28 +32,25 @@ BEGIN
 		 ,dim_fed_hierarchy_history.hierarchylevel3hist AS Department
 		 ,dim_fed_hierarchy_history.hierarchylevel4hist AS Team
 		 ,dim_detail_core_details.suspicion_of_fraud
-		 ,  fic =	 ISNULL(dim_detail_fraud.el_points,0)  
-						+ ISNULL(dim_detail_fraud.pl_points,0)
-						+ ISNULL(dim_detail_fraud.motor_freight_liveried_points,0)
-						+ ISNULL(dim_detail_fraud.motor_personal_line_insurance_points,0)
-						+ ISNULL(dim_detail_fraud.disease_points,0)
-						+  ISNULL(dim_detail_fraud.rmg_el_points,0) 
-						+ ISNULL(dim_detail_fraud.rmg_pl_points,0) 
-			
+		 ,referral_reason AS [Referral Reason]
+		 ,CASE WHEN date_closed_case_management IS NULL THEN DATEDIFF(DAY, date_opened_case_management,GETDATE())
+					ELSE DATEDIFF(DAY,date_opened_case_management, date_closed_case_management) END AS [Days Opened]
 
-				 ,dim_detail_fraud.el_points AS FRA130
-				 ,dim_detail_fraud.pl_points AS FRA131
-				 ,dim_detail_fraud.motor_freight_liveried_points AS FRA133
-				 ,dim_detail_fraud.motor_personal_line_insurance_points AS FRA134
-				 ,dim_detail_fraud.disease_points AS FRA135
-				 ,dim_detail_fraud.rmg_el_points AS FRA137
-				 ,dim_detail_fraud.rmg_pl_points AS FRA129
-				 ,fic_fraud_transfer_date [fic_review_date]
-				 ,fic_fraud_transfer [fic_revew]
-				 ,date_received 
-				 ,date_intel_report_sent
-				 ,FICProcess.tskCompleted
+		 ,fic =	 total_points_calc 
 
+		 ,dim_detail_fraud.el_points AS FRA130
+		 ,dim_detail_fraud.pl_points AS FRA131
+		 ,dim_detail_fraud.motor_freight_liveried_points AS FRA133
+		 ,dim_detail_fraud.motor_personal_line_insurance_points AS FRA134
+		 ,dim_detail_fraud.disease_points AS FRA135
+		 ,dim_detail_fraud.rmg_el_points AS FRA137
+		 ,dim_detail_fraud.rmg_pl_points AS FRA129
+		 ,fic_fraud_transfer_date [fic_review_date]
+		 ,fic_fraud_transfer [fic_revew]
+		 ,date_received 
+		 ,date_intel_report_sent
+		 ,FICProcess.tskCompleted
+		 ,ms_fileid
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -77,6 +74,10 @@ BEGIN
 		AND dim_matter_header_current.matter_number<>'ML'
 		AND dim_matter_header_current.date_opened_case_management > '20161231'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
+
+		AND LOWER(referral_reason) LIKE '%dispute%'
+		AND suspicion_of_fraud ='No'
+
 		--AND fic_fraud_transfer='Yes'
 		-- fic score
 		--AND CASE WHEN 
@@ -97,6 +98,8 @@ BEGIN
 		 --AND fact_dimension_main.client_code='N12105'
 		 --AND fact_dimension_main.matter_number='00000627'
 
+		 --AND ms_fileid='5070040'
+
 		 --aborted process logic below
 		--AND CASE WHEN (dim_detail_fraud.el_points > 15 AND dim_detail_fraud.fic_el  <> '26.00')
 		--		OR (dim_detail_fraud.pl_points > 15 AND dim_detail_fraud.fic_pl  <> '22.00')
@@ -112,4 +115,5 @@ END
 
 
 
+--SELECT * FROM red_dw.dbo.dim_detail_fraud
 GO
