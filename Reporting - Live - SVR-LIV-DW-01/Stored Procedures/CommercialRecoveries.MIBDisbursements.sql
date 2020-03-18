@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBDisbursements]
 (@StartDate AS DATE
 ,@EndDate AS DATE
@@ -29,6 +30,7 @@ txtClaimRef AS [Account Number]
 			WHEN cboPlacement='CLAIMANT' THEN 'Claimant'
 			WHEN cboPlacement='DEFENDANT' THEN 'Defendant'
 			WHEN cboPlacement='INSURER' THEN 'Insurer'  ELSE 'Missing' END AS [Placement]
+,RTRIM(clNo)+'-'+RTRIM(fileNo) AS [3e Reference]
 FROM [MS_PROD].dbo.udCRLedgerSL
 INNER JOIN [MS_PROD].config.dbFile
  ON dbFile.fileID = udCRLedgerSL.fileID

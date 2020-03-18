@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedsCashCollections] --EXEC [CommercialRecoveries].[LCCCashCollections] '2019-11-01','2020-02-20'
 (
 @StartDate AS DATE
@@ -24,6 +25,8 @@ clNo +'-' + fileNo AS [Our Referece]
 ,[red_dw].[dbo].[datetimelocal](dtePosted) AS [Date of Payment]
 ,dtePosted
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
+,txtCurenStatNot AS [Current Status]
+
  FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID

@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[FWFixedFees]
 (
 @StartDate AS DATE
@@ -36,8 +37,9 @@ WHEN CRSystemSourceID LIKE '323223-%'  OR CRSystemSourceID LIKE '32469-%' OR Cln
 WHEN CRSystemSourceID LIKE '34485-%' OR clno='W15495' THEN 'M.K.M Building Supplies Limited'
 WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3' ) AND txtCliRef LIKE '8%' THEN 'LCC - Council Tax'
 WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3') AND txtCliRef NOT LIKE '8%'  AND txtCliRef NOT LIKE 'EN%' THEN 'LCC - Housing Benefit & Sundry Income'
-WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC2' ) THEN 'LCC Section 146'
-WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC1' ) THEN 'LCC Business Rates'
+WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC2' ) THEN 'LCC - Section 146'
+WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC1' ) THEN 'LCC - Business Rates'
+WHEN (CRSystemSourceID  LIKE '35153-%' OR clNo='707938') THEN 'NHS'	
 WHEN CRSystemSourceID LIKE '35163-%'  OR clno='W17055' THEN 'Energas'
 --WHEN CRSystemSourceID LIKE '13329-%' AND ISNULL(txtCliRef,'')<>'8GB' AND ISNULL(txtCliRef,'')<>'9GB' THEN 'UPS Exc COD'
 --WHEN CRSystemSourceID LIKE '13329-%' AND (ISNULL(txtCliRef,'')='8GB' OR ISNULL(txtCliRef,'')='9GB') THEN 'UPS Inc COD' 
