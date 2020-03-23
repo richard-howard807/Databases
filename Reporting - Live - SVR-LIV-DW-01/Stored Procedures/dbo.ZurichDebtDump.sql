@@ -8,6 +8,7 @@ CREATE PROCEDURE [dbo].[ZurichDebtDump] as
 ==================================================================================================
 Jamie Bonner - Ticket #53193
 Added columns for Fees, Other Fees, Hard Costs, Soft Costs, VAT and Total Excl VAT
+zurich_legal_x column updated to change blanks to yes or no based on invoice status code being Legal X or not 
 ==================================================================================================
 */
 
@@ -55,7 +56,17 @@ dim_detail_core_details.brief_description_of_injury as 'Injury Type',
 dim_detail_core_details.zurich_referral_reason as 'Zurich Referral Reason',
 dim_detail_client.zurich_debt_department,
 dim_detail_client.zurich_reason_not_legal_x,
-dim_detail_client.zurich_legal_x,
+CASE
+	WHEN dim_detail_client.zurich_legal_x IS NULL THEN	
+		CASE 
+			WHEN dim_bill_debt_narrative.invoice_status_code LIKE 'LX%' THEN
+				'Yes'
+			ELSE 
+				'No'
+		END
+	ELSE
+		dim_detail_client.zurich_legal_x
+END AS [zurich_legal_x],
 invoice_status_code,
 invoice_status_desc,
 dim_bill_debt_narrative.udf_modified_by created_by,
