@@ -4,26 +4,38 @@ SET ANSI_NULLS ON
 GO
 CREATE PROCEDURE [dbo].[ZurichDebtDump] as
 
+/*
+==================================================================================================
+Jamie Bonner - Ticket #53193
+Added columns for Fees, Other Fees, Hard Costs, Soft Costs, VAT and Total Excl VAT
+==================================================================================================
+*/
+
 
 SELECT 
-isnull(left(Matter.loadnumber,(charindex('-',Matter.loadnumber)-1)),Client.altnumber) as 'Client',
-isnull(right(Matter.loadnumber, len(Matter.loadnumber) - charindex('-',Matter.loadnumber))
+ISNULL(LEFT(Matter.loadnumber,(CHARINDEX('-',Matter.loadnumber)-1)),Client.altnumber) AS 'Client',
+ISNULL(RIGHT(Matter.loadnumber, LEN(Matter.loadnumber) - CHARINDEX('-',Matter.loadnumber))
 ,
-right(Matter.altnumber, len(Matter.altnumber) - charindex('-',Matter.altnumber))
-) as 'Matter', 
-Matter.Number as '3e ref',
-dim_fed_hierarchy_history.hierarchylevel2hist as 'BusinessLine',
-dim_fed_hierarchy_history.hierarchylevel3hist as 'PracticeArea',
-dim_fed_hierarchy_history.hierarchylevel4hist as 'Team',
-dim_client.client_name as 'ClientName',
-Matter.DisplayName as 'MatterDesc',
-dim_matter_header_current.date_opened_practice_management as 'MatterOpenDate',
-dim_fed_hierarchy_history.hierarchylevel4hist as 'MatterOwnerTeam',
-dim_fed_hierarchy_history.display_name as 'MatterOwner',
+RIGHT(Matter.altnumber, LEN(Matter.altnumber) - CHARINDEX('-',Matter.altnumber))
+) AS 'Matter', 
+Matter.Number AS '3e ref',
+dim_fed_hierarchy_history.hierarchylevel2hist AS 'BusinessLine',
+dim_fed_hierarchy_history.hierarchylevel3hist AS 'PracticeArea',
+dim_fed_hierarchy_history.hierarchylevel4hist AS 'Team',
+dim_client.client_name AS 'ClientName',
+Matter.DisplayName AS 'MatterDesc',
+dim_matter_header_current.date_opened_practice_management AS 'MatterOpenDate',
+dim_fed_hierarchy_history.hierarchylevel4hist AS 'MatterOwnerTeam',
+dim_fed_hierarchy_history.display_name AS 'MatterOwner',
 InvPayor.InvNumber,
 InvMaster.InvDate,
-InvPayor.BalAmt as 'DebtValue',
-InvPayor.BalFee as 'OutstandingCosts',
+InvPayor.BalAmt AS 'DebtValue',
+InvPayor.BalFee AS 'OutstandingCosts',
+InvPayor.BalOth	AS [Other Fees (Success Fee)],
+InvPayor.BalHCo AS [Hard Costs],
+InvPayor.BalSCo AS [Soft Costs],
+InvPayor.BalTax AS [VAT],
+InvPayor.BalFee + InvPayor.BalOth + InvPayor.BalHCo + InvPayor.BalSCo AS [Total Amount Excl. VAT],
 datediff(day, InvMaster.InvDate, getdate()) as 'DaysOutstanding',
 case
 	when datediff(day, InvMaster.InvDate, getdate())	between 0 and 30 then '0 - 30 Days'
@@ -88,5 +100,6 @@ LEFT JOIN red_dw.dbo.dim_bill_debt_narrative ON InvPayor.InvNumber COLLATE DATAB
 WHERE 
 InvPayor.BalAmt <> 0
 AND LOWER(Address.FormattedString) LIKE '%zurich%'
---and InvPayor.InvNumber = '01659941'
+--and InvPayor.InvNumber = '01862579'
+
 GO
