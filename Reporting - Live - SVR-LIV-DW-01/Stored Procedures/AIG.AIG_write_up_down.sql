@@ -14,6 +14,7 @@ AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
+	--
 	SET NOCOUNT ON;
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 --IF OBJECT_ID ('tempdb.dbo.#results') IS NOT NULL

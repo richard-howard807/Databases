@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Regulatory'	,'PDGHSC'
 (
 @Department AS NVARCHAR(MAX)
@@ -50,7 +51,8 @@ WHEN cboCliBalance='NOACTION' THEN 'No Action Required'
 WHEN cboCliBalance='ACTION' THEN 'Action Required' End cboCliBalance
 ,txtCommentCli	 txtCommentsCli
 ,dteLastReview
-	
+,TMName
+,[TMEmail]
 				
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
@@ -102,7 +104,11 @@ FROM
 	LEFT OUTER JOIN (SELECT fed_code
 							,hierarchylevel2,hierarchylevel3 AS [Practice Area]
 							,hierarchylevel4 AS [Team]
-						FROM red_dw.dbo.dim_fed_hierarchy_current
+							,worksforname AS TMName
+							,worksforemail AS [TMEmail]
+						FROM red_dw.dbo.dim_fed_hierarchy_history
+						INNER JOIN red_dw.dbo.dim_employee
+						 ON  dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 						WHERE dss_current_flag='Y') AS Teams
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
 INNER JOIN #Department AS Department  ON RTRIM(LTRIM(Department.ListValue)) COLLATE database_default =RTRIM(LTRIM( [Practice Area])) COLLATE database_default

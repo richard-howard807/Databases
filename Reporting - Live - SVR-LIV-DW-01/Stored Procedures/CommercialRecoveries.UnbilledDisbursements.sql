@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+--SELECT * FROM VFile_Streamlined.dbo.VFDetailMapping WHERE [VF Field Name] LIKE 'him%'
+
 CREATE PROCEDURE [CommercialRecoveries].[UnbilledDisbursements]
 (
 @Client AS NVARCHAR(50)
@@ -21,7 +23,11 @@ SELECT AllData.clNo,
        AllData.WorkAmt,
        AllData.StdAmt,
        AllData.Narrative,
-       AllData.IsHardCost FROM 
+       AllData.IsHardCost
+	   ,txtClaimRef AS MIBClaimNumber
+	  ,txtAccNumber AS AccountNumber
+	  ,txtCliRef AS ClientRef
+	FROM 
 (SELECT clNo,
        fileNo,
        fileDesc,
@@ -31,7 +37,8 @@ SELECT AllData.clNo,
        CostCard.WorkAmt,
        CostCard.StdAmt,
        CostCard.Narrative,
-       CostCard.IsHardCost
+       CostCard.IsHardCost,CostBill.costbillindex
+	   ,fileID
 FROM TE_3E_Prod.dbo.CostCard
     INNER JOIN TE_3E_Prod.dbo.Matter
         ON CostCard.Matter = matter.MattIndex
@@ -54,7 +61,14 @@ FROM TE_3E_Prod.dbo.CostCard
         ON CostCard.Timekeeper = Timekeeper.TkprIndex
 WHERE TE_3E_Prod.dbo.CostCard.IsActive = 1
       AND fileType = '2038'
+	  AND  InvIndex IS NULL
 ) AS AllData
+LEFT OUTER JOIN ms_prod.dbo.udCRClientScreens
+ ON udCRClientScreens.fileID = AllData.fileID
+ LEFT OUTER JOIN ms_prod.dbo.udCRCore
+ ON udCRCore.fileID = AllData.fileID
+
+ 
 WHERE AllData.clNo=@Client
 END
 GO

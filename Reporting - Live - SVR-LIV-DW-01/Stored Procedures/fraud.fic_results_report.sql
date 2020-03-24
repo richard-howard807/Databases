@@ -49,6 +49,7 @@ BEGIN
 		 ,fic_fraud_transfer [fic_revew]
 		 ,date_received 
 		 ,date_intel_report_sent
+		 ,FICProcess.tskDue
 		 ,FICProcess.tskCompleted
 		 ,ms_fileid
 
@@ -62,10 +63,15 @@ BEGIN
 	LEFT OUTER JOIN red_dw..dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
 	LEFT OUTER JOIN red_dw..dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 
-	INNER JOIN (SELECT fileID, tskDesc, tskCompleted 
+	--LEFT OUTER JOIN (SELECT fileID, tskDesc, tskCompleted 
+	--			FROM MS_Prod.dbo.dbTasks
+	--			WHERE tskDesc LIKE 'FIC Process'
+	--			AND tskCompleted IS NOT NULL 
+	--			AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
+
+	INNER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
 				FROM MS_Prod.dbo.dbTasks
 				WHERE tskDesc LIKE 'FIC Process'
-				AND tskCompleted IS NOT NULL 
 				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 	WHERE 
@@ -93,7 +99,7 @@ BEGIN
 		
 		--test examples
 		 --AND fact_dimension_main.client_code='Z1001'
-		 --AND fact_dimension_main.matter_number='00080186'
+		 --AND fact_dimension_main.matter_number='00078456'
 		 
 		 --AND fact_dimension_main.client_code='N12105'
 		 --AND fact_dimension_main.matter_number='00000627'
@@ -115,5 +121,8 @@ END
 
 
 
---SELECT * FROM red_dw.dbo.dim_detail_fraud
+--SELECT fileID, tskDesc, tskCompleted,*
+--				FROM MS_Prod.dbo.dbTasks
+--				WHERE tskDesc LIKE 'FIC Process'
+--				AND tskActive=1
 GO

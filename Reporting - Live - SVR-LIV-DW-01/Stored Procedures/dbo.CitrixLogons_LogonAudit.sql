@@ -5,11 +5,19 @@ GO
 
 
 CREATE PROCEDURE [dbo].[CitrixLogons_LogonAudit] -- EXEC dbo.CitrixLogons_LogonAudit '2016-01-01','2016-01-26','Eif Williams'
+
+/*
+===============================================================================================================
+Jamie Bonner - Ticket #50362 - removed @team parameter. 
+removed #Name table, added in s.DisplayName IN (@Name) to allow multiple employees to be selected
+===============================================================================================================
+*/
+
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
 ,@Name AS VARCHAR(MAX)
-,@Team AS VARCHAR(MAX)
+--,@Team AS VARCHAR(MAX)
 )
 AS
 --DECLARE @StartDate AS DATE
@@ -24,7 +32,7 @@ AS
 
 BEGIN
 
-SELECT ListValue  INTO #Name FROM Reporting.dbo.[udt_TallySplit]('|', @Name)
+--SELECT ListValue  INTO #Name FROM Reporting.dbo.[udt_TallySplit]('|', @Name)
 
 SELECT s.SessionID,	s.TimeStamp, s.EventType, s.Username, s.ComputerName, s.DisplayName, s.SessionName, s.ClientName, s.Domain, hierarchylevel4hist
 		FROM [SVR-LIV-XASQ-01].[LogonAudit].[dbo].[session] s
@@ -32,13 +40,13 @@ SELECT s.SessionID,	s.TimeStamp, s.EventType, s.Username, s.ComputerName, s.Disp
 	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key 
 	AND dss_current_flag='Y' AND activeud=1
 	
-	INNER JOIN #Name AS Name ON Name.ListValue   COLLATE DATABASE_DEFAULT = name COLLATE DATABASE_DEFAULT
+	--INNER JOIN #Name AS Name ON Name.ListValue   COLLATE DATABASE_DEFAULT = name COLLATE DATABASE_DEFAULT
 	
 	WHERE s.TimeStamp BETWEEN @StartDate AND DATEADD(DAY,1,@EndDate)
-
-	AND hierarchylevel4hist=@Team
+	AND s.DisplayName IN (@Name)
+	--AND hierarchylevel4hist=@Team
 	
-	ORDER BY s.TimeStamp
+	ORDER BY s.DisplayName, s.TimeStamp
 END
 
 
