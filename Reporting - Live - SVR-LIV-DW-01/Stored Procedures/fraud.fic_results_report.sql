@@ -17,10 +17,21 @@ GO
 --==============================================
 
 CREATE PROCEDURE [fraud].[fic_results_report]
+
+	@Department varchar(MAX)
+	, @Team varchar(MAX)
+	, @Handler varchar(MAX)
 	
 AS
 BEGIN
 	
+	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	IF OBJECT_ID('tempdb..#Handler') IS NOT NULL   DROP TABLE #Handler
+
+	SELECT ListValue  INTO #Department FROM 	dbo.udt_TallySplit(',', @Department)
+	SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit(',', @Team)
+	SELECT ListValue  INTO #Handler FROM 	dbo.udt_TallySplit(',', @Handler)
 
 	 SELECT 
 		 [Client Code] = dim_matter_header_current.client_code
@@ -74,11 +85,17 @@ BEGIN
 				WHERE tskDesc LIKE 'FIC Process'
 				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
+	INNER JOIN #Department AS Department ON Department.ListValue COLLATE database_default = hierarchylevel3hist COLLATE database_default
+	INNER JOIN #Team AS Team ON Team.ListValue COLLATE database_default = hierarchylevel4hist COLLATE database_default
+	INNER JOIN #Handler AS Handler ON Handler.ListValue COLLATE database_default = matter_owner_full_name COLLATE DATABASE_DEFAULT
+	
+
+
 	WHERE 
 		dim_matter_header_current.date_closed_case_management IS NULL
 		AND dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
-		AND dim_matter_header_current.date_opened_case_management > '20161231'
+		AND dim_matter_header_current.date_opened_case_management > '20190101'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
 
 		AND LOWER(referral_reason) LIKE '%dispute%'
