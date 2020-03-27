@@ -11,6 +11,7 @@ GO
 
 
 
+
 --435
 --253
 
@@ -20,7 +21,7 @@ CREATE PROCEDURE [CommercialRecoveries].[MIBAudit]
 BEGIN
 SELECT 
 MIB_ClaimNumber
-,MatterCode
+,CAST(MatterCode AS NVARCHAR(MAX)) AS MatterCode
 ,AccountDescription
 ,DateOpened
 ,uddetail.ud_field##1 AS [Number of weeks from LBA to 1st telephone contact with defendant]
