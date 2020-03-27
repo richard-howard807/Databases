@@ -3,10 +3,11 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[NewCreatedClients]  --EXEC [dbo].[NewCreatedClients] '2019-03-11','2019-03-20'
 (
-@StartDate AS Date
-,@EndDate AS Date
+@StartDate AS DATE
+,@EndDate AS DATE
 )
 AS
 BEGIN
@@ -24,15 +25,15 @@ SELECT dim_client.client_code AS ClientNumber
 ,client_group_code AS cl_clgrp
 ,client_group_name AS cl_clname
 ,red_dw.dbo.dim_client.client_partner_name AS cl_part
-,CASE WHEN hierarchylevel3hist IN ('Real Estate','Property','Corporate','Commercial Glasgow','X Mace and Jones') THEN 1 ELSE 0 END  As Filter
+,CASE WHEN hierarchylevel3hist IN ('Real Estate','Property','Corporate','Commercial Glasgow','X Mace and Jones') THEN 1 ELSE 0 END  AS Filter
 FROM red_dw.dbo.dim_client
 INNER JOIN (SELECT DISTINCT client_code,fee_earner_code,[name],case_id,worksforname
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
- WHERE matter_number IN ('ML','00000001','00000000')
+ WHERE matter_number IN ('00000001')
  ) AS Matters
-on dim_client.client_code=Matters.client_code	
+ON dim_client.client_code=Matters.client_code	
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON client_partner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 
