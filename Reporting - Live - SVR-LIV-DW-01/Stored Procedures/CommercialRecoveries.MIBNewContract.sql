@@ -16,7 +16,10 @@ GO
 
 
 
-CREATE PROCEDURE [CommercialRecoveries].[MIBNewContract] --'2019-01-01','2019-01-31'
+
+
+
+CREATE PROCEDURE [CommercialRecoveries].[MIBNewContract]--'2020-03-01','2020-03-26'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -24,12 +27,12 @@ CREATE PROCEDURE [CommercialRecoveries].[MIBNewContract] --'2019-01-01','2019-01
 AS
 BEGIN
 SELECT 
-MatterCode AS [Supplier Ref]
+CAST(MatterCode AS NVARCHAR(MAX)) AS [Supplier Ref]
 ,fee.name AS [Fee Earner] 
 , MIB_ClaimNumber AS [MIB Ref]
 ,CONVERT(DATE,DateOpened,103)   AS [Date Instruction Received]
 , Insurer AS [Insurer identified?]
-, [DateIdentified] AS [Date insuerer case returned to MIB]
+, TRY_CAST([DateIdentified] AS DATETIME) AS [Date insuerer case returned to MIB]
 ,CASE WHEN [ADA28]='Recovery from Claimant' THEN 'Claimant'
 WHEN [ADA28]  IN ('2nd Placement','Yes') THEN 'Defendant' 
 WHEN  ISNULL(ADA.ADA28,'No') IN ('','No','1st Placement') THEN 'Defendant' END AS [Type of insruction -1st Placement or 2nd Placement]
@@ -188,6 +191,8 @@ DATEADD(DAY,180,[red_dw].[dbo].[datetimelocal](dbFile.Created)) ELSE DATEADD(DAY
 , CASE WHEN ISNULL(RecoverableCostsToDate,0)=0 THEN 0 ELSE  ISNULL(curOriginalBal,0) - ISNULL(RecoverableCostsToDate,0)  END AS [Measure  2 - Value recovered to date v Costs charged to date]
 ,curCurrentBal AS CurrentBalance
 ,NULL AS [Measure2a]
+,PaymentsAll.FirstPayment AS FirstPaymentDate
+,DATEDIFF(DAY,MS_Prod.config.dbFile.Created,FirstPayment) AS Measure3
 ,CASE WHEN txtClaNum9 IS NULL AND txtClaNum2 IS NULL THEN 'Pre Litigation'  
 WHEN usrAlias='6138' THEN 'Defended'
 WHEN dteInterim IS NOT NULL OR dteFinalOrder IS NOT NULL 
@@ -199,17 +204,19 @@ INNER JOIN [MS_PROD].dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
+LEFT OUTER JOIN MS_PROD.dbo.udCRCore
+  ON udCRCore.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.udCRClientScreens
  ON udCRClientScreens.fileID = dbFile.fileID
-LEFT OUTER JOIN [MS_PROD].udCRChangingOrders
- ON udCRChangingOrders.fileID = dbFile.fileID
-LEFT OUTER JOIN [MS_PROD].udCRWarrant
- ON udCRWarrant.fileID = dbFile.fileID
- LEFT OUTER JOIN [MS_PROD].udCRAttachmentsOfEarnings
- ON udCRAttachmentsOfEarnings.fileID = dbFile.fileID
+ LEFT OUTER JOIN [MS_PROD].dbo.udCRIssueDetails
+ ON udCRIssueDetails.fileID = dbFile.fileID
  
-
-
+LEFT OUTER JOIN [MS_PROD].dbo.udCRChangingOrders
+ ON udCRChangingOrders.fileID = dbFile.fileID
+LEFT OUTER JOIN [MS_PROD].dbo.udCRWarrant
+ ON udCRWarrant.fileID = dbFile.fileID
+ LEFT OUTER JOIN [MS_PROD].dbo.udCRAttachmentsOfEarnings
+ ON udCRAttachmentsOfEarnings.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
  ON udCRAccountInformation.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.dbUser
@@ -222,7 +229,7 @@ WHERE cboCatDesc='5'
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 GROUP BY fileID) AS Payments
  ON Payments.fileID = dbFile.fileID
-LEFT OUTER JOIN (SELECT fileID,SUM(curClient) AS TotalRecovered
+LEFT OUTER JOIN (SELECT fileID,SUM(curClient) AS TotalRecovered,MIN(dtePosted) AS FirstPayment
 FROM [MS_PROD].dbo.udCRLedgerSL
 WHERE cboCatDesc='5'
 GROUP BY fileID) AS PaymentsAll
