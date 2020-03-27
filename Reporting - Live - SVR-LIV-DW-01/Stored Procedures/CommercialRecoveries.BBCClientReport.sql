@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BBCClientReport]
 AS
 BEGIN
@@ -20,6 +21,7 @@ SELECT dbFile.fileID
 ,txtCliRef AS [GK Account No]
 ,NULL AS [In/Out]
 ,ISNULL(CRSystemSourceID,clNo +'-' + fileNo) AS [F&W Ref]
+,RTRIM(clNo) +'-' + RTRIM(fileNo) AS [Weightmans Ref]
 ,txtPubName AS [Pub Name]
 ,ISNULL(Defendant.Defendant,fileDesc) AS [Tenants Name]
 ,curOriginalBal AS [Original Debt]
