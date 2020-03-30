@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[FWFixedFees]
 (
 @StartDate AS DATE
@@ -35,6 +36,8 @@ WHEN CRSystemSourceID LIKE '33746-%'  OR clno='W15410' THEN 'The Borough Council
 WHEN CRSystemSourceID LIKE '30535-%' OR clNo='FW27456' THEN 'Stratford On Avon District Council' 
 WHEN CRSystemSourceID LIKE '323223-%'  OR CRSystemSourceID LIKE '32469-%' OR Clno='W15354' THEN 'Basildon Borough Council' 
 WHEN CRSystemSourceID LIKE '34485-%' OR clno='W15495' THEN 'M.K.M Building Supplies Limited'
+WHEN (cboLeedsCC='LC2' ) THEN 'LCC - Section 146'
+WHEN (cboLeedsCC='LC1' ) THEN 'LCC - Business Rates'
 WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3' ) AND txtCliRef LIKE '8%' THEN 'LCC - Council Tax'
 WHEN (CRSystemSourceID LIKE '3600-%' OR clno='W15471' OR cboLeedsCC='LC3') AND txtCliRef NOT LIKE '8%'  AND txtCliRef NOT LIKE 'EN%' THEN 'LCC - Housing Benefit & Sundry Income'
 WHEN (CRSystemSourceID  LIKE '31991-%' OR cboLeedsCC='LC2' ) THEN 'LCC - Section 146'
