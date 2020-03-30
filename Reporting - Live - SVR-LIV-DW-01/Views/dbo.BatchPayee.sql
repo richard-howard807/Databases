@@ -2,10 +2,12 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE VIEW [dbo].[BatchPayee]
 AS
-SELECT        BillSentToClientDate, ActualBillNumber, SendToClientError
-FROM            SQL2008SVR.Reporting.dbo.BatchPayee AS BatchPayee_1
+SELECT        billsenttoclientdate, actualbillnumber, sendtoclienterror
+-- FROM            SQL2008SVR.Reporting.dbo.BatchPayee AS BatchPayee_1
+FROM red_dw..ds_sh_ebilling_batchpayee
 GO
 EXEC sp_addextendedproperty N'MS_DiagramPane1', N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
 Begin DesignProperties = 
