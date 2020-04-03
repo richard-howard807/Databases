@@ -15,7 +15,9 @@ Current Version:	Initial Create
 ====================================================
 
 */
-CREATE PROCEDURE [nhs].[NHSR_CAR]
+CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Risk Pool'
+
+@Team VARCHAR(50)
 AS
 BEGIN
 
@@ -192,6 +194,7 @@ AND PanelAverages.Banding=NHSRData.Banding
 
 SELECT a.*,b.[DefenceCostsTarget],b.[ShelfLifeTarget],b.[DamagesTarget]
 FROM #SummaryData AS a
+
 LEFT OUTER JOIN (SELECT [Master Client Code]
 						,[Master Matter Number]
 						,Reporting_Group
@@ -214,6 +217,8 @@ FROM #SummaryData WHERE Reporting_Group='June 2019'
  AND b.[Master Matter Number] = a.[Master Matter Number]
  AND b.Reporting_Group=a.Reporting_Group
  AND b.Reporting_Line=a.Reporting_Line
+
+ WHERE a.Team = @Team
 
 
 END

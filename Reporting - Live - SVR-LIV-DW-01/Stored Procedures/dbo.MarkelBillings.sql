@@ -27,7 +27,8 @@ SELECT dim_matter_header_current.client_name AS [Client Name]
 ,SUM(HardCosts) + SUM(SoftCosts) AS [Total Disbursements Billed]
 ,SUM([MarkelTax]) AS [Total VAT Billed to Markel In Period]
 ,SUM([NonMarkelTax]) AS [Total VAT Not Billed to Markel In Period]
-,SUM([Bill Total]) - (SUM([NonMarkelTax]) +SUM([MarkelTax]) ) AS [Total Billed In Period]
+,SUM(AllData.[Bill Total])  AS [Total Billed In Period]
+--,orlaghbill
 ,SUM([Bill Total]) - SUM([NonMarkelTax]) AS [Total Billed In Period Incluisve of Disbursements VAT payable by Markel only]
 ,ISNULL(CounselExpert,0) AS [Total Counsel Fees Billed In Period]
 FROM

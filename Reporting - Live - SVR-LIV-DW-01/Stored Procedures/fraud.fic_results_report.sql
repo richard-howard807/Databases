@@ -80,22 +80,21 @@ BEGIN
 	--			AND tskCompleted IS NOT NULL 
 	--			AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
-	INNER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
-				FROM MS_Prod.dbo.dbTasks
-				WHERE tskDesc LIKE 'FIC Process'
-				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 	INNER JOIN #Department AS Department ON Department.ListValue COLLATE database_default = hierarchylevel3hist COLLATE database_default
 	INNER JOIN #Team AS Team ON Team.ListValue COLLATE database_default = hierarchylevel4hist COLLATE database_default
 	INNER JOIN #Handler AS Handler ON Handler.ListValue COLLATE database_default = matter_owner_full_name COLLATE DATABASE_DEFAULT
 	
-
+	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
+				FROM MS_Prod.dbo.dbTasks
+				WHERE tskDesc LIKE 'FIC Process'
+				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 	WHERE 
 		dim_matter_header_current.date_closed_case_management IS NULL
 		AND dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
-		AND dim_matter_header_current.date_opened_case_management > '20190101'
+		AND dim_matter_header_current.date_opened_case_management > '2019-01-01'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
 
 		AND LOWER(referral_reason) LIKE '%dispute%'

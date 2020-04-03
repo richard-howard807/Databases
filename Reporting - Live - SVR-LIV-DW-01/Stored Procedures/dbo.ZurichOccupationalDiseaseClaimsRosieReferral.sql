@@ -75,7 +75,7 @@ RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_3,'')) +
 CASE WHEN isnull(dim_claimant_address.claimant1_address_line_3,'') = '' THEN '' ELSE ', ' end + 
 RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_4,'')) [Claimant address],
  RTRIM(dim_claimant_address.claimant1_postcode) [Claimant postcode],
- CASE WHEN dim_detail_core_details.claimants_date_of_birth IS NULL THEN NULL ELSE DATEDIFF(DAY,claimants_date_of_birth,GETDATE()) end [Claimant age],
+ CASE WHEN dim_detail_core_details.claimants_date_of_birth IS NULL THEN NULL ELSE DATEDIFF(YEAR,claimants_date_of_birth,GETDATE()) end [Claimant age],
  dim_claimant_thirdparty_involvement.claimantsols_name [Claimant solicitor name],
  dim_detail_claim.ll01_claimants_medical_experts_name [Medical expert],
  dim_detail_practice_area.examination_date [Exam. date],
@@ -93,6 +93,10 @@ RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_4,'')) [Claimant addres
  '' [Draftsman_paid],
  dim_detail_client.weightmans_comments [Comments],
 ISNULL(WPS386,date_settlement_form_sent_to_zurich) [Settlement form date],
+dim_detail_litigation.[zurich_disease_litigation_reference] [Litigated Matter Number],
+ dim_detail_fraud.[previous_claims_form_sent_out] [CDF (Mandate) Sent ] ,
+ dim_detail_fraud.[previous_claims_form_returned] [CDF (Mandate) Returned], 
+
 CASE
 			WHEN WPS387 IS NOT NULL THEN RTRIM(WPS387)
            WHEN dim_detail_critical_mi.[claim_status] IS NULL THEN
@@ -102,6 +106,7 @@ CASE
            ELSE
                RTRIM(dim_detail_critical_mi.[claim_status])
            END  [Claim status],
+		ISNULL(WPS276,dim_detail_claim.[lead_follow])  [Lead/ Follow],
  dim_detail_fraud.reason_for_referral_to_fraud [Reason for Referral to Fraud],
 dim_detail_client.[date_settlement_form_sent_to_zurich]  [Filter],
  outcome_of_case,
@@ -255,6 +260,7 @@ LEFT JOIN (SELECT client_code,matter_number,STUFF((SELECT ',' + RTRIM(WPS275) FR
            AND RTRIM(fact_dimension_main.matter_number) = RTRIM(WPS275_grouped.matter_number)
 
    LEFT JOIN red_dw.dbo.dim_date dim_last_bill_date ON dim_last_bill_date.dim_date_key = dim_last_bill_date_key
+   LEFT JOIN red_dw.dbo.dim_detail_litigation ON dim_detail_litigation.dim_detail_litigation_key = fact_dimension_main.dim_detail_litigation_key
 
 
    WHERE reporting_exclusions = 0 

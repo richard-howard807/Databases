@@ -75,7 +75,7 @@ RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_3,'')) +
 CASE WHEN isnull(dim_claimant_address.claimant1_address_line_3,'') = '' THEN '' ELSE ', ' end + 
 RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_4,'')) [Claimant address],
  RTRIM(dim_claimant_address.claimant1_postcode) [Claimant postcode],
- CASE WHEN dim_detail_core_details.claimants_date_of_birth IS NULL THEN NULL ELSE DATEDIFF(DAY,claimants_date_of_birth,GETDATE()) end [Claimant age],
+ CASE WHEN dim_detail_core_details.claimants_date_of_birth IS NULL THEN NULL ELSE DATEDIFF(year,claimants_date_of_birth,GETDATE()) end [Claimant age],
  dim_claimant_thirdparty_involvement.claimantsols_name [Claimant solicitor name],
  dim_detail_claim.ll01_claimants_medical_experts_name [Medical expert],
  dim_detail_practice_area.examination_date [Exam. date],
@@ -93,6 +93,8 @@ RTRIM(ISNULL(dim_claimant_address.claimant1_address_line_4,'')) [Claimant addres
  '' [Draftsman_paid],
  dim_detail_client.weightmans_comments [Comments],
 ISNULL(WPS386,date_settlement_form_sent_to_zurich) [Settlement form date],
+dim_detail_litigation.[zurich_disease_litigation_reference] [Litigated Matter Number],
+
 CASE
 			WHEN WPS387 IS NOT NULL THEN RTRIM(WPS387)
            WHEN dim_detail_critical_mi.[claim_status] IS NULL THEN
@@ -106,6 +108,9 @@ CASE
 dim_detail_client.[date_settlement_form_sent_to_zurich]  [Filter],
 dim_detail_core_details.suspicion_of_fraud [Suspicion of Fraud ], 
  outcome_of_case,
+dim_detail_health.leadfollow [Lead/ Follow],
+ dim_detail_fraud.[previous_claims_form_sent_out] [CDF (Mandate) Sent ] ,
+ dim_detail_fraud.[previous_claims_form_returned] [CDF (Mandate) Returned], 
  WPS275_grouped
 FROM red_dw.dbo.fact_dimension_main
 		LEFT JOIN red_Dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
@@ -256,16 +261,17 @@ LEFT JOIN (SELECT client_code,matter_number,STUFF((SELECT ',' + RTRIM(WPS275) FR
            AND RTRIM(fact_dimension_main.matter_number) = RTRIM(WPS275_grouped.matter_number)
 
    LEFT JOIN red_dw.dbo.dim_date dim_last_bill_date ON dim_last_bill_date.dim_date_key = dim_last_bill_date_key
-
+   LEFT JOIN red_dw.dbo.dim_detail_litigation ON dim_detail_litigation.dim_detail_litigation_key = fact_dimension_main.dim_detail_litigation_key
+   LEFT JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 
    WHERE reporting_exclusions = 0 
    AND   ISNULL(LOWER(dim_detail_outcome.outcome_of_case),'') <> 'exclude from reports'
    AND dim_client.client_group_name = 'Zurich'
    AND LOWER(dim_detail_client.zurich_instruction_type) LIKE '%outsource%'
-   AND (ISNULL(fact_detail_paid_detail.general_damages_paid,0) + ISNULL(fact_detail_paid_detail.special_damages_paid,0) ) = 0
+  -- AND (ISNULL(fact_detail_paid_detail.general_damages_paid,0) + ISNULL(fact_detail_paid_detail.special_damages_paid,0) ) = 0
    AND ISNULL(WPS386,date_settlement_form_sent_to_zurich) IS NOT NULL
-   AND LOWER(dim_detail_core_details.[suspicion_of_fraud]) ='yes'
-    AND LOWER(ISNULL(WPS276,dim_detail_claim.[lead_follow])) = 'lead'
+  -- AND LOWER(dim_detail_core_details.[suspicion_of_fraud]) ='yes'
+   -- AND LOWER(ISNULL(WPS276,dim_detail_claim.[lead_follow])) = 'lead'
 
  
  
