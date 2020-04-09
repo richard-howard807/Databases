@@ -62,7 +62,9 @@ BEGIN
 		 ,date_intel_report_sent
 		 ,FICProcess.tskDue
 		 ,FICProcess.tskCompleted
+		 ,FICProcess.tskDesc
 		 ,ms_fileid
+		 ,work_type_group
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -73,6 +75,7 @@ BEGIN
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON fact_dimension_main.dim_detail_outcome_key = dim_detail_outcome.dim_detail_outcome_key
 	LEFT OUTER JOIN red_dw..dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
 	LEFT OUTER JOIN red_dw..dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
 	--LEFT OUTER JOIN (SELECT fileID, tskDesc, tskCompleted 
 	--			FROM MS_Prod.dbo.dbTasks
@@ -87,7 +90,8 @@ BEGIN
 	
 	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
 				FROM MS_Prod.dbo.dbTasks
-				WHERE tskDesc LIKE 'FIC Process'
+				WHERE (tskDesc LIKE 'FIC Process'
+				OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
 				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 	WHERE 
@@ -99,6 +103,7 @@ BEGIN
 
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
+		AND work_type_group IN ('EL','PL','Motor','Disease')
 
 		--AND fic_fraud_transfer='Yes'
 		-- fic score
