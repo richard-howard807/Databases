@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [CommercialRecoveries].[UPSFixedFeeDisbs]
 (
 @StartDAte AS DATE
@@ -37,7 +38,7 @@ INNER JOIN [MS_PROD].config.dbContact
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
-WHERE (CRSystemSourceID  LIKE '13329-%' OR clNo='FW13329' OR clNo='FW13905')
+WHERE (CRSystemSourceID  LIKE '13329-%' OR clNo='FW13329' OR clNo='FW13905' OR clNo='FW13509')
 AND cboCatDesc IN ('7','1','0')
 AND fileType='2038'
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103) BETWEEN @StartDate AND @EndDate
