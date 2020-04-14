@@ -10,6 +10,7 @@ GO
 
 
 
+
 --EXEC [CommercialRecoveries].[MIBCollectionsReport] '2019-12-01','2019-12-02','First Placement'
 
 CREATE PROCEDURE [CommercialRecoveries].[MIBCollectionsReport]
@@ -27,8 +28,8 @@ SELECT  txtDefSur AS defendant
       , CASE WHEN [red_dw].[dbo].[datetimelocal](dbFile.Created) <'2019-02-01' THEN 15 ELSE 22.5 END AS commission
       , curOriginalBal AS instructedvalue
       , curOriginalBal AS totalinstructedvalue
-      , curClient AS paidtoagent
-      , 0 AS paidtoclient
+      , curAgent AS paidtoagent
+      , curClient AS paidtoclient
       ,curCurrentBal AS CurrentBalance
 	  ,CASE WHEN cboPlacement='ARBITRATION' THEN 'Arbitration'
 			WHEN cboPlacement='CLAIMANT' THEN 'Claimant'
@@ -37,7 +38,9 @@ SELECT  txtDefSur AS defendant
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS DateOpened
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
 ,RTRIM(clNo)+'-'+RTRIM(fileNo) AS [3e Reference]
-FROM (SELECT udCRLedgerSL.fileID,SUM(curClient) AS curClient 
+FROM (SELECT udCRLedgerSL.fileID
+,SUM(CASE WHEN cboPayType='PAY015' THEN curClient ELSE 0 END) AS curClient 
+,SUM(CASE WHEN cboPayType='PAY015' THEN 0 ELSE curClient END) AS curAgent 
 FROM [MS_PROD].dbo.udCRLedgerSL
 INNER JOIN [MS_PROD].config.dbfile
  ON udCRLedgerSL.FileID=dbfile.FileID
