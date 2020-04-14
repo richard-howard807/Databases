@@ -22,6 +22,8 @@ BEGIN
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
 		, dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team]
 		, dim_client.client_group_name AS [Client Group Name]
+		, segment AS [Segment]
+		, sector AS [Sector]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, dim_matter_worktype.work_type_name AS [Work Type] 
 		, dim_matter_worktype.work_type_group AS [Work Type Group]
