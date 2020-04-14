@@ -8,6 +8,8 @@ GO
 
 
 
+
+
 --EXEC [CommercialRecoveries].[LeedsBillingAllClient] '2020-03-06', '2020-03-06'
 
 CREATE PROCEDURE [CommercialRecoveries].[LeedsBillingAllClient]
@@ -90,9 +92,10 @@ AND clNo NOT IN
 ,'W15495' --  M.K.M Building Supplies Limited'
 ,'W15471' --  LCC
 ,'W17055' --  Energas'
---,'FW13329'--  UPS
+,'FW13329'--  UPS
 ,'707938' --  NHS	
---,'FW13905'--UPS
+,'FW13905'--UPS
+,'FW13509' -- UPS
 )
 ORDER BY CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) DESC 
 END 
