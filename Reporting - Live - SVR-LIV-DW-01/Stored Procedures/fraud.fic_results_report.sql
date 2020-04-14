@@ -103,7 +103,7 @@ BEGIN
 
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
-		AND work_type_group IN ('EL','PL','Motor','Disease')
+		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
 		--AND fic_fraud_transfer='Yes'
 		-- fic score
