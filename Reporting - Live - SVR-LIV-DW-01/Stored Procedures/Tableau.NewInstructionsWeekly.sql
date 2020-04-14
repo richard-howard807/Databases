@@ -14,9 +14,9 @@ BEGIN
 
 	SET NOCOUNT ON;
 
-	SELECT DISTINCT fact_matter_summary.client_code AS [Client Code]
-		, fact_matter_summary.matter_number AS [Matter Number]
-		, dim_matter_header_history.date_opened_case_management AS [Date Opened]
+		SELECT DISTINCT fact_dimension_main.client_code AS [Client Code]
+		, fact_dimension_main.matter_number AS [Matter Number]
+		, date_opened_case_management AS [Date Opened]
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
@@ -77,26 +77,34 @@ BEGIN
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
 
- FROM red_dw.dbo.fact_matter_summary	
- INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_matter_summary.dim_fed_hierarchy_history_key 
- AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims','Legal Ops - LTA')
- INNER JOIN red_dw.dbo.dim_matter_header_history ON dim_matter_header_history.dim_mat_head_history_key=fact_matter_summary.dim_matter_header_history_key
- INNER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.client_code = fact_matter_summary.client_code AND dim_detail_core_details.matter_number = fact_matter_summary.matter_number
- INNER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_matter_summary.dim_client_key
- INNER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_history.dim_matter_worktype_key
- INNER JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_matter_summary.master_fact_key
- INNER JOIN red_dw.dbo.fact_dimension_main ON fact_matter_summary.master_fact_key = fact_dimension_main.master_fact_key
- LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_detail_reserve_detail.master_fact_key
- LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
- INNER  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+ FROM red_dw.dbo.fact_dimension_main
+ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+ LEFT OUTER JOIN red_dw.dbo.dim_date 
+ ON calendar_date=CAST(date_opened_case_management AS DATE)
+ LEFT OUTER JOIN red_dw.dbo.dim_client 
+ ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+ INNER  JOIN red_dw.dbo.dim_detail_outcome 
+ ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
- LEFT OUTER JOIN red_dw.dbo.dim_date ON calendar_date=CAST(dim_matter_header_history.date_opened_case_management AS DATE)
 
-
-WHERE  fact_matter_summary.date_opened_case_management>='2020-01-01'
-and reporting_exclusions=0
+ WHERE date_opened_case_management>='2020-01-01'
+ AND reporting_exclusions=0
+ AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
     
 END
 
---SELECT * FROM red_dw.dbo.dim_date
+
 GO

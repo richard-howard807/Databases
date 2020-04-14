@@ -24,7 +24,7 @@ BEGIN
 		, dim_date.fin_year
 		, dim_date.current_fin_month
 		, CAST(fin_year-1 AS VARCHAR)+'/'+CAST(fin_year AS VARCHAR) AS [Year]
-		, open_practice_management_month AS [Open Practice Management Month]
+		, 1 AS [Open Practice Management Month]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, dim_matter_worktype.work_type_group AS [Work Type Group]
 		, proceedings_issued AS [Proceedings Issued]
@@ -83,36 +83,33 @@ BEGIN
 THEN 1 ELSE 0 END AS showit
 
 
- FROM red_dw.dbo.fact_matter_summary
-
--- INNER JOIN (SELECT DISTINCT employeeid,fed_code FROM red_dw.dbo.dim_fed_hierarchy_history
---			) empid ON red_dw.dbo.fact_matter_summary.fee_earner_fed_code = empid.fed_code
- 
--- INNER JOIN (SELECT dim_fed_hierarchy_history_key, employeeid, dss_start_date, dss_end_date, fed_code FROM red_dw.dbo.dim_fed_hierarchy_history) histkey
---ON empid.employeeid = histkey.employeeid  AND red_dw.dbo.fact_matter_summary.date_opened_practice_management  BETWEEN histkey.dss_start_date 
---AND histkey.dss_end_date AND ISNUMERIC(histkey.fed_code) = 1
-		
- INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_matter_summary.dim_fed_hierarchy_history_key 
- AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims','Legal Ops - LTA')
- INNER JOIN red_dw.dbo.dim_matter_header_history ON dim_matter_header_history.dim_mat_head_history_key=fact_matter_summary.dim_matter_header_history_key
- INNER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.client_code = fact_matter_summary.client_code AND dim_detail_core_details.matter_number = fact_matter_summary.matter_number
- INNER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_matter_summary.dim_client_key
- INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key = fact_matter_summary.dim_date_key 
-	--AND fin_year>=DATEPART(YEAR,GETDATE())
-	AND (CASE WHEN fin_month_no<9 and fin_year>=DATEPART(YEAR,GETDATE())-1 THEN 1
-			WHEN fin_month_no>=9 AND fin_year>=DATEPART(YEAR,GETDATE())-1 THEN 1 ELSE 0 END)=1
-	AND current_cal_month<>'Current'  
- INNER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_history.dim_matter_worktype_key
- INNER JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_matter_summary.master_fact_key
- INNER JOIN red_dw.dbo.fact_dimension_main ON fact_matter_summary.master_fact_key = fact_dimension_main.master_fact_key
- LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_detail_reserve_detail.master_fact_key
- LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
- INNER  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+ FROM red_dw.dbo.fact_dimension_main
+ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+ LEFT OUTER JOIN red_dw.dbo.dim_date 
+ ON calendar_date=CAST(date_opened_case_management AS DATE)
+ LEFT OUTER JOIN red_dw.dbo.dim_client 
+ ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+ INNER  JOIN red_dw.dbo.dim_detail_outcome 
+ ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
-
-WHERE  (open_practice_management_month=1 OR open_practice_management=1)
-AND reporting_exclusions=0
+ WHERE date_opened_case_management>='2018-05-01'
+ AND reporting_exclusions=0
+ AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
+ AND current_cal_month<>'Current'  
     
 END
 GO
