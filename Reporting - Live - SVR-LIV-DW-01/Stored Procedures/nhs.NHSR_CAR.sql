@@ -13,13 +13,20 @@ Ticket:				29094
 Current Version:	Initial Create
 ====================================================
 ====================================================
-
+1.1 6/04/2020 - added team and matter owner prams as per ticket 48837
 */
-CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Risk Pool'
+CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Risk Pool, Clinical London, Clinical Birmingham', 'Juliette Addis'
 
-@Team VARCHAR(50)
+  @Team AS varchar(MAX), --1.1
+  @MatterOwner AS varchar(MAX) --1.1
 AS
 BEGIN
+
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team --1.1
+	IF OBJECT_ID('tempdb..#MatterOwner') IS NOT NULL   DROP TABLE #MatterOwner --1.1
+
+	SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit(',', @Team) --1.1
+	SELECT ListValue  INTO #MatterOwner FROM 	dbo.udt_TallySplit(',', @MatterOwner)  --1.1
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
@@ -107,7 +114,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement tpi ON tpi.dim_cl
 left outer join red_dw..dim_date date_claim_concluded on date_claim_concluded.calendar_date = outcome.date_claim_concluded
 left outer join red_dw..dim_date date_final_bill_sent_to_client on date_final_bill_sent_to_client.calendar_date = health.zurichnhs_date_final_bill_sent_to_client
 left outer join red_dw..dim_date date_instructions_received on date_instructions_received.calendar_date = core.date_instructions_received
-
+INNER JOIN #Team AS Team ON Team.ListValue COLLATE database_default = hierarchylevel4hist COLLATE database_default --1.1
+INNER JOIN #MatterOwner AS MatterOwner ON MatterOwner.ListValue COLLATE database_default = header.matter_owner_full_name COLLATE database_default --1.1
 
 
 
@@ -218,7 +226,7 @@ FROM #SummaryData WHERE Reporting_Group='June 2019'
  AND b.Reporting_Group=a.Reporting_Group
  AND b.Reporting_Line=a.Reporting_Line
 
- WHERE a.Team = @Team
+
 
 
 END

@@ -21,6 +21,7 @@ CREATE PROCEDURE [fraud].[fic_results_report]
 	@Department varchar(MAX)
 	, @Team varchar(MAX)
 	, @Handler varchar(MAX)
+	, @ClientGroupName varchar(MAX)
 	
 AS
 BEGIN
@@ -28,10 +29,40 @@ BEGIN
 	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
 	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 	IF OBJECT_ID('tempdb..#Handler') IS NOT NULL   DROP TABLE #Handler
+	IF OBJECT_ID('tempdb..#ClientGroupName') IS NOT NULL   DROP TABLE #ClientGroupName
+	IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL   DROP TABLE #FICProcess
 
-	SELECT ListValue  INTO #Department FROM 	dbo.udt_TallySplit(',', @Department)
-	SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit(',', @Team)
-	SELECT ListValue  INTO #Handler FROM 	dbo.udt_TallySplit(',', @Handler)
+	--SELECT ListValue  INTO #Department FROM 	dbo.udt_TallySplit(',', @Department)
+	--SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit(',', @Team)
+	--SELECT ListValue  INTO #Handler FROM 	dbo.udt_TallySplit(',', @Handler)
+	--SELECT ListValue  INTO #ClientGroupName FROM 	dbo.udt_TallySplit(',', @ClientGroupName)
+
+	CREATE TABLE #Department 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Department
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Department) 
+
+	CREATE TABLE #Team 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Team
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Team) 
+
+	CREATE TABLE #Handler 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Handler
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Handler) 
+
+	CREATE TABLE #ClientGroupName 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #ClientGroupName
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @ClientGroupName) 
+
+	SELECT fileID, tskDesc, tskDue, tskCompleted 
+	INTO #FICProcess
+	FROM MS_Prod.dbo.dbTasks
+	WHERE (tskDesc LIKE 'FIC Process'
+	OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
+	AND tskActive=1
 
 	 SELECT 
 		 [Client Code] = dim_matter_header_current.client_code
@@ -65,6 +96,7 @@ BEGIN
 		 ,FICProcess.tskDesc
 		 ,ms_fileid
 		 ,work_type_group
+		 ,ISNULL(client_group_name, client_name) AS [Client Group Name]
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -84,21 +116,18 @@ BEGIN
 	--			AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 
-	INNER JOIN #Department AS Department ON Department.ListValue COLLATE database_default = hierarchylevel3hist COLLATE database_default
-	INNER JOIN #Team AS Team ON Team.ListValue COLLATE database_default = hierarchylevel4hist COLLATE database_default
-	INNER JOIN #Handler AS Handler ON Handler.ListValue COLLATE database_default = matter_owner_full_name COLLATE DATABASE_DEFAULT
+	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
+	INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
+	INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
+	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = ISNULL(client_group_name, client_name) 
 	
-	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
-				FROM MS_Prod.dbo.dbTasks
-				WHERE (tskDesc LIKE 'FIC Process'
-				OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
-				AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
+	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 
 	WHERE 
 		dim_matter_header_current.date_closed_case_management IS NULL
 		AND dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
-		AND dim_matter_header_current.date_opened_case_management > '2019-01-01'
+		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
 
 		AND LOWER(referral_reason) LIKE '%dispute%'
