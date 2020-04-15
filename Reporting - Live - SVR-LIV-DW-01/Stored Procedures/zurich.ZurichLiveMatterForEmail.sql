@@ -3,8 +3,6 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
 CREATE PROCEDURE [zurich].[ZurichLiveMatterForEmail]
 (
 @Email AS NVARCHAR(500)
@@ -33,6 +31,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE master_client_code='Z1001'
 AND date_closed_case_management IS NULL
+AND matter_number <> 'ML'
+AND reporting_exclusions = 0
 
 END
 
@@ -56,7 +56,9 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE master_client_code='Z1001'
 AND date_closed_case_management IS NULL
-AND workemail=@Email
+AND workemail= @Email
+AND matter_number <> 'ML'
+AND reporting_exclusions = 0
 
 END
 
