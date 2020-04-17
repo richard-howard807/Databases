@@ -110,73 +110,82 @@ CASE
  dim_detail_fraud.reason_for_referral_to_fraud [Reason for Referral to Fraud],
 dim_detail_client.[date_settlement_form_sent_to_zurich]  [Filter],
  outcome_of_case,
- WPS275_grouped
+ WPS275_grouped,
+ dim_detail_claim.reason_for_settlement			AS [Zurich Settlement Reason]
 FROM red_dw.dbo.fact_dimension_main
-		LEFT JOIN red_Dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
-		LEFT JOIN red_Dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
-		LEFT JOIN red_Dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-		LEFT JOIN red_Dw.dbo.dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
-		LEFT JOIN red_Dw.dbo.dim_claimant_thirdparty_involvement ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
-		LEFT JOIN red_Dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-		LEFT JOIN red_Dw.dbo.dim_detail_practice_area ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
-		LEFT join red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
-		LEFT JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
-		LEFT JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
-		left join red_Dw.dbo.dim_fed_hierarchy_history on  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-		LEFT JOIN red_Dw.dbo.dim_detail_critical_mi ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-		LEFT JOIN red_Dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-		LEFT JOIN red_Dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
-		LEFT JOIN (select
-fact_dimension_main.master_fact_key,
-dim_client.contact_salutation insuredclient1_contact_salutation,
-dim_client.addresse insuredclient1_addresse,
-dim_client.address_line_1 insuredclient1_address_line_1,
-dim_client.address_line_2 insuredclient1_address_line_2,
-dim_client.address_line_3 insuredclient1_address_line_3,
-dim_client.address_line_4 insuredclient1_address_line_4,
-dim_client.postcode insuredclient1_postcode
-
-from
-red_Dw.dbo.dim_client_involvement
-
-inner join red_Dw.dbo.fact_dimension_main
- on fact_dimension_main.dim_client_involvement_key = dim_client_involvement.dim_client_involvement_key
-
-inner join red_Dw.dbo.dim_involvement_full 
- on dim_involvement_full.dim_involvement_full_key = dim_client_involvement.insuredclient_1_key
-
-inner join red_Dw.dbo.dim_client 
- on dim_client.dim_client_key = dim_involvement_full.dim_client_key
-
-where 
-dim_client.dim_client_key != 0) dim_insuredclient_address ON dim_insuredclient_address.master_fact_key = fact_dimension_main.master_fact_key
-LEFT JOIN (
-select
-fact_dimension_main.master_fact_key, 
-dim_client.contact_salutation claimant1_contact_salutation,
-dim_client.addresse claimant1_addresse,
-dim_client.address_line_1 claimant1_address_line_1,
-dim_client.address_line_2 claimant1_address_line_2,
-dim_client.address_line_3 claimant1_address_line_3,
-dim_client.address_line_4 claimant1_address_line_4,
-dim_client.postcode claimant1_postcode,
-dim_involvement_full.forename as claimant_1_forename
-
-from
-red_Dw.dbo.dim_claimant_thirdparty_involvement
-inner join red_Dw.dbo.fact_dimension_main
- on fact_dimension_main.dim_claimant_thirdpart_key = dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key
-inner join red_Dw.dbo.dim_involvement_full 
- on dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimant_1_key
-inner join red_Dw.dbo.dim_client 
- on dim_client.dim_client_key = dim_involvement_full.dim_client_key
-
-where 
-dim_client.dim_client_key != 0)  dim_claimant_address ON dim_claimant_address.master_fact_key = fact_dimension_main.master_fact_key
-
+	LEFT JOIN red_Dw.dbo.dim_client_involvement 
+		ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+	LEFT JOIN red_Dw.dbo.dim_detail_client 
+		ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
+	LEFT JOIN red_Dw.dbo.dim_detail_core_details 
+		ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+	LEFT JOIN red_Dw.dbo.dim_detail_fraud 
+		ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
+	LEFT JOIN red_Dw.dbo.dim_claimant_thirdparty_involvement 
+		ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
+	LEFT JOIN red_Dw.dbo.dim_detail_claim 
+		ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+	LEFT JOIN red_Dw.dbo.dim_detail_practice_area 
+		ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
+	LEFT join red_dw.dbo.fact_detail_paid_detail 
+		ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
+	LEFT JOIN red_dw.dbo.dim_matter_header_current 
+		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+	LEFT JOIN red_dw.dbo.dim_client 
+		ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+	LEFT JOIN red_Dw.dbo.dim_fed_hierarchy_history 
+		ON  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+	LEFT JOIN red_Dw.dbo.dim_detail_critical_mi 
+		ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
+	LEFT JOIN red_Dw.dbo.dim_detail_outcome 
+		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+	LEFT JOIN red_Dw.dbo.fact_matter_summary_current 
+		ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+	LEFT JOIN (
+				SELECT
+					fact_dimension_main.master_fact_key,
+					dim_client.contact_salutation insuredclient1_contact_salutation,
+					dim_client.addresse insuredclient1_addresse,
+					dim_client.address_line_1 insuredclient1_address_line_1,
+					dim_client.address_line_2 insuredclient1_address_line_2,
+					dim_client.address_line_3 insuredclient1_address_line_3,
+					dim_client.address_line_4 insuredclient1_address_line_4,
+					dim_client.postcode insuredclient1_postcode
+				FROM red_Dw.dbo.dim_client_involvement
+					INNER JOIN red_Dw.dbo.fact_dimension_main
+						ON fact_dimension_main.dim_client_involvement_key = dim_client_involvement.dim_client_involvement_key
+					INNER JOIN red_Dw.dbo.dim_involvement_full 
+						ON dim_involvement_full.dim_involvement_full_key = dim_client_involvement.insuredclient_1_key
+					INNER JOIN red_Dw.dbo.dim_client 
+						ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
+				WHERE 
+					dim_client.dim_client_key != 0
+				) dim_insuredclient_address 
+		ON dim_insuredclient_address.master_fact_key = fact_dimension_main.master_fact_key
+	LEFT JOIN (
+				SELECT
+					fact_dimension_main.master_fact_key, 
+					dim_client.contact_salutation claimant1_contact_salutation,
+					dim_client.addresse claimant1_addresse,
+					dim_client.address_line_1 claimant1_address_line_1,
+					dim_client.address_line_2 claimant1_address_line_2,
+					dim_client.address_line_3 claimant1_address_line_3,
+					dim_client.address_line_4 claimant1_address_line_4,
+					dim_client.postcode claimant1_postcode,
+					dim_involvement_full.forename as claimant_1_forename
+				FROM red_Dw.dbo.dim_claimant_thirdparty_involvement
+					INNER JOIN red_Dw.dbo.fact_dimension_main
+						ON fact_dimension_main.dim_claimant_thirdpart_key = dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key
+					INNER JOIN red_Dw.dbo.dim_involvement_full 
+						ON dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimant_1_key
+					INNER JOIN red_Dw.dbo.dim_client 
+						ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
+				WHERE 
+					dim_client.dim_client_key != 0
+				)  dim_claimant_address 
+		ON dim_claimant_address.master_fact_key = fact_dimension_main.master_fact_key
     LEFT OUTER JOIN
-    (
-        
+    (    
         SELECT Parent.client_code,
                Parent.matter_number,
                sequence_no,

@@ -111,7 +111,8 @@ dim_detail_core_details.suspicion_of_fraud [Suspicion of Fraud ],
 dim_detail_health.leadfollow [Lead/ Follow],
  dim_detail_fraud.[previous_claims_form_sent_out] [CDF (Mandate) Sent ] ,
  dim_detail_fraud.[previous_claims_form_returned] [CDF (Mandate) Returned], 
- WPS275_grouped
+ WPS275_grouped,
+ dim_detail_claim.reason_for_settlement  [Zurich Settlement Reason]
 FROM red_dw.dbo.fact_dimension_main
 		LEFT JOIN red_Dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 		LEFT JOIN red_Dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
