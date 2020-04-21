@@ -8,19 +8,21 @@ CREATE PROC [dbo].[run_SSIS_package_and_return_result] @package_name VARCHAR(60)
 
 as
 
+SET NOCOUNT ON
+
 -- Proc calles a SSIS package and returns execution results
 -- Used to allow Finanace to upload Excel files for Budgets/Cost Rates etc.
 -- RH - 20/04/2020 
 
 	DECLARE -- @package_name VARCHAR(60) = 'Upload Budget.dtsx',
-			@folder VARCHAR(60),
-			@project VARCHAR(60),
+			@folder VARCHAR(60)='',
+			@project VARCHAR(60) ='',
 			@execution_id BIGINT,
 			@output_execution_id BIGINT
 	
 -- Set Package Variable 
 
-SELECT * FROM SSISDB.CATALOG.packages
+
 
 	SELECT @folder = folders.name, 
 		   @project = projects.NAME
@@ -29,9 +31,9 @@ SELECT * FROM SSISDB.CATALOG.packages
 	INNER JOIN SSISDB.CATALOG.folders ON folders.folder_id = projects.folder_id
 	WHERE packages.name = @package_name
 	
-	--PRINT @package_name
-	--PRINT @project
-	--PRINT @folder
+	--	PRINT @package_name
+	--	PRINT @project
+	--	PRINT @folder
 
 	
 -- Run SSIS Package
@@ -56,7 +58,7 @@ WHILE 	(SELECT status FROM SSISDB.CATALOG.executions WHERE execution_id = @outpu
 	BEGIN
 	  
 	  WAITFOR DELAY '00:00:01';
-	  PRINT 'WAITING'
+	--  PRINT 'WAITING'
 
 	END
 
@@ -69,9 +71,10 @@ WHILE 	(SELECT status FROM SSISDB.CATALOG.executions WHERE execution_id = @outpu
         WHEN 4 THEN 'Package Failed'
         WHEN 7 THEN CASE EM.message_type 
             WHEN 120 THEN 'Package Failed' 
-            WHEN 130 THEN 'Package Failed' ELSE 'Package Succeed' END
+            WHEN 130 THEN 'Package Failed' ELSE 'Package Succeeded' END
         END AS STATUS
-		    , STRING_AGG(OM.message, ' <br> ') ERROR_MESSAGE
+		    , STRING_AGG(OM.message, ' <br> ') ERROR_MESSAGE,
+			MAX(OM.message_time) run_time
 	-- select *
 FROM SSISDB.CATALOG.operation_messages AS OM
 INNER JOIN SSISDB.CATALOG.operations AS O ON O.operation_id = OM.operation_id
@@ -84,7 +87,7 @@ GROUP BY  EX.package_name,
         WHEN 4 THEN 'Package Failed'
         WHEN 7 THEN CASE EM.message_type 
             WHEN 120 THEN 'Package Failed' 
-            WHEN 130 THEN 'Package Failed' ELSE 'Package Succeed'END
+            WHEN 130 THEN 'Package Failed' ELSE 'Package Succeeded'END
         END 
 
 
