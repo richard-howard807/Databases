@@ -15,6 +15,7 @@ GO
 -- ES 20/05/2019 - Amended claimant solicitors to include claimant's represtative in the coalesce, 19878 
 -- ES 29/07/2019 - added reserve details, 27736
 -- ES 20/02/2020 - added additional fields, 48695
+-- ES 22/04/2020 - added Does the claimant have a PI claim? and Date of Last Bill and Date Last Worked, 56563
 ---------- =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
@@ -122,7 +123,9 @@ BEGIN
 		   , dim_detail_core_details.[do_clients_require_an_initial_report] AS [Initial Report Required?]
 		   , dim_detail_core_details.[date_initial_report_due] AS [Date Initial Report Due]
 		   , dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
-
+		   , dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the claimant have a PI claim?]
+		   , last_bill_date AS [Date of Last Bill]
+		   , last_time_transaction_date AS [Date Last Worked]
 
     FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
@@ -167,6 +170,9 @@ BEGIN
 
 			LEFT JOIN red_dw.dbo.dim_involvement_full insdref
 			ON insdref.dim_involvement_full_key = client_ref.insuredclient_1_key
+
+			LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
+			ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 
 		
 		

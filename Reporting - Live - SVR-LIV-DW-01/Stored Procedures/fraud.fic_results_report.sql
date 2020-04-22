@@ -25,6 +25,8 @@ CREATE PROCEDURE [fraud].[fic_results_report]
 	
 AS
 BEGIN
+
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 	
 	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
 	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team

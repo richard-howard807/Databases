@@ -21,7 +21,7 @@ BEGIN
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
 		, dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team]
-		, dim_client.client_group_name AS [Client Group Name]
+		, ISNULL(dim_client.client_group_name, dim_client.client_name) AS [Client Group Name]
 		, segment AS [Segment]
 		, sector AS [Sector]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
