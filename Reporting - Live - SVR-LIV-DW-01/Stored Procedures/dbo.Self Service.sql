@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -403,7 +404,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, [Pre-trial checklist]
 	, [Trial date]
 ---------------------------------------------------
-
+,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
 INTO Reporting.dbo.selfservice
    
 ----------------------------------------------------

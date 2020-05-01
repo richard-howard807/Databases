@@ -209,6 +209,7 @@ CREATE TABLE [dbo].[selfservice]
 [Exchange of witness statements] [datetime] NULL,
 [Exchange of medical reports] [datetime] NULL,
 [Pre-trial checklist] [datetime] NULL,
-[Trial date] [datetime] NULL
+[Trial date] [datetime] NULL,
+[International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

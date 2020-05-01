@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20170822
@@ -59,7 +60,7 @@ AS
 	
 	SELECT 
 	
-		 client_list.name [insuredclient_name] 
+		 CASE WHEN client_list.name IN ('East Midlands Ambulance Service NHS Trust','East Midlands Ambulance Trust') THEN 'East Midlands Ambulance Service NHS Trust' ELSE client_list.name END AS [insuredclient_name] 
 		, structure.hierarchylevel3hist [Department]
 		, SUM(fin_year_fees_total) AS fin_year_fees_total
 		, SUM(fin_year_minus_1_fees_total) AS fin_year_minus_1_fees_total
@@ -154,10 +155,10 @@ AS
 
 				)
 
-GROUP BY client_list.name
+GROUP BY CASE WHEN client_list.name IN ('East Midlands Ambulance Service NHS Trust','East Midlands Ambulance Trust') THEN 'East Midlands Ambulance Service NHS Trust' ELSE client_list.name END 
 	,structure.hierarchylevel3hist
 	
-	ORDER BY client_list.name ASC
+	ORDER BY CASE WHEN client_list.name IN ('East Midlands Ambulance Service NHS Trust','East Midlands Ambulance Trust') THEN 'East Midlands Ambulance Service NHS Trust' ELSE client_list.name END  ASC
 
 
 

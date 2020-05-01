@@ -75,6 +75,7 @@ CREATE TABLE [dbo].[selfserviceLTAonlyData]
 [Total Solicitor/LegalExec Hours Recorded] [numeric] (38, 6) NULL,
 [Total Trainee Hours Recorded] [numeric] (38, 6) NULL,
 [Current Costs Estimate] [numeric] (13, 2) NULL,
+[International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [update_time] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO

@@ -12,6 +12,10 @@ GO
 
 
 
+
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[LCCHosingBenefit]
 AS
 BEGIN
@@ -21,6 +25,7 @@ SET @StartDate=(SELECT DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0))
 SET @EndDate =(DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1) )
 
 SELECT dbFile.fileID 
+,cboLeedsCC
 ,clNo
 ,clNo +'-' + fileNo AS [Client/Matter]
 ,ISNULL(Defendant.Defendant,fileDesc) AS [Debtors Name]
@@ -36,6 +41,8 @@ SELECT dbFile.fileID
 ,CASE WHEN CONVERT(DATE,fileClosed,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS ClosedLastMonth
 ,txtCurenStatNot
 ,txtFileStatus
+,ISNULL(DisbsCosts.CostsIncurred,0) AS RecoverableCost
+,ISNULL(DisbsPreviousMonth.CostsIncurred,0) AS RecoverableCostPrevious
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -64,7 +71,7 @@ LEFT OUTER JOIN (SELECT fileID,SUM(CASE WHEN cboCatDesc='2' THEN curOffice ELSE 
 ,SUM(CASE WHEN cboCatDesc='4' THEN curOffice ELSE NULL END) AS Interest
 ,SUM(CASE WHEN txtItemDesc LIKE '%Late Payment Costs%' THEN curOffice ELSE NULL END) AS LatePaymentLedger
 FROM [MS_PROD].dbo.udCRLedgerSL
-WHERE cboCatDesc IN ('2','1','0','7','4')
+WHERE cboCatDesc IN ('2','1','0','7','4','3')
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 GROUP BY fileID
 ) AS DisbsPreviousMonth
@@ -76,7 +83,7 @@ LEFT OUTER JOIN (SELECT fileID,SUM(CASE WHEN cboCatDesc='2' THEN curOffice ELSE 
 ,SUM(CASE WHEN cboCatDesc='4' THEN curOffice ELSE NULL END) AS Interest
 ,SUM(CASE WHEN txtItemDesc LIKE '%Late Payment Costs%' THEN curOffice ELSE NULL END) AS LatePaymentLedger
 FROM [MS_PROD].dbo.udCRLedgerSL
-WHERE cboCatDesc IN ('2','1','0','7','4')
+WHERE cboCatDesc IN ('2','1','0','7','4','3')
 GROUP BY fileID
 ) AS DisbsCosts
  ON DisbsCosts.fileID = dbFile.fileID
@@ -91,6 +98,7 @@ AND cboDefendantNo='1') AS Defendant
 WHERE (CRSystemSourceID  LIKE '3600%' OR cboLeedsCC='LC3' --OR clNo='W15471' OR cboLeedsCC='LC1'
 )
 AND fileType='2038'
+AND LEFT(ISNULL(txtCliRef,''),1)NOT IN ('8','9')
 
 
 

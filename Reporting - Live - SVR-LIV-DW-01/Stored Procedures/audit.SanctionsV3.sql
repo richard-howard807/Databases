@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [audit].[SanctionsV3] 
 
 
@@ -91,7 +92,8 @@ SELECT Sanctions.Name
 ,COALESCE(cboRevFileSanLi,AUD213.case_text,AUD213b.case_text) AS [Reviewed file against Sanctions list]
 ,COALESCE(dteDateSanRev,AUD214.case_date,AUD214b.case_date) AS [Date Sanctions list reviewed]
 ,ConflictSearch.SourceID AS SourceID
-,COALESCE(dteDateofBirth,DOB) AS [SanctionDOB]
+--,COALESCE(dteDateofBirth,DOB) AS [SanctionDOB]
+,DOB AS [SanctionDOB]
 FROM #Sanctions AS Sanctions
 INNER JOIN ConflictSearch.dbo.ConflictSearch
  ON LOWER(Sanctions.Name) = LOWER(CleanName)

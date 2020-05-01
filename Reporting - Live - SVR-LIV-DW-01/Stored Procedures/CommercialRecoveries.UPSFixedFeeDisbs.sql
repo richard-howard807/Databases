@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [CommercialRecoveries].[UPSFixedFeeDisbs]
 (
 @StartDAte AS DATE
@@ -42,7 +43,10 @@ WHERE (CRSystemSourceID  LIKE '13329-%' OR clNo='FW13329' OR clNo='FW13905' OR c
 AND cboCatDesc IN ('7','1','0')
 AND fileType='2038'
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103) BETWEEN @StartDate AND @EndDate
-AND (CASE WHEN 	txtCliRef LIKE '8GB%' OR txtCliRef='6GB%' THEN 'UPS COD' ELSE 'UPS Exc COD' END)=@Report
+--AND (CASE WHEN 	txtCliRef LIKE '8GB%' OR txtCliRef='6GB%' THEN 'UPS COD' ELSE 'UPS Exc COD' END)=@Report
+AND (CASE WHEN clNo='FW13905'   THEN 'Overpayment of Salary'
+WHEN clNo='FW13509'   THEN 'Freight Charges - Cash on Delivery / Europe'
+WHEN clNo='FW13329' THEN 'Freight charges / GB' END) =@Report
 AND CONVERT(DATE,red_dw.dbo.datetimelocal(dtePosted),103)>'2020-02-29'
 ORDER BY dtePosted
 
