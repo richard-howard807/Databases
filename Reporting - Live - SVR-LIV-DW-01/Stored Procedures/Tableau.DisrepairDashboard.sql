@@ -92,7 +92,11 @@ AS
 		, CAST(dim_detail_property.court_hearing_date AS DATE)										AS [Hearing Date]
 		, CAST(dim_detail_property.other_key_dates AS DATE)											AS [Other Key Dates]
 		, dim_detail_property.status_comment														AS [Current Status]
-		, dim_detail_property.disrepair_outcome														AS [Outcome]
+		, CASE	
+			WHEN dim_detail_property.disrepair_outcome IS NULL THEN
+				'Ongoing'
+			ELSE dim_detail_property.disrepair_outcome
+		  END																						AS [Outcome]
 		, CAST(dim_detail_property.disrepair_date_application_submitted AS DATE)					AS [Date Application Submitted]
 	FROM red_dw.dbo.fact_dimension_main
 		INNER JOIN red_dw.dbo.dim_matter_header_current
@@ -113,6 +117,8 @@ AS
 			ON #property_postcode.header_key = dim_matter_header_current.dim_matter_header_curr_key
 		LEFT OUTER JOIN red_dw.dbo.Doogal
 			ON Doogal.Postcode = LTRIM(RTRIM(#property_postcode.postcode))
+		LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+			ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 	WHERE
 		dim_matter_worktype.work_type_code = '1150'
 		AND dim_matter_header_current.reporting_exclusions <> 1
