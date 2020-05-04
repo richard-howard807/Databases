@@ -9,12 +9,14 @@ GO
 
 --2019-08-07 ES added Casualty Liverpool 2 requested by JB 
 --2020-01-13 ES added Casualty Birmingham requested by JB
+--2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
 
 CREATE PROCEDURE [dbo].[ZurichBillingProjectReport]
 AS
 BEGIN
 SELECT dim_matter_header_current.client_code AS [Client]
 ,dim_matter_header_current.matter_number AS [Matter]
+, dim_matter_header_current.master_client_code +'-'+ dim_matter_header_current.master_matter_number AS [Client/Matter Number]
 ,matter_description AS [Matter Description]
 ,date_opened_case_management AS [Date Opened]
 ,name AS [Matter Owner]
@@ -79,27 +81,28 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
 WHERE dim_matter_header_current.client_code='Z1001'
 AND date_opened_case_management>='2019-02-01'
 AND dim_matter_header_current.matter_number NOT IN ('00079227')
-AND hierarchylevel4hist IN (
-'Large Loss Liverpool'
-,'Casualty Liverpool 1'
-,'Casualty Liverpool 2'
-,'Disease Liverpool 1'
-,'Casualty Manchester'
-,'Casualty Glasgow'
-,'Disease Birmingham 4'
-,'Disease Birmingham 2 and London'
-,'Casualty Leicester'
-,'Motor Credit Hire'
-,'Disease Birmingham 3'
-,'Large Loss London'
-,'Disease Management'
-,'Clinical Birmingham'
-,'Niche Costs'
-,'Disease Liverpool 3'
-,'Casualty London'
-,'Casualty Birmingham'
-,'Motor Liverpool and Birmingham'
-)
+AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+--AND hierarchylevel4hist IN (
+--'Large Loss Liverpool'
+--,'Casualty Liverpool 1'
+--,'Casualty Liverpool 2'
+--,'Disease Liverpool 1'
+--,'Casualty Manchester'
+--,'Casualty Glasgow'
+--,'Disease Birmingham 4'
+--,'Disease Birmingham 2 and London'
+--,'Casualty Leicester'
+--,'Motor Credit Hire'
+--,'Disease Birmingham 3'
+--,'Large Loss London'
+--,'Disease Management'
+--,'Clinical Birmingham'
+--,'Niche Costs'
+--,'Disease Liverpool 3'
+--,'Casualty London'
+--,'Casualty Birmingham'
+--,'Motor Liverpool and Birmingham'
+--)
 AND date_closed_practice_management IS NULL
 AND date_opened_case_management >='2019-02-01'
 --AND present_position='Final bill due - claim and costs concluded'
@@ -118,4 +121,5 @@ ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,d
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)
 END
+
 GO
