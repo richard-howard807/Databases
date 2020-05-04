@@ -17,6 +17,8 @@ BEGIN
 		SELECT DISTINCT fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
 		, date_opened_case_management AS [Date Opened]
+		, cal_week_in_year AS [Week Number]
+		, CAST(DATEADD(dd, -(DATEPART(dw, date_opened_case_management)-1), date_opened_case_management) AS DATE) [Week Start]
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
@@ -76,6 +78,7 @@ BEGIN
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
+			
 
  FROM red_dw.dbo.fact_dimension_main
  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
