@@ -11,10 +11,11 @@ Created Date:		2019-10-14
 Description:		Claims Division MI to drive the Tableau Dashboards, all years
 Current Version:	Initial Create
 ====================================================
+-- ES 2020-05-06 Added new financial year requested by HW
 ====================================================
 
 */
-Create PROCEDURE [Tableau].[SurreyandSussexPolice_All_Years]
+CREATE PROCEDURE [Tableau].[SurreyandSussexPolice_All_Years]
 AS
 BEGIN
 
@@ -91,6 +92,7 @@ inner join
 					WHEN bill_date BETWEEN '2017-04-01' and '2018-03-31' THEN '2017/18'
 					WHEN bill_date BETWEEN '2018-04-01' and '2019-03-31' THEN '2018/19'
 					WHEN bill_date BETWEEN '2019-04-01' and '2020-03-31' THEN '2019/20'
+					WHEN bill_date BETWEEN '2020-04-01' and '2021-03-31' THEN '2020/21'
 					ELSE NULL END [TFY]
               from red_dw..fact_bill_matter_detail  
 			  WHERE  bill_date between DATEADD(month,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-3,0)) and DATEADD(month,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
@@ -109,6 +111,9 @@ inner join
                        WHEN bill_date
                        BETWEEN '2019-04-01' AND '2020-03-31' THEN
                        '2019/20'
+                       WHEN bill_date
+                       BETWEEN '2020-04-01' AND '2021-03-31' THEN
+                       '2020/21'
                        ELSE
                        NULL
                        END,
@@ -127,6 +132,7 @@ LEFT OUTER JOIN (SELECT client_code
 					WHEN transaction_calendar_date BETWEEN '2017-04-01' and '2018-03-31' THEN '2017/18'
 					WHEN transaction_calendar_date BETWEEN '2018-04-01' and '2019-03-31' THEN '2018/19'
 					WHEN transaction_calendar_date BETWEEN '2019-04-01' and '2020-03-31' THEN '2019/20'
+					WHEN transaction_calendar_date BETWEEN '2020-04-01' and '2021-03-31' THEN '2020/21'
 					ELSE NULL END AS [FY]
 				FROM red_dw.dbo.fact_all_time_activity
 				INNER JOIN red_dw.dbo.dim_transaction_date
@@ -146,6 +152,9 @@ LEFT OUTER JOIN (SELECT client_code
                          WHEN transaction_calendar_date
                          BETWEEN '2019-04-01' AND '2020-03-31' THEN
                          '2019/20'
+                         WHEN transaction_calendar_date
+                         BETWEEN '2020-04-01' AND '2021-03-31' THEN
+                         '2020/21'
                          ELSE
                          NULL
                          END,
