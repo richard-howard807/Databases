@@ -209,7 +209,8 @@ WHERE
 													'Property View', 'Debt Recovery', 'Employment Advice Line', 'Holidays (including holiday pay)'
 													, 'Early Conciliation', 'Claims Handling', 'Plot Sales'
 												  )
-	OR (RTRIM(dim_matter_worktype.work_type_name) = 'Plot Sales' AND RTRIM(dim_detail_property.commercial_bl_status) <> 'Pending'))
+	--OR (RTRIM(dim_matter_worktype.work_type_name) = 'Plot Sales' AND RTRIM(dim_detail_property.commercial_bl_status) <> 'Pending')		--removed until Mandy's team can set up on MS
+		)
 
 
 
