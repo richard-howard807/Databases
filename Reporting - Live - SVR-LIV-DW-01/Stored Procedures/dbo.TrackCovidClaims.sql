@@ -5,9 +5,26 @@ GO
 
 
 CREATE PROCEDURE [dbo].[TrackCovidClaims]
+(
+@Department AS VARCHAR(MAX),
+@Team AS VARCHAR(MAX)
+)
 AS 
 BEGIN
 SET NOCOUNT ON
+
+--DROP TABLE IF EXISTS #team_list
+
+--CREATE TABLE #team_list  (
+--ListValue  NVARCHAR(MAX)
+--)
+--BEGIN
+
+--    INSERT into #team_list 
+--	SELECT ListValue
+--    FROM dbo.udt_TallySplit(',', @Team)
+	
+--END
 
 SELECT 
 	dim_matter_header_current.master_client_code + '/'
@@ -108,6 +125,13 @@ SELECT
 			', Contested application made'
 		ELSE
 			''
+	  END
+	  +
+	  CASE
+		WHEN dim_detail_core_details.covid_other = 1 THEN
+			', Other'
+		ELSE
+			''
 	  END, 3, 400)																				AS [Covid 19 Reason]
 	, dim_detail_core_details.covid_reason														AS [Covid 19 Reason - Other Only]
 FROM red_dw.dbo.fact_dimension_main
@@ -122,7 +146,9 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_client
 		ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 WHERE 
-	CONVERT(INT, dim_detail_core_details.covid_counsel_unavailability) +
+	dim_matter_header_current.reporting_exclusions <> 1
+	AND dim_matter_header_current.master_client_code <> '30645'
+	AND CONVERT(INT, dim_detail_core_details.covid_counsel_unavailability) +
 		CONVERT(INT, dim_detail_core_details.covid_directions_extended) +
 		CONVERT(INT, dim_detail_core_details.covid_disclosure_delay_defendant) +
 		CONVERT(INT, dim_detail_core_details.covid_disclosure_delay_claimant) +
@@ -136,6 +162,8 @@ WHERE
 		CONVERT(INT, dim_detail_core_details.covid_witness_unavailablility_claimant) +
 		CONVERT(INT, dim_detail_core_details.covid_witness_unavailability_defendant) +
 		CONVERT(INT, dim_detail_core_details.covid_contested_application_made) > 0
+	AND dim_fed_hierarchy_history.hierarchylevel3hist IN (@Department)
+	AND dim_fed_hierarchy_history.hierarchylevel4hist IN (@Team)
 
 END
 GO
