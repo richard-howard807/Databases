@@ -103,7 +103,7 @@ BEGIN
  ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
- WHERE date_opened_case_management>='2020-01-01'
+ WHERE date_opened_case_management>='2019-01-01'
  AND reporting_exclusions=0
  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
     

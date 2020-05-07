@@ -15,6 +15,7 @@ History
  Date		 Name	Version		
  20/11/2018	 JL		1.1 - excluded present position matters as per ticket 2482
  03/09/2019	 ES		1.2 - added dim_detail_critical_mi.[is_there_an_issue_on_liability] as per ticket 30785 
+ 07/05/2020	 ES		1.3 - amended panel averages and changed age of matter to years rater than days as pert ticket 57804
 ====================================================
 
 */
@@ -84,7 +85,7 @@ ELSE 'Green' END AS RAG
 WHEN CAST([age_of_matter] AS DECIMAL(10,2))/CAST([Panel Average Life Cycle] AS DECIMAL(10,2)) BETWEEN 0.75 AND 1 THEN 'Orange'
 ELSE 'Green' END AS RAG1
 ,[Is there an issue on liability?]
-
+,[Tranche]
 FROM 
 (
 SELECT
@@ -100,7 +101,7 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE()) AS [age_of_matter]
+,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -121,36 +122,51 @@ fact_finance_summary.[time_charge_value]
 ,(fact_finance_summary.[wip] + fact_finance_summary.[defence_costs_billed] + fact_finance_summary.disbursement_balance + disbursements_billed) WIPPlusBilled
 ,fact_finance_summary.[damages_reserve]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 4446
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6289
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 23163
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 42109
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 58709 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 93926
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 5353
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6452
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 20951
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 43817
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 59273
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 84005
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 2399
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4359
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 10639
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 26338
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 3816
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 2227
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 3857
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4005
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 9095
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 23232
 END AS [Panel Average Defence Costs]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 457 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 457
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 740 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 947 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 1242  
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 1706 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.14
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 1.31
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 2.14 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 2.87 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 3.44  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 5.19 
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 313 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 341 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 489 
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 767 
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.10 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 0.82 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 0.86 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 1.19 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 1.42 
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 1.80
 END AS [Panel Average Life Cycle]
 
+,CASE 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN '£1 – £50,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN '£50,001 – £250,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN '£250,001 – £500,000' 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN '£500,001 – £1,000,000'  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN '£1,000,001 +' 
+
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN '£1 – £5,000' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN '£5,001 – £10,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN '£10,001 – £25,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN '£25,001 – £50,000'
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN '£50,001 +'
+END AS [Tranche]
 ,NominatedPartnerName
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
@@ -269,6 +285,7 @@ ELSE 'Green' END AS RAG
 WHEN CAST([age_of_matter] AS DECIMAL(10,2))/CAST([Panel Average Life Cycle] AS DECIMAL(10,2)) BETWEEN 0.75 AND 1 THEN 'Orange'
 ELSE 'Green' END AS RAG1
 ,[Is there an issue on liability?]
+,[Tranche]
 
 FROM 
 (
@@ -285,7 +302,7 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE()) AS [age_of_matter]
+,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -306,36 +323,51 @@ fact_finance_summary.[time_charge_value]
 ,(fact_finance_summary.[wip] + fact_finance_summary.[defence_costs_billed] + fact_finance_summary.disbursement_balance + disbursements_billed) WIPPlusBilled
 ,fact_finance_summary.[damages_reserve]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 4446
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6289
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 23163
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 42109
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 58709 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 93926
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 5353
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6452
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 20951
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 43817
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 59273
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 84005
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 2399
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4359
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 10639
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 26338
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 3816
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 2227
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 3857
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4005
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 9095
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 23232
 END AS [Panel Average Defence Costs]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 457 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 457
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 740 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 947 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 1242  
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 1706 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.14
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 1.31
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 2.14 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 2.87 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 3.44  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 5.19 
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 313 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 341 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 489 
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 767 
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.10 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 0.82 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 0.86 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 1.19 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 1.42 
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 1.80
 END AS [Panel Average Life Cycle]
 
+,CASE 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN '£1 – £50,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN '£50,001 – £250,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN '£250,001 – £500,000' 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN '£500,001 – £1,000,000'  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN '£1,000,001 +' 
+
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN '£1 – £5,000' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN '£5,001 – £10,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN '£10,001 – £25,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN '£25,001 – £50,000'
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN '£50,001 +'
+END AS [Tranche]
 ,NominatedPartnerName
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
@@ -455,6 +487,7 @@ ELSE 'Green' END AS RAG
 WHEN CAST([age_of_matter] AS DECIMAL(10,2))/CAST([Panel Average Life Cycle] AS DECIMAL(10,2)) BETWEEN 0.75 AND 1 THEN 'Orange'
 ELSE 'Green' END AS RAG1
 ,[Is there an issue on liability?]
+,[Tranche]
 
 FROM 
 (
@@ -471,7 +504,7 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE()) AS [age_of_matter]
+,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -492,36 +525,51 @@ fact_finance_summary.[time_charge_value]
 ,(fact_finance_summary.[wip] + fact_finance_summary.[defence_costs_billed] + fact_finance_summary.disbursement_balance + disbursements_billed) WIPPlusBilled
 ,fact_finance_summary.[damages_reserve]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 4446
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6289
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 23163
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 42109
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 58709 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 93926
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 5353
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6452
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 20951
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 43817
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 59273
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 84005
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 2399
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4359
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 10639
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 26338
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 3816
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 2227
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 3857
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4005
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 9095
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 23232
 END AS [Panel Average Defence Costs]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 457 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 457
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 740 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 947 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 1242  
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 1706 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.14
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 1.31
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 2.14 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 2.87 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 3.44  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 5.19 
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 313 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 341 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 489 
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 767 
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.10 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 0.82 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 0.86 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 1.19 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 1.42 
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 1.80
 END AS [Panel Average Life Cycle]
 
+,CASE 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN '£1 – £50,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN '£50,001 – £250,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN '£250,001 – £500,000' 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN '£500,001 – £1,000,000'  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN '£1,000,001 +' 
+
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN '£1 – £5,000' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN '£5,001 – £10,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN '£10,001 – £25,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN '£25,001 – £50,000'
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN '£50,001 +'
+END AS [Tranche]
 ,NominatedPartnerName
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
@@ -641,6 +689,7 @@ ELSE 'Green' END AS RAG
 WHEN CAST([age_of_matter] AS DECIMAL(10,2))/CAST([Panel Average Life Cycle] AS DECIMAL(10,2)) BETWEEN 0.75 AND 1 THEN 'Orange'
 ELSE 'Green' END AS RAG1
 ,[Is there an issue on liability?]
+,[Tranche]
 
 FROM 
 (
@@ -657,7 +706,7 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE()) AS [age_of_matter]
+,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -678,36 +727,51 @@ fact_finance_summary.[time_charge_value]
 ,(fact_finance_summary.[wip] + fact_finance_summary.[defence_costs_billed] + fact_finance_summary.disbursement_balance + disbursements_billed) WIPPlusBilled
 ,fact_finance_summary.[damages_reserve]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 4446
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6289
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 23163
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 42109
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 58709 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 93926
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 5353
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 6452
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 20951
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 43817
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 59273
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 84005
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 1777
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 2399
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4359
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 10639
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 26338
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 3816
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 2227
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 3857
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 4005
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 9095
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 23232
 END AS [Panel Average Defence Costs]
 ,CASE 
-WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 457 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 457
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 740 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 947 
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 1242  
-WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 1706 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.14
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN 1.31
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN 2.14 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN 2.87 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN 3.44  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN 5.19 
 
-WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 243 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 313 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 341 
-WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 489 
-WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 767 
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN 1.10 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN 0.82 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN 0.86 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN 1.19 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN 1.42 
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN 1.80
 END AS [Panel Average Life Cycle]
 
+,CASE 
+WHEN work_type_group='NHSLA' AND  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 50000 THEN '£1 – £50,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 50000.01 AND 250000 THEN '£50,001 – £250,000'
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 250000.01 AND 500000 THEN '£250,001 – £500,000' 
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve] BETWEEN 500000.01 AND 1000000 THEN '£500,001 – £1,000,000'  
+WHEN work_type_group='NHSLA' AND  fact_finance_summary.[damages_reserve]>1000000 THEN '£1,000,001 +' 
+
+WHEN  ISNULL(fact_finance_summary.[damages_reserve],0)=0 THEN '£0' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 0.01 AND 5000 THEN '£1 – £5,000' 
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 5000.01 AND 10000 THEN '£5,001 – £10,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 10000.01 AND 25000 THEN '£10,001 – £25,000'
+WHEN  fact_finance_summary.[damages_reserve] BETWEEN 25000.01 AND 50000 THEN '£25,001 – £50,000'
+WHEN  fact_finance_summary.[damages_reserve] > 50000.01 THEN '£50,001 +'
+END AS [Tranche]
 ,NominatedPartnerName
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
