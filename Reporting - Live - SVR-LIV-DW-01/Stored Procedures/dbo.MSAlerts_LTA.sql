@@ -66,6 +66,7 @@ exec sp_executesql @sql
 SELECT	
 	dim_matter_header_current.master_client_code																										AS client_code
 	, dim_matter_header_current.master_matter_number																									AS matter_number
+
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0)														AS ff_revenue_billed
 	, ISNULL(fact_finance_summary.fixed_fee_amount, 0) - (ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0))	AS outstanding_ff
 	, ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0)		AS total_billed_unbilled
@@ -98,6 +99,7 @@ SELECT
 	, dim_matter_header_current.dim_matter_header_curr_key													AS [Matter Header Current Key]
 	, dim_matter_header_current.matter_description															AS [Matter Description]
 	, dim_matter_header_current.matter_owner_full_name														AS [Matter Owner]
+		, CASE WHEN dim_matter_header_current.client_group_name IS NULL THEN dim_matter_header_current.client_name ELSE dim_matter_header_current.client_group_name END AS client
 	, dim_fed_hierarchy_history.hierarchylevel4														AS [Team]
 	, dim_fed_hierarchy_history.hierarchylevel3														AS [Department]
 	, dim_fed_hierarchy_history.hierarchylevel2														AS [Business Line]
@@ -108,7 +110,7 @@ SELECT
 	, dim_matter_header_current.fee_arrangement																AS [Fee Arrangement]
 	, CASE 
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
-			ISNULL(fact_finance_summary.fixed_fee_amount, 0)
+			fact_finance_summary.fixed_fee_amount
 		ELSE
 			NULL
 	  END																					AS [Fixed Fee Amount]
@@ -127,12 +129,13 @@ SELECT
 	, CASE
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
 			CASE 
-				WHEN fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0 THEN
+				WHEN fact_finance_summary.fixed_fee_amount = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.75) THEN
 					'Amber'
+				WHEN 	fact_finance_summary.fixed_fee_amount IS NULL THEN 'nocolour'
 				ELSE
 					'Green'
 			END	

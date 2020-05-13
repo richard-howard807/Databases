@@ -65,7 +65,8 @@ exec sp_executesql @sql
 
 SELECT	
 	dim_matter_header_current.master_client_code																											AS client_code
-	, dim_matter_header_current.master_matter_number																										AS matter_number
+	, dim_matter_header_current.master_matter_number		AS matter_number
+
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0)															AS ff_revenue_billed
 	, ISNULL(fact_finance_summary.fixed_fee_amount, 0) - (ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0))		AS outstanding_ff
 	, ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0)			AS total_billed_unbilled
@@ -95,6 +96,7 @@ CREATE INDEX INX_1 ON #finacial_calcs (matter_number) INCLUDE (client_code)
 SELECT 
 	dim_matter_header_current.master_client_code														AS [Client Code]
 	, dim_matter_header_current.master_matter_number													AS [Matter Number]
+		,CASE WHEN dim_matter_header_current.client_group_name IS NULL THEN dim_matter_header_current.client_name ELSE dim_matter_header_current.client_group_name END AS client
 	, dim_matter_header_current.dim_matter_header_curr_key												AS [Matter Header Current Key]
 	, dim_matter_header_current.matter_description														AS [Matter Description]
 	, dim_matter_header_current.matter_owner_full_name													AS [Matter Owner]
@@ -106,9 +108,10 @@ SELECT
 	, dim_matter_worktype.work_type_name																AS [Worktype]
 	, dim_detail_core_details.present_position															AS [Present Position] 
 	, dim_matter_header_current.fee_arrangement															AS [Fee Arrangement]
+	,dim_detail_core_details.[referral_reason] 
 	, CASE 
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
-			ISNULL(fact_finance_summary.fixed_fee_amount, 0)
+			fact_finance_summary.fixed_fee_amount
 		ELSE
 			NULL
 	  END																								AS [Fixed Fee Amount]
@@ -127,19 +130,20 @@ SELECT
 	, CASE
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
 			CASE 
-				WHEN fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0 THEN
+				WHEN  fact_finance_summary.fixed_fee_amount = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.75) THEN
 					'Amber'
+					WHEN fact_finance_summary.fixed_fee_amount IS NULL THEN 'noncolour'
 				ELSE
 					'Green'
 			END	
 		ELSE
 			'N/A'
 	  END																								AS [Fixed Fee RAG Status]
-	, ISNULL(fact_finance_summary.defence_costs_reserve, 0)												AS [Defence Costs Reserve]
+	, fact_finance_summary.defence_costs_reserve										AS [Defence Costs Reserve]
 	, ISNULL(fact_finance_summary.commercial_costs_estimate, 0)											AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)													AS [Total of Total Billed + WIP + Unbilled Disbursements]
 	, CASE
@@ -151,19 +155,21 @@ SELECT
 	, CASE
 		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
 			CASE 
-				WHEN fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0 THEN
+				WHEN  fact_finance_summary.defence_costs_reserve = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.9) THEN
 					'Red'
 				WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.75) THEN
 					'Amber'
+
+					WHEN fact_finance_summary.defence_costs_reserve IS NULL THEN 'nocolour'
 				ELSE
 					'Green'
 			END
 		ELSE	
 			'N/A'
 	  END																								AS [Defence Costs Reserve RAG Status]
-	, ISNULL(fact_finance_summary.defence_costs_billed, 0)												AS [Revenue Billed (net of VAT)]
+	, fact_finance_summary.defence_costs_billed											AS [Revenue Billed (net of VAT)]
 	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0)									AS [Disbursements Billed (excl VAT)]
 	, ISNULL(fact_bill_detail_summary.vat_amount, 0)													AS [VAT]
 	, ISNULL(fact_bill_detail_summary.bill_total, 0)													AS [Total Billed]

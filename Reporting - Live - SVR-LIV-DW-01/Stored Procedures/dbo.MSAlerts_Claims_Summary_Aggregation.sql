@@ -112,7 +112,7 @@ SELECT
 	, dim_matter_header_current.fee_arrangement															AS [Fee Arrangement]
 	, CASE 
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
-			ISNULL(fact_finance_summary.fixed_fee_amount, 0)
+			fact_finance_summary.fixed_fee_amount
 		ELSE
 			NULL
 	  END																								AS [Fixed Fee Amount]
@@ -131,19 +131,20 @@ SELECT
 	, CASE
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
 			CASE 
-				WHEN fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0 THEN
+				WHEN  fact_finance_summary.fixed_fee_amount = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.75) THEN
 					'Amber'
+							WHEN fact_finance_summary.fixed_fee_amount IS NULL THEN 'noncolour'
 				ELSE
 					'Green'
 			END	
 		ELSE
 			'N/A'
 	  END																								AS [Fixed Fee RAG Status]
-	, ISNULL(fact_finance_summary.defence_costs_reserve, 0)												AS [Defence Costs Reserve]
+	, fact_finance_summary.defence_costs_reserve												AS [Defence Costs Reserve]
 	, ISNULL(fact_finance_summary.commercial_costs_estimate, 0)											AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)													AS [Total of Total Billed + WIP + Unbilled Disbursements]
 	, CASE
@@ -155,12 +156,14 @@ SELECT
 	, CASE
 		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
 			CASE 
-				WHEN fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0 THEN
+				WHEN  fact_finance_summary.defence_costs_reserve = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.9) THEN
 					'Red'
 				WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.75) THEN
 					'Amber'
+					
+					WHEN fact_finance_summary.defence_costs_reserve IS NULL THEN 'nocolour'
 				ELSE
 					'Green'
 			END

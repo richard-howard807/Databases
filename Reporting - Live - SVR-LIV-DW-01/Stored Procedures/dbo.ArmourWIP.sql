@@ -6,6 +6,7 @@ GO
 -- Author:		Emily Smith
 -- Create date: 2020-05-04
 -- Description:	New report for Armour recovery files, 57421
+-- JL - 20200512 added in worked hours as per ticket 57800 1.1
 -- =============================================
 CREATE PROCEDURE [dbo].[ArmourWIP]
 
@@ -36,6 +37,13 @@ SELECT RTRIM(dim_matter_header_current.client_code)+'-'+dim_matter_header_curren
 	, HoursBilled.[Hours Billed - Laura Moore]
 	, HoursBilled.[Hours Billed - Chris Ball]
 	, HoursBilled.[Hours Billed - Other]
+	, WorkedHours.[Worked Hours - Susan Carville] 
+	, WorkedHours.[Worked Hours - Ian Young] 
+	, WorkedHours.[Worked Hours - Andrew Sutton]
+	, WorkedHours.[Worked Hours - Laura Moore] 
+	, WorkedHours.[Worked Hours - Chris Ball] 
+	, WorkedHours.[Worked Hours - Other] 
+	, WorkedHours.HoursRecorded
 	, defence_costs_billed AS [Revenue]
 	, client_account_balance_of_matter AS [Client Balance]
 
@@ -68,6 +76,8 @@ GROUP BY client,
          matter) AS WIP 
 		 ON dim_matter_header_current.client_code=WIP.client AND dim_matter_header_current.matter_number=WIP.matter
 
+
+
 LEFT OUTER JOIN (SELECT client_code_bill_item,
 					   matter_number_bill_item,
                        master_fact_key,
@@ -99,6 +109,38 @@ LEFT OUTER JOIN (SELECT client_code_bill_item,
                 GROUP BY client_code_bill_item,
                          matter_number_bill_item,
                          master_fact_key) AS [HoursBilled] ON HoursBilled.master_fact_key = fact_dimension_main.master_fact_key
+						 
+--****HOURS WORKED (JL ADDED AS PER TICKET  57800 1.1)*****
+LEFT OUTER JOIN (
+SELECT 
+                
+SUM(minutes_recorded) / 60 AS [HoursRecorded]
+,SUM(minutes_recorded) AS [MinutesRecorded]
+,ct.master_fact_key
+,SUM(CASE WHEN FeeEarners.name ='Susan Carville' THEN ct.minutes_recorded ELSE NULL END) /60 AS [Worked Hours - Susan Carville]
+	, SUM(CASE WHEN name ='Ian Young' THEN ct.minutes_recorded ELSE NULL END) / 60 AS [Worked Hours - Ian Young]
+	, SUM(CASE WHEN name ='Andrew Sutton' THEN ct.minutes_recorded ELSE NULL END) / 60 AS [Worked Hours - Andrew Sutton]
+	, SUM(CASE WHEN name ='Laura Moore' THEN ct.minutes_recorded ELSE NULL END) / 60 AS [Worked Hours - Laura Moore]
+	, SUM(CASE WHEN name ='Chris Ball' THEN ct.minutes_recorded ELSE NULL END) / 60 AS [Worked Hours - Chris Ball]
+	, SUM(CASE WHEN NOT (name IN ('Susan Carville','Ian Young','Andrew Sutton','Laura Moore','Chris Ball')) THEN ct.minutes_recorded ELSE NULL END) / 60 AS [Worked Hours - Other]
+
+FROM red_dw.dbo.fact_chargeable_time_activity AS ct 
+
+LEFT OUTER JOIN(
+
+	 SELECT DISTINCT
+	 dim_fed_hierarchy_history_key,
+	 name
+	 FROM red_dw.dbo.dim_fed_hierarchy_history
+  )AS FeeEarners
+ON FeeEarners.dim_fed_hierarchy_history_key = ct.dim_fed_hierarchy_history_key
+
+GROUP BY
+ct.master_fact_key
+
+) AS WorkedHours
+ON WorkedHours.master_fact_key = fact_dimension_main.master_fact_key
+-----1.1 jl
 
 WHERE dim_matter_header_current.master_client_code='752920'
 AND reporting_exclusions=0

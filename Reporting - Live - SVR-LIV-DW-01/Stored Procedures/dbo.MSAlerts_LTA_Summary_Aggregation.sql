@@ -126,7 +126,7 @@ SELECT
 	, CASE
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
 			CASE 
-				WHEN fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0 THEN
+				WHEN  fact_finance_summary.fixed_fee_amount = 0 THEN
 					'Red'
 				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
 					'Red'
