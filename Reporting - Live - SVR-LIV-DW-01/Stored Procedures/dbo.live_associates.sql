@@ -54,26 +54,25 @@ SELECT ListValue
 FROM dbo.udt_TallySplit(',', @CaseManager)
 
 -- Associates
-SELECT dim_matter_header_curr_key, dim_client.dim_client_key, capacity_code, capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
+SELECT dim_matter_header_curr_key, dim_client.dim_client_key, capacity_code, ISNULL(capacity_description, capacity_code) capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
 	address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name
 	INTO #associates
 -- select *
 FROM red_dw.dbo.dim_involvement_full
 INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.client_code = dim_involvement_full.client_code AND dim_matter_header_current.matter_number = dim_involvement_full.matter_number
 LEFT outer JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
-INNER JOIN red_dw.dbo.ds_sh_ms_dbassociates ON ds_sh_ms_dbassociates.fileid = dim_matter_header_current.ms_fileid AND ds_sh_ms_dbassociates.assoctype = dim_involvement_full.capacity_code
-			AND ds_sh_ms_dbassociates.contid = dim_client.contactid
+INNER JOIN red_dw.dbo.ds_sh_ms_dbassociates ON dim_involvement_full.sequence_number = ds_sh_ms_dbassociates.associd AND ds_sh_ms_dbassociates.contid = dim_client.contactid
 LEFT OUTER JOIN (SELECT emails.contid, emails.contcode, emails.contemail, ROW_NUMBER() OVER	(PARTITION BY emails.contid ORDER BY emails.contdefaultorder) rnk
 					-- select *
 					FROM red_dw.dbo.ds_sh_ms_dbcontactemails emails
 					WHERE emails.contactive = 1) emails ON emails.contid = dim_client.contactid AND emails.rnk = 1
 where dim_involvement_full.capacity_code IN
-('COURT','CLAIMANTSOLS','DEFENDANT','DEFENDANTINS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP') 
+('COURT','CLAIMANTSOLS','DEFENDANTINS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP') 
 AND ds_sh_ms_dbassociates.assocactive = 1
 
 
 -- Main Data
-SELECT distinct dim_detail_core_details.client_code, dim_matter_header_current.matter_number, matter_description, dim_matter_header_current.ms_fileid, fact_dimension_main.dim_matter_header_curr_key,
+SELECT distinct RTRIM(dim_detail_core_details.client_code) client_code, LTRIM(dim_matter_header_current.matter_number) matter_number, matter_description, dim_matter_header_current.ms_fileid, fact_dimension_main.dim_matter_header_curr_key,
 				dim_fed_hierarchy_history.name matter_owner_name,	
 
                 dim_fed_hierarchy_history.hierarchylevel4hist [matter_owner_team],
@@ -93,7 +92,14 @@ SELECT distinct dim_detail_core_details.client_code, dim_matter_header_current.m
                 associates.address_line_1,
                 associates.address_line_2,
                 associates.address_line_3,
-                associates.reference
+                associates.reference,
+				CASE WHEN capacity_code = 'COURT' THEN 1
+					 WHEN capacity_code = 'CLAIMANTSOLS' THEN 2					 
+					 WHEN capacity_code = 'CLAIMANTREP' THEN 3
+					 WHEN capacity_code = 'CODEF' THEN 4 
+					 WHEN associates.capacity_code = 'COMPRECUNITDWP' then 5 
+					 WHEN associates.capacity_code = 'OTHER' then 6 
+					 ELSE 15 END AS column_order
 
 FROM red_dw.dbo.fact_dimension_main
 INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -103,7 +109,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.cl
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 
-LEFT OUTER JOIN #associates associates ON associates.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+inner JOIN #associates associates ON associates.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 
 INNER JOIN #Division ON #Division.ListValue = dim_fed_hierarchy_history.hierarchylevel2hist 
 INNER JOIN #Department ON #Department.ListValue = dim_fed_hierarchy_history.hierarchylevel3hist
