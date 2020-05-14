@@ -54,8 +54,9 @@ SELECT ListValue
 FROM dbo.udt_TallySplit(',', @CaseManager)
 
 -- Associates
-SELECT dim_matter_header_curr_key, dim_client.dim_client_key, capacity_code, ISNULL(capacity_description, capacity_code) capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
-	address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name
+SELECT dim_matter_header_curr_key, dim_client.dim_client_key,  IIF(LOWER(capacity_code) LIKE '%court%', 'COURT', capacity_code) capacity_code,
+		ISNULL(IIF(LOWER(capacity_code) LIKE '%court%', 'Court', capacity_description), capacity_code) capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
+		address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name
 	INTO #associates
 -- select *
 FROM red_dw.dbo.dim_involvement_full
@@ -66,8 +67,9 @@ LEFT OUTER JOIN (SELECT emails.contid, emails.contcode, emails.contemail, ROW_NU
 					-- select *
 					FROM red_dw.dbo.ds_sh_ms_dbcontactemails emails
 					WHERE emails.contactive = 1) emails ON emails.contid = dim_client.contactid AND emails.rnk = 1
-where dim_involvement_full.capacity_code IN
-('COURT','CLAIMANTSOLS','DEFENDANTINS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP') 
+where (dim_involvement_full.capacity_code IN ('COURT','CLAIMANTSOLS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP','CORONERCOURT') 
+		OR
+		LOWER(dim_involvement_full.capacity_code) LIKE '%court%')
 AND ds_sh_ms_dbassociates.assocactive = 1
 
 
@@ -126,6 +128,7 @@ AND (dim_detail_core_details.present_position IS NULL
 	OR 
 	dim_detail_core_details.present_position IN ('Claim and costs outstanding','Claim concluded but costs outstanding','Claim and costs concluded but recovery outstanding')
 	)
+	--and dim_matter_header_current.client_code = 'N1001' AND dim_matter_header_current.matter_number = '00018068'
 
 ORDER BY 1, 2
 		
