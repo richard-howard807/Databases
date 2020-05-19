@@ -16,6 +16,7 @@ GO
 -- ES 29/07/2019 - added reserve details, 27736
 -- ES 20/02/2020 - added additional fields, 48695
 -- ES 22/04/2020 - added Does the claimant have a PI claim? and Date of Last Bill and Date Last Worked, 56563
+-- JL 13/05/2020 - removed date_instructions_received is not null as per ticket 58054
 ---------- =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
@@ -185,7 +186,7 @@ BEGIN
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_matter_header_current.date_opened_case_management >= '20170101'
-          AND dim_detail_core_details.date_instructions_received IS NOT NULL
+          --AND dim_detail_core_details.date_instructions_received IS NOT NULL
 		  --AND dim_matter_header_current.client_code='A1001' AND dim_matter_header_current.matter_number='00010136'
 		  
     

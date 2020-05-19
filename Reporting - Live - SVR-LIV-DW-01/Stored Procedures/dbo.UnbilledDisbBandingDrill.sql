@@ -25,14 +25,18 @@ Client,Matter,matter_description,date_opened_practice_management,date_closed_pra
 ,SUM(DisbAmount) AS [Total]
 ,SUM(HardCost) AS HardCost
 ,SUM(SoftCost) AS SoftCost
+,AllData.[Fee Arrangement]
+,AllData.[Fixed Fee Amount]
+,SUM(AllData.WIP) WIP 
+
 
 FROM 
 (
 SELECT a.client_code AS  Client
 ,a.matter_number AS  Matter
-,total_unbilled_disbursements AS ChargeRate
-,total_unbilled_disbursements AS DisbAmount
-,total_unbilled_disbursements_vat AS [Tax Value]
+,a.total_unbilled_disbursements AS ChargeRate
+,a.total_unbilled_disbursements AS DisbAmount
+,a.total_unbilled_disbursements_vat AS [Tax Value]
 ,hierarchylevel2hist AS [Business Line]
 ,hierarchylevel3hist As [Practice Area]
 ,hierarchylevel4hist AS [Team]
@@ -42,6 +46,10 @@ SELECT a.client_code AS  Client
 ,client_name
 ,unbilled_hard_disbursements AS HardCost
 ,unbilled_soft_disbursements AS SoftCost
+,dim_matter_header_current.fee_arrangement [Fee Arrangement]
+,dim_matter_header_current.fixed_fee_amount [Fixed Fee Amount]
+, fact_finance_summary.wip [WIP]
+
 ,a.workdate AS DisbDate
 ,CASE WHEN DATEDIFF(DAY,a.workdate,EOMONTH(transaction_calendar_date)) BETWEEN 0 AND 30 THEN '0-30 Days'
 WHEN DATEDIFF(DAY,a.workdate,EOMONTH(transaction_calendar_date)) BETWEEN 31 AND 90 THEN '31-90 Days'
@@ -57,9 +65,10 @@ INNER JOIN red_dw.dbo.dim_transaction_date As b
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON a.client_code=dim_matter_header_current.client_code
  AND a.matter_number=dim_matter_header_current.matter_number 
+ 
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK) 
  ON dim_matter_header_current.fee_earner_code=fed_code collate database_default AND dss_current_flag='Y'
- 
+LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.client_code = a.client_code AND fact_finance_summary.matter_number = a.matter_number
  WHERE dim_bill_key=0
 AND total_unbilled_disbursements <> 0
 --AND reporting_exclusions=0  -- Requested by steve Scullion to remove
@@ -67,7 +76,7 @@ AND b.transaction_fin_month=@finMonth
 AND display_name=@DisplayName
 ) AS AllData
 GROUP BY Client,Matter,matter_description,date_opened_practice_management,date_closed_practice_management
-,client_name
+,client_name, AllData.[Fee Arrangement], AllData.[Fixed Fee Amount]
 --,DisbNotes
 --,DisbDate
 ,[Display Name]

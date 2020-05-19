@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
+CREATE  PROCEDURE [nhs].[NHSRRawDataReport_test]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
 ,@Referralreason AS NVARCHAR(MAX)
@@ -368,8 +368,8 @@ AND ISNULL(nhs_instruction_type,'') NOT IN
 )
 AND ([zurichnhs_date_final_bill_sent_to_client]  IS NULL  OR [zurichnhs_date_final_bill_sent_to_client] >='2019-04-01')
 AND ISNULL(outcome_of_case,'') <>'Exclude from reports'
-AND (dim_detail_outcome.date_claim_concluded >= '2020-04-01' OR dim_detail_outcome.date_claim_concluded IS NULL )
+--AND (dim_detail_outcome.date_claim_concluded >= '2020-04-01' OR dim_detail_outcome.date_claim_concluded IS NULL )
 AND CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insurerclient_reference END NOT IN ('M17LT402/026')
-AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client >= '2020-04-01' OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL )
+--AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client >= '2020-04-01' OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL )
 END
 GO

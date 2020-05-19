@@ -5,12 +5,20 @@ GO
 
 
 
-CREATE PROC [dbo].[live_associates] (@Division NVARCHAR(MAX), @Department NVARCHAR(MAX), @Team NVARCHAR(MAX), @CaseManager NVARCHAR(MAX))
+CREATE PROC [dbo].[live_associates_Email] (@Division NVARCHAR(MAX), @Department NVARCHAR(MAX), @Team NVARCHAR(MAX), @CaseManager NVARCHAR(MAX))
 
-AS
+AS 
+/*
+===================================================
+===================================================
+Author:				Julie Loughlin
+Created Date:		2020-05-15
+Description:		Live Associates v2 for Case Team and Andy Griffiths to add in email type and further capapity's
+Current Version:	Initial Create
+====================================================
+====================================================
 
--- Changed from DAX query to SP as DAX was slow and ass default email is not in CD cube
--- Original report request 56949
+*/
 DROP TABLE  IF EXISTS #associates
 
 DROP TABLE IF EXISTS #Division
@@ -49,14 +57,14 @@ SELECT ListValue
 FROM dbo.udt_TallySplit('|', @Team)
 
 INSERT INTO #CaseManager 
-SELECT split_delimited_to_rows.val
+SELECT ListValue
 -- INTO #FedCodeList
-FROM dbo.split_delimited_to_rows(@CaseManager,',')
+FROM dbo.udt_TallySplit('|', @CaseManager)
 
 -- Associates
 SELECT dim_matter_header_curr_key, dim_client.dim_client_key,  IIF(LOWER(capacity_code) LIKE '%court%', 'COURT', capacity_code) capacity_code,
 		ISNULL(IIF(LOWER(capacity_code) LIKE '%court%', 'Court', capacity_description), capacity_code) capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
-		address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name
+		address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name, emails.contcode AS EmailType
 	INTO #associates
 -- select *
 FROM red_dw.dbo.dim_involvement_full
@@ -66,10 +74,10 @@ INNER JOIN red_dw.dbo.ds_sh_ms_dbassociates ON dim_involvement_full.sequence_num
 LEFT OUTER JOIN (SELECT emails.contid, emails.contcode, emails.contemail, ROW_NUMBER() OVER	(PARTITION BY emails.contid ORDER BY emails.contdefaultorder) rnk
 					-- select *
 					FROM red_dw.dbo.ds_sh_ms_dbcontactemails emails
-					WHERE emails.contactive = 1) emails ON emails.contid = dim_client.contactid AND emails.rnk = 1
-where (dim_involvement_full.capacity_code IN ('COURT','CLAIMANTSOLS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP','CORONERCOURT') 
+					WHERE emails.contactive = 1) as emails ON emails.contid = dim_client.contactid AND emails.rnk = 1
+where (dim_involvement_full.capacity_code IN ('COURT','CLAIMANTSOLS','COMPRECUNITDWP','EXPERT','EXPERTNONMED','OTHER','CODEF','CLAIMANTREP','CORONERCOURT','OTHERSIDESOLS','DEFSOLICITOR','DEFENDANTSOLS','CORONER','DIS','CROWNCRT','P20DEFENDANTSOL',' RESPSOL','PURCHASERSOLS','CONVSOL','  COINSURERSOLS','CLAIMINSSOL') 
 		OR
-		LOWER(dim_involvement_full.capacity_code) LIKE '%court%')
+		LOWER(dim_involvement_full.capacity_code) LIKE '%court%') 
 AND ds_sh_ms_dbassociates.assocactive = 1
 
 
@@ -95,6 +103,7 @@ SELECT distinct RTRIM(dim_detail_core_details.client_code) client_code, LTRIM(di
                 associates.address_line_2,
                 associates.address_line_3,
                 associates.reference,
+				associates.EmailType,
 				CASE WHEN capacity_code = 'COURT' THEN 1
 					 WHEN capacity_code = 'CLAIMANTSOLS' THEN 2					 
 					 WHEN capacity_code = 'CLAIMANTREP' THEN 3
@@ -116,7 +125,7 @@ LEFT OUTER JOIN #associates associates ON associates.dim_matter_header_curr_key 
 INNER JOIN #Division ON #Division.ListValue = dim_fed_hierarchy_history.hierarchylevel2
 INNER JOIN #Department ON #Department.ListValue = dim_fed_hierarchy_history.hierarchylevel3
 INNER JOIN #Team ON #Team.ListValue = dim_fed_hierarchy_history.hierarchylevel4
-INNER JOIN #CaseManager ON #CaseManager.ListValue = dim_fed_hierarchy_history.name
+--INNER JOIN #CaseManager ON #CaseManager.ListValue = dim_fed_hierarchy_history.name  
 
 WHERE reporting_exclusions = 0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'') <> 'Exclude from reports'
