@@ -66,7 +66,7 @@ AND a.reporting_exclusions <> 1) matter_count
 
 WHERE 1=1
 --AND b.cboReferralType IS null
-AND dbClient.Created BETWEEN @StartDate AND @EndDate 
+AND CAST(dbClient.CREATED AS DATE) BETWEEN @StartDate AND @EndDate 
 AND dbClient.clName NOT LIKE '%MS TEST%'
 AND UPPER(dbClient.clName) NOT LIKE '%TEST%'
 AND UPPER(dbClient.clName) NOT LIKE '%ERROR%'
