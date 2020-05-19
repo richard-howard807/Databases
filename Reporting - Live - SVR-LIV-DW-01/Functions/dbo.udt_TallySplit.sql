@@ -5,7 +5,7 @@ GO
 
 CREATE FUNCTION [dbo].[udt_TallySplit]
 (	@Delim	CHAR(1) = ','
-,	@String	VARCHAR(max)
+,	@String	NVARCHAR(max)
 )
 RETURNS TABLE
 AS

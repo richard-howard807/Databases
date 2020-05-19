@@ -118,7 +118,8 @@ select (case when @Level IN ('Individual', 'Area Managed') then ListValue else n
 )
 
 --AND fact_write_off_monthly.write_off_type <> 'N'
-AND fact_write_off.write_off_type IN ('W','D')
+--AND fact_write_off.write_off_type IN ('W','D')
+AND fact_write_off.write_off_type IN ('WA','NC','BA')
 AND CASE WHEN @Report='Total' THEN 1 
 		 WHEN @Report=  CASE WHEN LOWER(fee_arrangement)= 'annual retainer' OR LOWER(fee_arrangement)= 'contingent' OR LOWER(fee_arrangement)= 'internal / no charge' OR LOWER(fee_arrangement)= 'secondment' OR LOWER(fee_arrangement)= 'tbc/other'  THEN 'Other'
 			WHEN LOWER(fee_arrangement)='hourly rate' THEN 'Hourly Rate'
@@ -129,4 +130,6 @@ AND CASE WHEN @Report='Total' THEN 1
 
 
 END
+
+
 GO
