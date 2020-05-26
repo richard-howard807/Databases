@@ -64,7 +64,7 @@ FROM dbo.udt_TallySplit('|', @CaseManager)
 -- Associates
 SELECT dim_matter_header_curr_key, dim_client.dim_client_key,  IIF(LOWER(capacity_code) LIKE '%court%', 'COURT', capacity_code) capacity_code,
 		ISNULL(IIF(LOWER(capacity_code) LIKE '%court%', 'Court', capacity_description), capacity_code) capacity_description, COALESCE(assocemail, emails.contemail, dim_client.email) email,
-		address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name, emails.contcode AS EmailType
+		address_line_1, address_line_2, address_line_3, reference, dim_involvement_full.name, emails.contcode AS EmailType, sequence_number
 	INTO #associates
 -- select *
 FROM red_dw.dbo.dim_involvement_full
@@ -94,6 +94,7 @@ SELECT distinct RTRIM(dim_detail_core_details.client_code) client_code, LTRIM(di
 				dim_detail_core_details.proceedings_issued,
 				dim_matter_worktype.work_type_name,
 				fact_matter_summary_current.last_time_transaction_date,
+				dim_matter_header_current.ms_fileid,
 
 				associates.name,
                 associates.capacity_code,
@@ -104,6 +105,7 @@ SELECT distinct RTRIM(dim_detail_core_details.client_code) client_code, LTRIM(di
                 associates.address_line_3,
                 associates.reference,
 				associates.EmailType,
+				associates.sequence_number,
 				CASE WHEN capacity_code = 'COURT' THEN 1
 					 WHEN capacity_code = 'CLAIMANTSOLS' THEN 2					 
 					 WHEN capacity_code = 'CLAIMANTREP' THEN 3
@@ -111,6 +113,8 @@ SELECT distinct RTRIM(dim_detail_core_details.client_code) client_code, LTRIM(di
 					 WHEN associates.capacity_code = 'COMPRECUNITDWP' then 5 
 					 WHEN associates.capacity_code = 'OTHER' then 6 
 					 ELSE 15 END AS column_order
+
+
 
 FROM red_dw.dbo.fact_dimension_main
 INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -141,5 +145,5 @@ AND (dim_detail_core_details.present_position IS NULL
 
 ORDER BY 1, 2
 		
-		
+	
 GO
