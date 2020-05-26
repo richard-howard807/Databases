@@ -20,7 +20,7 @@ GO
 -- LD 20191004 Added logic to include the latest archive record , 33758
 -- ES 20200217 Added type of instruction, requested by JS
 -- ES 20200220 Added MS key dates, 26576
--- RH 20200526 Amended Revenue & Hours billed for all years to use composite billing #45295 && Added Chargeable hours #45295 and changed rolling 3 years to last 3 full financial years
+-- RH 20200526 Amended Revenue & Hours billed for all years to use composite billing #45295 & Added Chargeable hours #45295 & changed rolling 3 years to last 3 full financial years
 -- RH 20200526 Added financial year on various dates #59250 && #57252
 
 
