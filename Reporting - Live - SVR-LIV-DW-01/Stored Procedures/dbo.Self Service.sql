@@ -21,6 +21,7 @@ GO
 -- ES 20200217 Added type of instruction, requested by JS
 -- ES 20200220 Added MS key dates, 26576
 -- RH 20200526 Amended Revenue & Hours billed for all years to use composite billing #45295 && Added Chargeable hours #45295 and changed rolling 3 years to last 3 full financial years
+-- RH 20200526 Added financial year on various dates #59250 && #57252
 
 
 
@@ -45,7 +46,9 @@ BEGIN
 
 SELECT DISTINCT
     dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
-    dim_matter_header_current.date_closed_case_management AS [Date Case Closed],
+	red_dw.dbo.get_fin_year(dim_matter_header_current.date_opened_case_management) [Fin Year Opened],
+    dim_matter_header_current.date_closed_case_management AS [Date Case Closed],	
+	red_dw.dbo.get_fin_year(dim_matter_header_current.date_closed_case_management) [Fin Year Closed],
     dim_matter_header_current.ms_only AS [MS Only],
     RTRIM(fact_dimension_main.client_code) + '/' + fact_dimension_main.matter_number AS [Weightmans Reference],
     fact_dimension_main.client_code AS [Client Code],
@@ -240,6 +243,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_court.[date_of_trial] AS [Date of Trial],
 		   
     dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
+	red_dw.dbo.get_fin_year(dim_detail_outcome.date_claim_concluded) AS [Fin Year Claim Concluded],
     fact_finance_summary.damages_interims AS [Interim Damages],
     CASE
         WHEN fact_finance_summary.[damages_paid] IS NULL
@@ -286,6 +290,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_outcome.date_referral_to_costs_unit AS [Date Referral to Costs Unit],
     dim_detail_outcome.[date_claimants_costs_received] AS [Date Claimants Costs Received],
     dim_detail_outcome.date_costs_settled AS [Date Costs Settled],
+	red_dw.dbo.get_fin_year(dim_detail_outcome.date_costs_settled) AS [Fin Year Costs Settled],
     dim_detail_client.date_settlement_form_sent_to_zurich AS [Date Settlement form Sent to Zurich WPS386 VE00571],
     fact_detail_paid_detail.interim_costs_payments AS [Interim Costs Payments],
     fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)],
@@ -325,7 +330,9 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
             fact_matter_summary_current.last_bill_date
     END AS [Last Bill Date],
     fact_bill_matter.last_bill_date [Last Bill Date Composite ],
+	red_dw.dbo.get_fin_year(fact_bill_matter.last_bill_date) [Fin Year Of Last Bill],
     fact_matter_summary_current.[last_time_transaction_date] AS [Date of Last Time Posting],
+	red_dw.dbo.get_fin_year(fact_matter_summary_current.[last_time_transaction_date]) AS [Fin Year Of Last Time Posting],
     TimeRecorded.HoursRecorded AS [Hours Recorded],
     TimeRecorded.MinutesRecorded AS [Minutes Recorded],
     ((CASE

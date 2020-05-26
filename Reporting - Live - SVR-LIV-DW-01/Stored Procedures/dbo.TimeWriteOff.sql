@@ -6,6 +6,8 @@ GO
 -- Author:		Emily Smith
 -- Create date: 2019-02-20
 -- Description:	Time write off report
+
+-- 2020/05/26 RH -  Amended to take into account new fact_write_off design
 -- =============================================
 
 CREATE PROCEDURE [dbo].[TimeWriteOff]
@@ -58,15 +60,15 @@ SELECT [dim_transaction_date_key]
       --,[work_hrs]/60 [ytd_work_hrs]
 	  --,CASE WHEN current_fin_month='Current' THEN work_amt ELSE 0 END [mtd_work_amt]
 	  --,CASE WHEN current_fin_month='Current' THEN work_hrs/60 ELSE 0 END [mtd_work_hrs]
-	  ,CASE WHEN fin_period=@Month THEN  work_amt ELSE 0 END [mtd_work_amt]
-	  ,CASE WHEN fin_period=@Month THEN work_hrs/60 ELSE 0 END [mtd_work_hrs]
-	  ,CASE WHEN fin_period<=@Month THEN work_amt ELSE 0 END [ytd_work_amt]
-	  ,CASE WHEN fin_period<=@Month THEN work_hrs/60 ELSE 0 END [ytd_work_hrs]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_work_amt]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn/60 ELSE 0 END [mtd_work_hrs]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_work_amt]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn/60 ELSE 0 END [ytd_work_hrs]
 	  
-	  ,CASE WHEN fin_period=@Month THEN [bill_amt_wdn] ELSE 0 END [mtd_bill_amt_wdn]
-	  ,CASE WHEN fin_period=@Month THEN [bill_hrs_wdn]/60 ELSE 0 END [mtd_bill_hrs_wdn]
-	  ,CASE WHEN fin_period<=@Month THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
-	  ,CASE WHEN fin_period<=@Month THEN [bill_hrs_wdn]/60 ELSE 0 END [ytd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn] ELSE 0 END [mtd_bill_amt_wdn]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn]/60 ELSE 0 END [mtd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn]/60 ELSE 0 END [ytd_bill_hrs_wdn]
       --,[bill_amt_wdn] 
       --,[bill_amt_wup] 
       --,[bill_amt_woff] 

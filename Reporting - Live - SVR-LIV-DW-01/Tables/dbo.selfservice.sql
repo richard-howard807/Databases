@@ -1,7 +1,9 @@
 CREATE TABLE [dbo].[selfservice]
 (
 [Date Case Opened] [datetime] NULL,
+[Fin Year Opened] [int] NULL,
 [Date Case Closed] [datetime] NULL,
+[Fin Year Closed] [int] NULL,
 [MS Only] [bit] NULL,
 [Weightmans Reference] [varchar] (17) COLLATE Latin1_General_BIN NULL,
 [Client Code] [char] (8) COLLATE Latin1_General_BIN NULL,
