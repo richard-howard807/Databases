@@ -29,6 +29,8 @@ CREATE PROCEDURE  [dbo].[Self Service]
 AS
 BEGIN
 
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
  -- exec [dbo].[Self Service]
 
     DECLARE @CurrentYear AS DATETIME = '2019-01-01',
