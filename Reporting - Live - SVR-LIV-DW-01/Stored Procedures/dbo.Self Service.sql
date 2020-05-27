@@ -5,8 +5,6 @@ GO
 
 
 
-
-
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -46,11 +44,92 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
     SET NOCOUNT ON;
   
 
+
+       
+
+-- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
+
+	
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Revenue
+		FROM (
+	
+			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Revenue)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+	
+
+
+	SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Billed_hours
+		FROM (
+	
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_bill_billed_time_activity
+			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS billedhours
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+
+-- Added Chargeable hours #45295
+
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Chargeable_hours
+		FROM (
+	
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_billable_time_activity
+			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+
 SELECT DISTINCT
     dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
-	red_dw.dbo.get_fin_year(dim_matter_header_current.date_opened_case_management) [Fin Year Opened],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_opened_case_management AS date)) [Fin Year Opened],
     dim_matter_header_current.date_closed_case_management AS [Date Case Closed],	
-	red_dw.dbo.get_fin_year(dim_matter_header_current.date_closed_case_management) [Fin Year Closed],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_closed_case_management AS date)) [Fin Year Closed],
     dim_matter_header_current.ms_only AS [MS Only],
     RTRIM(fact_dimension_main.client_code) + '/' + fact_dimension_main.matter_number AS [Weightmans Reference],
     fact_dimension_main.client_code AS [Client Code],
@@ -245,7 +324,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_court.[date_of_trial] AS [Date of Trial],
 		   
     dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
-	red_dw.dbo.get_fin_year(dim_detail_outcome.date_claim_concluded) AS [Fin Year Claim Concluded],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(date_claim_concluded AS date)) AS [Fin Year Claim Concluded],
     fact_finance_summary.damages_interims AS [Interim Damages],
     CASE
         WHEN fact_finance_summary.[damages_paid] IS NULL
@@ -292,7 +371,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_outcome.date_referral_to_costs_unit AS [Date Referral to Costs Unit],
     dim_detail_outcome.[date_claimants_costs_received] AS [Date Claimants Costs Received],
     dim_detail_outcome.date_costs_settled AS [Date Costs Settled],
-	red_dw.dbo.get_fin_year(dim_detail_outcome.date_costs_settled) AS [Fin Year Costs Settled],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_detail_outcome.date_costs_settled AS date)) AS [Fin Year Costs Settled],
     dim_detail_client.date_settlement_form_sent_to_zurich AS [Date Settlement form Sent to Zurich WPS386 VE00571],
     fact_detail_paid_detail.interim_costs_payments AS [Interim Costs Payments],
     fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)],
@@ -332,9 +411,9 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
             fact_matter_summary_current.last_bill_date
     END AS [Last Bill Date],
     fact_bill_matter.last_bill_date [Last Bill Date Composite ],
-	red_dw.dbo.get_fin_year(fact_bill_matter.last_bill_date) [Fin Year Of Last Bill],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_bill_matter.last_bill_date AS date)) [Fin Year Of Last Bill],
     fact_matter_summary_current.[last_time_transaction_date] AS [Date of Last Time Posting],
-	red_dw.dbo.get_fin_year(fact_matter_summary_current.[last_time_transaction_date]) AS [Fin Year Of Last Time Posting],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_matter_summary_current.[last_time_transaction_date] AS date)) AS [Fin Year Of Last Time Posting],
     TimeRecorded.HoursRecorded AS [Hours Recorded],
     TimeRecorded.MinutesRecorded AS [Minutes Recorded],
     ((CASE
@@ -396,12 +475,12 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	 , Billed_hours.[2020] [Hours Billed 2019/2020]
 	 , Billed_hours.[2021] [Hours Billed 2020/2021]
 
-	 , Chargeable_hours.[2016] [Chargeable Hours 2015/2016]
-	 , Chargeable_hours.[2017] [Chargeable Hours 2016/2017]
-	 , Chargeable_hours.[2018] [Chargeable Hours 2017/2018]
-	 , Chargeable_hours.[2019] [Chargeable Hours 2018/2019]
-	 , Chargeable_hours.[2020] [Chargeable Hours 2019/2020]
-	 , Chargeable_hours.[2021] [Chargeable Hours 2020/2021]
+	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
+	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
+	 , Chargeable_hours.[2018] [Chargeable Hours Posted 2017/2018]
+	 , Chargeable_hours.[2019] [Chargeable Hours Posted 2018/2019]
+	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
+	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
 
 	,[Disbursements Billed 2015/2016]
 	,[Disbursements Billed 2016/2017]
@@ -917,88 +996,17 @@ LEFT OUTER JOIN
  ON dim_matter_header_current.client_code=Revenue2020.client_code
 AND dim_matter_header_current.matter_number=Revenue2020.matter_number
 
-
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
-LEFT OUTER JOIN (
-	
-		SELECT PVIOT.client_code,
-			   PVIOT.matter_number,
-			   PVIOT.[2021],
-			   PVIOT.[2020],
-			   PVIOT.[2019],
-			   PVIOT.[2018],
-			   PVIOT.[2017],
-			   PVIOT.[2016]
-		FROM (
-	
-			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
-			FROM red_dw.dbo.fact_bill_activity
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
-			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
-			) AS revenue
-		PIVOT	
-			(
-			SUM(Revenue)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
-			) AS PVIOT
-	
-) AS Revenue
+LEFT OUTER JOIN #Revenue Revenue
  ON dim_matter_header_current.client_code=Revenue.client_code
 AND dim_matter_header_current.matter_number=Revenue.matter_number
 
-LEFT OUTER	JOIN (
-	SELECT PVIOT.client_code,
-			   PVIOT.matter_number,
-			   PVIOT.[2021],
-			   PVIOT.[2020],
-			   PVIOT.[2019],
-			   PVIOT.[2018],
-			   PVIOT.[2017],
-			   PVIOT.[2016]
-		FROM (
-	
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
-			FROM red_dw.dbo.fact_bill_billed_time_activity
-			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
-			GROUP BY client_code, matter_number, bill_fin_year
-			) AS billedhours
-		PIVOT	
-			(
-			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
-			) AS PVIOT
-) Billed_hours  ON dim_matter_header_current.client_code=Billed_hours.client_code
+LEFT OUTER	JOIN #Billed_hours Billed_hours ON dim_matter_header_current.client_code=Billed_hours.client_code
 			AND dim_matter_header_current.matter_number=Billed_hours.matter_number 
 
 
 -- Added Chargeable hours #45295
-LEFT OUTER JOIN (
-		SELECT PVIOT.client_code,
-			   PVIOT.matter_number,
-			   PVIOT.[2021],
-			   PVIOT.[2020],
-			   PVIOT.[2019],
-			   PVIOT.[2018],
-			   PVIOT.[2017],
-			   PVIOT.[2016]
-		FROM (
-	
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
-			FROM red_dw.dbo.fact_billable_time_activity
-			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
-			GROUP BY client_code, matter_number, bill_fin_year
-			) AS revenue
-		PIVOT	
-			(
-			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
-			) AS PVIOT
-) Chargeable_hours  ON dim_matter_header_current.client_code=Chargeable_hours.client_code
+LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current.client_code=Chargeable_hours.client_code
 			AND dim_matter_header_current.matter_number=Chargeable_hours.matter_number 
 
 
