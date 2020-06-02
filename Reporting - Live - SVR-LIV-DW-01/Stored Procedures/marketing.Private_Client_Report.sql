@@ -11,6 +11,10 @@ CREATE PROCEDURE [marketing].[Private_Client_Report]
 
 AS
 BEGIN
+
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
+
 	SELECT 
   RTRIM(red_dw.dbo.dim_matter_header_current.client_code)+'/'+red_dw.dbo.dim_matter_header_current.matter_number AS [Weightmans Reference]
   ,red_dw.dbo.dim_matter_header_current.matter_description
@@ -25,10 +29,10 @@ BEGIN
   ,red_dw.dbo.dim_matter_header_current.reason_for_email_opt_out AS [Reason for opt out]
   ,red_dw.dbo.dim_matter_header_current.opt_out_reason_desc [Reason for opt out Y/N]
   ,red_dw.dbo.dim_involvement_full.default_email AS Email
-
+  
   
  
-  --,red_dw.dbo.dim_matter_header_current.DateofEmail -- on in yet
+  ,red_dw.dbo.dim_involvement_full.date_marketing_email_last_sent [Date Marketing Email Last Sent]
 
 
 	
