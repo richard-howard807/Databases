@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -19,8 +20,8 @@ SELECT ListValue  INTO #Referralreason  FROM Reporting.dbo.[udt_TallySplit]('|',
 DECLARE @GraphStart AS DATE
 DECLARE @GraphEnd AS DATE
 
-SET @GraphStart='2019-04-01'
-SET @GraphEnd='2020-04-31'
+SET @GraphStart='2020-04-01'
+SET @GraphEnd='2021-04-30'
 
 
 
@@ -84,7 +85,7 @@ ISNULL(fact_detail_paid_detail.[gd_paid_nhs],0) + ISNULL(fact_detail_paid_detail
 ISNULL(fact_detail_client.[nhs_retained_lump_sum_amount_ppo],0) -  ISNULL(fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution],0) ELSE ISNULL(fact_detail_client.[nhs_retained_lump_sum_amount_ppo],0) END AS [Retained Lump sum amount (PPO)]
 --,fact_detail_client.[nhs_retained_lump_sum_amount_ppo] AS [Retained Lump sum amount (PPO)]
 ,fact_detail_client.[nhs_annual_pp_ppo] AS [Annual PP (PPO)]
-,CASE WHEN dim_detail_court.[date_of_trial] > dim_detail_outcome.[date_claim_concluded] THEN null ELSE dim_detail_court.[date_of_trial] END AS [Trial Date New]
+,CASE WHEN dim_detail_court.[date_of_trial] > dim_detail_outcome.[date_claim_concluded] THEN NULL ELSE dim_detail_court.[date_of_trial] END AS [Trial Date New]
 
 ,dim_detail_outcome.[date_claim_concluded] AS [Date of settlement - Concluded]
 ,dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] AS [Date of closure of file]
@@ -241,13 +242,13 @@ ELSE '-' END AS [case value ]
 
 ,YEAR(dim_detail_outcome.[date_claim_concluded]) AS [Year Concluded]
 ,MONTH(dim_detail_outcome.[date_claim_concluded]) AS [Month No Concluded]
-,datename(month, dim_detail_outcome.[date_claim_concluded]) AS [Month Name Concluded] 
+,DATENAME(MONTH, dim_detail_outcome.[date_claim_concluded]) AS [Month Name Concluded] 
 ,CASE WHEN dim_detail_outcome.[date_claim_concluded] BETWEEN @GraphStart AND @GraphEnd AND  UPPER(dim_detail_core_details.referral_reason) LIKE '%DISPUTE%' 
 THEN 1 ELSE 0 END AS ConcludedGraph
 
 ,YEAR([zurichnhs_date_final_bill_sent_to_client]) AS [Year Final Bill]
 ,MONTH([zurichnhs_date_final_bill_sent_to_client]) AS [Month No Final Bill]
-,datename(month, [zurichnhs_date_final_bill_sent_to_client]) AS [Month Name Final Bill] 
+,DATENAME(MONTH, [zurichnhs_date_final_bill_sent_to_client]) AS [Month Name Final Bill] 
 ,CASE WHEN [zurichnhs_date_final_bill_sent_to_client] BETWEEN @GraphStart AND @GraphEnd AND  UPPER(dim_detail_core_details.referral_reason) LIKE '%DISPUTE%' 
 THEN 1 ELSE 0 END AS FinalBillGraph
 ,CASE WHEN UPPER(dim_detail_outcome.[outcome_of_case]) LIKE '%LOST%' OR UPPER(dim_detail_outcome.[outcome_of_case]) LIKE '%WON%' THEN 1 ELSE 0 END AS [NoWon]
@@ -255,7 +256,7 @@ THEN 1 ELSE 0 END AS FinalBillGraph
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON fed_code=fee_earner_code collate DATABASE_DEFAULT AND dss_current_flag='Y'
+ ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number

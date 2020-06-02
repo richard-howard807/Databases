@@ -29,12 +29,12 @@ BEGIN
 	--For testing purposes
 	--===========================================================
 	--DECLARE  @Team AS VARCHAR(MAX) = 'Motor Management'
-	--,@Name AS VARCHAR(MAX) = ''
-	--,@StartDate AS DATE = '2019-01-01'
-	--,@EndDate AS DATE = '2019-07-24'
-	--,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs outstanding,To be closed/minor balances to be clear, Missing, Claim concluded but costs outstanding'
-	--,@ClientGroup AS VARCHAR(MAX)  = '
-	--,@Status AS VARCHAR (30) = 'Closed'
+--,@Name AS VARCHAR(MAX) = ''
+--	,@StartDate AS DATE = '2019-01-01'
+--	,@EndDate AS DATE = '2019-07-24'
+--	,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs outstanding,To be closed/minor balances to be clear, Missing, Claim concluded but costs outstanding'
+--	,@ClientGroup AS VARCHAR(MAX)  = ''
+--	,@Status AS VARCHAR (30) = 'Closed'
 
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -52,6 +52,13 @@ IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 	SELECT ListValue  INTO #ClientGroup FROM 	dbo.udt_TallySplit('|', @ClientGroup)
 	SELECT ListValue  INTO #PresentPosition FROM 	dbo.udt_TallySplit('|', @PresentPosition)
 	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit('|', @Status)
+
+	SELECT fileID, tskDesc, tskDue, tskCompleted 
+	INTO #FICProcess
+	FROM MS_Prod.dbo.dbTasks
+	WHERE (tskDesc LIKE 'FIC Process'
+	OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
+	AND tskActive=1
 
 SELECT client_name AS [Client Name]
 	, dim_matter_header_current.client_code AS [Client Code]
@@ -77,6 +84,11 @@ SELECT client_name AS [Client Name]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
 	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Subsequent Report]
 	, 1 AS [Number of Files]
+	,days.days_to_first_report_lifecycle
+	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
+	 ,FICProcess.tskDue
+	,FICProcess.tskCompleted
+		,FICProcess.tskDesc
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -85,11 +97,15 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
 ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
+ON days.master_fact_key = fact_dimension_main.master_fact_key
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 INNER JOIN #Name AS Name ON Name.ListValue COLLATE DATABASE_DEFAULT = name COLLATE DATABASE_DEFAULT
 INNER JOIN #ClientGroup AS ClientGroup ON dim_matter_header_current.client_group_name=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
 INNER JOIN #PresentPosition AS Position ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = dim_detail_core_details.present_position COLLATE DATABASE_DEFAULT
 INNER JOIN #Status AS [Status] ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
+
+LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 --INNER JOIN #Status ON #Status.ListValue = CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END
 WHERE reporting_exclusions=0
 AND hierarchylevel2hist='Legal Ops - Claims'

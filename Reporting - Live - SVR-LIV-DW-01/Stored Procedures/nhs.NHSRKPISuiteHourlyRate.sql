@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [nhs].[NHSRKPISuiteHourlyRate] -- EXEC [nhs].[NHSRKPISuiteHourlyRate] '2019-09-01','2019-09-30'
 	(
 		@StartDate AS DATE,
@@ -41,7 +42,8 @@ BEGIN
                              ) AS LatestRecord,
            bill_number,
            fact_all_time_activity.isactive, 
-		   fact_billable_time_activity.minutes_recorded / 60 [Chargeable Hours]
+		   fact_billable_time_activity.minutes_recorded / 60 [Chargeable Hours] 
+		   ,transaction_calendar_date AS [Transaction Date] -- added in per request 58547
     FROM red_dw.dbo.fact_bill_billed_time_activity
         INNER JOIN red_dw.dbo.dim_bill
             ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
@@ -54,7 +56,9 @@ BEGIN
         --INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
         INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
             ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_bill_billed_time_activity.dim_fed_hierarchy_history_key
-        LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+        LEFT OUTER JOIN red_dw.dbo.dim_transaction_date
+		 ON dim_transaction_date.dim_transaction_date_key = fact_bill_billed_time_activity.dim_transaction_date_key
+		LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
             ON dim_client_involvement.client_code = dim_matter_header_current.client_code
                AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
         LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
