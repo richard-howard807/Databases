@@ -42,12 +42,13 @@ SELECT [dim_transaction_date_key]
       ,fact_write_off.[master_matter_number]
 	  ,matter_description
 	  ,client_name
-	  ,fed_code
+	  ,dim_fed_hierarchy_history.fed_code
       ,[matter_owner]
 	  ,matter_owner_full_name
-      ,hierarchylevel2hist
-      ,hierarchylevel3hist
-      ,RTRIM(hierarchylevel4hist) hierarchylevel4hist
+	  , feeearner.display_name Fee_Earner
+      ,dim_fed_hierarchy_history.hierarchylevel2hist
+      ,dim_fed_hierarchy_history.hierarchylevel3hist
+      ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
       ,CASE WHEN LOWER(fee_arrangement)= 'annual retainer' OR LOWER(fee_arrangement)= 'contingent' OR LOWER(fee_arrangement)= 'internal / no charge' OR LOWER(fee_arrangement)= 'secondment' OR LOWER(fee_arrangement)= 'tbc/other'  THEN 'Other'
 			WHEN LOWER(fee_arrangement)='hourly rate' THEN 'Hourly Rate'
 			WHEN LOWER(fee_arrangement)='fixed fee/fee quote/capped fee' THEN 'Fixed Fee/Fee Quote/Capped Fee'
@@ -56,19 +57,22 @@ SELECT [dim_transaction_date_key]
 	  ,fee_arrangement AS [original_fee_arrangement]
       ,date_opened_case_management
       ,date_closed_case_management
+	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'None Chargeable Time'
+			WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
+			WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' END AS write_off_type
       --,[work_amt] [ytd_work_amt]
       --,[work_hrs]/60 [ytd_work_hrs]
 	  --,CASE WHEN current_fin_month='Current' THEN work_amt ELSE 0 END [mtd_work_amt]
 	  --,CASE WHEN current_fin_month='Current' THEN work_hrs/60 ELSE 0 END [mtd_work_hrs]
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_work_amt]
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn/60 ELSE 0 END [mtd_work_hrs]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn ELSE 0 END [mtd_work_hrs]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_work_amt]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn/60 ELSE 0 END [ytd_work_hrs]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn ELSE 0 END [ytd_work_hrs]
 	  
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn] ELSE 0 END [mtd_bill_amt_wdn]
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn]/60 ELSE 0 END [mtd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn] ELSE 0 END [mtd_bill_hrs_wdn]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn]/60 ELSE 0 END [ytd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn] ELSE 0 END [ytd_bill_hrs_wdn]
       --,[bill_amt_wdn] 
       --,[bill_amt_wup] 
       --,[bill_amt_woff] 
@@ -88,6 +92,8 @@ FROM red_dw.dbo.fact_write_off
 --from red_dw.dbo.reddw_fact_write_off_190402 fact_write_off
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
        ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_matter_owner_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  feeearner
+       ON feeearner.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_hierarchy_history_key
 INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_header_curr_key
        = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
@@ -132,6 +138,8 @@ AND CASE WHEN @Report='Total' THEN 1
 
 
 END
+
+
 
 
 GO
