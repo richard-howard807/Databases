@@ -202,6 +202,7 @@ CREATE TABLE [dbo].[selfservice]
 [STW Work Type] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [minutes_recorded_cost_handler] [numeric] (13, 2) NULL,
 [time_charge_value_cost_handler] [numeric] (13, 2) NULL,
+[cost_handler_revenue] [numeric] (38, 2) NULL,
 [Client Ref] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [date_recovery_concluded] [datetime] NULL,
 [Counsel Fees Billed ex VAT] [numeric] (38, 5) NULL,
@@ -227,6 +228,8 @@ CREATE TABLE [dbo].[selfservice]
 [Exchange of medical reports] [datetime] NULL,
 [Pre-trial checklist] [datetime] NULL,
 [Trial date] [datetime] NULL,
-[International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL
+[date of trial not KD] [datetime] NULL,
+[International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[reporting_exclusions] [smallint] NOT NULL
 ) ON [PRIMARY]
 GO

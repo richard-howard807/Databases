@@ -20,7 +20,8 @@ GO
 -- ES 20200220 Added MS key dates, 26576
 -- RH 20200526 Amended Revenue & Hours billed for all years to use composite billing #45295 & Added Chargeable hours #45295 & changed rolling 3 years to last 3 full financial years
 -- RH 20200526 Added financial year on various dates #59250 && #57252
-
+-- RH 20200604 Removed reporting exclusions from where clause and added as a column instead so revenue balances, #57252
+-- RH 20200604 Added cost handler revenue #55807
 
 
 CREATE PROCEDURE  [dbo].[Self Service]
@@ -492,6 +493,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	,dim_detail_claim.[stw_work_type] [STW Work Type]
 	,fact_finance_summary.minutes_recorded_cost_handler
 	,fact_finance_summary.time_charge_value_cost_handler 
+	, cost_handler_revenue.cost_handler_revenue
 	,ClientAssocRef AS [Client Ref]
 	,dim_detail_claim.[date_recovery_concluded] AS date_recovery_concluded
 	,[Counsel ex VAT] AS [Counsel Fees Billed ex VAT]
@@ -519,8 +521,11 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, [Exchange of medical reports]
 	, [Pre-trial checklist]
 	, [Trial date]
+	, dim_detail_court.date_of_trial [date of trial not KD]
+	
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
+, ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 INTO Reporting.dbo.selfservice
    
 ----------------------------------------------------
@@ -1165,12 +1170,19 @@ LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current
 	AND tskType='KEYDATE'AND tskDesc ='Trial date - today'
 	GROUP BY fileID) AS [KD_TrialDate] ON [KD_TrialDate].fileID=ms_fileid
 
+	LEFT OUTER JOIN (SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, SUM(fact_bill_activity.bill_amount) cost_handler_revenue
+					FROM red_dw..fact_bill_activity
+					INNER JOIN red_dw..dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_bill_activity.dim_fed_hierarchy_history_key
+					WHERE dim_fed_hierarchy_history.cost_handler = 1
+					GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number) cost_handler_revenue
+					ON cost_handler_revenue.client_code = dim_matter_header_current.client_code
+					AND cost_handler_revenue.matter_number = dim_matter_header_current.matter_number
 
 --- Final WHERE Clause -------------------------------------------------------------------------------------------------
 
 WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )
-          AND dim_matter_header_current.reporting_exclusions = 0
+          --AND dim_matter_header_current.reporting_exclusions = 0
           AND
           (
               dim_matter_header_current.date_closed_case_management >= @nDate
