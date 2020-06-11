@@ -13,6 +13,7 @@ Description:		Data for all AXA XL matters for Tableau
 Ticket:				47664
 Current Version:	Initial Create
 ====================================================
+-- ES 2020-06-11 amended where clause to match the where clause in the report [axa].[axa_matter_listing_report], requested by HF
 ====================================================
 */
 
@@ -405,9 +406,15 @@ AS
 			ON revenue_2020.client_code = dim_matter_header_current.client_code AND revenue_2020.matter_number = dim_matter_header_current.matter_number
 				AND revenue_2020.year_billed = '2020'
 	WHERE 
-		red_dw.dbo.dim_client.client_group_name = 'AXA XL'
-		AND red_dw.dbo.dim_matter_header_current.matter_number <> 'ML'
-		AND reporting_exclusions <> 1
+		--red_dw.dbo.dim_client.client_group_name = 'AXA XL'
+		--AND red_dw.dbo.dim_matter_header_current.matter_number <> 'ML'
+		--AND reporting_exclusions <> 1
+		  ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
+          AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
+          AND dim_matter_header_current.matter_number <> 'ML'
+          AND dim_matter_header_current.master_client_code = 'A1001'
+          AND dim_matter_header_current.reporting_exclusions = 0
+          AND dim_matter_header_current.date_opened_case_management >= '20170101'
 	ORDER BY dim_matter_header_current.date_opened_practice_management
 
 END
