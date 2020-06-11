@@ -32,6 +32,7 @@ AS
             dim_matter_header_current.client_code [client]
 			,dim_matter_header_current.matter_number [matter]
 			,dim_matter_header_current.client_code + '.' +  dim_matter_header_current.matter_number case_ref
+			, dim_matter_header_current.matter_description	AS [Matter Description]
 			,RTRIM(dim_detail_property.store_number) store_number
 			,RTRIM(dim_detail_property.store_name) store_name
 			,RTRIM(dim_detail_property.case_type_asw) [case_type]
@@ -82,6 +83,7 @@ AS
   
      GROUP BY       dim_matter_header_current.client_code 
 			,dim_matter_header_current.matter_number 
+			, dim_matter_header_current.matter_description
 			,RTRIM(dim_detail_property.store_number) 
 			,RTRIM(dim_detail_property.store_name) 
 			,RTRIM(dim_detail_property.case_type_asw) 
