@@ -51,6 +51,7 @@ AND is_active = 1
 --AND red_dw.dbo.dim_involvement_full.client_code = '154981H'
 AND red_dw.dbo.dim_client.client_type = 'Individual'
 AND red_dw.dbo.dim_matter_header_current.opt_out_of_auto_client_email IS NOT NULL
+AND ISNULL(dim_matter_header_current.reporting_exclusions,0) = 0
 
 	SET NOCOUNT ON;
 
