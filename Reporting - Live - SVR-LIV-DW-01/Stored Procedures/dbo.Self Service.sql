@@ -22,6 +22,7 @@ GO
 -- RH 20200526 Added financial year on various dates #59250 && #57252
 -- RH 20200604 Removed reporting exclusions from where clause and added as a column instead so revenue balances, #57252
 -- RH 20200604 Added cost handler revenue #55807
+-- JB 20200611 Added is_this_part_of_a_campaign #61388
 
 
 CREATE PROCEDURE  [dbo].[Self Service]
@@ -522,6 +523,8 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, [Pre-trial checklist]
 	, [Trial date]
 	, dim_detail_court.date_of_trial [date of trial not KD]
+
+	, dim_detail_core_details.is_this_part_of_a_campaign		AS [Is This Part of a Campaign?]
 	
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
