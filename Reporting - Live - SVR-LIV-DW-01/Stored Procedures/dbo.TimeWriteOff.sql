@@ -59,20 +59,21 @@ SELECT [dim_transaction_date_key]
       ,date_closed_case_management
 	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'None Chargeable Time'
 			WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
-			WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' END AS write_off_type
+			WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
+			WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
       --,[work_amt] [ytd_work_amt]
       --,[work_hrs]/60 [ytd_work_hrs]
 	  --,CASE WHEN current_fin_month='Current' THEN work_amt ELSE 0 END [mtd_work_amt]
 	  --,CASE WHEN current_fin_month='Current' THEN work_hrs/60 ELSE 0 END [mtd_work_hrs]
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_work_amt]
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn ELSE 0 END [mtd_work_hrs]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_work_amt]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type = 'NC' THEN fact_write_off.bill_hrs_wdn ELSE 0 END [ytd_work_hrs]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_work_amt]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_hrs_wdn ELSE 0 END [mtd_work_hrs]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_work_amt]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_hrs_wdn ELSE 0 END [ytd_work_hrs]
 	  
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn] ELSE 0 END [mtd_bill_amt_wdn]
-	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn] ELSE 0 END [mtd_bill_hrs_wdn]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
-	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type <> 'NC' THEN [bill_hrs_wdn] ELSE 0 END [ytd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_amt_wdn] ELSE 0 END [mtd_bill_amt_wdn]
+	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [mtd_bill_hrs_wdn]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
+	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [ytd_bill_hrs_wdn]
       --,[bill_amt_wdn] 
       --,[bill_amt_wup] 
       --,[bill_amt_woff] 
@@ -127,7 +128,7 @@ select (case when @Level IN ('Individual', 'Area Managed') then ListValue else n
 
 --AND fact_write_off_monthly.write_off_type <> 'N'
 --AND fact_write_off.write_off_type IN ('W','D')
-AND fact_write_off.write_off_type IN ('WA','NC','BA')
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
 AND CASE WHEN @Report='Total' THEN 1 
 		 WHEN @Report=  CASE WHEN LOWER(fee_arrangement)= 'annual retainer' OR LOWER(fee_arrangement)= 'contingent' OR LOWER(fee_arrangement)= 'internal / no charge' OR LOWER(fee_arrangement)= 'secondment' OR LOWER(fee_arrangement)= 'tbc/other'  THEN 'Other'
 			WHEN LOWER(fee_arrangement)='hourly rate' THEN 'Hourly Rate'
