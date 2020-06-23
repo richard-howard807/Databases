@@ -183,6 +183,22 @@ SELECT
 	, ISNULL(fact_bill_detail_summary.bill_total, 0)										AS [Total Billed]
 	, ISNULL(fact_finance_summary.wip, 0)																AS [WIP]
 	, ISNULL(fact_finance_summary.disbursement_balance, 0)												AS [Unbilled Disbursements]
+	, CASE
+		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
+			CASE 
+				WHEN (fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0) THEN 
+					'FF amount missing'
+				ELSE 
+					'FF amount complete'
+			END 
+		ELSE 
+			CASE 
+				WHEN (fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0) THEN 
+					'Defence costs reserve missing'
+				ELSE
+					'Defence costs reserve complete'
+			END 
+	   END																								AS [Missing FF or Defence Costs Reserve]
 	--, dim_detail_outcome.outcome_of_case																AS [Outcome]
 --select *
 FROM red_dw.dbo.dim_matter_header_current																							

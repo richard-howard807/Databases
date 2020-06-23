@@ -2,7 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE proc [dbo].[HealthcareDocumentSearch] @Client varchar(8), @Matter varchar(8) 
+
+CREATE PROC [dbo].[HealthcareDocumentSearch] @Client VARCHAR(8), @Matter VARCHAR(8) 
 AS
 
 --select 
@@ -31,18 +32,16 @@ LTRIM(RTRIM(docDesc)) COLLATE DATABASE_DEFAULT title,
 dbDocument.Created  creation_date,
 dbUser.usrFullName COLLATE DATABASE_DEFAULT author
 ,docFileName
-,CASE WHEN docdirID= 1 THEN '\\sbc.root\matterspheredocs\Mattersphere1\MS_PROD\Docs'
-WHEN docdirID= 2 THEN '\\sbc.root\matterspheredocs\Mattersphere1\MS_PROD\Precs'
-WHEN docdirID= 3 THEN '\\sbc.root\matterspheredocs\Mattersphere1\MS_PROD\SMS'
-WHEN docdirID= 4 THEN '\\sbc.root\matterspheredocs\Mattersphere2\MS_PROD\Docs'
-WHEN docdirID= 5 THEN '\\sbc.root\matterspheredocs\Mattersphere3\MS_PROD\Docs' END +'\'+ docFileName AS DocumentLink
+,dirPath +'\'+ docFileName AS DocumentLink
 ,CASE WHEN docIDOld IS NOT NULL THEN 'Imported from FED' ELSE 'Created In Mattersphere' END [System]
  FROM  ms_prod.config.dbDocument 
  LEFT JOIN ms_prod.dbo.dbUser  ON dbUser.usrID = dbDocument.Createdby
  LEFT JOIN ms_prod.config.dbFile ON dbFile.fileID = dbDocument.fileID
  LEFT JOIN ms_prod.config.dbClient ON dbClient.clID = dbFile.clID
+ LEFT OUTER JOIN ms_prod.dbo.dbDirectory
+  ON docdirID=dirID
  WHERE clNo COLLATE DATABASE_DEFAULT = @Client AND fileNo  COLLATE DATABASE_DEFAULT  = @Matter
 
- order by 
+ ORDER BY 
 creation_date
 GO

@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[CostCutter]
 AS
 BEGIN
@@ -15,11 +18,17 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 ,txtClaNum2 AS [ClaimNumber]
 ,txtCurenStatNot AS [Reporting Notes]
 ,usrFullName AS [WeightmansHandler]
-,dbFile.fileID
 ,CASE WHEN fileStatus ='LIVE' THEN 'Open' ELSE 'Closed' END AS FileStatus
 ,dbFile.Created AS [DateOpened]
 ,fileClosed AS [DateClosed]
 ,DATEDIFF(DAY,dbFile.Created,fileClosed) AS [DaysOpened]
+,dbFile.fileID
+,Defendant.Defendant
+,Defendant.Postcode
+,Longitude
+,Latitude 
+,CASE WHEN Defendant.contTypeCode='ORGANISATION' THEN 'Company' WHEN Defendant.contTypeCode='INDIVIDUAL' THEN 'Individual' ELSE 'Other' END AS [Company Or Individual]
+,AnnualYTD AS [RecoveredYTD]
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -46,6 +55,7 @@ SELECT MS_Prod.dbo.udCRLedgerSL.fileID
 ,ISNULL(SUM(CASE WHEN cboCatDesc='5' AND ISNULL(cboPayType,'') <>'PAY016' THEN curClient ELSE NULL END),0) AS [Payments]
 ,ISNULL(SUM(CASE WHEN cboCatDesc='6' THEN curClient ELSE NULL END),0) AS [Receipta awaiting clearance]
 ,ISNULL(SUM(CASE WHEN cboCatDesc='3' THEN curOffice ELSE NULL END),0) AS [Original Balance]
+,ISNULL(SUM(CASE WHEN cboCatDesc='5' AND YEAR(dtePosted)=YEAR(GETDATE()) THEN curClient ELSE NULL END),0) AS AnnualYTD
 FROM [MS_PROD].dbo.udCRLedgerSL
 INNER JOIN ms_prod.config.dbFile
  ON dbFile.fileID = udCRLedgerSL.fileID
@@ -61,6 +71,17 @@ WHERE assocType='INSUREDCLIENT'
 AND assocRef IS NOT NULL
 ) AS InsuredREf
  ON InsuredREf.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,contName AS Defendant,contTypeCode,addPostcode AS Postcode
+,ROW_NUMBER() OVER (PARTITION BY fileID ORDER BY assocID ASC) AS RowNumber
+FROM ms_prod.config.dbAssociates
+INNER JOIN ms_prod.config.dbContact
+ ON dbContact.contID = dbAssociates.contID
+LEFT OUTER JOIN ms_prod.dbo.dbAddress
+ ON contDefaultAddress=addID
+WHERE assocType='DEFENDANT') AS Defendant
+ ON Defendant.fileID = dbFile.fileID
+LEFT OUTER JOIN red_dw.dbo.Doogal
+ ON Doogal.Postcode = Defendant.Postcode COLLATE DATABASE_DEFAULT
 WHERE clNo='W22511' 
 AND fileType='2038'
 

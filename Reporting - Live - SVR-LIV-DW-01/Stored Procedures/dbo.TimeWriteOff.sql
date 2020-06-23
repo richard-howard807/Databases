@@ -57,7 +57,7 @@ SELECT [dim_transaction_date_key]
 	  ,fee_arrangement AS [original_fee_arrangement]
       ,date_opened_case_management
       ,date_closed_case_management
-	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'None Chargeable Time'
+	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Billable Time Not Billed'
 			WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
 			WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
 			WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
@@ -74,6 +74,14 @@ SELECT [dim_transaction_date_key]
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [mtd_bill_hrs_wdn]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [ytd_bill_hrs_wdn]
+
+
+	  ,CASE WHEN fin_period=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END [mtd_value]
+	  ,CASE WHEN fin_period=@Month THEN ISNULL(fact_write_off.bill_hrs_wdn,0) ELSE 0  END [mtd_hrs]
+	  ,CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END [ytd_value]
+	  ,CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_hrs_wdn,0) ELSE 0 END [ytd_hrs]
+	  
+
       --,[bill_amt_wdn] 
       --,[bill_amt_wup] 
       --,[bill_amt_woff] 

@@ -8,6 +8,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20/11/2017
@@ -93,22 +96,60 @@ AS
 	LEFT JOIN MS_Prod.dbo.dbUser dbUser ON dbUser.usrID = udExtClient.cboPartner
 	LEFT JOIN MS_Prod.dbo.udClientGroup udClientGroup ON udClientGroup.code = udExtClient.cboClientGroup
 	LEFT JOIN (SELECT DISTINCT client_code,master_client_code FROM red_dw.dbo.dim_matter_header_current ) matter_header ON dbClient.clNo = matter_header.master_client_code COLLATE DATABASE_DEFAULT
+	--WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
+	--AND cboGenClientStatus NOT IN ('0004','0005')
+	--AND dbClient.clID <> '69873' -- a collegiate management limited file that should be excluded  (has a markel client group)
 	WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
-	AND cboGenClientStatus NOT IN ('0004','0005')
-	AND dbClient.clID <> '69873' -- a collegiate management limited file that should be excluded  (has a markel client group)
+	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) <>'AXA Insurance UK Plc'
+	AND (
+
+		CASE WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
+			  WHEN [cboGenClientStatus] = '0002' THEN 'Star'
+			  WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
+			  WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
+			  WHEN [cboGenClientStatus] = '0004' THEN 'Generator'
 	
+		WHEN [cboGenClientStatus] IS NULL THEN ''
+		 END + ' : ' + ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) 
+IN (
+N'Patron : Zurich',N'Patron : Zurich',N'Patron : NHS Resolution',N'Patron : Ageas',
+N'Star : AXA XL',N'Pipeline : AXA Insurance UK Plc',N'Pipeline : AXA Insurance UK Plc',
+N'Patron : AIG',N'Star : Royal Mail',N'Star : Markel',N'Star : Markel',N'Pipeline : BARRATT PLC',
+N'Star : Surrey Police',N'Star : Sussex Police',N'Star : Sabre',N'Patron : pwc',N'Pipeline : Bibby Group',
+N'Star : Clarion Housing Group Limited',
+N'Star : Metropolitan Police',
+N'Generator : Sovini Group',
+N'Generator : Business Energy Solutions Ltd' ,                                                
+N'Generator : BES Utilities Holding Ltd',                                                    
+N'Generator : BES Metering Services Limited'  
+
+)
+
+OR (dbClient.clNo = 'W21402') OR ( CASE WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
+			  WHEN [cboGenClientStatus] = '0002' THEN 'Star'
+			  WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
+			  WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
+			  		WHEN [cboGenClientStatus] = '0004' THEN 'Generator'
+	
+	WHEN [cboGenClientStatus] IS NULL THEN ''
+		 END + ' : ' + ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited'))
+		 
+		 ------------------------------------------------------------------------------------------------------------------------------
+
+
 	SELECT 
 			
 		COALESCE(generator.client_group_name,dim_client.client_name COLLATE DATABASE_DEFAULT) client_group_name
 		,dim_client.sector
 		,dim_client.segment
-  		,CASE	WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
-				WHEN [cboGenClientStatus] = '0002' THEN 'Star'
-				WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
-				WHEN [cboGenClientStatus] = '0004' THEN 'Client'
-				WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
+  		--,CASE	WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
+				--WHEN [cboGenClientStatus] = '0002' THEN 'Star'
+				--WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
+				--WHEN [cboGenClientStatus] = '0004' THEN 'Client'
+				--WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
 
-				END [generator_category]
+				--END [generator_category]
+		,'Patron'  AS [generator_category] -- Sarah Gerrad asked for them all to show as Parton
 		,[cboGenClientStatus] [category_code]
 		,SUM(CASE WHEN fin_year = @PrevFinancialYearMinus1 THEN [fact_bill_activity].[bill_amount] ELSE 0 END) [fin_year_minus_2]
 		,SUM(CASE WHEN fin_year = @PreviousFinancialYear THEN [fact_bill_activity].[bill_amount] ELSE 0 END) [fin_year_minus_1]

@@ -143,7 +143,7 @@ SELECT
 		ELSE
 			'N/A'
 	  END																								AS [Fixed Fee RAG Status]
-	, fact_finance_summary.defence_costs_reserve										AS [Defence Costs Reserve]
+	, fact_finance_summary.defence_costs_reserve														AS [Defence Costs Reserve]
 	, ISNULL(fact_finance_summary.commercial_costs_estimate, 0)											AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)													AS [Total of Total Billed + WIP + Unbilled Disbursements]
 	, CASE
@@ -169,12 +169,28 @@ SELECT
 		ELSE	
 			'N/A'
 	  END																								AS [Defence Costs Reserve RAG Status]
-	, fact_finance_summary.defence_costs_billed											AS [Revenue Billed (net of VAT)]
+	, fact_finance_summary.defence_costs_billed															AS [Revenue Billed (net of VAT)]
 	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0)									AS [Disbursements Billed (excl VAT)]
 	, ISNULL(fact_bill_detail_summary.vat_amount, 0)													AS [VAT]
 	, ISNULL(fact_bill_detail_summary.bill_total, 0)													AS [Total Billed]
 	, ISNULL(fact_finance_summary.wip, 0)																AS [WIP]
 	, ISNULL(fact_finance_summary.disbursement_balance, 0)												AS [Unbilled Disbursements]
+	, CASE
+		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
+			CASE 
+				WHEN (fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0) THEN 
+					'FF amount missing'
+				ELSE 
+					'FF amount complete'
+			END 
+		ELSE 
+			CASE 
+				WHEN (fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0) THEN 
+					'Defence costs reserve missing'
+				ELSE
+					'Defence costs reserve complete'
+			END 
+	   END																								AS [Missing FF or Defence Costs Reserve]
 	--, outcome.outcome_of_case																AS [Outcome]
 --select *
 FROM red_dw.dbo.dim_matter_header_current																							

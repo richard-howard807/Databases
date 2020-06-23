@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[OutstandingPreClients] -- EXEC [dbo].[OutstandingPreClients]'Corp-Comm'	,'Wills, Trusts and Estates '
 (
 @Department AS NVARCHAR(MAX)
@@ -62,13 +64,15 @@ WHERE cboBilling ='Y'
 ON udAMLProcess.client_code = dim_client.client_code
 LEFT OUTER JOIN 
 (
-SELECT dim_client.client_code,CASE WHEN COUNT(dim_client.client_code) -SUM(CASE WHEN date_closed_practice_management IS NOT NULL THEN 1 ELSE 0 END)>=1 THEN 'Include' ELSE 'Exclude' END    AS HideFlag
+SELECT dim_client.client_code,CASE WHEN COUNT(dim_client.client_code) -SUM(CASE WHEN date_closed_case_management IS NOT NULL OR fileStatus='PENDCLOSE' THEN 1 ELSE 0 END)>=1 THEN 'Include' ELSE 'Exclude' END    AS HideFlag -- date changed to closed in MS not Closed in 3E
 --SELECT * 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_client
  ON dim_matter_header_current.client_code=dim_client.client_code
 LEFT OUTER JOIN  MS_Prod.dbo.udAMLProcess
  ON fileID=ms_fileid
+LEFT OUTER JOIN ms_prod.config.dbFile
+ ON dbFile.fileID=ms_fileid
 WHERE (client_status='PENDING' OR cboBilling='Y')
 AND matter_number NOT IN ('ML','00000000')
 --AND dim_matter_header_current.client_code='00432030'

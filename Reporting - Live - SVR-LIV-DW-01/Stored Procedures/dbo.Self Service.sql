@@ -23,6 +23,7 @@ GO
 -- RH 20200604 Removed reporting exclusions from where clause and added as a column instead so revenue balances, #57252
 -- RH 20200604 Added cost handler revenue #55807
 -- JB 20200611 Added is_this_part_of_a_campaign #61388
+-- ES 20200622 Amended disbursements billed query as code was incorrect #61966
 
 
 CREATE PROCEDURE  [dbo].[Self Service]
@@ -126,6 +127,34 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			SUM(Billed_hours)
 			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
 			) AS PVIOT
+
+--Added disbursements #61966
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Disbursements
+		FROM (
+	
+						SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
+			FROM red_dw.dbo.fact_bill_detail
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			AND charge_type='disbursements'
+	GROUP BY client_code,
+             matter_number,
+             bill_fin_year
+			) AS disbursements
+		PIVOT	
+			(
+			SUM(Disbursements)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+
 
 SELECT DISTINCT
     dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
@@ -484,12 +513,12 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
 	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
 
-	,[Disbursements Billed 2015/2016]
-	,[Disbursements Billed 2016/2017]
-	,[Disbursements Billed 2017/2018]
-	,[Disbursements Billed 2018/2019]
-	,[Disbursements Billed 2019/2020]
-	,[Disbursements Billed 2020/2021]
+	, Disbursements.[2016] [Disbursements Billed 2015/2016]
+	, Disbursements.[2017] [Disbursements Billed 2016/2017]
+	, Disbursements.[2018] [Disbursements Billed 2017/2018]
+	, Disbursements.[2019] [Disbursements Billed 2018/2019]
+	, Disbursements.[2020] [Disbursements Billed 2019/2020]
+	, Disbursements.[2021] [Disbursements Billed 2020/2021]
 
 	,dim_detail_claim.[stw_work_type] [STW Work Type]
 	,fact_finance_summary.minutes_recorded_cost_handler
@@ -897,112 +926,112 @@ FROM red_dw.dbo.fact_dimension_main
             ON dim_matter_header_current.ms_fileid = MSvatAddress.fileID
                AND MSvatAddress.XOrder = 1
  ---- below added per request 8366              
- LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2015/2016]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2015/2016]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2015/2016]
+-- LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2015/2016]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2015/2016]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2015/2016]
 
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	 INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2015-05-01' AND '2016-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2015
- ON dim_matter_header_current.client_code=Revenue2015.client_code
-AND dim_matter_header_current.matter_number=Revenue2015.matter_number
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	 INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2015-05-01' AND '2016-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2015
+-- ON dim_matter_header_current.client_code=Revenue2015.client_code
+--AND dim_matter_header_current.matter_number=Revenue2015.matter_number
 
-LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code, fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
-	-- select bill_fin_year
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2016
- ON dim_matter_header_current.client_code=Revenue2016.client_code
-AND dim_matter_header_current.matter_number=Revenue2016.matter_number
-
-
-LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2017
- ON dim_matter_header_current.client_code=Revenue2017.client_code
-AND dim_matter_header_current.matter_number=Revenue2017.matter_number
+--LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code, fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
+--	-- select bill_fin_year
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2016
+-- ON dim_matter_header_current.client_code=Revenue2016.client_code
+--AND dim_matter_header_current.matter_number=Revenue2016.matter_number
 
 
-LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2018
- ON dim_matter_header_current.client_code=Revenue2018.client_code
-AND dim_matter_header_current.matter_number=Revenue2018.matter_number
+--LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2017
+-- ON dim_matter_header_current.client_code=Revenue2017.client_code
+--AND dim_matter_header_current.matter_number=Revenue2017.matter_number
 
 
-LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2019
- ON dim_matter_header_current.client_code=Revenue2019.client_code
-AND dim_matter_header_current.matter_number=Revenue2019.matter_number
+--LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2018
+-- ON dim_matter_header_current.client_code=Revenue2018.client_code
+--AND dim_matter_header_current.matter_number=Revenue2018.matter_number
 
-LEFT OUTER JOIN 
-(
-	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
-	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
-	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
-	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
-	FROM red_dw.dbo.fact_bill_detail
-	INNER JOIN red_dw.dbo.dim_bill_date
-	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
-	 WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
-	AND charge_type='time'
-	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
-) AS Revenue2020
- ON dim_matter_header_current.client_code=Revenue2020.client_code
-AND dim_matter_header_current.matter_number=Revenue2020.matter_number
+
+--LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2019
+-- ON dim_matter_header_current.client_code=Revenue2019.client_code
+--AND dim_matter_header_current.matter_number=Revenue2019.matter_number
+
+--LEFT OUTER JOIN 
+--(
+--	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
+--	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
+--	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
+--	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
+--	FROM red_dw.dbo.fact_bill_detail
+--	INNER JOIN red_dw.dbo.dim_bill_date
+--	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+--	 WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
+--	AND charge_type='time'
+--	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
+--) AS Revenue2020
+-- ON dim_matter_header_current.client_code=Revenue2020.client_code
+--AND dim_matter_header_current.matter_number=Revenue2020.matter_number
 
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
 LEFT OUTER JOIN #Revenue Revenue
@@ -1016,6 +1045,10 @@ LEFT OUTER	JOIN #Billed_hours Billed_hours ON dim_matter_header_current.client_c
 -- Added Chargeable hours #45295
 LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current.client_code=Chargeable_hours.client_code
 			AND dim_matter_header_current.matter_number=Chargeable_hours.matter_number 
+
+-- Added Disbursements #61966
+LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.client_code=Disbursements.client_code
+			AND dim_matter_header_current.matter_number=Disbursements.matter_number 
 
 
 	LEFT JOIN

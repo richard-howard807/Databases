@@ -55,7 +55,7 @@ INNER JOIN red_dw.dbo.dim_detail_client
 LEFT OUTER JOIN 
 (
 SELECT fact_bill_billed_time_activity.dim_matter_header_curr_key
-,SUM(minutes_recorded) AS [Total Hours Billed]
+,SUM(minutes_recorded)/60 AS [Total Hours Billed]
 ,SUM(time_charge_value) AS [Total Amount Billed]
 ,SUM(CASE WHEN fee_earner_code=fed_code THEN minutes_recorded ELSE 0 END) /60 AS [Lead Hours Billed]
 ,SUM(CASE WHEN fee_earner_code=fed_code THEN time_charge_value ELSE 0 END)  AS [Lead Amount Billed]

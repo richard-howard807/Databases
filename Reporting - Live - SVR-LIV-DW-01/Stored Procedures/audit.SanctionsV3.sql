@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [audit].[SanctionsV3] 
 
 
@@ -168,6 +169,7 @@ LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,
 AND  (RTRIM(client) + '.' + RTRIM(matter)) NOT IN (
 '00337897.00002914'
 ,'00610426.00000358'
+,'T3003.00000493'
 )
 
  

@@ -13,71 +13,51 @@ GO
 -- =============================================
 -- ES 2020-03-12 42547 Amended the logic to look at the FIC Process task rather than
 --						filter based on the FIC score which is based on case details
--- ES 2020-06-09 58589 Removed fixed fee from total calc
---==============================================
-CREATE  PROCEDURE [fraud].[fic_results_report_test]
 
-(
-    @FedCode AS VARCHAR(MAX),
-    --@Month AS VARCHAR(100)
-    @Level AS VARCHAR(100)
-	,@Status AS VARCHAR(MAX)
-)
+--==============================================
+
+create PROCEDURE [fraud].[fic_results_report_testBACKUP]
+
+	@Department varchar(MAX)
+	, @Team varchar(MAX)
+	, @Handler varchar(MAX)
+	, @ClientGroupName varchar(MAX)
 	
 AS
 BEGIN
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
-
-
-
-
+	
+	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	IF OBJECT_ID('tempdb..#Handler') IS NOT NULL   DROP TABLE #Handler
+	IF OBJECT_ID('tempdb..#ClientGroupName') IS NOT NULL   DROP TABLE #ClientGroupName
 	IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL   DROP TABLE #FICProcess
-	DROP TABLE  IF EXISTS #FedCodeList
-    	CREATE TABLE #FedCodeList  (
-ListValue  NVARCHAR(MAX)
-)
-
-IF OBJECT_ID('tempdb..#Status') IS NOT NULL   DROP TABLE #Status
-
-IF @level  <> 'Individual'
-	BEGIN
-	PRINT ('not Individual')
-DECLARE @sql NVARCHAR(MAX)
-
-SET @sql = '
-use red_dw;
-DECLARE @nDate AS DATE = GETDATE()
-
-SELECT DISTINCT
-dim_fed_hierarchy_history_key
-FROM red_Dw.dbo.dim_fed_hierarchy_history 
-WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
-
-INSERT into #FedCodeList 
-exec sp_executesql @sql
-	end
-	
-	
-	IF  @level  = 'Individual'
-    BEGIN
-	PRINT ('Individual')
-    INSERT into #FedCodeList 
-	SELECT ListValue
-   -- INTO #FedCodeList
-    FROM dbo.udt_TallySplit(',', @FedCode)
-	
-	END
-
-	
-
-
 
 	--SELECT ListValue  INTO #Department FROM 	dbo.udt_TallySplit(',', @Department)
 	--SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit(',', @Team)
 	--SELECT ListValue  INTO #Handler FROM 	dbo.udt_TallySplit(',', @Handler)
 	--SELECT ListValue  INTO #ClientGroupName FROM 	dbo.udt_TallySplit(',', @ClientGroupName)
 
+	CREATE TABLE #Department 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Department
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Department) 
+
+	CREATE TABLE #Team 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Team
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Team) 
+
+	CREATE TABLE #Handler 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #Handler
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Handler) 
+
+	CREATE TABLE #ClientGroupName 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #ClientGroupName
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @ClientGroupName) 
 
 	SELECT fileID, tskDesc, tskDue, tskCompleted 
 	INTO #FICProcess
@@ -86,9 +66,6 @@ exec sp_executesql @sql
 	OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
 	AND tskActive=1
 
-	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit(',', @Status)
-
-	
 	 SELECT 
 		 [Client Code] = dim_matter_header_current.client_code
 		 ,[Matter Number]=dim_matter_header_current.matter_number
@@ -102,7 +79,6 @@ exec sp_executesql @sql
 		 ,referral_reason AS [Referral Reason]
 		 ,CASE WHEN date_closed_case_management IS NULL THEN DATEDIFF(DAY, date_opened_case_management,GETDATE())
 					ELSE DATEDIFF(DAY,date_opened_case_management, date_closed_case_management) END AS [Days Opened]
-					,dim_fed_hierarchy_history.name [FeeEarnerName]
 
 		 ,fic =	 total_points_calc 
 
@@ -122,7 +98,7 @@ exec sp_executesql @sql
 		 ,FICProcess.tskDesc
 		 ,ms_fileid
 		 ,work_type_group
-		 ,CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END AS [Client Group Name]
+		 ,ISNULL(client_group_name, client_name) AS [Client Group Name]
 		 		,dim_detail_core_details.[fixed_fee] AS [Fixed Fee]
 		,ISNULL(fact_finance_summary.[fixed_fee_amount], 0) AS [Fixed Fee Amount]
 		,RTRIM(ISNULL(dim_detail_finance.[output_wip_fee_arrangement], 0)) AS [Fee Arrangement]
@@ -131,35 +107,11 @@ exec sp_executesql @sql
 	  
 		,CASE WHEN FICProcess.tskDue IS NOT NULL AND FICProcess.tskCompleted IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
 		,CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
-		,CASE WHEN  dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END AS [countless15]
-		,CASE WHEN  dim_detail_fraud.total_points_calc >= 15 THEN 1 ELSE 0 END AS [countmore15]
+		,CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END AS [countless15]
+		,CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc > 15 THEN 1 ELSE 0 END AS [countmore15]
 	
 		, CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
 		END AS [countfixeddefence]
-		, CASE WHEN FICProcess.tskCompleted IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscorenotcompleted]
-----------------------------
- 	,(CASE WHEN FICProcess.tskDue IS NULL THEN 1 ELSE 0 END +
-	CASE WHEN FICProcess.tskDue IS NOT NULL AND FICProcess.tskCompleted IS NULL THEN 1 ELSE 0 END + 
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END +
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END +
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc > 15 THEN 1 ELSE 0 END) -
-		CASE WHEN FICProcess.tskCompleted IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END
-		--CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
-		--END 
-		AS TOTAL 
-	,  CASE WHEN 
-		--dim_matter_header_current.date_closed_case_management IS NULL
-	   dim_matter_header_current.reporting_exclusions=0
-		AND dim_matter_header_current.matter_number<>'ML'
-		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
-		--AND dim_detail_outcome.date_claim_concluded IS NULL
-		AND LOWER(referral_reason) LIKE '%dispute%'
-		AND suspicion_of_fraud ='No'
-		AND work_type_group IN ('EL','PL All','Motor','Disease') 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR total_points_calc IS NOT null)
-		THEN 1 ELSE 0 END AS [Number of Matters]
-		, CASE WHEN dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
-		, CASE WHEN date_claim_concluded IS NULL THEN 'Open' else 'Closed' END AS [Status]
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -181,60 +133,57 @@ exec sp_executesql @sql
 	--			AND tskActive=1) AS FICProcess ON FICProcess.fileID=ms_fileid
 
 
-	--INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
-	--INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
-	--INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
-	--INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END 
+	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
+	INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
+	INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
+	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = ISNULL(client_group_name, client_name) 
 	
 	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 
-	INNER JOIN #Status ON #Status.ListValue = CASE WHEN date_claim_concluded IS NULL THEN 'Open' ELSE 'Closed' END
-
 	WHERE 
-	--dim_matter_header_current.date_closed_case_management IS NULL
-		 dim_matter_header_current.reporting_exclusions=0
+		--dim_matter_header_current.date_closed_case_management IS NULL
+	 dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
 		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
-	--AND dim_detail_outcome.date_claim_concluded IS NULL
+		--AND dim_detail_outcome.date_claim_concluded IS NULL
 
 		AND LOWER(referral_reason) LIKE '%dispute%'
-	AND suspicion_of_fraud ='No'
+		--AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR total_points_calc IS NOT null)
+		--AND fic_fraud_transfer='Yes'
+		-- fic score
+		--AND CASE WHEN 
+		--	ISNULL(dim_detail_fraud.el_points,0)  
+		--	+ ISNULL(dim_detail_fraud.pl_points,0)
+		--	+ ISNULL(dim_detail_fraud.motor_freight_liveried_points,0)
+		--	+ ISNULL(dim_detail_fraud.motor_personal_line_insurance_points,0)
+		--	+ ISNULL(dim_detail_fraud.disease_points,0)
+		--	 > 14 
+	 -- 	 OR ISNULL(dim_detail_fraud.rmg_el_points,0) > 5 
+		-- OR ISNULL(dim_detail_fraud.rmg_pl_points,0) > 5
+		-- THEN 1 ELSE 0 END =1
+		
+		--test examples
+		 --AND fact_dimension_main.client_code='Z1001'
+		 --AND fact_dimension_main.matter_number='00078456'
+		 
+		 --AND fact_dimension_main.client_code='N12105'
+		 --AND fact_dimension_main.matter_number='00000627'
 
- AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
-              (
-                  SELECT (CASE
-                              WHEN @Level = 'Firm' THEN
-                                  dim_fed_hierarchy_history_key
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM red_dw.dbo.dim_fed_hierarchy_history
-                  UNION
-                  SELECT  (CASE
-                              WHEN @Level IN ( 'Individual' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-                  UNION
-                  SELECT (CASE
-                              WHEN @Level IN ( 'Area Managed' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-              )
+		 --AND ms_fileid='5070040'
 
-			  
-END;
+		 --aborted process logic below
+		--AND CASE WHEN (dim_detail_fraud.el_points > 15 AND dim_detail_fraud.fic_el  <> '26.00')
+		--		OR (dim_detail_fraud.pl_points > 15 AND dim_detail_fraud.fic_pl  <> '22.00')
+		--		OR (dim_detail_fraud.motor_self_drive_points >15 AND dim_detail_fraud.fic_selfdrive <> '13.00')
+		--		OR (dim_detail_fraud.motor_freight_liveried_points > 15 AND dim_detail_fraud.fic_freight <> '13.00')
+		--		OR (dim_detail_fraud.motor_personal_line_insurance_points >15 AND dim_detail_fraud.fic_pli <> '13.00')
+		--		OR (dim_detail_fraud.disease_points  > 5 AND dim_detail_fraud.fic_disease <> '34.00')
+		--		OR (dim_detail_fraud.rmg_el_points > 5 AND dim_detail_fraud.fic_rmg_el  <> '63.00')
+		--		OR (dim_detail_fraud.rmg_pl_points > 15 AND dim_detail_fraud.fic_rmg_pl <> '63.00') THEN 1 ELSE 0 END = 1
+
+END
 
 
 

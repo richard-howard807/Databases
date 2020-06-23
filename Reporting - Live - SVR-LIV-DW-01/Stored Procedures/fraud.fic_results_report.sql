@@ -98,7 +98,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		 ,FICProcess.tskDesc
 		 ,ms_fileid
 		 ,work_type_group
-		 ,ISNULL(client_group_name, client_name) AS [Client Group Name]
+		 ,CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END AS [Client Group Name]
+		 ,1 AS [Number of Matters]
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -121,7 +122,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
 	INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
 	INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
-	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = ISNULL(client_group_name, client_name) 
+	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue =CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END
 	
 	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 

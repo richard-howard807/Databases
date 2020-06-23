@@ -19,7 +19,7 @@ CREATE PROCEDURE [dbo].[ClaimsSLACompliance]
 	,@StartDate AS DATE
 	,@EndDate AS DATE
 	,@ClientGroup AS VARCHAR(MAX) 
-	,@Status AS VARCHAR(10) 
+	,@Status AS VARCHAR(MAX) 
 	,@PresentPosition AS VARCHAR(MAX) 
 	
 )
@@ -72,7 +72,7 @@ SELECT client_name AS [Client Name]
 	, date_opened_case_management AS [Date Opened]
 	, date_closed_case_management AS [Date Closed]
 	, date_instructions_received AS [Date Instructions Received]
-	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) AS [Days to File Opened from Date Instructions Received]
+	, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, date_initial_report_sent AS [Date Initial Report Sent]
 	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
 	, receipt_of_instructions AS [Date Receipt of File Papers]
@@ -86,9 +86,40 @@ SELECT client_name AS [Client Name]
 	, 1 AS [Number of Files]
 	,days.days_to_first_report_lifecycle
 	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
-	 ,FICProcess.tskDue
+	,FICProcess.tskDue
 	,FICProcess.tskCompleted
-		,FICProcess.tskDesc
+	,FICProcess.tskDesc
+	--Client SLA's
+	, [File Opening SLA (days)]
+	, [Initial Report SLA (days)]
+	, [Update Report SLA (days)]
+	, [Update Report SLA]
+	, CASE WHEN date_instructions_received IS NULL THEN 'Amber'
+			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<0 THEN 'Amber'
+			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<=[File Opening SLA (days)] THEN 'LimeGreen'
+			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)>[File Opening SLA (days)] THEN 'Red'
+			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<=2 THEN 'LimeGreen'
+			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)>2 THEN 'Red'
+			ELSE 'Transparent' END [File Opening RAG]
+	, CASE WHEN date_initial_report_sent IS NULL THEN 'Amber'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<0 THEN 'Orange'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<=[Initial Report SLA (days)] THEN 'LimeGreen'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))>[Initial Report SLA (days)] THEN 'Red'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<=10 THEN 'LimeGreen'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))>10 THEN 'Red'
+			ELSE 'Transparent' END [Initial Report RAG]
+	, CASE WHEN days.days_to_first_report_lifecycle IS NULL THEN 'Amber'
+			WHEN (days.days_to_first_report_lifecycle)<0 THEN 'Orange'
+			WHEN (days.days_to_first_report_lifecycle)<=[Initial Report SLA (days)] THEN 'LimeGreen'
+			WHEN (days.days_to_first_report_lifecycle)>[Initial Report SLA (days)] THEN 'Red'
+			WHEN (days.days_to_first_report_lifecycle)<=10 THEN 'LimeGreen'
+			WHEN (days.days_to_first_report_lifecycle)>10 THEN 'Red'
+			ELSE 'Transparent' END [NEW Initial Report RAG]
+	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN 'Amber'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<0 THEN 'Orange'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=[Update Report SLA (days)] THEN 'LimeGreen'
+			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
+			ELSE 'Transparent' END [Update Report RAG]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -107,6 +138,9 @@ INNER JOIN #Status AS [Status] ON RTRIM([Status].ListValue)  = (CASE WHEN dim_ma
 
 LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 --INNER JOIN #Status ON #Status.ListValue = CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END
+
+LEFT OUTER JOIN Reporting.dbo.ClientSLAs ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
+
 WHERE reporting_exclusions=0
 AND hierarchylevel2hist='Legal Ops - Claims'
 AND (date_closed_case_management IS NULL 
