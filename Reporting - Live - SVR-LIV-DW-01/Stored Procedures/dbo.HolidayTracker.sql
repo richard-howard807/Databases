@@ -136,7 +136,8 @@ LEFT OUTER JOIN (SELECT employeeid, attendancekey, category, SUM(durationdays) d
 				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
 											FROM red_dw.dbo.dim_date
 											WHERE current_fin_year='Current')
-						AND durationdays<>0
+											AND durationdays<>0
+											AND startdate<=GETDATE()
 						GROUP BY employeeid, attendancekey,
                                  category) AS Absence ON Absence.employeeid = dim_employee.employeeid 
 

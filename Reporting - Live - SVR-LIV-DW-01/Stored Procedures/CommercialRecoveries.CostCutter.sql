@@ -6,6 +6,10 @@ GO
 
 
 
+
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[CostCutter]
 AS
 BEGIN
@@ -29,11 +33,30 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 ,Latitude 
 ,CASE WHEN Defendant.contTypeCode='ORGANISATION' THEN 'Company' WHEN Defendant.contTypeCode='INDIVIDUAL' THEN 'Individual' ELSE 'Other' END AS [Company Or Individual]
 ,AnnualYTD AS [RecoveredYTD]
+,CASE WHEN CostcutterStatus='Court Proceedings' THEN 'Court Proceedings'
+WHEN CostcutterStatus='Insolvency' THEN CostcutterStatus + ' - ' + InsolvancyStatus	
+WHEN CostcutterStatus='Insolvency Proceedings' THEN 'Insolvency Proceedings'
+WHEN CostcutterStatus='Post Judgment Enforcement' THEN CostcutterStatus + ' - ' + CostcutterStatus.EnforcementStatus	
+WHEN CostcutterStatus='Pre Proceedings' THEN CostcutterStatus + ' - ' + CostcutterStatus.PreStatus
+END AS CostcutterStatus
+,CASE WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyType='Personal Insolvency'  THEN CostcutterStatus.InsolvancyType + '-' + CostcutterStatus.Personal 
+WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyType='Corporate and Personal Insolvency'  THEN CostcutterStatus.InsolvancyType + '-' + CostcutterStatus.Corporate
+END AS [Insolvency proceedings]
+,CASE WHEN CostcutterStatus='Court Proceedings' THEN CostcutterStatus.CourtStatus ELSE NULL END AS [Court proceedings]
+,ActionReq AS ActionRequired
+,HearingDate
+,defence_costs_billed AS [Revenue]
+,CAST(master_matter_number AS INT) AS master_matter_number
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
 INNER JOIN [MS_PROD].dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dbFile.fileID=ms_fileid
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.client_code = dim_matter_header_current.client_code
+ AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN MS_Prod.dbo.dbUser
  ON filePrincipleID=usrID
 LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
@@ -80,8 +103,61 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
  ON contDefaultAddress=addID
 WHERE assocType='DEFENDANT') AS Defendant
  ON Defendant.fileID = dbFile.fileID
+ AND Defendant.RowNumber=1
 LEFT OUTER JOIN red_dw.dbo.Doogal
  ON Doogal.Postcode = Defendant.Postcode COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT fileID
+,CCStatus.cdDesc AS CostcutterStatus
+,Enforce.cdDesc AS [EnforcementStatus]
+,pre.cdDesc AS [PreStatus]
+,Insolve.cdDesc AS InsolvancyStatus
+,Personal.cdDesc AS Personal
+,Corp.cdDesc AS Corporate
+,Court.cdDesc AS CourtStatus
+,InsolveType.cdDesc AS InsolvancyType
+,ActionReq.cdDesc AS ActionReq
+
+FROM ms_prod.dbo.udCRCostcutterDetails
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus
+ ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Enforce
+ ON cboEnforcStatus=Enforce.cdCode AND Enforce.cdType='ENFORCEMENTSTS'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Pre
+ ON cboPreProStatus=Pre.cdCode AND Pre.cdType='PREPROCEEDSTATS'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Insolve
+ ON cboInsolvStatus=Insolve.cdCode AND Insolve.cdType='INSOLVENCYSTS'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Personal
+ ON cboPersnInsoSts=Personal.cdCode AND Personal.cdType='PERSINSOLSTATUS'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Corp
+ ON cboCorpInsoSts=Corp.cdCode AND Corp.cdType='CORPINSOLSTATUS'
+ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Court
+ ON cboCrtProStatus=Court.cdCode AND Court.cdType='COURTPROCEEDSTS'
+ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS InsolveType
+ ON cboInsolvType=InsolveType.cdCode AND InsolveType.cdType='INSOLVENCYTYPE'
+  LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS ActionReq
+ ON cboactreqby=ActionReq.cdCode AND ActionReq.cdType='CCACTREQBY'
+
+ 
+) AS CostcutterStatus
+ ON CostcutterStatus.fileID = dbFile.fileID
+LEFT OUTER JOIN 
+(
+SELECT dbTasks.fileID,MIN(tskDue)  AS HearingDate 
+FROM ms_prod.dbo.dbTasks
+INNER JOIN ms_prod.config.dbFile
+ ON dbFile.fileID = dbTasks.fileID
+INNER JOIN MS_Prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+WHERE tskDesc  IN (--'Court hearing due - today',
+'Hearing - today')
+AND clNo='W22511' 
+AND fileType='2038'
+AND tskActive=1
+GROUP BY dbTasks.fileID
+) AS HearingDate
+ ON HearingDate.fileID = CostcutterStatus.fileID
 WHERE clNo='W22511' 
 AND fileType='2038'
 

@@ -190,34 +190,36 @@ AND PanelAverages.Banding=NHSRData.Banding
 
 
 
-SELECT a.*,b.[DefenceCostsTarget],b.[ShelfLifeTarget],b.[DamagesTarget]
+SELECT a.*,b.[Shelf Life Target] AS [ShelfLifeTarget], b.[Damages Target] AS [DamagesTarget], b.[Defence Costs Target] AS [DefenceCostsTarget], b.[Consolidated Costs Target] AS [ConsolidatedCostsTarget]
 FROM #SummaryData AS a
 
-LEFT OUTER JOIN (SELECT [Master Client Code]
-						,[Master Matter Number]
-						,Reporting_Group
-						,Reporting_Line
-						--,CASE WHEN Reporting_Line='FinalBillSent' AND Reporting_Costs IS NULL THEN [Panel Defence Costs] 
-						--	WHEN Reporting_Line='FinalBillSent' THEN Reporting_Costs*0.9 ELSE NULL END AS [DefenceCostsTarget]
-						--,CASE WHEN Reporting_Line='Concluded' AND Reporting_Costs IS NULL THEN [Panel Damages Paid] 
-						--	WHEN Reporting_Line='Concluded' THEN Reporting_Costs*0.9 ELSE NULL END AS [DamagesTarget]
-						--,CASE WHEN Reporting_Line='Concluded' AND Reporting_Shelf_Life IS NULL THEN [Panel Shelf life (yrs)] 
-						--	WHEN Reporting_Line='Concluded' THEN Reporting_Shelf_Life*0.9 ELSE NULL END AS [ShelfLifeTarget]
-						,CASE WHEN Reporting_Line='FinalBillSent' AND Reporting_Costs IS NULL THEN NULL
-							WHEN Reporting_Line='FinalBillSent' THEN Reporting_Costs*0.9 ELSE NULL END AS [DefenceCostsTarget]
-						,CASE WHEN Reporting_Line='Concluded' AND Reporting_Costs IS NULL THEN NULL 
-							WHEN Reporting_Line='Concluded' THEN Reporting_Costs*0.9 ELSE NULL END AS [DamagesTarget]
-						,CASE WHEN Reporting_Line='Concluded' AND Reporting_Shelf_Life IS NULL THEN NULL 
-							WHEN Reporting_Line='Concluded' THEN Reporting_Shelf_Life*0.9 ELSE NULL END AS [ShelfLifeTarget]
-FROM #SummaryData WHERE Reporting_Group='June 2019'
-) AS b
- ON b.[Master Client Code] = a.[Master Client Code]
- AND b.[Master Matter Number] = a.[Master Matter Number]
- AND b.Reporting_Group=a.Reporting_Group
- AND b.Reporting_Line=a.Reporting_Line
+--LEFT OUTER JOIN (SELECT [Master Client Code]
+--						,[Master Matter Number]
+--						,Reporting_Group
+--						,Reporting_Line
+--						--,CASE WHEN Reporting_Line='FinalBillSent' AND Reporting_Costs IS NULL THEN [Panel Defence Costs] 
+--						--	WHEN Reporting_Line='FinalBillSent' THEN Reporting_Costs*0.9 ELSE NULL END AS [DefenceCostsTarget]
+--						--,CASE WHEN Reporting_Line='Concluded' AND Reporting_Costs IS NULL THEN [Panel Damages Paid] 
+--						--	WHEN Reporting_Line='Concluded' THEN Reporting_Costs*0.9 ELSE NULL END AS [DamagesTarget]
+--						--,CASE WHEN Reporting_Line='Concluded' AND Reporting_Shelf_Life IS NULL THEN [Panel Shelf life (yrs)] 
+--						--	WHEN Reporting_Line='Concluded' THEN Reporting_Shelf_Life*0.9 ELSE NULL END AS [ShelfLifeTarget]
+--						,CASE WHEN Reporting_Line='FinalBillSent' AND Reporting_Costs IS NULL THEN NULL
+--							WHEN Reporting_Line='FinalBillSent' THEN Reporting_Costs*0.9 ELSE NULL END AS [DefenceCostsTarget]
+--						,CASE WHEN Reporting_Line='Concluded' AND Reporting_Costs IS NULL THEN NULL 
+--							WHEN Reporting_Line='Concluded' THEN Reporting_Costs*0.9 ELSE NULL END AS [DamagesTarget]
+--						,CASE WHEN Reporting_Line='Concluded' AND Reporting_Shelf_Life IS NULL THEN NULL 
+--							WHEN Reporting_Line='Concluded' THEN Reporting_Shelf_Life*0.9 ELSE NULL END AS [ShelfLifeTarget]
+--FROM #SummaryData WHERE Reporting_Group='June 2019'
+--) AS b
+-- ON b.[Master Client Code] = a.[Master Client Code]
+-- AND b.[Master Matter Number] = a.[Master Matter Number]
+-- AND b.Reporting_Group=a.Reporting_Group
+-- AND b.Reporting_Line=a.Reporting_Line
 
-
-
+ LEFT OUTER JOIN Reporting.nhs.NHSRCARTargets AS b
+ ON b.Name=a.[Matter Owner] COLLATE DATABASE_DEFAULT
+ AND b.Scheme=a.Scheme COLLATE DATABASE_DEFAULT
+ --AND a.Reporting_Group='June 2019'
 
 END
 

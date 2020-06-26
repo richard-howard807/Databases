@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -68,7 +69,7 @@ red_dw..dim_detail_finance.output_wip_fee_arrangement  [Fee Type],
 dim_detail_claim.[dst_insured_client_name] AS [Insured Client Name],
 red_dw.dbo.fact_detail_recovery_detail.amount_recovery_sought AS [Recovery Sought],
 red_dw.dbo.fact_finance_summary.wip,
-red_dw.dbo.fact_finance_summary.total_recovery AS [Total Recovery],
+ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0) AS [Total Recovery],
 red_dw.dbo.dim_claimant_thirdparty_involvement.tpinsurer_name AS [Claimant],
 red_dw.dbo.fact_finance_summary.defence_costs_billed AS Revenue,
 red_dw.dbo.fact_finance_summary.client_account_balance_of_matter AS [Client Balance of Matter], 

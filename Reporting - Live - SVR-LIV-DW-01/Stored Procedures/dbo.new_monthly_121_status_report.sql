@@ -109,7 +109,7 @@ BEGIN
 									FROM red_dw.dbo.fact_employee_attendance
 									WHERE 
 										fact_employee_attendance.startdate BETWEEN @StartDate AND @EndDate
-										AND fact_employee_attendance.category IN ('Furlough', 'Sickness', 'Maternity', 'Paternity')
+										AND fact_employee_attendance.category <> 'Holiday'
 									GROUP BY employeeid 
 
 								)				AS [Excluded] 
@@ -210,7 +210,7 @@ BEGIN
 									FROM red_dw.dbo.fact_employee_attendance
 									WHERE 
 										fact_employee_attendance.startdate BETWEEN @StartDate AND @EndDate
-										AND fact_employee_attendance.category IN ('Furlough', 'Sickness', 'Maternity', 'Paternity')
+										AND fact_employee_attendance.category <> 'Holiday'
 									GROUP BY employeeid 
 
 								)				AS [Excluded] 
