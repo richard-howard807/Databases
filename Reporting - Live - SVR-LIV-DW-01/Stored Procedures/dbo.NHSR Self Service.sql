@@ -7,6 +7,15 @@ GO
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
 -- Description:	<NHSR General Data file to be used for all general queries firm wide. ,,>
+
+
+-- RH 20200526 Amended Revenue & Hours billed for all years to use composite billing #45295 & Added Chargeable hours #45295 & changed rolling 3 years to last 3 full financial years
+-- RH 20200526 Added financial year on various dates #59250 && #57252
+-- RH 20200604 Removed reporting exclusions from where clause and added as a column instead so revenue balances, #57252
+-- RH 20200604 Added cost handler revenue #55807
+-- ES 20200622 Amended disbursements billed query as code was incorrect #61966
+
+
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -14,7 +23,116 @@ BEGIN
 
 
     DECLARE @CurrentYear AS DATETIME = '2018-01-01',
-            @nDate AS DATETIME = DATEADD(YYYY, -3, GETDATE());
+          --  @nDate AS DATETIME = DATEADD(YYYY, -3, GETDATE());
+		  	  @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
+
+
+
+
+-- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
+
+	
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Revenue
+		FROM (
+	
+			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Revenue)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+	
+
+
+	SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Billed_hours
+		FROM (
+	
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_bill_billed_time_activity
+			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS billedhours
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+
+-- Added Chargeable hours #45295
+
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Chargeable_hours
+		FROM (
+	
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_billable_time_activity
+			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
+
+--Added disbursements #61966
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Disbursements
+		FROM (
+	
+			SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
+			FROM red_dw.dbo.fact_bill_detail
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			AND charge_type='disbursements'
+	GROUP BY client_code,
+             matter_number,
+             bill_fin_year
+			) AS disbursements
+		PIVOT	
+			(
+			SUM(Disbursements)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			) AS PVIOT
 
 
 
@@ -359,397 +477,37 @@ dim_detail_health.nhs_da_date  AS [DA date],
 dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to DA],
 
            GETDATE() AS update_time,
-                                ----, PFC.client_code, PFC.matter_number ---Financial year join [not needed ]
-
-                                ----- Financial years Disbursements //Fees/ And Revenue 
-
-                                --		--,isnull(PFC6.fees,0) AS FEES2014
-                                --		--,isnull(PFC6.disbBilled, 0)AS DISB2014
-                                --		--,isnull(PFC6.defence_costs_billed, 0)AS REV2014
-
-                                --		--,isnull(PFC2.fees,0) AS FEES2015
-                                --		--,isnull(PFC2.disbBilled, 0)AS DISB2015
-                                --		--,isnull(PFC2.defence_costs_billed, 0)AS REV2015
-
-                                --		--,isnull(PFC3.fees,0) AS FEES2016
-                                --		--,isnull(PFC3.disbBilled,0) AS DISB2016
-                                --		--,isnull(PFC3.defence_costs_billed,0) AS REV2016
-
-                                --		--,isnull(PFC4.fees,0) AS FEES2017
-                                --		--,isnull(PFC4.disbBilled,0) AS DISB2017
-                                --		--,isnull(PFC4.defence_costs_billed,0) AS REV2017
-
-
-                                --		--,isnull(PFC5.fees,0) AS FEES2018
-                                --		--,isnull(PFC5.disbBilled,0) AS DISB2018
-                                --		--,isnull(PFC5.defence_costs_billed,0) AS REV2018
-
-
-
-                                --		, dim_detail_core_details.[claimants_date_of_birth] AS [Claimant's DOB]
-
-
-
-
-                                --		, dim_detail_core_details.zurich_policy_holdername_of_insured AS [Policy Holder Name]
-
-
-
-                                --,COALESCE([Insurer Reference],dim_client_involvement.insurerclient_reference) COLLATE database_default  AS [Insurer Reference]
-                                --,COALESCE([Insurer Name],dim_client_involvement.insurerclient_name)COLLATE database_default   AS  [insurer contact ] 
-                                --,COALESCE([Insured Reference],dim_client_involvement.insuredclient_reference)COLLATE database_default   AS [insured reference ]
-                                --,COALESCE([Insured Name],dim_client_involvement.insuredclient_name)COLLATE database_default   AS  [Insured Contact]
-
-
-
-
-
-
-
-                                --		, dim_detail_claim.accident_location AS [Accident Location]
-
-
-                                --		, dim_detail_core_details.injury_type AS [Type of Injury]
-                                --		, dim_detail_incident.[description_of_injury_v] AS [Injury Type]
-
-
-                                --		, dim_experts_involvement.engineer_name AS [Engineer Name]
-                                --				, dim_detail_core_details.[is_this_the_lead_file] AS [Lead File?]
-
-                                --		, dim_detail_hire_details.cho_hire_start_date AS [Hire Start Date]
-                                --		, dim_detail_hire_details.chp_hire_end_date AS [Hire End Date]
-
-
-                                --		, dim_detail_claim.is_this_a_work_referral AS [Work Referral?]
-
-                                --		, dim_detail_client.[coop_fraud_status] AS [Fraud Status]
-                                --		, dim_detail_client.weightmans_comments AS [Weightmans Comments]
-                                --		, dim_detail_core_details.date_of_current_estimate_to_complete_retainer AS [Date of Current Estimate to Complete Retainer]
-                                --		, dim_detail_core_details.date_letter_of_claim AS [Date Letter of Claim]
-
-                                --		, dim_detail_core_details.[date_pre_trial_report] AS [Date of Pre-Trial Report]
-
-
-                                --		, dim_detail_court.[trial_window] AS [Trial Window]
-                                --		, dim_detail_core_details.[date_start_of_trial_window] AS [Date Start of Trial Window]
-                                --		, dim_detail_court.[date_end_of_trial_window] AS [Date End Of Trial Window]
-                                --		, dim_detail_court.[infant_approval] AS [Infant Approval]
-
-
-
-                                --		, dim_detail_core_details.sabre_reason_for_instructions AS [Reason for Instruction]
-
-                                --		, dim_detail_core_details.date_subsequent_sla_report_sent AS [Sub Report]
-                                --		, dim_detail_core_details.date_the_closure_report_sent AS [Closure Report]
-
-
-
-
-
-                                --		, dim_detail_core_details.ccnumber AS [Live Claim]
-                                --		, dim_detail_claim.live_case_status AS [Live Case Status]
-                                --		, dim_detail_litigation.litigated AS [Litigated]
-
-                                --		, dim_detail_critical_mi.closure_reason AS [Converge Closure Reason]
-
-
-
-
-
-
-
-                                --		, fact_detail_elapsed_days.[elapsed_days_conclusion] AS [Elapsed Days Conclusion]
-
-                                --		, fact_detail_paid_detail.fraud_savings AS [Fraud Savings]
-                                --		--, fact_matter_summary_current.[last_financial_transaction_date] AS [Last Actioned]
-                                --		, dim_detail_client.case_type_classification AS [Case Classification]
-
-
-                                --		, dim_employee.levelidud AS [Level]
-                                --		, dim_employee.postid AS [Post ID]
-                                --		, dim_employee.payrollid AS [Payroll ID]
-                                --		--, fact_employee_days_fte.fte AS [FTE]
-
-
-                                --		, fact_matter_summary_current.[number_of_exceptions_mi] AS [Total MI Exceptions]
-                                --		, fact_matter_summary_current.[critical_exceptions_mi] AS [Total Critical MI Exceptions]
-                                --		, dim_detail_outcome.final_bill_date_grp AS [Final Bill Date GRP]
-                                --		--, fact_all_time_activity.minutes_recorded AS [Time Recorded]
-
-
-                                --		, dim_matter_header_current.[final_bill_date] AS [Date of Final Bill]
-
-
-
-                                --		, 1 AS [Number of Records]
-
-                                --		, 'Qtr' +' '+ CAST(dim_open_case_management_date.open_case_management_fin_quarter_no AS VARCHAR) AS [Financial Quarter Opened]
-
-
-
-                                --		, cast(dim_open_case_management_date.open_case_management_fin_year - 1 as varchar) + '/' + cast(dim_open_case_management_date.open_case_management_fin_year as varchar) AS [Financial Year Opened] 
-                                --		, 'Qtr' +' '+ CAST(dim_closed_case_management_date.closed_case_management_fin_quarter_no AS VARCHAR) AS [Financial Quarter Closed]
-                                --		, cast(dim_closed_case_management_date.closed_case_management_fin_year - 1 as varchar) + '/' + cast(dim_closed_case_management_date.closed_case_management_fin_year as varchar) AS [Financial Year Closed] 
-                                --		, CASE WHEN fact_detail_elapsed_days.[elapsed_days_live_files] <=100 THEN '0-100'
-                                --				WHEN fact_detail_elapsed_days.[elapsed_days_live_files]<=200 THEN '101-200'
-                                --				WHEN fact_detail_elapsed_days.[elapsed_days_live_files]<=300 THEN '201-300'
-                                --				WHEN fact_detail_elapsed_days.[elapsed_days_live_files]<=400 THEN '301-400'
-                                --				WHEN fact_detail_elapsed_days.[elapsed_days_live_files]<=600 THEN '401-600'
-                                --				WHEN fact_detail_elapsed_days.[elapsed_days_live_files]>600 THEN '601+' END AS [Elapsed Days Live Bandings]
-                                --		, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL AND dim_detail_outcome.date_claim_concluded IS NULL THEN 1 ELSE 0 END AS [Number of Live Instructions]
-
-                                --		--, ROW_NUMBER() OVER(PARTITION BY RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number ORDER BY RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number,dim_client_involvement.[insurerclient_reference] DESC) AS [Multiple Claimant]
-                                --		--, dim_date_last_time.last_time_calendar_date
-                                --		--, [Total Time Billed]
-                                --		, DATEADD(wk, DATEDIFF(wk, 0, dim_detail_core_details.date_instructions_received), 0) AS [Week Commencing] --Monday of each week
-                                --		, CAST(DATEPART(wk, dim_detail_core_details.date_instructions_received) AS CHAR (2)) +'/'+ CAST(DATEPART(YEAR,dim_detail_core_details.date_instructions_received) AS CHAR (4)) AS [Week Number]  
-                                --		, DATEADD(yy,-4,GETDATE()) AS [GetDate 4 Years] -- this is 4 years from today
-
-                                --		, CONVERT(VARCHAR(3),(dim_matter_header_current.date_opened_case_management)) + '-' + CONVERT(VARCHAR(4),YEAR(dim_matter_header_current.date_opened_case_management)) AS YearPeriod_MMYY
-                                --		, CASE     WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) > 4 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) = @CurrentYear THEN 1               -- current may to dec
-                                --                   WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) < 5 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) > @CurrentYear THEN 1               -- current jan to apr
-                                --                   WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) < 5 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) = @CurrentYear THEN 2               -- historic1  (last year may to dec)
-                                --                   WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) > 4 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) = @CurrentYear-1 THEN 2             -- historic1  (last year jan to apr)
-                                --                   WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) < 5 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) = @CurrentYear-1 THEN 3             -- historic2  (2 years ago may to dec)
-                                --                   WHEN datepart(mm,dim_matter_header_current.date_opened_case_management) > 4 AND Datepart(yyyy,dim_matter_header_current.date_opened_case_management) = @CurrentYear-2 THEN 3             -- historic2  (2 years ago jan to apr)
-                                --                   ELSE 4
-                                --                   END 'PeriodType' 
-
-
-
-                                --		, CASE WHEN DATEPART(mm,dim_detail_core_details.date_instructions_received)<=3 THEN 'Qtr1'
-                                --				WHEN DATEPART(mm,dim_detail_core_details.date_instructions_received)<=6 THEN 'Qtr2'
-                                --				WHEN DATEPART(mm,dim_detail_core_details.date_instructions_received)<=9 THEN 'Qtr3'
-                                --				WHEN DATEPART(mm,dim_detail_core_details.date_instructions_received)<=12 THEN 'Qtr4'
-                                --				ELSE NULL END AS [Calendar Quarter Received]
-                                --		, CASE WHEN DATEPART(mm,dim_matter_header_current.date_opened_case_management)<=3 THEN 'Qtr1'
-                                --				WHEN DATEPART(mm,dim_matter_header_current.date_opened_case_management)<=6 THEN 'Qtr2'
-                                --				WHEN DATEPART(mm,dim_matter_header_current.date_opened_case_management)<=9 THEN 'Qtr3'
-                                --				WHEN DATEPART(mm,dim_matter_header_current.date_opened_case_management)<=12 THEN 'Qtr4'
-                                --				ELSE NULL END AS [Calendar Quarter Opened]
-                                --		, CASE WHEN dim_detail_core_details.present_position in ('To be closed/minor balances to be clear','Final bill sent - unpaid')
-                                --								or (dim_matter_header_current.date_closed_case_management is not null ) THEN 'Closed' ELSE 'Open' END AS [Status]
-
-
-                                --		, REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_worktype.[work_type_name],char(9),' '),CHAR(10),' '),CHAR(13), ' '), 'DO NOT USE','') AS [All Work Types]
-                                --		, COALESCE(dim_detail_core_details.date_instructions_received,dim_matter_header_current.date_opened_case_management) [Date Received/Opened]
-
-
-                                --		, CASE WHEN dim_detail_outcome.date_costs_settled is not null or dim_matter_header_current.date_closed_case_management is not null THEN 1 ELSE 0 END AS [Sum Total of Concluded Matters]
-                                --		, DATEDIFF(dd,dim_matter_header_current.date_opened_case_management,dim_detail_outcome.date_costs_settled) as [Conclusion Days]
-
-
-
-                                --		, DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,dim_detail_outcome.date_claim_concluded) AS [Elapsed Days to Outcome]
-
-                                --		, CASE WHEN dim_detail_core_details.[motor_status] = 'Cancelled' THEN 'Closed'
-                                --               WHEN --MaxFinalBillPaidDate >= ISNULL(MaxInterimBillDate,MaxFinalBillPaidDate)OR 
-                                --					dim_matter_header_current.date_closed_case_management IS NOT NULL 
-                                --                   OR (dim_detail_client.[europcartransferred_file]='Yes') THEN 'Closed'
-                                --               ELSE 'Open' END AS [Filestatus]
-
-
-                                --, CASE WHEN dim_detail_core_details.date_instructions_received BETWEEN DATEADD(Month,-11,DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0))  AND DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1) THEN 1 ELSE 0 END [Rolling 12 Months Concluded]
-                                --, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN DATEADD(Month,-11,DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0))  AND DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1) THEN 1 ELSE 0 END [Rolling 12 Months Opened]
-                                --, CASE WHEN dim_detail_outcome.[outcome_of_case] LIKE 'Exclude from reports' THEN  'Exclude from reports'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE 'Discontinued%'THEN 'Repudiated'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE 'Won at trial%'THEN 'Repudiated'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE  'Struck out%'THEN 'Repudiated'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE  'Settled%'THEN 'Settled'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE  'Lost at trial%'THEN 'Settled'
-                                --		WHEN dim_detail_outcome.[outcome_of_case] LIKE  'Assessment of damages%'THEN 'Settled'
-                                --		ELSE NULL END [Repudiation - outcome]
-                                --, CASE WHEN TimeRecorded.MinutesRecorded<=12 THEN 'Free 12 mins'
-                                --		WHEN TimeRecorded.MinutesRecorded<=60 THEN '12 – 60 mins'
-                                --		WHEN TimeRecorded.MinutesRecorded<=120 THEN '1 - 2 hours'
-                                --		WHEN TimeRecorded.MinutesRecorded<=180 THEN '2 - 3 hours'
-                                --		WHEN TimeRecorded.MinutesRecorded<=240 THEN '3 - 4 hours'
-                                --		WHEN TimeRecorded.MinutesRecorded<=300 THEN '4 – 5 hours'
-                                --		WHEN TimeRecorded.MinutesRecorded>300 THEN 'Over 5 hours'
-                                --	ELSE NULL END AS [Time Recorded (Banded)]
-                                --, CASE WHEN TimeRecorded.MinutesRecorded >=12 THEN 'Yes' ELSE 'No' END AS [Free 12 mins Used?]
-                                --, CASE WHEN TimeRecorded.MinutesRecorded <=12 THEN 0 
-                                --	WHEN TimeRecorded.MinutesRecorded>12 THEN TimeRecorded.MinutesRecorded-12 END AS [Chargeable Time]
-
-
-
-
-
-
-
-
-                                --, DATEDIFF(DAY,dim_detail_outcome.[date_claimants_costs_received], dim_detail_outcome.date_costs_settled) AS [Days from Date receipt of Claimant's Costs to Date Costs Settled]
-                                --, CASE WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management,dim_matter_header_current.[final_bill_date])
-                                --	ELSE NULL END AS [Days from Date opened in FED to date of last bill on file (closed matters)]
-                                --, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_critical_mi.date_closed) AS [Days from Date opened in FED to Converge Date Closed]
-                                --, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management,dim_detail_client.[date_settlement_form_sent_to_zurich]) AS [Days from Date opened in FED to Date Settlement Form Sent to Zurich]
-                                --, CAST((CASE WHEN MONTH(dim_matter_header_current.date_opened_case_management) >= 5 THEN CAST(YEAR(dim_matter_header_current.date_opened_case_management) as varchar) + '/' + CAST((YEAR(dim_matter_header_current.date_opened_case_management) + 1) AS varchar)
-                                --               ELSE CAST((YEAR(dim_matter_header_current.date_opened_case_management) - 1) AS VARCHAR) + '/' + CAST(YEAR(dim_matter_header_current.date_opened_case_management) AS VARCHAR) 
-                                --                 END) AS VARCHAR) [Whitbread Year Period]
-                                --, CASE WHEN dim_detail_critical_mi.[litigated]='Yes' OR dim_detail_core_details.[proceedings_issued]='Yes' THEN 'Litigated' ELSE 'Pre-Litigated' END AS [Litigated/Proceedings Issued]
-
-                                ----amended as requested by Ann-Marie 230096
-                                ----, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL AND (dim_detail_outcome.[outcome_of_case] IS NOT NULL OR dim_detail_outcome.[date_claim_concluded] IS NOT NULL) THEN 'Damages Only Settled'
-                                ----	WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL OR dim_detail_outcome.[date_costs_settled] IS NOT NULL OR dim_detail_client.[date_settlement_form_sent_to_zurich] IS NOT NULL  THEN 'Closed' ELSE 'Live' END AS [Status - Disease]
-                                --, CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL OR dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 'Closed'
-                                --		WHEN dim_detail_outcome.[date_claim_concluded] IS NOT NULL AND (dim_detail_outcome.[date_costs_settled] IS NULL AND dim_matter_header_current.date_closed_case_management IS NULL) THEN 'Damages Only Settled'
-                                --		WHEN dim_detail_outcome.[date_claim_concluded] IS NULL AND dim_detail_outcome.[date_costs_settled] IS NULL AND dim_matter_header_current.date_closed_case_management IS NULL THEN 'Live'
-                                --		ELSE NULL END AS [Status - Disease]
-                                --, COALESCE(dim_detail_core_details.[track],dim_detail_core_details.[zurich_track]) AS [Track - Disease]
-
-                                --, CASE WHEN LOWER(ISNULL(dim_detail_core_details.[present_position],'')) = 'claim and costs concluded but recovery outstanding' AND ISNULL(dim_detail_core_details.[is_this_the_lead_file],'Yes') = 'Yes' THEN 'PP3 Lead' 
-                                --             WHEN LOWER(ISNULL(dim_detail_core_details.[present_position],'')) = 'claim and costs outstanding' AND ISNULL(dim_detail_core_details.[is_this_the_lead_file],'Yes') = 'Yes' THEN 'PP1 Lead'
-                                --             WHEN LOWER(ISNULL(dim_detail_core_details.[present_position],'')) = 'claim and costs concluded but recovery outstanding' AND ISNULL(dim_detail_core_details.[is_this_the_lead_file],'Yes') = 'No' THEN 'PP3 Linked'
-                                --             WHEN LOWER(ISNULL(dim_detail_core_details.[present_position],'')) = 'claim and costs outstanding' AND ISNULL(dim_detail_core_details.[is_this_the_lead_file],'Yes') = 'No' THEN 'PP1 Linked' END [PP Description]
-                                ----, CASE WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] Like '%Credit Hire%' THEN FLOOR(60 * fact_employee_days_fte.fte)	
-                                ----		WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] LIKE 'Motor Multi Track%' THEN FLOOR(40 * fact_employee_days_fte.fte)
-                                ----              WHEN LOWER(dim_fed_hierarchy_history.[hierarchylevel4hist]) LIKE 'fast track%' THEN FLOOR(50 * fact_employee_days_fte.fte)
-                                ----		WHEN LOWER(dim_fed_hierarchy_history.[hierarchylevel4hist]) LIKE 'motor%' THEN FLOOR(55 * fact_employee_days_fte.fte)
-                                ----              WHEN LOWER(dim_fed_hierarchy_history.[hierarchylevel4hist]) LIKE 'multi%' THEN FLOOR(55 * fact_employee_days_fte.fte)
-                                ----              WHEN LOWER(dim_fed_hierarchy_history.[hierarchylevel4hist]) = 'disease fraud' THEN FLOOR(50 * fact_employee_days_fte.fte)
-                                ----              WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] IN ('Disease Birmingham','Disease Dartford','Disease Leicester','Disease Liverpool','Disease Midlands')  THEN FLOOR(40 * fact_employee_days_fte.fte)
-                                ----              WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] IN ('Disease Pre Lit Birmingham','Disease Pre Lit Liverpool') THEN FLOOR(250 * fact_employee_days_fte.fte)
-                                ----		ELSE FLOOR(30 * fact_employee_days_fte.fte) 
-                                ----              END [Optimum Case Level]
-                                ----, CASE WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] Like '%Credit Hire%' THEN FLOOR(30 * fact_employee_days_fte.fte)	
-                                ----		ELSE FLOOR(30 * fact_employee_days_fte.fte) 
-                                ----              END [Fraud Optimum Case Level]
-                                ----, CASE WHEN dim_fed_hierarchy_history.[hierarchylevel4hist] Like '%Credit Hire%' THEN FLOOR(60 * fact_employee_days_fte.fte)	
-                                ----		ELSE FLOOR(30 * fact_employee_days_fte.fte) 
-                                ----              END [Credit Hire Optimum Case Level]
-
-                                --, COALESCE(dim_detail_claim.[claimants_solicitors_firm_name ], dim_claimant_thirdparty_involvement.claimantsols_name) AS [Claimant's Solicitors Firm]
-                                --, CAST([DateClaimConcluded].fin_year-1 AS VARCHAR)+'/'+CAST([DateClaimConcluded].fin_year AS VARCHAR) AS [FY Date Claim Concluded]
-                                --, CAST([DateCostsSettled].fin_year-1 AS VARCHAR)+'/'+CAST([DateCostsSettled].fin_year  AS VARCHAR) AS [FY Date Costs Settled]
-                                --, CAST([DateInstructionsReceived].fin_year-1 AS VARCHAR)+'/'+CAST([DateInstructionsReceived].fin_year  AS VARCHAR) AS [FY Date Instructions Received]
-
-                                --, dim_detail_claim.dst_claimant_solicitor_firm [DST Claimant Solicitors Form ]
-                                --, dim_detail_claim.dst_insured_client_name [DST Insured Client Name ]
-
-
-                                ----Fin 2015
-                                --,isnull(FIND1.Rev,0) As [2016-Q1]
-                                --,isnull(FIND2.Rev,0) As [2016-Q2]
-                                --,isnull(FIND3.Rev,0) As [2016-Q3]
-                                --,isnull(FIND4.Rev,0) As [2016-Q4]
-                                ----Fin 2016
-                                --,isnull(FIND5.Rev,0) As [2017-Q1]
-                                --,isnull(FIND6.Rev,0) As [2017-Q2]
-                                --,isnull(FIND7.Rev,0) As [2017-Q3]
-                                --,isnull(FIND8.Rev,0) As [2017-Q4]
-                                ----Fin 2017
-                                --,isnull(FIND9.Rev,0) As [2018-Q1]
-                                --,isnull(FIND10.Rev,0) As [2018-Q2]
-                                --,isnull(FIND11.Rev,0) As [2018-Q3]
-                                --,isnull(FIND12.Rev,0) As [2018-Q4]
-                                ----Fin 2018
-                                --,isnull(FIND13.Rev,0) As [2019-Q1]
-                                ----isnull(FIND14.Rev,0) As [2019-Q2],
-                                ----isnull(FIND15.Rev,0) As [2019-Q3],
-                                ----isnull(FIND16.Rev,0) As [2019-Q4],
-
-
-                                --,dim_detail_claim.cnf_received_date AS [Date CNF Recieved]
-                                --,dim_detail_claim.cnf_acknowledgement_date AS [CNF Acknowledged]
-                                --, dim_detail_practice_area.who_dropped_the_claim_out_of_portal AS [Who Dropped The Claim Out of Portal]
-                                --, isnull(fact_detail_paid_detail.portal_costs,0) as [Portal Costs]
-                                --, isnull(fact_detail_paid_detail.portal_disbursements, 0)as [Portal Disbursements]
-                                --, dim_detail_health.reason_claim_left_the_portal AS [Reason Claim Left the Portal]
-                                --	, CASE WHEN dim_matter_header_current.final_bill_flag=0 OR dim_matter_header_current.final_bill_flag IS NULL THEN 'N' ELSE 'Y' END AS [Final Bill Flag]
-
-                                --		, CASE WHEN dim_detail_critical_mi.claim_status IN ('Open', 'Re-opened') THEN ''
-                                --			   WHEN dim_detail_critical_mi.claim_status  IN ('Closed') AND (ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(fact_finance_summary.interlocutory_costs_paid_to_claimant,0)+ISNULL(fact_finance_summary.detailed_assessment_costs_paid,0))=0 THEN 'Nil Settlement'
-                                --               WHEN dim_detail_critical_mi.claim_status  IN ('Closed') AND (ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(fact_finance_summary.interlocutory_costs_paid_to_claimant,0)+ISNULL(fact_finance_summary.detailed_assessment_costs_paid,0))>0 THEN 'Payment Made'
-                                --               END [Nill Settlement]
-                                --		, CASE WHEN dim_matter_header_current.final_bill_flag=1 THEN '0'
-                                --				WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN '0'
-                                --				ELSE isnull(fact_finance_summary.commercial_costs_estimate_net,0)
-                                --		  END AS [Outstanding Costs Estimate]
-                                --		  	, fact_finance_summary.[total_amount_billed] AS [Total Amount Billed]
-                                --		, ISNULL(fact_finance_summary.[total_amount_billed],0)-ISNULL(fact_finance_summary.vat_billed,0) [Total Amount Billed (exc VAT)]
-                                --		, ISNULL(fact_finance_summary.commercial_costs_estimate,0)-(ISNULL(fact_finance_summary.[total_amount_billed],0)-ISNULL(fact_finance_summary.vat_billed,0)) [Total Outstanding Costs]
-                                --		, ISNULL(fact_detail_future_care.[interlocutory_costs_claimed_by_claimant],0) + ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[detailed_assessment_costs_paid],0) + ISNULL(fact_finance_summary.[other_defendants_costs_paid],0) AS [Opponents Cost Spend]
-                                --		, ISNULL(fact_finance_summary.[tp_costs_reserve_initial], 0) + ISNULL(fact_finance_summary.[other_defendants_costs_reserve_initial], 0) AS [Initial claimant's costs reserve / estimation] 
-
-                                --		, fact_bill_detail_summary.bill_total_excl_vat AS [Total Bill Amount - Composite (excVAT)] 
-
-
-
-                                --		, ISNULL(fact_finance_summary.commercial_costs_estimate,0)-(ISNULL(fact_bill_detail_summary.bill_total_excl_vat,0)) [Total Outstanding Costs - Composite]
-
-
-                                --		, CASE WHEN fact_finance_summary.[claimants_total_costs_paid_by_all_parties] IS NULL AND fact_detail_paid_detail.[claimants_costs] IS NULL THEN NULL
-                                --				ELSE (CASE WHEN fact_finance_summary.[claimants_total_costs_paid_by_all_parties] IS NULL THEN 
-                                --			(CASE WHEN ISNULL(fact_detail_paid_detail.[our_proportion_costs ],0)=0 THEN NULL ELSE ISNULL(fact_detail_paid_detail.[claimants_costs],0)/fact_detail_paid_detail.[our_proportion_costs ] END) 
-                                --				ELSE fact_finance_summary.[claimants_total_costs_paid_by_all_parties] END)  END AS [Claimant's Total Costs Paid (all parties) - Disease]
-
-                                --		, isnull(fact_detail_paid_detail.tp_total_costs_claimed_all_parties,0) AS [TP Total Costs Claimed All Parties]
-                                --		, fact_detail_paid_detail.interim_damages_paid_by_client_preinstruction as [Interim Damages Paid by Client Preinstruction]
-
-
-                                --		--,ISNULL(fact_finance_summary.[damages_paid],0)+ISNULL(fact_finance_summary.claimants_costs_paid,0)+ISNULL(fact_finance_summary.defence_costs_billed,0) as Indem
-                                --, ISNULL(fact_finance_summary.indemnity_spend, 0) AS [Indemnity Spend ]
-                                ----, fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat] AS [Claimant's solicitor's base costs paid + VAT]
-                                --, fact_finance_summary.[claimants_solicitors_disbursements_paid] AS [Claimant's solicitor's disbursements paid]
-
-
-
-
-                                --, fact_finance_summary.[total_reserve_initial] AS [Total Reserve Initial]
-
-
-
-                                --, dim_detail_core_details.aig_coverage_defence AS [AIG Converge Defence]
-                                --, fact_detail_client.defence_costs AS [Defence Costs ]
-                                --,fact_finance_summary.defence_costs_reserve_initial AS [Defence Costs Initial] 
-                                --, fact_finance_summary.defence_costs_reserve_net AS [Defence Costs Reserve (NET)]
-                                --, fact_finance_summary.other_defendants_costs_reserve_initial AS [Other Defendants Costs Reserve Initial]
-                                --,fact_finance_summary.other_defendants_costs_paid AS [Other Defendants Costs Reserve Current]
-
-
-
-
-                                --, fact_detail_paid_detail.amount_hire_paid AS [Amount Hired Paid ]
-                                --, fact_detail_paid_detail.cru_paid_by_all_parties AS [CRU Paid by all Parties]
-                                --, fact_detail_cost_budgeting.initial_costs_estimate AS [Initial Costs Estimate]
-
-                                --, fact_detail_client.nhs_charges_paid_by_all_parties AS [NHS Charges Paid by all parties]
-
-
-
-                                --,dim_detail_claim.date_recovery_concluded AS [Date Recovery Concluded] 
-                                --,dim_detail_outcome.are_we_pursuing_a_recovery AS [Are We Persuing a Recovery? ]
-                                --,fact_finance_summary.recovery_claimants_damages_via_third_party_contribution AS [Recovery Claimant Damages Via Third Party Contribution]
-                                --,fact_finance_summary.recovery_defence_costs_via_third_party_contribution AS [Recovery Defence Costs Via Third Party Contribution]
-                                --,fact_finance_summary.recovery_defence_costs_from_claimant as [Recovery Defence Costs from Claimant]
-                                --,dim_detail_outcome.recovery_claimants_our_client_damages AS [Recovery Claimants (Our Client) Damages ]
-
-
-
-
-                                --, fact_detail_paid_detail.general_damages_paid AS [General Damages Paid]
-                                --, fact_detail_paid_detail.special_damages_paid AS [Special Damages Paid]
-                                --, fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat] AS [Claimant's solicitor's base costs paid + VAT]
-                                --, fact_detail_reserve_detail.[claimant_s_solicitor_s_base_costs_claimed_vat] AS [Claimant's solicitor's base costs claimed + VAT]
-                                --, fact_detail_paid_detail.interim_damages_paid_by_client_preinstruction AS [Interim Damages Paid by Client Pre Instruction]
-
-
-
-                                --, fact_detail_reserve_detail.[personal_injury_reserve_initial] AS [PI Reserve Initial]
-                                --, fact_detail_cost_budgeting.[personal_injury_reserve_current] AS [PI Reserve Current]
-                                --, dim_detail_outcome.grpageas_name_of_costs_negotiator AS [Name of Cost Negotiators (GPR AGEAS)]
-                                --, dim_detail_outcome.mib_name_of_costs_negotiators AS  [Name of Cost Negotiators (MIB)]
-                                --,dim_detail_client.service_category
-
-                                ----------------------------------------
-           [Revenue 2015/2016],
-           [Revenue 2016/2017],
-           [Revenue 2017/2018], ---- Added Per Request 8366
-           [Revenue 2018/2019],
-           [Hours Billed 2015/2016],
-           [Hours Billed 2016/2017],
-           [Hours Billed 2017/2018],
-           [Hours Billed 2018/2019]
+                               
+
+
+	 Revenue.[2016] [Revenue 2015/2016]
+	, Revenue.[2017] [Revenue 2016/2017]
+	, Revenue.[2018] [Revenue 2017/2018]
+	, Revenue.[2019] [Revenue 2018/2019]
+	, Revenue.[2020] [Revenue 2019/2020]
+	, Revenue.[2021] [Revenue 2020/2021]
+
+	 , Billed_hours.[2016] [Hours Billed 2015/2016]
+	 , Billed_hours.[2017] [Hours Billed 2016/2017]
+	 , Billed_hours.[2018] [Hours Billed 2017/2018]
+	 , Billed_hours.[2019] [Hours Billed 2018/2019]
+	 , Billed_hours.[2020] [Hours Billed 2019/2020]
+	 , Billed_hours.[2021] [Hours Billed 2020/2021]
+
+	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
+	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
+	 , Chargeable_hours.[2018] [Chargeable Hours Posted 2017/2018]
+	 , Chargeable_hours.[2019] [Chargeable Hours Posted 2018/2019]
+	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
+	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
+
+	, Disbursements.[2016] [Disbursements Billed 2015/2016]
+	, Disbursements.[2017] [Disbursements Billed 2016/2017]
+	, Disbursements.[2018] [Disbursements Billed 2017/2018]
+	, Disbursements.[2019] [Disbursements Billed 2018/2019]
+	, Disbursements.[2020] [Disbursements Billed 2019/2020]
+	, Disbursements.[2021] [Disbursements Billed 2020/2021]
+	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
     ---------------------------------------------------
     INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810
@@ -846,64 +604,7 @@ dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to
             ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
-        --LEFT OUTER JOIN red_dw.dbo.fact_employee_days_fte ON fact_employee_days_fte.dim_fed_hierarchy_history_key=dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
-        -- financial Quarters 
-        -- left join FIND FIND1 ON fact_dimension_main.client_code = FIND1.client_code and fact_dimension_main.matter_number = FIND1.matter_number 
-        --AND FIND1.bill_fin_quarter ='2016-Q1'
-
-        -- left join FIND FIND2 ON fact_dimension_main.client_code = FIND2.client_code and fact_dimension_main.matter_number = FIND2.matter_number 
-        --AND FIND2.bill_fin_quarter ='2016-Q2'
-
-        --left join FIND FIND3 ON fact_dimension_main.client_code = FIND3.client_code and fact_dimension_main.matter_number = FIND3.matter_number 
-        --AND FIND3.bill_fin_quarter = '2016-Q3'
-
-        --left join FIND FIND4 ON fact_dimension_main.client_code = FIND4.client_code and fact_dimension_main.matter_number = FIND4.matter_number 
-        --AND FIND4.bill_fin_quarter = '2016-Q4'
-
-        --left join FIND FIND5 ON fact_dimension_main.client_code = FIND5.client_code and fact_dimension_main.matter_number = FIND5.matter_number 
-        --AND FIND5.bill_fin_quarter = '2017-Q1'
-
-        --left join FIND FIND6 ON fact_dimension_main.client_code = FIND6.client_code and fact_dimension_main.matter_number = FIND6.matter_number 
-        --AND FIND6.bill_fin_quarter = '2017-Q2'
-
-        --left join FIND FIND7 ON fact_dimension_main.client_code = FIND7.client_code and fact_dimension_main.matter_number = FIND7.matter_number 
-        --AND FIND7.bill_fin_quarter = '2017-Q3'
-
-        --left join FIND FIND8 ON fact_dimension_main.client_code = FIND8.client_code and fact_dimension_main.matter_number = FIND8.matter_number 
-        --AND FIND8.bill_fin_quarter = '2017-Q4'
-
-        --left join FIND FIND9 ON fact_dimension_main.client_code = FIND9.client_code and fact_dimension_main.matter_number = FIND9.matter_number 
-        --AND FIND9.bill_fin_quarter = '2018-Q1'
-
-        --left join FIND FIND10 ON fact_dimension_main.client_code = FIND10.client_code and fact_dimension_main.matter_number = FIND10.matter_number 
-        --AND FIND10.bill_fin_quarter = '2018-Q2'
-
-        --left join FIND FIND11 ON fact_dimension_main.client_code = FIND11.client_code and fact_dimension_main.matter_number = FIND11.matter_number 
-        --AND FIND11.bill_fin_quarter = '2018-Q3'
-
-        --left join FIND FIND12 ON fact_dimension_main.client_code = FIND12.client_code and fact_dimension_main.matter_number = FIND12.matter_number 
-        --AND FIND12.bill_fin_quarter = '2018-Q4'
-
-        --left join FIND FIND13 ON fact_dimension_main.client_code = FIND13.client_code and fact_dimension_main.matter_number = FIND13.matter_number 
-        --AND FIND13.bill_fin_quarter = '2019-Q1'
-
-
-        ----Financial year 
-        --left join PFC PFC6 ON fact_dimension_main.client_code = PFC6.client_code and fact_dimension_main.matter_number = PFC6.matter_number 
-        --AND PFC6.bill_fin_year = 2015
-
-        --left join PFC PFC2 ON fact_dimension_main.client_code = PFC2.client_code and fact_dimension_main.matter_number = PFC2.matter_number 
-        --AND PFC2.bill_fin_year = 2016
-
-        --left join PFC PFC3 ON fact_dimension_main.client_code = PFC3.client_code and fact_dimension_main.matter_number = PFC3.matter_number 
-        --AND PFC3.bill_fin_year = 2017
-
-        --left join PFC PFC4 ON fact_dimension_main.client_code = PFC4.client_code and fact_dimension_main.matter_number = PFC4.matter_number 
-        --AND PFC4.bill_fin_year = 2018
-
-        --left join PFC PFC5 ON fact_dimension_main.client_code = PFC5.client_code and fact_dimension_main.matter_number = PFC5.matter_number 
-        --AND PFC5.bill_fin_year = 2019
-
+       
 
 
         LEFT OUTER JOIN
@@ -1169,79 +870,29 @@ dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to
         ) AS MSvatAddress
             ON dim_matter_header_current.ms_fileid = MSvatAddress.fileID
                AND MSvatAddress.XOrder = 1
-        ---- below added per request 8366              
-        LEFT OUTER JOIN
-        (
-            SELECT fact_bill_detail.client_code,
-                   fact_bill_detail.matter_number,
-                   SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2015/2016],
-                   SUM(fact_bill_detail.workhrs) AS [Hours Billed 2015/2016]
-            FROM red_dw.dbo.fact_bill_detail
-                INNER JOIN red_dw.dbo.dim_bill_date
-                    ON fact_bill_detail.dim_bill_date_key = dim_bill_date.dim_bill_date_key
-            WHERE dim_bill_date.bill_date
-                  BETWEEN '2015-05-01' AND '2016-04-30'
-                  AND charge_type = 'time'
-            GROUP BY fact_bill_detail.client_code,
-                     fact_bill_detail.matter_number
-        ) AS Revenue2015
-            ON dim_matter_header_current.client_code = Revenue2015.client_code
-               AND dim_matter_header_current.matter_number = Revenue2015.matter_number
-        LEFT OUTER JOIN
-        (
-            SELECT fact_bill_detail.client_code,
-                   fact_bill_detail.matter_number,
-                   SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017],
-                   SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
-            FROM red_dw.dbo.fact_bill_detail
-                INNER JOIN red_dw.dbo.dim_bill_date
-                    ON fact_bill_detail.dim_bill_date_key = dim_bill_date.dim_bill_date_key
-            WHERE dim_bill_date.bill_date
-                  BETWEEN '2016-05-01' AND '2017-04-30'
-                  AND charge_type = 'time'
-            GROUP BY fact_bill_detail.client_code,
-                     fact_bill_detail.matter_number
-        ) AS Revenue2016
-            ON dim_matter_header_current.client_code = Revenue2016.client_code
-               AND dim_matter_header_current.matter_number = Revenue2016.matter_number
-        LEFT OUTER JOIN
-        (
-            SELECT fact_bill_detail.client_code,
-                   fact_bill_detail.matter_number,
-                   SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018],
-                   SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
-            FROM red_dw.dbo.fact_bill_detail
-                INNER JOIN red_dw.dbo.dim_bill_date
-                    ON fact_bill_detail.dim_bill_date_key = dim_bill_date.dim_bill_date_key
-            WHERE dim_bill_date.bill_date
-                  BETWEEN '2017-05-01' AND '2018-04-30'
-                  AND charge_type = 'time'
-            GROUP BY fact_bill_detail.client_code,
-                     fact_bill_detail.matter_number
-        ) AS Revenue2017
-            ON dim_matter_header_current.client_code = Revenue2017.client_code
-               AND dim_matter_header_current.matter_number = Revenue2017.matter_number
-        LEFT OUTER JOIN
-        (
-            SELECT fact_bill_detail.client_code,
-                   fact_bill_detail.matter_number,
-                   SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019],
-                   SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
-            FROM red_dw.dbo.fact_bill_detail
-                INNER JOIN red_dw.dbo.dim_bill_date
-                    ON fact_bill_detail.dim_bill_date_key = dim_bill_date.dim_bill_date_key
-            WHERE dim_bill_date.bill_date
-                  BETWEEN '2018-05-01' AND '2019-04-30'
-                  AND charge_type = 'time'
-            GROUP BY fact_bill_detail.client_code,
-                     fact_bill_detail.matter_number
-        ) AS Revenue2018
-            ON dim_matter_header_current.client_code = Revenue2018.client_code
-               AND dim_matter_header_current.matter_number = Revenue2018.matter_number
+
+
+-- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
+LEFT OUTER JOIN #Revenue Revenue
+ ON dim_matter_header_current.client_code=Revenue.client_code
+AND dim_matter_header_current.matter_number=Revenue.matter_number
+
+LEFT OUTER	JOIN #Billed_hours Billed_hours ON dim_matter_header_current.client_code=Billed_hours.client_code
+			AND dim_matter_header_current.matter_number=Billed_hours.matter_number 
+
+
+-- Added Chargeable hours #45295
+LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current.client_code=Chargeable_hours.client_code
+			AND dim_matter_header_current.matter_number=Chargeable_hours.matter_number 
+
+-- Added Disbursements #61966
+LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.client_code=Disbursements.client_code
+			AND dim_matter_header_current.matter_number=Disbursements.matter_number 
+
     WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )
 		  AND dim_matter_header_current.client_group_name = 'NHS Resolution'
-          AND dim_matter_header_current.reporting_exclusions = 0
+        --  AND dim_matter_header_current.reporting_exclusions = 0
           AND
           (
               dim_matter_header_current.date_closed_case_management >= @nDate
