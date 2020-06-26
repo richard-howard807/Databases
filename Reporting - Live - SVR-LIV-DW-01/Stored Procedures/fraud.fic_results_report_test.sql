@@ -127,7 +127,7 @@ exec sp_executesql @sql
 		,ISNULL(fact_finance_summary.[fixed_fee_amount], 0) AS [Fixed Fee Amount]
 		,RTRIM(ISNULL(dim_detail_finance.[output_wip_fee_arrangement], 0)) AS [Fee Arrangement]
 		,fact_finance_summary.defence_costs_reserve AS [Defence Costs Reserve]
-		,CASE WHEN FICProcess.tskDue IS NULL THEN 1 ELSE 0 END AS [CountNoprocessdue]
+		,CASE WHEN FICProcess.tskDue IS NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [CountNoprocessdue]
 	  
 		,CASE WHEN FICProcess.tskDue IS NOT NULL AND FICProcess.tskCompleted IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
 		,CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
