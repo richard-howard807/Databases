@@ -56,6 +56,7 @@ SELECT name AS [Name]
 	, totalentitlementdays AS [Annual Holiday Allowance]
 	, remaining_fte_working_days_year AS [Annual Working Days]
 	, durationholidaydays AS [Holidays Taken to Date]
+	, ISNULL(totalentitlementdays,0)-ISNULL(durationholidaydays,0) AS [Holidays yet to Take]
 	, [Trading Days] AS [Working Days to Date]
 	, [ChargeableHours] AS [Chargeable Hours]
 	, CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END AS [Utilisation %]
@@ -110,7 +111,7 @@ LEFT OUTER JOIN (SELECT employeeid, SUM(minutes_recorded)/60 AS [ChargeableHours
 				WHERE minutes_recorded<>0
 				GROUP BY employeeid) AS [ChargeableHours] ON ChargeableHours.employeeid = dim_employee.employeeid
 
-LEFT OUTER JOIN (SELECT employeeid, SUM(contracted_hours_in_month) AS [ContractedHours] 
+INNER JOIN (SELECT employeeid, SUM(contracted_hours_in_month) AS [ContractedHours] 
 				FROM  red_dw.dbo.fact_budget_activity
 				LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
@@ -131,15 +132,21 @@ LEFT OUTER JOIN (SELECT dim_employee.employeeid, SUM(Dates.[Trading Days]) [Trad
 				-- AND dim_employee.employeeid IN ('13E3D529-2BD9-4C6F-9471-58A303D7A946', '7DE27206-711E-47C1-A214-D40A46EEFD1B')
 				GROUP BY dim_employee.employeeid ) AS [TradingHours] ON TradingHours.employeeid = dim_employee.employeeid
 
-LEFT OUTER JOIN (SELECT employeeid, attendancekey, category, SUM(durationdays) days, MIN(startdate) startdate, MAX(startdate) enddate
+LEFT OUTER JOIN (SELECT * FROM
+(SELECT employeeid, attendancekey, category, SUM(durationdays) days, MIN(startdate) startdate, MAX(startdate) enddate
 				FROM red_dw.dbo.fact_employee_attendance
 				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
 											FROM red_dw.dbo.dim_date
 											WHERE current_fin_year='Current')
 											AND durationdays<>0
 											AND startdate<=GETDATE()
+											AND ISNULL(category,'')<>'Holiday'
+											--AND employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
 						GROUP BY employeeid, attendancekey,
-                                 category) AS Absence ON Absence.employeeid = dim_employee.employeeid 
+                                 category
+								 ) AS [CurrentAbsence]
+								 WHERE CAST(GETDATE()-1 AS date) BETWEEN [CurrentAbsence].startdate AND ISNULL([CurrentAbsence].enddate,GETDATE()+1) 
+								 OR CAST(GETDATE() AS date) BETWEEN [CurrentAbsence].startdate AND ISNULL([CurrentAbsence].enddate,GETDATE()+1)) AS Absence ON Absence.employeeid = dim_employee.employeeid 
 
 	INNER JOIN #Division AS Division ON Division.ListValue = hierarchylevel2hist 
 	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
@@ -148,8 +155,9 @@ LEFT OUTER JOIN (SELECT employeeid, attendancekey, category, SUM(durationdays) d
 
 
 WHERE leaver=0
- --AND dim_employee.employeeid='2E5E49EA-A167-4E47-AEF9-C77B72A08ABF'
+--AND CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END>0
+ --AND dim_employee.employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
 
-ORDER BY name, Absence.startdate
+ORDER BY name
 END
 GO
