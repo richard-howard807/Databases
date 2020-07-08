@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[FlowMatrix]
 
 AS 
@@ -23,8 +24,8 @@ GroupedData.[Practice Area],
        GroupedData.[TM Email] ,
 	   SUM(ItemsWaiting) AS NoItemsWaiting,
 	   MIN(DateScanned) AS OldestItem,
-	   MAX(DateScanned) AS NewestItem
-
+	   MAX(DateScanned) AS NewestItem,
+	   SUM(Over5Days) AS NoOver5Days
 FROM 
 (
 SELECT j.[job_id] AS job_id,
@@ -43,6 +44,7 @@ SELECT j.[job_id] AS job_id,
 	   ,1 AS ItemsWaiting
 	   ,worksforname AS [Team Manager]
 	   ,worksforemail AS [TM Email]
+	   ,CASE WHEN DATEDIFF(DAY,created,GETDATE())>=5 THEN 1 ELSE 0 END AS Over5Days
 FROM [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] j
   JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Queues] q ON j.queue_id = q.queue_id
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history

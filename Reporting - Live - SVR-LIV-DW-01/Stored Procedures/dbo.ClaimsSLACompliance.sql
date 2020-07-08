@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -75,11 +76,17 @@ SELECT client_name AS [Client Name]
 	, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, date_initial_report_sent AS [Date Initial Report Sent]
 	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
-	, receipt_of_instructions AS [Date Receipt of File Papers]
+	--, receipt_of_instructions AS [Date Receipt of File Papers]
+	, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Receipt of File Papers]
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, date_initial_report_due AS [Date Initial Report Due (if extended)]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
-	, CASE WHEN date_initial_report_due IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Initial Report]
+	--, CASE WHEN date_initial_report_due IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Initial Report]
+	, CASE WHEN do_clients_require_an_initial_report = 'No' THEN NULL
+		WHEN date_initial_report_sent IS NOT NULL THEN NULL
+		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE())
+		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
+		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
 	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Subsequent Report]
@@ -120,7 +127,7 @@ SELECT client_name AS [Client Name]
 			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=[Update Report SLA (days)] THEN 'LimeGreen'
 			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
 			ELSE 'Transparent' END [Update Report RAG]
-
+,referral_reason
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

@@ -133,7 +133,7 @@ BEGIN
 		AND (
 				@Division = 'Legal Ops - LTA' 
 				-- Motor were using the new form in May 20 as the test department. Healthcare started using new form towards the end of May 20, created separate table for them
-				OR (@Division = 'Legal Ops - Claims' AND AllData.department NOT IN ('Motor', 'Healthcare') AND @CalendarMonth = '202005')
+				OR (@Division = 'Legal Ops - Claims' AND AllData.department NOT IN ('Motor', 'Healthcare') AND @CalendarMonth = '202004')
 				OR (@Division = 'Legal Ops - Claims' AND @CalendarMonth < '202005')
 			)
 		-- Molly Brislen has 2 live records, excluding the earlier emp start date
@@ -229,7 +229,7 @@ BEGIN
 										INNER JOIN [SVR-LIV-SQL-02].[O2O].[form].[Status]
 											ON Status.StatusId = Detail.StatusId
 										INNER JOIN red_dw.dbo.dim_date
-											ON Response.DataAsOf = dim_date.calendar_date
+											ON  Response.DataAsOf = dim_date.calendar_date 
 									WHERE 
 										dim_date.cal_month = @CalendarMonth
 								) AS NewOneToOne 
@@ -332,7 +332,7 @@ BEGIN
 										INNER JOIN [SVR-LIV-SQL-02].[O2O].[form].[Status]
 											ON Status.StatusId = Detail.StatusId
 										INNER JOIN red_dw.dbo.dim_date
-											ON Response.DataAsOf = dim_date.calendar_date
+											ON  response.DataAsOf = dim_date.calendar_date 
 									WHERE 
 										dim_date.cal_month = @CalendarMonth
 								) AS OneToOne 
@@ -365,14 +365,15 @@ BEGIN
 		AND
 		(
 			-- Motor were using the new form in May 20 as the test department
-			(@Division = 'Legal Ops - Claims' AND AllData.department IN ('Motor') AND @CalendarMonth = '202005') OR 
-			(@Division = 'Legal Ops - Claims' AND @CalendarMonth >= '202006')
+			(@Division = 'Legal Ops - Claims' AND AllData.department IN ('Motor') AND @CalendarMonth >= '202004') OR 
+			(@Division = 'Legal Ops - Claims' AND @CalendarMonth >= '202005')
 		)
 		-- Molly Brislen has 2 live records, excluding the earlier emp start date
-		AND AllData.employeeid <> '429D09F5-4EE9-46D0-B874-609B1E43F695'
+		-- Sonal has duplicate fed codes and has left
+		AND AllData.employeeid NOT IN ('429D09F5-4EE9-46D0-B874-609B1E43F695','BFA0184C-C25B-447B-AF39-92A89C892F5D','E05A6212-D20C-45E9-8D65-755A5842FBB2')
+
 	ORDER BY 
 		AllData.employee_name
-
 
 
 --==================================================================================================================================================
@@ -396,4 +397,5 @@ END
 
 
 		   
+
 GO

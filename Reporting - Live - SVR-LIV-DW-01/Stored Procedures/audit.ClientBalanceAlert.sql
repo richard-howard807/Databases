@@ -3,15 +3,16 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [audit].[ClientBalanceAlert]
 AS
 BEGIN
 SELECT 
 clNo AS [MS Client]
 ,fileNo AS [MS Matter]
-,CASE WHEN udExtFile.FEDCode is null THEN (CASE WHEN ISNUMERIC(dbClient.clno)=1 THEN  RIGHT('00000000' + CONVERT(VARCHAR,dbClient.clno), 8) ELSE CAST(RTRIM(dbClient.clNo)  AS VARCHAR(8)) END) ELSE (CAST(SUBSTRING(RTRIM(udExtFile.FEDCode), 1, CASE WHEN CHARINDEX('-', RTRIM(udExtFile.FEDCode)) > 0 THEN CHARINDEX('-', RTRIM(udExtFile.FEDCode))-1
+,CASE WHEN udExtFile.FEDCode IS NULL THEN (CASE WHEN ISNUMERIC(dbClient.clno)=1 THEN  RIGHT('00000000' + CONVERT(VARCHAR,dbClient.clno), 8) ELSE CAST(RTRIM(dbClient.clNo)  AS VARCHAR(8)) END) ELSE (CAST(SUBSTRING(RTRIM(udExtFile.FEDCode), 1, CASE WHEN CHARINDEX('-', RTRIM(udExtFile.FEDCode)) > 0 THEN CHARINDEX('-', RTRIM(udExtFile.FEDCode))-1
 ELSE LEN(RTRIM(udExtFile.FEDCode)) END) AS CHAR(8))) END  AS [FED Client] 
-,CASE WHEN udExtFile.FEDCode is null THEN RIGHT('00000000' + CONVERT(VARCHAR,dbFile.fileno), 8) ELSE CAST(RIGHT(RTRIM(udExtFile.FEDCode),LEN(RTRIM(udExtFile.FEDCode))-CHARINDEX('-',RTRIM(udExtFile.FEDCode)))AS CHAR(8)) END  AS [FED Matter]
+,CASE WHEN udExtFile.FEDCode IS NULL THEN RIGHT('00000000' + CONVERT(VARCHAR,dbFile.fileno), 8) ELSE CAST(RIGHT(RTRIM(udExtFile.FEDCode),LEN(RTRIM(udExtFile.FEDCode))-CHARINDEX('-',RTRIM(udExtFile.FEDCode)))AS CHAR(8)) END  AS [FED Matter]
 ,dbClient.clName AS [Client Name]
 ,fileDesc AS [Matter Description]
 ,ClientBalance
@@ -30,8 +31,8 @@ WHEN DATEDIFF(d, [post_date], GETDATE()) BETWEEN 14  AND 27 THEN '14To27'
 ,Team
 ,hierarchylevel2
 ,MattIndex
-,BCM.usrFullName + ' (' + BCM.usrInits  + ')' AS BCMName
-,BCM.usrEmail AS [BCMEmailAddress]
+,Teams.worksforname AS BCMName
+,Teams.worksforemail AS [BCMEmailAddress]
 FROM 
 (SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
 ,COALESCE(MAX(CASE WHEN  PositiveBalance=1  THEN  [post_date] ELSE NULL END)
@@ -43,15 +44,15 @@ SELECT MattIndex
 ,[post_date]
 ,running_sales_amount
 ,ZeroBalance
-,LAG(ZeroBalance, 1,0) OVER (partition by MattIndex ORDER BY [post_date])  AS PositiveBalance
+,LAG(ZeroBalance, 1,0) OVER (PARTITION BY MattIndex ORDER BY [post_date])  AS PositiveBalance
 FROM 
 (
 
 SELECT      MattIndex AS MattIndex
             ,tb.amount AS ClientBalance
 			,COALESCE(disb.postdate,receipt.postdate,adjustment.postdate,transfers.postdate) [post_date]
-			,sum(tb.amount) over (partition by MattIndex order by (COALESCE(disb.postdate,receipt.postdate,adjustment.postdate,transfers.postdate)) rows unbounded preceding) as running_sales_amount   
-			,CASE WHEN (sum(tb.amount) over (partition by MattIndex order by (COALESCE(disb.postdate,receipt.postdate,adjustment.postdate,transfers.postdate)) rows unbounded preceding))=0 THEN 1 ELSE 0 END AS ZeroBalance
+			,SUM(tb.amount) OVER (PARTITION BY MattIndex ORDER BY (COALESCE(disb.postdate,receipt.postdate,adjustment.postdate,transfers.postdate)) ROWS UNBOUNDED PRECEDING) AS running_sales_amount   
+			,CASE WHEN (SUM(tb.amount) OVER (PARTITION BY MattIndex ORDER BY (COALESCE(disb.postdate,receipt.postdate,adjustment.postdate,transfers.postdate)) ROWS UNBOUNDED PRECEDING))=0 THEN 1 ELSE 0 END AS ZeroBalance
 			
      FROM [TE_3E_Prod].[dbo].[TrustBalance] tb
      INNER JOIN [TE_3E_Prod].[dbo].Matter matter ON tb.matter = matter.MattIndex
@@ -80,13 +81,18 @@ INNER JOIN MS_Prod.config.dbClient
  ON dbFile.clID=dbClient.clID
 INNER JOIN MS_PROD.dbo.udExtFile
  ON dbFile.fileID=udExtFile.fileID
-INNER JOIN MS_PROD.dbo.dbUser fee on fee.usrID = dbFile.filePrincipleID
-INNER JOIN MS_PROD.dbo.dbUser BCM on BCM.usrID = dbFile.fileresponsibleID
-LEFT OUTER JOIN (SELECT fed_code,hierarchylevel2,hierarchylevel3 AS [Practice Area]
+INNER JOIN MS_PROD.dbo.dbUser fee ON fee.usrID = dbFile.filePrincipleID
+INNER JOIN MS_PROD.dbo.dbUser BCM ON BCM.usrID = dbFile.fileresponsibleID
+LEFT OUTER JOIN (SELECT DISTINCT fed_code,hierarchylevel2,hierarchylevel3 AS [Practice Area]
 ,hierarchylevel4 AS [Team]
-FROM red_dw.dbo.dim_fed_hierarchy_current
-WHERE dss_current_flag='Y') AS Teams
- ON fee.usrInits=fed_code collate database_default
+,worksforname
+,worksforemail
+FROM red_dw.dbo.dim_fed_hierarchy_history
+INNER JOIN red_dw.dbo.dim_employee
+ ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+WHERE dss_current_flag='Y' AND activeud=1
+) AS Teams
+ ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
 
 WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 

@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[CabotTransactions]
 (
 @StartDate AS DATE
@@ -30,6 +31,7 @@ txtAccNumber AS SupplierRef
 ,NULL AS Adjustment
 ,PaymentType.cdDesc AS PaymentMethod
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
+,clNo + '.' + fileNo AS [OurReference]
 
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient

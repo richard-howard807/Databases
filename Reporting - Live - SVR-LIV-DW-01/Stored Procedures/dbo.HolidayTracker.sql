@@ -150,7 +150,7 @@ LEFT OUTER JOIN (SELECT * FROM
 
 	INNER JOIN #Division AS Division ON Division.ListValue = hierarchylevel2hist 
 	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
-	INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
+	INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(hierarchylevel4hist,',','')
 	INNER JOIN #Individual AS Individual ON Individual.ListValue = name
 
 

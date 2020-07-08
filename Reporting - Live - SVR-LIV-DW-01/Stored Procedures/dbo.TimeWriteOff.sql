@@ -57,10 +57,14 @@ SELECT [dim_transaction_date_key]
 	  ,fee_arrangement AS [original_fee_arrangement]
       ,date_opened_case_management
       ,date_closed_case_management
-	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Billable Time Not Billed'
+	  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Chargeable Time Not Billed'
 			WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
 			WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
 			WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
+		, CASE WHEN fact_write_off.write_off_type = 'NC' THEN 3
+			WHEN  fact_write_off.write_off_type = 'BA' THEN 2
+			WHEN  fact_write_off.write_off_type = 'WA' THEN 1
+			WHEN fact_write_off.write_off_type = 'P' THEN 4 END AS write_off_type_order
       --,[work_amt] [ytd_work_amt]
       --,[work_hrs]/60 [ytd_work_hrs]
 	  --,CASE WHEN current_fin_month='Current' THEN work_amt ELSE 0 END [mtd_work_amt]

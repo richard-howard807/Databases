@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -98,7 +99,7 @@ END
 
 AS SuccessChance
 
-
+,dim_detail_claim.[insured_vehicle_reg]
 
 
 

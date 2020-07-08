@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Regulatory'	,'PDGHSC'
 (
 @Department AS NVARCHAR(MAX)
@@ -48,7 +49,7 @@ SELECT
 ,[fee_earner]			= fee.usrInits	
 ,CASE WHEN cboCliBalance='BREACH' THEN 'Breach' 
 WHEN cboCliBalance='NOACTION' THEN 'No Action Required'   
-WHEN cboCliBalance='ACTION' THEN 'Action Required' End cboCliBalance
+WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,txtCommentCli	 txtCommentsCli
 ,dteLastReview
 ,TMName
@@ -109,10 +110,10 @@ FROM
 						FROM red_dw.dbo.dim_fed_hierarchy_history
 						INNER JOIN red_dw.dbo.dim_employee
 						 ON  dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
-						WHERE dss_current_flag='Y') AS Teams
+						WHERE dss_current_flag='Y' AND activeud=1) AS Teams
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
-INNER JOIN #Department AS Department  ON RTRIM(LTRIM(Department.ListValue)) COLLATE database_default =RTRIM(LTRIM( [Practice Area])) COLLATE database_default
-INNER JOIN #Team AS Team ON RTRIM(LTRIM(Team.ListValue ))  COLLATE database_default =RTRIM(LTRIM( [Team] ))COLLATE database_default
+INNER JOIN #Department AS Department  ON RTRIM(LTRIM(Department.ListValue)) COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Practice Area])) COLLATE DATABASE_DEFAULT
+INNER JOIN #Team AS Team ON RTRIM(LTRIM(Team.ListValue ))  COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Team] ))COLLATE DATABASE_DEFAULT
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')

@@ -16,6 +16,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [CommercialRecoveries].[LCCHosingBenefit]
 AS
 BEGIN
@@ -33,11 +35,15 @@ SELECT dbFile.fileID
 ,txtDeptType
 ,curOriginalBal AS [Debt Amount]
 ,ISNULL(DisbsCosts.FixedCosts,0) AS [Fixed Costs]
+,ISNULL(DisbsCosts.CostsIncurred,0) AS RecoverableCosts
 ,ISNULL(DisbsCosts.DisbsIncurred,0) + ISNULL(DisbsCosts.UnRecoverableDisb,0)  AS [Disbursements]
 ,ISNULL(DisbsCosts.Interest,0) AS [Interest]
 ,ISNULL(TotalPayments.TotalCollections,0) AS Payments
 ,ISNULL(DisbsPreviousMonth.FixedCosts,0) AS [FixedCostsLastMonth]
+,ISNULL(DisbsPreviousMonth.CostsIncurred,0) AS RecoverableCostsPrevious
 ,ISNULL(DisbsPreviousMonth.DisbsIncurred,0) + ISNULL(DisbsPreviousMonth.UnRecoverableDisb,0)  AS [DisbursementsLastMonth]
+
+
 ,CASE WHEN CONVERT(DATE,fileClosed,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS ClosedLastMonth
 ,txtCurenStatNot
 ,txtFileStatus
