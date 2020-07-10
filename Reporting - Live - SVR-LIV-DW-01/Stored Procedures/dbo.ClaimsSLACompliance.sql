@@ -10,6 +10,8 @@ GO
 
 
 
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -144,7 +146,7 @@ ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_
 LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
 ON days.master_fact_key = fact_dimension_main.master_fact_key
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
-INNER JOIN #Name AS Name ON Name.ListValue COLLATE DATABASE_DEFAULT = name COLLATE DATABASE_DEFAULT
+INNER JOIN #Name AS Name ON Name.ListValue COLLATE DATABASE_DEFAULT = fee_earner_code COLLATE DATABASE_DEFAULT
 INNER JOIN #ClientGroup AS ClientGroup ON ISNULL(dim_matter_header_current.client_group_name,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
 INNER JOIN #PresentPosition AS Position ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(dim_detail_core_details.present_position,'Missing') COLLATE DATABASE_DEFAULT
 INNER JOIN #Status AS [Status] ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
@@ -161,7 +163,10 @@ AND (date_closed_case_management IS NULL
 
 --AND CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate and @EndDate
 AND ((dim_matter_header_current.date_opened_case_management >= @StartDate OR @StartDate IS NULL) AND  dim_matter_header_current.date_opened_case_management<=  @EndDate  OR @EndDate IS NULL) 
-
+--AND RTRIM(fact_dimension_main.client_code) +'-'+RTRIM(fact_dimension_main.matter_number) IN 
+--(
+--'A2002-00015763' , 'A2002-00015827' , 'A2002-00015612'
+--)
 
 END
 GO

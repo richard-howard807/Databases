@@ -5,6 +5,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [axa].[PAS_listing_report]
 AS
 BEGIN
@@ -197,7 +199,7 @@ BEGIN
         LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
             ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 		        LEFT OUTER JOIN red_dw.dbo.dim_detail_client
-            ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_claim_key
+            ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
         LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
             ON dim_defendant_involvement.dim_defendant_involvem_key = fact_dimension_main.dim_defendant_involvem_key
 	 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_initial 
@@ -246,7 +248,7 @@ GROUP BY client_code,matter_number
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_matter_header_current.date_opened_case_management >= '20200701'
-		  --AND [axa_instruction_type]='PAS'
+		  AND [axa_instruction_type]='PAS'
          
 		  
     

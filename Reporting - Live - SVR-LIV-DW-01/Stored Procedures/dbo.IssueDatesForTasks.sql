@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[IssueDatesForTasks]
 (
 @FeeEarner AS NVARCHAR(20)
@@ -36,6 +37,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 
 WHERE tskType LIKE '%KEYDATE%'
 AND CONVERT(DATE,dbTasks.Created,103)>='2020-06-29'
+AND CONVERT(DATE,dbTasks.Created,103)<='2020-07-09'
 AND tskDesc LIKE '% - today%'
 AND fed_code=@FeeEarner
 
