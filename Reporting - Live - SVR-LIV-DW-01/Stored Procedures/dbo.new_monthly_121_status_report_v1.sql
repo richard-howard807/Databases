@@ -197,9 +197,6 @@ SELECT DISTINCT #Employees.employee_name
 		,#Employees.jobtitle
 		,#Employees.employeestartdate , #Distinct121s.system
 FROM #Employees
-LEFT OUTER JOIN #Distinct121s ON #Distinct121s.hierarchylevel2hist = #Employees.division 
-								 AND #Distinct121s.hierarchylevel3hist = #Employees.department
-								 AND #Distinct121s.hierarchylevel4hist = #Employees.team
-								 AND #Distinct121s.employeeid = #Employees.employeeid
+LEFT OUTER JOIN #Distinct121s ON #Distinct121s.employeeid = #Employees.employeeid
 WHERE ISNULL(#Employees.management_exclusions,0) = 0
 GO
