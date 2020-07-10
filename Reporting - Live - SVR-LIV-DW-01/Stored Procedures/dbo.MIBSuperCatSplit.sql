@@ -3,6 +3,10 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
+
 CREATE PROCEDURE [dbo].[MIBSuperCatSplit]
 AS
 BEGIN
@@ -23,12 +27,17 @@ SELECT dim_matter_header_current.client_code AS Client
 ,Billed.[Lead Amount Billed]
 ,Billed.[NonLead Hours Billed]
 ,Billed.[NonLead Amount Billed]
+,outcome_of_case
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_detail_client
  ON dim_detail_client.client_code = dim_matter_header_current.client_code
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+ ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+ AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN 
 (
 SELECT fact_all_time_activity.dim_matter_header_curr_key
@@ -49,6 +58,8 @@ INNER JOIN red_dw.dbo.dim_detail_client
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
   WHERE service_category='Super cat'
  AND client_group_code='00000002'
+ AND dim_bill_key=0
+ AND isactive=1
  GROUP BY fact_all_time_activity.dim_matter_header_curr_key
 ) AS Recorded
  ON Recorded.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -77,5 +88,7 @@ INNER JOIN red_dw.dbo.dim_detail_client
  ON Billed.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  WHERE service_category='Super cat'
  AND client_group_code='00000002'
+ AND ISNULL(outcome_of_case,'')<>'Returned to Client'
+ AND ISNULL(matter_description,'') <>'Lizzie test'
 END
 GO

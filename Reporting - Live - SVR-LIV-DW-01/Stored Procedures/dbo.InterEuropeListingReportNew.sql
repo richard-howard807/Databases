@@ -19,8 +19,10 @@ BEGIN
 		SUBSTRING(h_current.client_code, PATINDEX('%[^0]%', h_current.client_code), LEN(h_current.client_code))
 			+ '.' +
 			SUBSTRING(h_current.matter_number, PATINDEX('%[^0]%', h_current.matter_number), LEN(h_current.matter_number))	AS [Weightmans Reference]
-		, LTRIM(RTRIM(client_involv.client_reference))																		AS [Insurer Client Reference]
-		, LTRIM(RTRIM(client_involv.insuredclient_name))																	AS [Insurer Client]
+	--	, LTRIM(RTRIM(client_involv.client_reference))																		AS [Insurer Client Reference]
+		, MSbillingAddress.[Insurer Reference] [Insurer Client Reference]
+		--, LTRIM(RTRIM(client_involv.insuredclient_name))																	AS [Insurer Client]
+		,foreigninsurer.[Insurer Name] AS [Insurer Client]
 		, CAST(core_details.date_instructions_received AS DATE)																AS [Date Instructions Received]
 		, CASE
 			WHEN core_details.referral_reason = 'Costs dispute' THEN
@@ -73,7 +75,8 @@ BEGIN
 		, elapsed_days.elapsed_days_costs_to_settle																			AS [Damages to costs lifecycle]
 		, paid_detail.total_damages_paid																					AS [Damages Paid]
 		, 'TBC'																												AS [Damages Saving against Reserve]
-		, fin_sum.total_tp_costs_paid_to_date																				AS [TP Costs Paid]
+		--, fin_sum.total_tp_costs_paid_to_date																				
+		,fin_sum.total_tp_costs_paid AS [TP Costs Paid]
 		, 'TBC'																												AS [Costs Saving against Claimed]		
 		, CAST(h_current.date_closed_case_management AS DATE)																AS [Date closed in MS]
 		, ISNULL(fin_sum.total_amount_billed, 0)																			AS [Total billed (inc disbs)]
@@ -138,12 +141,83 @@ BEGIN
 						tasks.client_code = '00351402'
 						AND tasks.task_desccription LIKE '%rial date - today%') find_trial_date
 				ON find_trial_date.client_code = h_current.client_code AND find_trial_date.matter_number = h_current.matter_number
+
+			
+LEFT JOIN
+        (
+            SELECT fileID,
+                   assocType,
+                   contName AS [Insurer Name],
+                   assocAddressee AS [Addressee],
+                   CASE
+                       WHEN assocdefaultaddID IS NOT NULL THEN
+                           ISNULL(dbAddress1.addLine1, '') + ' ' + ISNULL(dbAddress1.addLine2, '') + ' '
+                           + ISNULL(dbAddress1.addLine3, '') + ' ' + ISNULL(dbAddress1.addLine4, '') + ' '
+                           + ISNULL(dbAddress1.addLine5, '') + ' ' + ISNULL(dbAddress1.addPostcode, '')
+                       ELSE
+                           ISNULL(dbAddress2.addLine1, '') + ' ' + ISNULL(dbAddress2.addLine2, '') + ' '
+                           + ISNULL(dbAddress2.addLine3, '') + ' ' + ISNULL(dbAddress2.addLine4, '') + ' '
+                           + ISNULL(dbAddress2.addLine5, '') + ' ' + ISNULL(dbAddress2.addPostcode, '')
+                   END AS [Insurer Address],
+                   dbAssociates.assocRef AS [Insurer Reference],
+                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
+            FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
+                INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
+                    ON dbAssociates.contID = dbContact.contID
+                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress1 WITH (NOLOCK)
+                    ON assocdefaultaddID = dbAddress1.addID
+                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress2 WITH (NOLOCK)
+                    ON contDefaultAddress = dbAddress2.addID
+            WHERE assocType = 'CLIENT'
+
+			
+        )
+        --WHERE assocType='INSURERCLIENT' ) 
+
+
+
+        AS MSbillingAddress
+            ON h_current.ms_fileid = MSbillingAddress.fileID
+               AND MSbillingAddress.XOrder = 1
+
+
+
+			   LEFT JOIN
+        (
+            SELECT fileID,
+                   assocType,
+                   contName AS [Insurer Name],
+                   assocAddressee AS [Addressee],
+                   CASE
+                       WHEN assocdefaultaddID IS NOT NULL THEN
+                           ISNULL(dbAddress1.addLine1, '') + ' ' + ISNULL(dbAddress1.addLine2, '') + ' '
+                           + ISNULL(dbAddress1.addLine3, '') + ' ' + ISNULL(dbAddress1.addLine4, '') + ' '
+                           + ISNULL(dbAddress1.addLine5, '') + ' ' + ISNULL(dbAddress1.addPostcode, '')
+                       ELSE
+                           ISNULL(dbAddress2.addLine1, '') + ' ' + ISNULL(dbAddress2.addLine2, '') + ' '
+                           + ISNULL(dbAddress2.addLine3, '') + ' ' + ISNULL(dbAddress2.addLine4, '') + ' '
+                           + ISNULL(dbAddress2.addLine5, '') + ' ' + ISNULL(dbAddress2.addPostcode, '')
+                   END AS [Insurer Address],
+                   dbAssociates.assocRef AS [Insurer Reference],
+                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
+            FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
+                INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
+                    ON dbAssociates.contID = dbContact.contID
+                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress1 WITH (NOLOCK)
+                    ON assocdefaultaddID = dbAddress1.addID
+                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress2 WITH (NOLOCK)
+                    ON contDefaultAddress = dbAddress2.addID
+            WHERE assocType = 'INSURERCLIENT'
+
+			
+        ) AS foreigninsurer ON foreigninsurer.fileID = MSbillingAddress.fileID
+				AND foreigninsurer.XOrder = 1 
 	WHERE 
 		h_current.client_code = '00351402'
 		AND h_current.matter_number <> 'ML'
 		AND h_current.reporting_exclusions = 0
 		AND CAST(core_details.date_instructions_received AS DATE)>='2019-11-01'
-	
+		AND h_current.matter_owner_full_name <> 'Jake Whewell'	
 
 END;
 GO

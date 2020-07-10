@@ -7,6 +7,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -128,6 +131,9 @@ SELECT client_name AS [Client Name]
 			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
 			ELSE 'Transparent' END [Update Report RAG]
 ,referral_reason
+,CASE WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
+
+THEN 1 ELSE 0 END AS NoBlankInitial
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -139,8 +145,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days
 ON days.master_fact_key = fact_dimension_main.master_fact_key
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 INNER JOIN #Name AS Name ON Name.ListValue COLLATE DATABASE_DEFAULT = name COLLATE DATABASE_DEFAULT
-INNER JOIN #ClientGroup AS ClientGroup ON dim_matter_header_current.client_group_name=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
-INNER JOIN #PresentPosition AS Position ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = dim_detail_core_details.present_position COLLATE DATABASE_DEFAULT
+INNER JOIN #ClientGroup AS ClientGroup ON ISNULL(dim_matter_header_current.client_group_name,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
+INNER JOIN #PresentPosition AS Position ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(dim_detail_core_details.present_position,'Missing') COLLATE DATABASE_DEFAULT
 INNER JOIN #Status AS [Status] ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
 
 LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
