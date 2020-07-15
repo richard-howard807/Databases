@@ -3,11 +3,10 @@ GO
 SET ANSI_NULLS ON
 GO
 
+--================================================
+--ES 20200713 #64332
 
-
-
-
-
+--================================================
 
 
 CREATE PROCEDURE [CommercialRecoveries].[CostCutter]
@@ -17,6 +16,8 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 ,fileDesc AS [CaseDesc]
 ,Reference AS [AlternativeRef]
 ,curOriginalBal AS [PrincipalDebt]
+,CostcutterStatus.Termination AS [TerminationFees]
+,ISNULL(curOriginalBal,0)+ISNULL(CostcutterStatus.Termination,0) AS [Total Debt]
 ,Ledger.Payments AS [SumsRecovered]
 ,curCurrentBal AS [CurrentBalance]
 ,txtClaNum2 AS [ClaimNumber]
@@ -46,6 +47,9 @@ END AS [Insolvency proceedings]
 ,ActionReq AS ActionRequired
 ,HearingDate
 ,defence_costs_billed AS [Revenue]
+,CostcutterStatus.CostsRecovered AS [Costs Recovered from o/s]
+,(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0) AS [Net Payment to Costcutter £]
+,CASE WHEN (ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0)<=0 THEN NULL ELSE defence_costs_billed/(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0)) END AS [Net % to Costcutter]
 ,CAST(master_matter_number AS INT) AS master_matter_number
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
@@ -118,7 +122,8 @@ SELECT fileID
 ,Court.cdDesc AS CourtStatus
 ,InsolveType.cdDesc AS InsolvancyType
 ,ActionReq.cdDesc AS ActionReq
-
+,curTermination AS [Termination]
+,curCostRecOS AS [CostsRecovered]
 FROM ms_prod.dbo.udCRCostcutterDetails
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus
  ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'
