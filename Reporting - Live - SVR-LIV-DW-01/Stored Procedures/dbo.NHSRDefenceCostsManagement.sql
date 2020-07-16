@@ -16,6 +16,7 @@ History
  20/11/2018	 JL		1.1 - excluded present position matters as per ticket 2482
  03/09/2019	 ES		1.2 - added dim_detail_critical_mi.[is_there_an_issue_on_liability] as per ticket 30785 
  07/05/2020	 ES		1.3 - amended panel averages and changed age of matter to years rater than days as pert ticket 57804
+ 16/07/2020	 ES		1.4 - #64794 added ms ref 
 ====================================================
 
 */
@@ -39,6 +40,7 @@ SELECT
 ,[matter_owner_practice_area]
 ,[client_code]
 ,[matter_number]
+,AllData.Ref
 ,[matter_description]
 ,fed_code
 ,[wip]
@@ -94,6 +96,7 @@ fact_finance_summary.[time_charge_value]
 ,hierarchylevel4hist AS [matter_owner_practice_area]
 ,dim_client.[client_code]
 ,dim_matter_header_current.[matter_number]
+,dim_matter_header_current.master_client_code+'-'+master_matter_number AS [Ref]
 ,dim_matter_header_current.[matter_description]
 ,dim_fed_hierarchy_history.fed_code
 ,fact_finance_summary.[wip]
@@ -239,6 +242,7 @@ SELECT
 ,[matter_owner_practice_area]
 ,[client_code]
 ,[matter_number]
+,[Ref]
 ,[matter_description]
 ,fed_code
 ,[wip]
@@ -295,6 +299,7 @@ fact_finance_summary.[time_charge_value]
 ,hierarchylevel4hist AS [matter_owner_practice_area]
 ,dim_client.[client_code]
 ,dim_matter_header_current.[matter_number]
+,dim_matter_header_current.master_client_code+'-'+master_matter_number AS [Ref]
 ,dim_matter_header_current.[matter_description]
 ,dim_fed_hierarchy_history.fed_code
 ,fact_finance_summary.[wip]
@@ -441,6 +446,7 @@ SELECT
 ,[matter_owner_practice_area]
 ,[client_code]
 ,[matter_number]
+,[Ref]
 ,[matter_description]
 ,fed_code
 ,[wip]
@@ -497,6 +503,7 @@ fact_finance_summary.[time_charge_value]
 ,hierarchylevel4hist AS [matter_owner_practice_area]
 ,dim_client.[client_code]
 ,dim_matter_header_current.[matter_number]
+,dim_matter_header_current.master_client_code+'-'+master_matter_number AS [Ref]
 ,dim_matter_header_current.[matter_description]
 ,dim_fed_hierarchy_history.fed_code
 ,fact_finance_summary.[wip]
@@ -643,6 +650,7 @@ SELECT
 ,[matter_owner_practice_area]
 ,[client_code]
 ,[matter_number]
+,[Ref]
 ,[matter_description]
 ,fed_code
 ,[wip]
@@ -699,6 +707,7 @@ fact_finance_summary.[time_charge_value]
 ,hierarchylevel4hist AS [matter_owner_practice_area]
 ,dim_client.[client_code]
 ,dim_matter_header_current.[matter_number]
+,dim_matter_header_current.master_client_code+'-'+master_matter_number AS [Ref]
 ,dim_matter_header_current.[matter_description]
 ,dim_fed_hierarchy_history.fed_code
 ,fact_finance_summary.[wip]

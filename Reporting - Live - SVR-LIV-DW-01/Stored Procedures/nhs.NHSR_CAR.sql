@@ -97,7 +97,8 @@ SELECT --TOP 100*
        , date_final_bill_sent_to_client.cal_year AS date_final_bill_sent_to_client_cal_year  
 	   , date_instructions_received.cal_month_no AS date_instructions_received_cal_month_no
        , date_instructions_received.cal_year AS date_instructions_received_cal_year  
-	   
+	 --  , CASE WHEN emp_hierarchy.hierarchylevel2hist='Risk Pool' THEN 14 
+		--WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 14 ELSE 28 END AS [DaystoFirstReportTarget]
 
 
 
@@ -202,7 +203,12 @@ LEFT OUTER JOIN Reporting.nhs.PanelAverages ON PanelAverages.Scheme=NHSRData.Sch
 AND PanelAverages.Banding=NHSRData.Banding
 
 
-SELECT a.*,b.[Shelf Life Target] AS [ShelfLifeTarget], b.[Damages Target] AS [DamagesTarget], b.[Defence Costs Target] AS [DefenceCostsTarget]--, b.[Consolidated Costs Target] AS [ConsolidatedCostsTarget]
+SELECT a.*
+	,b.[Shelf Life Target] AS [ShelfLifeTarget]
+	, b.[Damages Target] AS [DamagesTarget]
+	, b.[Defence Costs Target] AS [DefenceCostsTarget]
+	--, b.[Consolidated Costs Target] AS [ConsolidatedCostsTarget]
+	
 FROM #SummaryData AS a
 
 --LEFT OUTER JOIN (SELECT [Master Client Code]
