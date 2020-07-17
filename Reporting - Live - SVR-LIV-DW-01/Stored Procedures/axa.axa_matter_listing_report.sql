@@ -17,6 +17,7 @@ GO
 -- ES 20/02/2020 - added additional fields, 48695
 -- ES 22/04/2020 - added Does the claimant have a PI claim? and Date of Last Bill and Date Last Worked, 56563
 -- JL 13/05/2020 - removed date_instructions_received is not null as per ticket 58054
+-- ES 16/07/2020 - #64836 added client code 220044, amended tp costs paid  detail, added date costs settled, unbilled disbs and unpaid bill balance
 ---------- =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
@@ -49,6 +50,8 @@ BEGIN
            fact_finance_summary.damages_paid [Total Settlement value],
            [Profit Costs Billed] = defence_costs_billed,
            [Disbs Billed] = fact_finance_summary.disbursements_billed,
+		   [Unbilled Disbursements] = fact_finance_summary.disbursement_balance,
+		   [Unpaid Bill Balance] = fact_finance_summary.unpaid_bill_balance,
            [WIP] = fact_finance_summary.wip,
            [Date Case Closed] = dim_matter_header_current.date_closed_case_management,
            [Date Case Opened] = dim_matter_header_current.date_opened_case_management,
@@ -102,7 +105,8 @@ BEGIN
            fact_finance_summary.damages_reserve_initial [Damages Reserve initial 1],
            fact_finance_summary.tp_costs_reserve_initial [initial Cost reserve 1],
            fact_finance_summary.total_reserve [Total Reserve 1],
-           [TP Costs Paid] = fact_finance_summary.total_tp_costs_paid,
+           --[TP Costs Paid] = fact_finance_summary.total_tp_costs_paid,
+		   [TP Costs Paid] = fact_finance_summary.claimants_costs_paid,
            fact_finance_summary.defence_costs_reserve_initial [defence_costs_reserve_initial1],
 		   red_dw.dbo.fact_detail_reserve_initial.damages_reserve_init [init- damages reserve], 
 		   red_dw.dbo.fact_detail_reserve_initial.claimant_costs_reserve_current_init [init- Claimant Cost Reserve ], 
@@ -127,6 +131,10 @@ BEGIN
 		   , dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the claimant have a PI claim?]
 		   , last_bill_date AS [Date of Last Bill]
 		   , last_time_transaction_date AS [Date Last Worked]
+		   , dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
+		   , CASE WHEN clients_claims_handler_surname_forename IN ('Spinks, Stephen','Lockheart, Steven','Bokhari, Iram','Rogers, Elizabeth','Nicolaou, Andy','Tuer, Robert') THEN 1 ELSE 0 END AS [London Casualty Team Matters]
+
+
 
     FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
@@ -183,11 +191,12 @@ BEGIN
     WHERE ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
           AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
           AND dim_matter_header_current.matter_number <> 'ML'
-          AND dim_matter_header_current.master_client_code = 'A1001'
+          AND (dim_matter_header_current.master_client_code = 'A1001' OR dim_matter_header_current.master_client_code='220044')
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_matter_header_current.date_opened_case_management >= '20170101'
           --AND dim_detail_core_details.date_instructions_received IS NOT NULL
 		  --AND dim_matter_header_current.client_code='A1001' AND dim_matter_header_current.matter_number='00010136'
+
 		  
     
     ORDER BY dim_matter_header_current.date_opened_case_management;
