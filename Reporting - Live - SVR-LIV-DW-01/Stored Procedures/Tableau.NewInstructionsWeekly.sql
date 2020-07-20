@@ -106,8 +106,9 @@ BEGIN
  WHERE date_opened_case_management>='2019-01-01'
  AND reporting_exclusions=0
  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
+ AND date_opened_case_management<(SELECT MIN(calendar_date) AS [CurrentWeekCommencing] 
+									FROM red_dw.dbo.dim_date
+									WHERE current_cal_week='Current')
     
 END
-
-
 GO
