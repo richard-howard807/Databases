@@ -14,6 +14,7 @@ Ticket:				47206
 Current Version:	Initial Create
 ====================================================
 -- ES 17-07-2020 #64922 added Andrew Currah
+-- ES 17-07-2020 #65156 added Ella Collett
 ====================================================
 */
 
@@ -33,6 +34,7 @@ AS
 	SELECT 
 		cost_time.master_fact_key
 		, cost_time.dim_matter_header_current_key
+		, ISNULL(SUM(cost_time.ella_collett), 0)											AS [ella_collett_wip]
 		, ISNULL(SUM(cost_time.andrew_currah), 0)											AS [andrew_currah_wip]
 		, ISNULL(SUM(cost_time.beth_price), 0)												AS [beth_price_wip]
 		, ISNULL(SUM(cost_time.brian_collins), 0)											AS [brian_collins_wip]
@@ -54,7 +56,8 @@ AS
 		, ISNULL(SUM(cost_time.sarah_evans), 0)												AS [sarah_evans_wip]
 		, ISNULL(SUM(cost_time.stephanie_mcbride), 0)										AS [stephanie_mcbride_wip]
 		, ISNULL(SUM(cost_time.stuart_naylor), 0)											AS [stuart_naylor_wip]
-		, ISNULL(SUM(cost_time.andrew_currah), 0) +
+		, ISNULL(SUM(cost_time.ella_collett), 0) +
+			ISNULL(SUM(cost_time.andrew_currah), 0) +
 			ISNULL(SUM(cost_time.beth_price), 0) +
 			ISNULL(SUM(cost_time.brian_collins), 0) +
 			ISNULL(SUM(cost_time.chloe_higham), 0) +
@@ -80,6 +83,12 @@ AS
 			SELECT
 				master_fact_key
 				, dim_matter_header_current_key
+				, CASE	
+					WHEN cost_handlers.fed_code IN ('5518','6195','ECE') THEN 
+						SUM(wip_value)
+					ELSE
+						0
+				  END																	AS [ella_collett]
 				, CASE	
 					WHEN cost_handlers.fed_code IN ('3691','ANC') THEN 
 						SUM(wip_value)
@@ -212,7 +221,7 @@ AS
 										dim_fed_hierarchy_history_key
 										, fed_code
 									FROM red_dw.dbo.dim_fed_hierarchy_history
-									WHERE fed_code IN ('3691','ANC','6180','SMB','4941','SHC1','SHC','3401','4846',
+									WHERE fed_code IN ('5518','6195','ECE','3691','ANC','6180','SMB','4941','SHC1','SHC','3401','4846',
 													'MCB1','MCB','4270','5607','MMB','1924','6114',
 													'2033','4410','LOH','LFO1','LFO','3662','KFI',
 													'4878','5386','WIJ','5522','IST','5113','GME',
@@ -255,6 +264,7 @@ AS
 		, red_dw.dbo.dim_matter_header_current.present_position										AS [Present Position]
 		, CAST(red_dw.dbo.fact_matter_summary_current.last_bill_date AS DATE)						AS [Date of Last Bill]
 		, CAST(red_dw.dbo.fact_matter_summary_current.last_time_transaction_date AS DATE)			AS [Date of Last Time Transaction]
+		, ISNULL(ella_collett_wip, 0)																AS [Ella Collett WIP]
 		, ISNULL(andrew_currah_wip, 0)																AS [Andrew Currah WIP]
 		, ISNULL(beth_price_wip, 0)																	AS [Beth Price WIP]
 		, ISNULL(brian_collins_wip, 0)																AS [Brian Collins WIP]
