@@ -2,9 +2,21 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE PROCEDURE [dbo].[WipAndDisbs] @FinMonth VARCHAR(50) AS
+
+
+CREATE PROCEDURE [dbo].[WipAndDisbs] @FinMonth VARCHAR(50) 
+
+as
+
+/*
+RH 21-07-2020 - Fixed Fee arrangmentent on files with no WIP
+
+*/
+
+--DECLARE  @FinMonth VARCHAR(20) = '2021-03 (Jul-2020)'
 
 --[dbo].[WipAndDisbs] '2019-07 (Nov-2018)'
+
 
 SELECT  
 fact_wip_monthly.dim_matter_header_history_key,
@@ -29,7 +41,7 @@ SUM(wip_value) AS wip_value,
 dim_matter_header_history.fixed_fee,
 dim_matter_header_history.fixed_fee_amount,
 fact_wip_monthly.fee_earner_code,
-dim_detail_finance.output_wip_fee_arrangement,
+output_wip_fee_arrangement AS output_wip_fee_arrangement,
 --fact_finance_summary.fixed_fee_amount,
 dim_detail_finance.output_wip_percentage_complete
 
@@ -152,7 +164,8 @@ last_bill_date,
 matter_owner_full_name,
 dim_fed_hierarchy_history.hierarchylevel2hist as 'business_line',
 dim_fed_hierarchy_history.hierarchylevel3hist as 'practice_area',
-dim_fed_hierarchy_history.hierarchylevel4hist as 'team'
+dim_fed_hierarchy_history.hierarchylevel4hist as 'team',
+output_wip_fee_arrangement AS output_wip_fee_arrangement
 
 INTO #disbs 
 
@@ -161,6 +174,7 @@ red_dw.dbo.fact_matter_summary
 left join red_dw.dbo.dim_matter_header_history on dim_matter_header_history.dim_mat_head_history_key = fact_matter_summary .dim_matter_header_history_key
 left join red_dw.dbo.dim_fed_hierarchy_history on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_matter_summary.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_matter_summary.dim_client_key
+left join red_dw.dbo.dim_detail_finance on dim_detail_finance.client_code = fact_matter_summary.client_code AND  dim_detail_finance.matter_number = fact_matter_summary.matter_number
 WHERE 
 fin_month =(select  fin_month from red_dw.dbo.dim_date
 				WHERE fin_period =@FinMonth
@@ -185,8 +199,30 @@ COALESCE(w.last_bill_date, d.last_bill_date) AS 'last_bill_date_c',
 COALESCE(w.business_line, d.business_line) AS 'business_line_c',
 COALESCE(w.practice_area, d.practice_area) AS 'practice_area_c',
 COALESCE(w.team, d.team) AS 'team_c',
-
-w.*, d.disbursement_balance 
+COALESCE(w.output_wip_fee_arrangement, d.output_wip_fee_arrangement) output_wip_fee_arrangement,
+w.dim_matter_header_history_key,
+w.business_line,
+w.practice_area,
+w.team,
+w.client_code,
+w.matter_number,
+w.client_name,
+w.segment,
+w.sector,
+w.[3e_matter_number],
+w.matter_description,
+w.matter_owner_full_name,
+w.costs_to_date,
+w.last_bill_date,
+w.[0 - 30 Days],
+w.[31 - 90 days],
+w.[Greater than 90 Days],
+w.[<0 Days],
+w.[Total Wip],
+w.fixed_fee,
+w.fixed_fee_amount,
+w.fee_earner_code,
+w.output_wip_percentage_complete, d.disbursement_balance 
 INTO #joined
 FROM #disbs  d
 left JOIN #wip w ON d.dim_matter_header_history_key = w.dim_matter_header_history_key
@@ -207,20 +243,20 @@ practice_area_c [Department],
 team_c [Team],
 matter_owner_full_name_c [Matter Owner],
 last_bill_date_c [Last Bill Date],
-sum(isnull([0 - 30 Days], 0)) [0 - 30 Days],
-sum(isnull([31 - 90 days], 0)) [31 - 90 days],
-sum(isnull([Greater than 90 Days], 0)) [Greater than 90 Days],
-sum(isnull([<0 Days], 0)) [<0 Days],
-sum(isnull([Total Wip], 0)) [Total Wip],
-max(isnull(disbursement_balance, 0)) [Disb Balance],
-max(isnull(costs_to_date_c, 0)) [Revenue],
+SUM(ISNULL([0 - 30 Days], 0)) [0 - 30 Days],
+SUM(ISNULL([31 - 90 days], 0)) [31 - 90 days],
+SUM(ISNULL([Greater than 90 Days], 0)) [Greater than 90 Days],
+SUM(ISNULL([<0 Days], 0)) [<0 Days],
+SUM(ISNULL([Total Wip], 0)) [Total Wip],
+MAX(ISNULL(disbursement_balance, 0)) [Disb Balance],
+MAX(ISNULL(costs_to_date_c, 0)) [Revenue],
 output_wip_fee_arrangement [Fee Arrangement],
-max(fixed_fee_amount) as [Fixed Fee Amount],
+MAX(fixed_fee_amount) AS [Fixed Fee Amount],
 output_wip_percentage_complete [Percentage Complete]
 
 FROM #joined
 
-group by
+GROUP BY
 client_code_c,
 matter_number_c,
 [3e_matter_number_c],
