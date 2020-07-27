@@ -11,6 +11,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20/11/2017
@@ -101,38 +102,22 @@ AS
 	--AND dbClient.clID <> '69873' -- a collegiate management limited file that should be excluded  (has a markel client group)
 	WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
 	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) <>'AXA Insurance UK Plc'
-	AND (
-
-		CASE WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
-			  WHEN [cboGenClientStatus] = '0002' THEN 'Star'
-			  WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
-			  WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
-			  WHEN [cboGenClientStatus] = '0004' THEN 'Generator'
-	
-		WHEN [cboGenClientStatus] IS NULL THEN ''
-		 END + ' : ' + ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) 
+	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) 
 IN (
-N'Patron : Zurich',N'Patron : Zurich',N'Patron : NHS Resolution',N'Patron : Ageas',
-N'Star : AXA XL',N'Pipeline : AXA Insurance UK Plc',N'Pipeline : AXA Insurance UK Plc',
-N'Patron : AIG',N'Star : Royal Mail',N'Star : Markel',N'Star : Markel',N'Pipeline : BARRATT PLC',
-N'Star : Surrey Police',N'Star : Sussex Police',N'Star : Sabre',N'Patron : pwc',N'Pipeline : Bibby Group',
-N'Star : Clarion Housing Group Limited',
-N'Star : Metropolitan Police',
-N'Generator : Sovini Group',
-N'Generator : Business Energy Solutions Ltd' ,                                                
-N'Generator : BES Utilities Holding Ltd',                                                    
-N'Generator : BES Metering Services Limited'  
+N'Zurich',N'Zurich',N'NHS Resolution',N'Ageas',
+N'AXA XL',N'AXA Insurance UK Plc',N'AXA Insurance UK Plc',
+N'AIG',N'Royal Mail',N'Markel',N'Markel',N'BARRATT PLC',
+N'Surrey Police',N'Sussex Police',N'Sabre',N'pwc',N'Bibby Group',
+N'Clarion Housing Group Limited',
+N'Metropolitan Police',
+N'Sovini Group',
+N'Business Energy Solutions Ltd' ,                                                
+N'BES Utilities Holding Ltd',                                                    
+N'BES Metering Services Limited'  
 
 )
 
-OR (dbClient.clNo = 'W21402') OR ( CASE WHEN [cboGenClientStatus] = '0001' THEN 'Patron'
-			  WHEN [cboGenClientStatus] = '0002' THEN 'Star'
-			  WHEN [cboGenClientStatus] = '0003' THEN 'Rising Star'
-			  WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
-			  		WHEN [cboGenClientStatus] = '0004' THEN 'Generator'
-	
-	WHEN [cboGenClientStatus] IS NULL THEN ''
-		 END + ' : ' + ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited'))
+OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited')
 		 
 		 ------------------------------------------------------------------------------------------------------------------------------
 

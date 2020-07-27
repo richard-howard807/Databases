@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[MilestoneProjectWixardCompliance]
 
 AS 
@@ -16,7 +17,7 @@ SELECT hierarchylevel2hist AS Division
 ,name AS [Fee Earner]
 ,fed_code AS [FedCode]
 ,1 AS [Number Live Matters]
-,CASE WHEN Milestones.Completed>1 THEN 1 ELSE 0 END  AS [WizardCompleted]
+,CASE WHEN Milestones.Completed>=1 THEN 1 ELSE 0 END  AS [WizardCompleted]
 ,CASE WHEN Milestones.Completed=0 THEN 1 ELSE 0 END  AS [WizardIncomplete]
 ,Milestones.DateLastCompleted AS [LastTimeRan]
 ,DATEDIFF(DAY,Milestones.DateLastCompleted,GETDATE()) AS [DaysSinceWizardLastCompleted]

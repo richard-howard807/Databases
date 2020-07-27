@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -158,9 +159,9 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 SELECT DISTINCT
     dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_opened_case_management AS date)) [Fin Year Opened],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_opened_case_management AS DATE)) [Fin Year Opened],
     dim_matter_header_current.date_closed_case_management AS [Date Case Closed],	
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_closed_case_management AS date)) [Fin Year Closed],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_closed_case_management AS DATE)) [Fin Year Closed],
     dim_matter_header_current.ms_only AS [MS Only],
     RTRIM(fact_dimension_main.client_code) + '/' + fact_dimension_main.matter_number AS [Weightmans Reference],
     fact_dimension_main.client_code AS [Client Code],
@@ -355,7 +356,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_court.[date_of_trial] AS [Date of Trial],
 		   
     dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(date_claim_concluded AS date)) AS [Fin Year Claim Concluded],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(date_claim_concluded AS DATE)) AS [Fin Year Claim Concluded],
     fact_finance_summary.damages_interims AS [Interim Damages],
     CASE
         WHEN fact_finance_summary.[damages_paid] IS NULL
@@ -402,7 +403,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     dim_detail_outcome.date_referral_to_costs_unit AS [Date Referral to Costs Unit],
     dim_detail_outcome.[date_claimants_costs_received] AS [Date Claimants Costs Received],
     dim_detail_outcome.date_costs_settled AS [Date Costs Settled],
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_detail_outcome.date_costs_settled AS date)) AS [Fin Year Costs Settled],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(dim_detail_outcome.date_costs_settled AS DATE)) AS [Fin Year Costs Settled],
     dim_detail_client.date_settlement_form_sent_to_zurich AS [Date Settlement form Sent to Zurich WPS386 VE00571],
     fact_detail_paid_detail.interim_costs_payments AS [Interim Costs Payments],
     fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)],
@@ -442,9 +443,9 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
             fact_matter_summary_current.last_bill_date
     END AS [Last Bill Date],
     fact_bill_matter.last_bill_date [Last Bill Date Composite ],
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_bill_matter.last_bill_date AS date)) [Fin Year Of Last Bill],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_bill_matter.last_bill_date AS DATE)) [Fin Year Of Last Bill],
     fact_matter_summary_current.[last_time_transaction_date] AS [Date of Last Time Posting],
-	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_matter_summary_current.[last_time_transaction_date] AS date)) AS [Fin Year Of Last Time Posting],
+	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(fact_matter_summary_current.[last_time_transaction_date] AS DATE)) AS [Fin Year Of Last Time Posting],
     TimeRecorded.HoursRecorded AS [Hours Recorded],
     TimeRecorded.MinutesRecorded AS [Minutes Recorded],
     ((CASE
@@ -557,6 +558,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
+,will_total_gross_reserve_on_the_claim_exceed_500000 AS [LL Damages £350k+]
 , ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 INTO Reporting.dbo.selfservice
    
@@ -654,7 +656,7 @@ FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
 			
-	left join red_dw.dbo.dim_involvement_full on dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimantrep_1_key 
+	LEFT JOIN red_dw.dbo.dim_involvement_full ON dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimantrep_1_key 
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
 		LEFT OUTER JOIN (SELECT fileID,CASE WHEN cboClientReqRep='Y' THEN 'Yes'
 								WHEN cboClientReqRep='N' THEN 'No' ELSE cboClientReqRep END  AS [Do clients require an initial report] 

@@ -12,6 +12,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -84,17 +87,21 @@ SELECT client_name AS [Client Name]
 	--, receipt_of_instructions AS [Date Receipt of File Papers]
 	, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Receipt of File Papers]
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
-	, date_initial_report_due AS [Date Initial Report Due (if extended)]
+	, CASE WHEN date_initial_report_due IS NULL THEN [dbo].[AddWorkDaysToDate](date_opened_case_management,10) ELSE date_initial_report_due END AS [Date Initial Report Due (if extended)]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
 	--, CASE WHEN date_initial_report_due IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Initial Report]
 	, CASE WHEN do_clients_require_an_initial_report = 'No' THEN NULL
+	WHEN dim_detail_core_details.delegated='Yes' THEN NULL
 		WHEN date_initial_report_sent IS NOT NULL THEN NULL
-		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE())
-		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
+		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())
+		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
-	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Subsequent Report]
+	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	ELSE NULL END AS [Days without Subsequent Report]
 	, 1 AS [Number of Files]
 	,days.days_to_first_report_lifecycle
 	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
@@ -136,6 +143,8 @@ SELECT client_name AS [Client Name]
 ,CASE WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
 
 THEN 1 ELSE 0 END AS NoBlankInitial
+,dim_detail_core_details.delegated
+
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -143,6 +152,9 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
 ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+ ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+ AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
 ON days.master_fact_key = fact_dimension_main.master_fact_key
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
