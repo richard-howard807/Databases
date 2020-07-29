@@ -2,10 +2,13 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[CHICLegalServicesMMIReport]
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
+,@Client AS VARCHAR(MAX) 
 )
 
 AS 
@@ -14,8 +17,12 @@ BEGIN
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-05-01'
 --SET @EndDate='2020-05-31'
+	IF OBJECT_ID('tempdb..#Client') IS NOT NULL   DROP TABLE #Client
 
-SELECT dim_matter_header_current.client_name AS [Member]
+		SELECT ListValue  INTO #Client FROM 	dbo.udt_TallySplit(',', @Client)
+SELECT 
+dim_matter_header_current.client_code
+,dim_matter_header_current.client_name AS [Member]
 ,'Weightmans LLP' AS [Panel Firm]
 ,date_opened_case_management AS [Instruction Date]
 ,clientcontact_name AS [Instructing Officer]
@@ -90,6 +97,8 @@ END AS [Lot]
 
 
 FROM red_dw.dbo.dim_matter_header_current
+INNER JOIN #client AS Client ON dim_matter_header_current.client_code=Client.ListValue COLLATE DATABASE_DEFAULT
+
 INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_matter_worktype

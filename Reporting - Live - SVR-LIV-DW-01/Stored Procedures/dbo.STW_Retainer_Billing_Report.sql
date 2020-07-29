@@ -9,6 +9,7 @@ GO
 -- Description:	STW Retainer Billing Report
 -- =============================================
 -- LD 20190703 Added in transaction date
+--  ok 28/07/2020 added matter 00000626
 CREATE PROCEDURE [dbo].[STW_Retainer_Billing_Report]
 	-- Add the parameters for the stored procedure here
 
@@ -41,9 +42,11 @@ LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_
 LEFT JOIN red_dw.dbo.dim_date tr_date ON red_dw.dbo.fact_all_time_activity.dim_transaction_date_key = tr_date.dim_date_key
 
 WHERE 
-dim_detail_claim.[stw_work_type] = 'Retainer' AND 
+(dim_detail_claim.[stw_work_type] = 'Retainer' AND 
 fact_dimension_main.client_code IN ('00257248','00513126')
-AND wipamt > 0 AND isactive = 1 
+AND wipamt > 0 AND isactive = 1 ) OR 
+( wipamt > 0 AND isactive = 1 AND fact_dimension_main.client_code = '00257248' AND 
+ fact_dimension_main.matter_number = '00000626') 
 
 
 END

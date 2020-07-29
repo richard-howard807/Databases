@@ -7,14 +7,42 @@ GO
 -- Create date: 2020-07-24
 -- Description:	New report to track holidays at firm level, 65712
 -- =============================================
---EXECUTE [dbo].[HolidayTracker_FirmLevel]  'Business Services', 'Data Services', 'Business Analytics', 'Julie Loughlin'
+--EXECUTE [dbo].[HolidayTracker_FirmLevel]  'Business Services', 'Data Services', 'Business Analytics', 'Orlagh Kelly, Julie Loughlin'
+--EXECUTE [dbo].[HolidayTracker_FirmLevel] 'Business Services, Client Relationships, Legal Ops - Claims, Legal Ops - LTA',
+
+--'Business Change,
+--Business Services Management,
+--Casualty,
+--Claims Management,
+--Client Management,
+--Corp-Comm,
+--Data Services,
+--Disease,
+--EPI,
+--Facilities,
+--Finance,
+--Glasgow,
+--Healthcare,
+--Information Systems,
+--LTA Management,
+--Large Loss,
+--Litigation,
+--Marketing,
+--Motor,
+--Newcastle,
+--People and Knowledge,
+--Real Estate,
+--Regulatory,
+--Risk and Compliance'
+
+
 
 CREATE PROCEDURE [dbo].[HolidayTracker_FirmLevel] 
 	
 	@Division VARCHAR(MAX) --= 'Business Services'
-	, @Department varchar(MAX) -- = 'Data Services'
-	, @Team varchar(MAX)--= 'Business Analytics'
-	, @Individual varchar(MAX) -- 'Julie Loughlin'
+, @Department varchar(MAX) -- = 'Data Services'
+	--, @Team varchar(MAX)--= 'Business Analytics'
+	--, @Individual varchar(MAX) -- 'Julie Loughlin'
 
 
 AS
@@ -25,8 +53,8 @@ BEGIN
 
 	IF OBJECT_ID('tempdb..#Division') IS NOT NULL   DROP TABLE #Division
 	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
-	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
-	IF OBJECT_ID('tempdb..#Individual') IS NOT NULL   DROP TABLE #Individual
+	--IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	--IF OBJECT_ID('tempdb..#Individual') IS NOT NULL   DROP TABLE #Individual
 
 			CREATE TABLE #Division 
 	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
@@ -38,15 +66,15 @@ BEGIN
 	INSERT INTO #Department
 	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Department) 
 
-	CREATE TABLE #Team 
-	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
-	INSERT INTO #Team
-	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Team) 
+	--CREATE TABLE #Team 
+	--( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	--INSERT INTO #Team
+	--SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Team) 
 
-	CREATE TABLE #Individual 
-	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
-	INSERT INTO #Individual
-	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Individual) 
+	--CREATE TABLE #Individual 
+	--( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	--INSERT INTO #Individual
+	--SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Individual) 
 
 
 SELECT name AS [Name]
@@ -151,8 +179,8 @@ LEFT OUTER JOIN (SELECT * FROM
 
 	INNER JOIN #Division AS Division ON Division.ListValue = hierarchylevel2hist 
 	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
-	INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(hierarchylevel4hist,',','')
-	INNER JOIN #Individual AS Individual ON Individual.ListValue = name
+	--INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(hierarchylevel4hist,',','')
+	--INNER JOIN #Individual AS Individual ON Individual.ListValue = name
 
 
 WHERE leaver=0

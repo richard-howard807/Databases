@@ -4,36 +4,40 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
+
 CREATE PROCEDURE [CommercialRecoveries].[AlphabetCompositReport]
+(
+@StartDate AS DATE
+,@EndDate AS DATE
+)
 
 AS 
 
 BEGIN
 
-
-
-
-SELECT ROW_NUMBER() OVER (PARTITION BY fact_bill_matter_detail.bill_number,dim_matter_header_current.client_code,dim_matter_header_current.matter_number ORDER BY fact_bill_matter_detail.bill_number) AS [Number ID]
+SELECT ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY dbFile.fileID) AS [Number ID]
+,dbFile.fileID AS [FileID]
+,clNo + '-' + fileNo AS [WeightmansRef]
 ,COALESCE(assocRef,txtCliRef) AS [F_INV_ACCREF]
-,fact_bill_matter_detail.bill_number AS [F_INV_EXTERNAL_NUMBER]
-,bill_total - vat AS [F_INV_NET_TOTAL]
-,vat AS [F_INV_VAT_TOTAL]
+,NULL AS [F_INV_EXTERNAL_NUMBER]
+,curOffice AS [F_INV_NET_TOTAL]
+,curVAT AS [F_INV_VAT_TOTAL]
 ,txtCliRef AS [F_INV_VEH_ID]
-,narrative AS [NARRATIVE_1]
+,txtItemDesc AS [NARRATIVE_1]
 ,txtVehicleReg AS [NARRATIVE_2]
-,matter_description AS [Customer Name]
-FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN red_dw.dbo.dim_matter_worktype
- ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-INNER JOIN red_dw.dbo.fact_bill_matter_detail
- ON fact_bill_matter_detail.client_code = dim_matter_header_current.client_code
- AND fact_bill_matter_detail.matter_number = dim_matter_header_current.matter_number
+,fileDesc AS [Customer Name]
+,CASE WHEN cboCatDesc='7' THEN 'Cost'
+WHEN cboCatDesc <> '7' AND UPPER(txtItemDesc) LIKE '%COURT%' THEN 'Court Fee' 
+ELSE 'Disbursement' END AS UnrecoverableCostType
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.dbo.udCRLedgerSL
+ ON udCRLedgerSL.fileID = dbFile.fileID
 LEFT OUTER JOIN MS_Prod.dbo.udCRCore
- ON ms_fileid=udcrcore.fileID
-LEFT OUTER JOIN red_dw.dbo.dim_bill_debt_narrative
- ON dim_bill_debt_narrative.dim_bill_debt_narrative_key = fact_bill_matter_detail.dim_bill_debt_narrative_key
-
-
+ ON dbFile.fileID=udcrcore.fileID
 LEFT OUTER JOIN (SELECT fileID,contName AS [Defendant],assocRef FROM [MS_PROD].config.dbAssociates
 INNER JOIN [MS_PROD].dbo.udExtAssociate
  ON udExtAssociate.assocID = dbAssociates.assocID
@@ -42,11 +46,11 @@ INNER JOIN MS_PROD.config.dbContact
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
 
- ON ms_fileid=Defendant.fileID
-WHERE dim_matter_header_current.client_code  IN ('W20110','FW23557','890248') 
-AND work_type_code='2038'
-AND reversed=0
-ORDER BY fact_bill_matter_detail.bill_number
+ ON dbfile.fileid=Defendant.fileID
+WHERE clNo IN ('W20110','FW23557','890248') 
+AND fileType='2038'
+AND cboCatDesc   IN ('7','0')
+AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate
 
 END
 GO
