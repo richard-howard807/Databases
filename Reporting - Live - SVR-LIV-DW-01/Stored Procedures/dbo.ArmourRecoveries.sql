@@ -8,6 +8,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -84,7 +86,8 @@ dim_detail_core_details.year_of_account [Year of Account ],
 ,date_ph_notified_re_indemnity
 ,date_notes_updated
 ,CASE WHEN ISNULL(amount_recovery_sought,0) <=10000 THEN amount_recovery_sought*0.18
-WHEN ISNULL(amount_recovery_sought,0)>10000 THEN amount_recovery_sought*0.10  END AS potential_fee_percent
+WHEN ISNULL(amount_recovery_sought,0)>10000 THEN 10000 *0.18 + (amount_recovery_sought-10000)*0.10  END 
+AS potential_fee_percent
 ,CASE WHEN ISNULL(recovery_notes,'')  IN ('monthly replayment (new)','Recovery Abandoned','Successful recovery')THEN 'N/A' ELSE chance_of_success_percent END AS chance_of_success_percent
 ,recoveries_year_of_account
 ,indemnity_granted_or_reason_refused
@@ -92,7 +95,7 @@ WHEN ISNULL(amount_recovery_sought,0)>10000 THEN amount_recovery_sought*0.10  EN
 ,CASE WHEN ISNULL(recovery_notes,'')  IN ('monthly replayment (new)','Recovery Abandoned','Successful recovery')THEN 0
 ELSE 
 CAST((CASE WHEN ISNULL(amount_recovery_sought,0) <=10000 THEN amount_recovery_sought*0.18
-WHEN ISNULL(amount_recovery_sought,0)>10000 THEN amount_recovery_sought*0.10  END
+WHEN ISNULL(amount_recovery_sought,0)>10000 THEN 10000 *0.18 + (amount_recovery_sought-10000)*0.10  END
 ) AS DECIMAL(10,2))  * (CAST(chance_of_success_percent AS DECIMAL(10,2)) /100)
 
 END 

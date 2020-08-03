@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- LD 20150618 Amended to Replace Beccy McDowell with Jenny Barr
 -- ES 20161214 Amended to exclude client number W16179 requested by Jenny Barr ticket 193211
 -- SG 20170201 Changes to the Email layout
@@ -141,8 +142,8 @@ ORDER BY dim_matter_header_current.client_code,matter_number
                 + 'Please ensure the conflict procedure is completed today.'
                 + '<p>'
                 + 'Should you have any queries or if you are unsure what to do, please contact Hillary Stephenson at 
-					hillary.stephenson@weightmans.com or on extension 133353 or Jenny Barr at 
-						jenny.barr@weightmans.com or on extension 139043  '
+					hillary.stephenson@weightmans.com or on extension 137352 or Angie Shepherd at 
+						angela.shepherd@weightmans.com or on extension 133399  '
 
             SET @vBody = @vBody + '<br>' + '<p>' + 'Fee Earner Code: '
                 + @FeeEarnerCode + '<br>' + 'Fee Earner Name: ' + @USERName

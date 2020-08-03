@@ -3,12 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+CREATE PROC [audit].[usp_ClientBalanceReportAlertRetired310720]
 
-
-
-CREATE  PROC [audit].[usp_ClientBalanceReportAlert]
-
-AS
+as
 
 
 SET NOCOUNT ON
@@ -131,9 +128,9 @@ INNER JOIN MS_PROD.dbo.udExtFile
 INNER JOIN MS_PROD.dbo.dbUser fee on fee.usrID = dbFile.filePrincipleID
 INNER JOIN MS_PROD.dbo.dbUser BCM on BCM.usrID = dbFile.fileresponsibleID
 WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
-AND (DATEDIFF(DAY,[post_date],GETDATE())) IN (1,21)
+AND (DATEDIFF(DAY,[post_date],GETDATE())) IN (1,28)
 --AND ((clno='882745' AND fileno='16')OR (clno='W16924' AND fileno='1'))
-AND dbFile.fileID IN (5069698,4082458)
+
 	
 
 DECLARE cur CURSOR LOCAL FAST_FORWARD FOR 
@@ -166,7 +163,7 @@ SELECT
 	,[MS Client] AS MSClient
 	,[MS Matter] AS MSMatter
 		FROM #ClientBalances
-WHERE [SinceUpdate]   IN ('1','21')
+WHERE [SinceUpdate]   IN ('1','28')
 AND UserEmailAddress IS NOT NULL
 AND  [FED Client] NOT IN ('00380241','CB001','U00002')
 AND RTRIM([FED Client]) + '.' +  RTRIM([Fed Matter])  NOT  IN
@@ -223,38 +220,47 @@ SET @vBody = '<font size="2" face= "Lucida Sans Unicode">'
 --+'Please consider immediately whether we have the client''s express instructions to retain this money any longer.<br>'
 --+'If we do not, please return it with appropriate interest straightaway.'+'<br>'
 
-IF @SinceUpdate =1
+IF @SinceUpdate IN (1, 28)
 BEGIN
 
 
-SET @vBody ='<font size="2" face= "Lucida Sans Unicode"><b>1 day notification</b> of a positive client balance<html><body>'    
-
-SET @vBody = @vBody + '<p><p><p><p><p>1	If you are required to <b>hold funds for a specific reason</b>, please reply to this email explaining why and update the Client Balance Review screen - in Mattersphere/Navigation pane/Compliance. You will receive an automated alert at 21 days which you can ignore.'
-SET @vBody = @vBody + '<p>2	Otherwise the Solicitors Accounts Rules 25 November 2019 say that you must: "ensure that client money is returned promptly to the client, or the third party for whom the money is held, as soon as there is no longer any proper reason to hold those funds".'
-SET @vBody = @vBody + '<p>3 If the balance is for <b>payment of an invoice</b>, please email a transfer to Legal Cashier.'
-SET @vBody = @vBody + '<p>4 If the balance is an <b>overpayment</b>, please refund (preferably by bacs) within 14 days.'
-SET @vBody = @vBody + '<p>5 If the balance relates to an <b>out of date cheque</b>, please make telephone or e-mail enquiries as to why cheque has not been presented and obtain bank details to return by bacs. If cheque is under &pound;10 please email Tracy Doyle to transfer to charity.'
-SET @vBody = @vBody + '<p>6 If the balance is under &pound;10.00 to <b>Zurich</b>, <b>MIB</b>, <b>AIG</b> or <b>BDW</b>, please email Tracy Doyle who will transfer to small balance account for these clients.'
-SET @vBody = @vBody + '<p>If your Day 1 alert relates to a cheque receipt, you will not be able to request payment out until this has cleared (7 days from receipt of cheque). You can check clear date in 3E by clicking on the amount of the client balance and scrolling across to Clear Date.'
-SET @vBody = @vBody + '<p>If you are receiving alerts and are no longer the Case Manager or Team Manager, please amend personnel in Mattersphere to ensure alerts are emailed to the correct recipient.<p>If you have any queries, contact Tracy Doyle, Risk & Compliance.'
-END
+SET @vBody ='<font size="2" face= "Lucida Sans Unicode">You have a positive client balance on the file identified above for' + ' ' + CAST(@SinceUpdate AS VARCHAR(2)) + ' day(s) <p> Please consider / follow the steps below<html><body>'    
 
 
-IF @SinceUpdate =21
-BEGIN
+--SET @vBody = @vBody + '<p><p><p><p><p>1	If the funds are on a <b>live</b> file (and 2 – 8 below do not apply) you are not required to do anything.  Please disregard further alerts about the balance unless circumstances change.'
+--SET @vBody = @vBody + '<p>2	If the balance is for <b>payment of an invoice</b>, please send a signed transfer to “Legal Cashier” for processing.'
+--SET @vBody = @vBody + '<p>3	If the balance is an <b>overpayment</b> please refund immediately or obtain authority from client to retain the funds.  If you obtain authority to retain funds please forward confirmation to Tracy Doyle.'
+--SET @vBody = @vBody + '<p>4	If you believe funds are posted to <b>incorrect file</b>, please email Legal Cashier to investigate. '
+--SET @vBody = @vBody + '<p>5 If the balance relates to an <b>out of date cheque</b>, please make enquires with the client/recipient as to why cheque has not been presented before issuing a further one.  Please consider returning funds by BACS.  If the balance of the out of the date cheque is under £10.00 please contact Tracy Doyle to consider transfer to charity account.'
+--SET @vBody = @vBody + '<p>6 If the balance is on a <b>substantially complete file</b> or there has been <b>no activity for three months</b>, please return/deal with funds.  If there is a reason for holding monies, please provide a copy email/letter to Tracy Doyle confirming to client how much we are holding, why and for how long to comply with Solicitors Accounts Rules.'
+--SET @vBody = @vBody + '<p>7 If the balance is under £10.00 for <b>Zurich</b>, <b>MIB</b>, <b>AIG</b> or <b>BDW</b>, please email Tracy Doyle who will transfer to small balances accounts for these clients.'
+--SET @vBody = @vBody + '<p>8 If the balance is under £5.00, please do not draw a cheque, contact Tracy Doyle who will advise on possible transfer to <b>charity</b> account or advise on refunding client.'
+
+SET @vBody = @vBody + '<p><p><p><p><p>1	If the balance is on a <b>substantially complete file</b> or there has been <b>no activity for three months</b>, please return/deal with funds.  If there is a reason for holding monies, please provide a copy email/letter to Tracy Doyle confirming to client how much we are holding, why and for how long to comply with Solicitors Accounts Rules.'
+SET @vBody = @vBody + '<p>2	If the funds are on a <b>live</b> file (and 3 – 8 below do not apply) you are not required to do anything.  Please disregard further alerts about the balance unless circumstances change.'
+SET @vBody = @vBody + '<p>3	If the balance is for <b>payment of an invoice</b>, please send a signed transfer to “Legal Cashier” for processing.'
+SET @vBody = @vBody + '<p>4 If the balance is an <b>overpayment</b> please refund immediately or obtain authority from client to retain the funds.  If you obtain authority to retain funds please forward confirmation to Tracy Doyle.'
+SET @vBody = @vBody + '<p>5 If you believe funds are posted to <b>incorrect file</b>, please email Legal Cashier to investigate. '
+SET @vBody = @vBody + '<p>6 If the balance relates to an <b>out of date cheque</b>, please make enquires with the client/recipient as to why cheque has not been presented before issuing a further one.  Please consider returning funds by BACS.  If the balance of the out of the date cheque is under £10.00 please contact Tracy Doyle to consider transfer to charity account.'
+SET @vBody = @vBody + '<p>7 If the balance is under £10.00 for <b>Zurich</b>, <b>MIB</b>, <b>AIG</b> or <b>BDW</b>, please email Tracy Doyle who will transfer to small balances accounts for these clients.'
+SET @vBody = @vBody + '<p>8 If the balance is under £5.00, please do not draw a cheque, contact Tracy Doyle who will advise on possible transfer to <b>charity</b> account or advise on refunding client.'
+
+SET @vBody = @vBody + '<p>If your Day 1 alert relates to a cheque receipt, please be aware you will not be able to request a cheque to pay funds out until this has cleared (7 days from receipt of cheque).  You can check “clear date” in 3E by clicking on the amount of the client balance and scrolling across to Clear Date.'
 
 
-SET @vBody ='<font size="2" face= "Lucida Sans Unicode"><b>21 day notification</b> of a positive client balance<html><body>'    
-SET @vBody = @vBody + '<p><b>IF THE FUNDS ARE PROPERLY HELD AND YOU RESPONDED TO DAY 1 ALERT - IGNORE THIS EMAIL</b>'
-SET @vBody = @vBody + '<p><p>1 If you are required to <b>hold funds for a specific reason</b>, please reply to this email explaining why and update the Client Balance Review screen - in Mattersphere/Navigation pane/Compliance.'
-SET @vBody = @vBody + '<p>2 Otherwise under the Solicitors Accounts Rules 25 November 2019 you must: <i>"ensure that client money is returned promptly to the <u>client</u>, or the third party for whom the money is held, as soon as there is no longer any proper reason to hold those funds"</i>.'
-SET @vBody = @vBody + '<p>3 If the balance is for <b>payment of an invoice</b>, please email a transfer to Legal Cashier.'
-SET @vBody = @vBody + '<p>4 If the balance is an <b>overpayment</b>, please refund (preferably by bacs) immediately. '
-SET @vBody = @vBody + '<p>5 If the balance relates to an <b>out of date cheque</b>, please make telephone or e-mail enquiries as to why cheque has not been presented and obtain bank details to return by bacs. If cheque is under &pound;10.00 please email Tracy Doyle to transfer to charity.'
-SET @vBody = @vBody + '<p>6 If the balance is under &pound;10.00 to <b>Zurich</b>, <b>MIB</b>, <b>AIG</b> or <b>BDW</b>, please email Tracy Doyle who will transfer to small balance account for these clients.'
-SET @vBody = @vBody + '<p>Spreadsheet of balances will be sent monthly to Team Manager, HSD and Director.'
-SET @vBody = @vBody + '<p>If you have any queries, contact Tracy Doyle, Risk & Compliance.'
+SET @vBody = @vBody + '<p>'
+SET @vBody = @vBody + '<p>'
+SET @vBody = @vBody + '<p>Spreadsheets of all balances will be sent regularly to all Heads of Service Delivery and Team Managers highlighting any breaches or overpayments for them to follow up.'
+SET @vBody = @vBody + '<p>'
+SET @vBody = @vBody + '<p>If you are receiving alerts and you are no longer the Case Manager or Team Manager please amend personnel in Mattersphere to ensure alerts are emailed to the correct recipient.'
+SET @vBody = @vBody + '<p>'
+SET @vBody = @vBody + '<p>If you have any queries please contact Tracy Doyle in Risk & Compliance on Extension 133364.'
+
+
 END 
+
+
+
 		
 
 		
@@ -288,7 +294,7 @@ SET @vBody = @vBody +'<br>'
 
 	BEGIN
 
-	IF  @SinceUpdate = 21
+	IF  @SinceUpdate = 28
 		BEGIN --main email to BCM, cc'd to Sue, and FEE EARNER
 		--SET @vRecipients = @BCMEmailAddress
 		SET @vRecipients = @UserEmailAddress

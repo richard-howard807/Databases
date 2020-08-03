@@ -5,35 +5,10 @@ GO
 -- =============================================
 -- Author:		Julie Loughlin
 -- Create date: 2020-07-24
--- Description:	New report to track holidays at firm level, 65712
+-- Description:	New report to track holidays at firm level, #65712
 -- =============================================
 --EXECUTE [dbo].[HolidayTracker_FirmLevel]  'Business Services', 'Data Services', 'Business Analytics', 'Orlagh Kelly, Julie Loughlin'
---EXECUTE [dbo].[HolidayTracker_FirmLevel] 'Business Services, Client Relationships, Legal Ops - Claims, Legal Ops - LTA',
-
---'Business Change,
---Business Services Management,
---Casualty,
---Claims Management,
---Client Management,
---Corp-Comm,
---Data Services,
---Disease,
---EPI,
---Facilities,
---Finance,
---Glasgow,
---Healthcare,
---Information Systems,
---LTA Management,
---Large Loss,
---Litigation,
---Marketing,
---Motor,
---Newcastle,
---People and Knowledge,
---Real Estate,
---Regulatory,
---Risk and Compliance'
+--EXECUTE [dbo].[HolidayTracker_FirmLevel] 'Business Services, Client Relationships, Legal Ops - Claims, Legal Ops - LTA','Business Change, Business Services Management, Casualty, Claims Management,Client Management,Corp-Comm,Data Services,Disease,EPI,Facilities,Finance,Glasgow,Healthcare,Information Systems,LTA Management,Large Loss, Litigation,Marketing,Motor,Newcastle,People and Knowledge,Real Estate,Regulatory,Risk and Compliance'
 
 
 
@@ -53,7 +28,7 @@ BEGIN
 
 	IF OBJECT_ID('tempdb..#Division') IS NOT NULL   DROP TABLE #Division
 	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
-	--IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 	--IF OBJECT_ID('tempdb..#Individual') IS NOT NULL   DROP TABLE #Individual
 
 			CREATE TABLE #Division 
@@ -82,13 +57,14 @@ SELECT name AS [Name]
 	, hierarchylevel3hist AS [Department]
 	, hierarchylevel4hist AS [Team]
 	, normalworkingday AS [Contractual hours per day]
+	, dim_employee.jobtitle
 	, totalentitlementdays AS [Annual Holiday Allowance]
 	, remaining_fte_working_days_year AS [Annual Working Days]
-	, durationholidaydays AS [Holidays Taken to Date]
-	, ISNULL(totalentitlementdays,0)-ISNULL(durationholidaydays,0) AS [Holidays yet to Take]
+	, ISNULL([HolidaysTaken].durationholidaydays,0) AS [Holidays Taken to Date]
+	, ISNULL(HolidaysTakenBeforeNov2020.HolidaysTakenbefore1stNov2020,0) AS [Holidays Booked before November 2020]
+	, ISNULL(HolidaysTakenAfterNov2020.HolidaysTakenafter31stOct2020,0) AS [Holidays Booked on or after 1st November 2020]
+	, ISNULL(totalentitlementdays,0)-ISNULL(HolidaysTakenBeforeNov2020.HolidaysTakenbefore1stNov2020,0)-ISNULL(HolidaysTakenAfterNov2020.HolidaysTakenafter31stOct2020,0) AS [Holidays yet to Take]
 	, [Trading Days] AS [Working Days to Date]
-	--, [ChargeableHours] AS [Chargeable Hours]
-	--, CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END AS [Utilisation %]
 	, Absence.days AS [Absent days]
 	, Absence.category AS [Absence]
 	, Absence.startdate AS [Absence Start Date]
@@ -128,26 +104,39 @@ AND fin_month=(SELECT MIN(fin_month)
 				FROM red_dw.dbo.dim_date
 				WHERE current_fin_year='Current')
 
-LEFT OUTER JOIN (SELECT employeeid, SUM(minutes_recorded)/60 AS [ChargeableHours]
-				FROM red_dw.dbo.fact_billable_time_activity
-				INNER JOIN red_dw.dbo.dim_date
-				ON dim_date_key=dim_orig_posting_date_key
-				AND fin_year=(SELECT DISTINCT fin_year 
-							FROM red_dw.dbo.dim_date
-							WHERE current_fin_year='Current')
-				LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
-				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_billable_time_activity.dim_fed_hierarchy_history_key
-				WHERE minutes_recorded<>0
-				GROUP BY employeeid) AS [ChargeableHours] ON ChargeableHours.employeeid = dim_employee.employeeid
+-----Holidays Booked before Nov 2020
+LEFT OUTER JOIN
+				(SELECT  employeeid, SUM(durationdays) AS durationdays , SUM(durationholidaydays) AS HolidaysTakenbefore1stNov2020
+				FROM red_dw.dbo.fact_employee_attendance
 
---INNER JOIN (SELECT employeeid, SUM(contracted_hours_in_month) AS [ContractedHours] 
---				FROM  red_dw.dbo.fact_budget_activity
---				LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
---				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
---				WHERE financial_budget_year=(SELECT DISTINCT fin_year 
---											FROM red_dw.dbo.dim_date
---											WHERE current_fin_year='Current')
---				GROUP BY employeeid) AS [ContractedHours] ON ContractedHours.employeeid = dim_employee.employeeid
+				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
+										FROM red_dw.dbo.dim_date
+										WHERE current_fin_year='Current')
+						AND category='Holiday'
+						AND startdate<='2020-10-31'
+						--AND employeeid  = 'A990411E-CEA8-424C-A421-C45A04F9392B'
+				GROUP BY employeeid) AS HolidaysTakenBeforeNov2020
+
+ON HolidaysTakenBeforeNov2020.employeeid = dim_employee.employeeid
+
+
+-------------------------------------------------------------------------------------------------------------------------
+--Holidays Booked after Oct 2020
+
+LEFT OUTER JOIN
+				(SELECT  employeeid, SUM(durationdays) AS durationdays , SUM(durationholidaydays) AS HolidaysTakenafter31stOct2020
+				FROM red_dw.dbo.fact_employee_attendance
+
+				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
+										FROM red_dw.dbo.dim_date
+										WHERE current_fin_year='Current')
+						AND category='Holiday'
+						AND startdate>'2020-10-31'
+						--AND employeeid  = 'A990411E-CEA8-424C-A421-C45A04F9392B'
+				GROUP BY employeeid) AS HolidaysTakenAfterNov2020
+ON HolidaysTakenAfterNov2020.employeeid = dim_employee.employeeid
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 LEFT OUTER JOIN (SELECT dim_employee.employeeid, SUM(Dates.[Trading Days]) [Trading Days]
 				FROM red_dw.dbo.dim_employee
@@ -184,6 +173,8 @@ LEFT OUTER JOIN (SELECT * FROM
 
 
 WHERE leaver=0
+AND red_dw.dbo.dim_employee.deleted_from_cascade <> 1 --added due to report bring back deleted emp
+AND red_dw.dbo.dim_employee.employeestartdate <= GETDATE() -- bring in new starters 
 --AND CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END>0
  --AND dim_employee.employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
 

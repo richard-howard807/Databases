@@ -17,11 +17,12 @@ History
  03/09/2019	 ES		1.2 - added dim_detail_critical_mi.[is_there_an_issue_on_liability] as per ticket 30785 
  07/05/2020	 ES		1.3 - amended panel averages and changed age of matter to years rater than days as pert ticket 57804
  16/07/2020	 ES		1.4 - #64794 added ms ref 
+ 29/07/2020	 JL		1.5 - 66147 - Matter age (years) amended logic 
 ====================================================
 
 */
 
-CREATE PROCEDURE [dbo].[NHSRDefenceCostsManagement] -- 'All','All'
+CREATE PROCEDURE [dbo].[NHSRDefenceCostsManagement] -- 'All','All', 'All'
 (
 @FeeEarner AS NVARCHAR(1000)
 ,@TM AS NVARCHAR(1000)
@@ -104,7 +105,11 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
+--,CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 ELSE 
+--DATEDIFF(DAY,dim_detail_core_details.date_instructions_received,dim_detail_outcome.date_claim_concluded)/365.0
+--END  AS [age_of_matter]
+, DATEDIFF(day, dim_detail_core_details.date_instructions_received, COALESCE(dim_detail_outcome.date_claim_concluded, getdate()))/365.0 AS [age_of_matter] --1.5 jl
+--,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -307,7 +312,11 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
+--,CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 ELSE 
+--DATEDIFF(DAY,dim_detail_core_details.date_instructions_received,dim_detail_outcome.date_claim_concluded)/365.0
+--END  AS [age_of_matter]
+, DATEDIFF(day, dim_detail_core_details.date_instructions_received, COALESCE(dim_detail_outcome.date_claim_concluded, getdate()))/365.0 AS [age_of_matter]
+--,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -511,7 +520,11 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
+--,CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 ELSE 
+--DATEDIFF(DAY,dim_detail_core_details.date_instructions_received,dim_detail_outcome.date_claim_concluded)/365.0
+--END  AS [age_of_matter]
+, DATEDIFF(day, dim_detail_core_details.date_instructions_received, COALESCE(dim_detail_outcome.date_claim_concluded, getdate()))/365.0 AS [age_of_matter]
+--,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
@@ -715,7 +728,11 @@ fact_finance_summary.[time_charge_value]
 ,fact_finance_summary.[disbursement_balance]
 ,fact_finance_summary.[time_billed]
 ,dim_matter_header_current.date_opened_case_management AS date_opened_case_management
-,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
+--,CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 ELSE 
+--DATEDIFF(DAY,dim_detail_core_details.date_instructions_received,dim_detail_outcome.date_claim_concluded)/365.0
+--END  AS [age_of_matter]
+, DATEDIFF(day, dim_detail_core_details.date_instructions_received, COALESCE(dim_detail_outcome.date_claim_concluded, getdate()))/365.0 AS [age_of_matter]
+--,DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())/365.0 AS [age_of_matter]
 ,fact_finance_summary.[fixed_fee_amount]
 ,dim_employee.[workemail]
 ,dim_employee.[worksforemail]
