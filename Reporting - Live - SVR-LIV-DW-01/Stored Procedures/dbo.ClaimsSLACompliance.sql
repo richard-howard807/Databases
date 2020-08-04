@@ -15,6 +15,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -91,7 +94,7 @@ SELECT client_name AS [Client Name]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
 	--, CASE WHEN date_initial_report_due IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Initial Report]
 	, CASE WHEN do_clients_require_an_initial_report = 'No' THEN NULL
-	WHEN dim_detail_core_details.delegated='Yes' THEN NULL
+	--WHEN dim_detail_core_details.delegated='Yes' THEN NULL
 		WHEN date_initial_report_sent IS NOT NULL THEN NULL
 		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())
 		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
@@ -134,15 +137,32 @@ SELECT client_name AS [Client Name]
 			WHEN (days.days_to_first_report_lifecycle)<=10 THEN 'LimeGreen'
 			WHEN (days.days_to_first_report_lifecycle)>10 THEN 'Red'
 			ELSE 'Transparent' END [NEW Initial Report RAG]
-	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN 'Amber'
-			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<0 THEN 'Orange'
-			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=[Update Report SLA (days)] THEN 'LimeGreen'
-			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
-			ELSE 'Transparent' END [Update Report RAG]
+	--, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN 'Amber'
+	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<0 THEN 'Orange'
+	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=[Update Report SLA (days)] THEN 'LimeGreen'
+	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
+	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>63 THEN 'Red'
+	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=63 THEN 'LimeGreen'
+	--		ELSE 'Transparent' END [Update Report RAG]
+
+,CASE WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	ELSE NULL END) BETWEEN 0 AND 53 THEN 'Limegreen'
+ WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	ELSE NULL END) BETWEEN 54 AND 63 THEN 'Orange'
+	ELSE 'Red'
+	END AS RagWithouthSub
 ,referral_reason
 ,CASE WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
 
 THEN 1 ELSE 0 END AS NoBlankInitial
+,CASE WHEN date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
+
+THEN 1 ELSE 0 END AS NoBlankSub
+
 ,dim_detail_core_details.delegated
 
 FROM red_dw.dbo.fact_dimension_main
