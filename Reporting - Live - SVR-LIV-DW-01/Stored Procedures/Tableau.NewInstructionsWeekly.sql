@@ -20,6 +20,7 @@ BEGIN
 		, date_opened_case_management AS [Date Opened]
 		, cal_week_in_year AS [Week Number]
 		, CAST(DATEADD(dd, -(DATEPART(dw, date_opened_case_management)-1), date_opened_case_management) AS DATE) [Week Start]
+		, date_opened_practice_management
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]

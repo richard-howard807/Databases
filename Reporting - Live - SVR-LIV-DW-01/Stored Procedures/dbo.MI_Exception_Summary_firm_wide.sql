@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 -- =============================================
 -- Author:		sgrego	
 -- Create date: 2018-10-10
@@ -12,7 +14,7 @@ GO
 -- 20190424 LD Amended so that people with leaver dates in the future still appear on the report.
 CREATE PROCEDURE [dbo].[MI_Exception_Summary_firm_wide]
 (
-@FeeEarners AS NVARCHAR(max)
+@FeeEarners AS NVARCHAR(MAX)
 )
 AS
 BEGIN
@@ -28,7 +30,7 @@ DROP TABLE  IF EXISTS #tempfeearners
 CREATE TABLE #tempfeearners  (
 employeeid  NVARCHAR(MAX)
 )
-
+ 
 DECLARE @sql NVARCHAR(MAX)
 
 SET @sql = '
@@ -46,7 +48,8 @@ exec sp_executesql @sql
 
 SELECT dim_fed_hierarchy_history.employeeid,
 		CASE WHEN date_closed_case_management IS NULL THEN 0 ELSE 1 END open_closed,
-       COUNT(dim_matter_header_current.case_id) cases
+       --COUNT(dim_matter_header_current.case_id) cases
+	   COUNT(dim_matter_header_current.ms_fileid) cases
 INTO #critria_cases
 FROM red_dw.dbo.fact_dimension_main
     LEFT JOIN red_dw.dbo.dim_matter_header_current
@@ -161,26 +164,46 @@ FROM Exceptions.dbo.MI_Management_firm_wide
     LEFT JOIN
     (
         SELECT dfhh.employeeid,
-               COUNT(dmh.case_id) cases
+               --COUNT(dmh.case_id) cases
+			   COUNT(dmh.ms_fileid) cases
         FROM red_dw.dbo.fact_dimension_main fdm
             INNER JOIN red_dw.dbo.dim_matter_header_current dmh WITH (NOLOCK)
                 ON dmh.dim_matter_header_curr_key = fdm.dim_matter_header_curr_key
             LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history dfhh
                 ON dfhh.dim_fed_hierarchy_history_key = fdm.dim_fed_hierarchy_history_key
+			LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+			 ON dim_detail_outcome.client_code = dmh.client_code
+			 AND dim_detail_outcome.matter_number = dmh.matter_number
         WHERE dmh.date_closed_case_management IS NULL
+		----------------- Additions to match above -------------------------
+		AND ms_only = 1 
+		AND reporting_exclusions = 0    
+		AND LOWER(ISNULL(outcome_of_case, '')) NOT in ('exclude from reports','returned to client') 
+
+		--------------------------------------------------------------------
         GROUP BY dfhh.employeeid
     ) cases
         ON cases.employeeid = hir.employeeid
     LEFT JOIN
     (
         SELECT dfhh.employeeid,
-               COUNT(dmh.case_id) cases
+               --COUNT(dmh.case_id) cases
+			    COUNT(dmh.ms_fileid) cases
         FROM red_dw.dbo.fact_dimension_main fdm
             INNER JOIN red_dw.dbo.dim_matter_header_current dmh WITH (NOLOCK)
                 ON dmh.dim_matter_header_curr_key = fdm.dim_matter_header_curr_key
             LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history dfhh
                 ON dfhh.dim_fed_hierarchy_history_key = fdm.dim_fed_hierarchy_history_key
+					LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+			 ON dim_detail_outcome.client_code = dmh.client_code
+			 AND dim_detail_outcome.matter_number = dmh.matter_number
         WHERE dmh.date_closed_case_management IS NOT NULL
+	    ----------------- Additions to match above -------------------------
+		AND ms_only = 1 
+		AND reporting_exclusions = 0    
+		AND LOWER(ISNULL(outcome_of_case, '')) NOT in ('exclude from reports','returned to client') 
+
+		--------------------------------------------------------------------
         GROUP BY dfhh.employeeid
     ) cases_closed
         ON cases_closed.employeeid = hir.employeeid
@@ -217,9 +240,9 @@ SELECT #results.employeeid,
        no_of_exceptions,
        total_cases,
 	   ---------------------------------critria------------------------------------------------------
-	    isnull(closed_critria_cases, 0) closed_critria_cases, 
-	    isnull(open_critria_cases,0) open_critria_cases,
-	    isnull(critria_cases,0) critria_cases
+	    ISNULL(closed_critria_cases, 0) closed_critria_cases, 
+	    ISNULL(open_critria_cases,0) open_critria_cases,
+	    ISNULL(critria_cases,0) critria_cases
        ---------------------------------avg------------------------------------------------------
       --CASE WHEN no_of_open_exceptions  = 0 OR total_open_cases = 0 THEN 0 ELSE CAST(CAST(no_of_open_exceptions AS DECIMAL(8, 2)) / CAST(total_open_cases AS DECIMAL(8, 2)) AS DECIMAL(8, 2)) END [average number of exceptions on open matters v number of all open matters],
       --CASE WHEN no_of_open_exceptions  = 0  OR no_of_open_cases_with_exceptions = 0THEN 0  ELSE CAST(CAST(no_of_open_exceptions AS DECIMAL(8, 2)) / CAST(no_of_open_cases_with_exceptions AS DECIMAL(8, 2)) AS DECIMAL(8, 2)) end [Average number of exceptions on open matters v number of open matters with exceptions on],
@@ -237,8 +260,8 @@ FROM #results
 				SELECT 
 				employeeid, 
 				SUM(cases) critria_cases,
-				CASE WHEN #critria_cases.open_closed = 1 then SUM(#critria_cases.cases) END closed_critria_cases,
-				CASE WHEN #critria_cases.open_closed = 0 then SUM(#critria_cases.cases) END open_critria_cases
+				CASE WHEN #critria_cases.open_closed = 1 THEN SUM(#critria_cases.cases) END closed_critria_cases,
+				CASE WHEN #critria_cases.open_closed = 0 THEN SUM(#critria_cases.cases) END open_critria_cases
 				FROM #critria_cases
 				GROUP BY open_closed ,
 				employeeid 

@@ -10,6 +10,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -17,8 +20,8 @@ AS
 BEGIN 
 
 SELECT  
-CASE WHEN UPPER(matter_description) LIKE '%ELITE%' THEN 'Elite'
-WHEN UPPER(matter_description) LIKE '%TRADEX%' THEN 'Tradex'
+CASE WHEN UPPER(matter_description) LIKE 'ELITE%' THEN 'Elite'
+WHEN UPPER(matter_description) LIKE 'TRADEX%' THEN 'Tradex'
 ELSE 'Armour' END AS Client,
 fact_dimension_main.client_code [Client Number],
 fact_dimension_main.matter_number [Matter number],
@@ -73,6 +76,12 @@ dim_detail_claim.[dst_insured_client_name] AS [Insured Client Name],
 red_dw.dbo.fact_detail_recovery_detail.amount_recovery_sought AS [Recovery Sought],
 red_dw.dbo.fact_finance_summary.wip,
 ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0) AS [Total Recovery],
+
+CASE WHEN ISNULL(ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0),0) <=10000 
+THEN (ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0))*0.18
+WHEN ISNULL(ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0),0)>10000 THEN 10000 *0.18 + (ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0)-10000)*0.10  END 
+AS TotalRecoverCalcPer,
+
 red_dw.dbo.dim_claimant_thirdparty_involvement.tpinsurer_name AS [Claimant],
 red_dw.dbo.fact_finance_summary.defence_costs_billed AS Revenue,
 red_dw.dbo.fact_finance_summary.client_account_balance_of_matter AS [Client Balance of Matter], 
@@ -209,6 +218,7 @@ AND reporting_exclusions = 0
 AND ms_only= 1 
 --AND hierarchylevel3hist = 'Motor'
 --AND dim_detail_core_details.referral_reason = 'Recovery                                                    '
-
+AND fact_dimension_main.matter_number NOT IN('00000771' ,'00000112')
+--AND fact_dimension_main.matter_number='00000687'
 END 
 GO

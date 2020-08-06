@@ -25,7 +25,7 @@ SELECT  master_client_code+'-'+master_matter_number AS [Client/Matter Number]
 	,calendar_date AS [Date of Time Posting]
 	,SUM(minutes_recorded/60) AS [Hours Recorded]
 	,fact_all_time_activity.hourly_charge_rate AS [Charge Rate]
-
+	,dim_instruction_type.instruction_type [RMG Instuction Type]
 
 FROM  red_dw.dbo.fact_all_time_activity WITH (NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH (NOLOCK)
@@ -38,6 +38,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_time_activity_type WITH (NOLOCK)
 ON dim_time_activity_type.time_activity_code = fact_all_time_activity.time_activity_code
 LEFT OUTER JOIN red_dw.dbo.dim_all_time_activity
 ON dim_all_time_activity.dim_all_time_activity_key = fact_all_time_activity.dim_all_time_activity_key
+LEFT OUTER JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 
 WHERE dim_matter_header_current.reporting_exclusions=0
@@ -54,6 +55,6 @@ GROUP BY master_client_code + '-' + master_matter_number,
          time_activity_description,
          transaction_type,
          calendar_date,
-         fact_all_time_activity.hourly_charge_rate
+         fact_all_time_activity.hourly_charge_rate, dim_instruction_type.instruction_type
 END
 GO

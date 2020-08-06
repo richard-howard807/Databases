@@ -19,8 +19,8 @@ DECLARE @cnt INT = 0
 DECLARE @TestEmail AS VARCHAR(MAX)
 DECLARE @TestCC AS VARCHAR(MAX)
 
-SET @TestEmail='kevin.hansen@weightmans.com'
-SET @TestCC='kevin.hansen@weightmans.com '
+SET @TestEmail='jamie.sturgess@weightmans.com'
+SET @TestCC='jamie.sturgess@weightmans.com '
 
 DECLARE
 	@Client  VARCHAR(8),
@@ -51,7 +51,7 @@ DECLARE
 	
 
 DECLARE @test AS INT
-SET @Test=0
+SET @Test=1
 SET @vImportance='HIGH'
 
 IF OBJECT_ID('tempdb..#ClientBalances') IS NOT NULL DROP TABLE #ClientBalances
@@ -132,8 +132,9 @@ INNER JOIN MS_PROD.dbo.dbUser fee on fee.usrID = dbFile.filePrincipleID
 INNER JOIN MS_PROD.dbo.dbUser BCM on BCM.usrID = dbFile.fileresponsibleID
 WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 AND (DATEDIFF(DAY,[post_date],GETDATE())) IN (1,21)
+--AND (DATEDIFF(DAY,[post_date],GETDATE())) =21
 --AND ((clno='882745' AND fileno='16')OR (clno='W16924' AND fileno='1'))
-AND dbFile.fileID IN (5069698,4082458)
+--AND dbFile.fileID IN (5019495,5071100)
 	
 
 DECLARE cur CURSOR LOCAL FAST_FORWARD FOR 
@@ -166,7 +167,7 @@ SELECT
 	,[MS Client] AS MSClient
 	,[MS Matter] AS MSMatter
 		FROM #ClientBalances
-WHERE [SinceUpdate]   IN ('1','21')
+WHERE [SinceUpdate]   IN (1,21)
 AND UserEmailAddress IS NOT NULL
 AND  [FED Client] NOT IN ('00380241','CB001','U00002')
 AND RTRIM([FED Client]) + '.' +  RTRIM([Fed Matter])  NOT  IN
@@ -307,7 +308,7 @@ BEGIN
 SET @cc = null
 
 END 
-			
+PRINT @cc			
 	SET @returncode = -1
 
 	EXEC @returncode = msdb.dbo.sp_send_dbmail 

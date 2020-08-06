@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[NHSLABillingByScheme] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
 (
 @Scheme AS VARCHAR(MAX)
@@ -71,7 +72,7 @@ SELECT Matters.Client,Matters.Matter,WorkRate AS ChargeRate
 ,NULL AS AccountsUser
 ,NULL[DisbsFeeArrangement]
 ,   CASE WHEN [WorkRate] > 0
-         THEN (Sum(WorkRate) / Count(WorkRate))
+         THEN (SUM(WorkRate) / COUNT(WorkRate))
          ELSE 0
     END AS HourlyRate
 ,Number AS FE
@@ -94,11 +95,12 @@ LEFT JOIN TE_3E_Prod.dbo.Timekeeper
 --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
 -- ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
 INNER JOIN #Details AS Details 
-ON Matters.Client=Details.client collate database_default AND Matters.Matter=Details.matter collate database_default
+ON Matters.Client=Details.client COLLATE DATABASE_DEFAULT AND Matters.Matter=Details.matter COLLATE DATABASE_DEFAULT
 
 WHERE  WIPRemoveDate IS NULL
 AND (Matters.LoadNumber  LIKE '%-%' OR Matters.AltNumber LIKE '%-%' )
 AND CONVERT(DATE,WorkDate) <=@EndDate
+AND ISNULL(TimeType,'') NOT IN ('CB10','CB11','CB12')
 
 
 
@@ -148,7 +150,7 @@ LEFT JOIN TE_3E_Prod.dbo.Timekeeper
 --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
  --ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
 INNER JOIN #Details AS Details 
- ON Matters.Client=Details.client collate database_default AND Matters.Matter=Details.matter collate database_default
+ ON Matters.Client=Details.client COLLATE DATABASE_DEFAULT AND Matters.Matter=Details.matter COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN TE_3E_Prod.dbo.VchrDetail AS VchrDetail
  ON UnbilledWIP.CostIndex=VchrDetail.CostCard
 LEFT OUTER JOIN (SELECT VchrTax.Voucher,SUM(VchrTax.CalcAmt) AS CalcAmt 

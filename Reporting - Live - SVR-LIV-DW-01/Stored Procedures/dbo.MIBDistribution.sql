@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[MIBDistribution]
 (
 @StartDate AS DATE
@@ -36,7 +37,7 @@ INNER JOIN TE_3E_Prod.dbo.InvMaster
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN  MimecastData.dbo.MessageData md on md.InvoiceNumber = InvNumber collate database_default
+LEFT OUTER JOIN  MimecastData.dbo.MessageData md ON RTRIM(md.InvoiceNumber) =  RTRIM(InvNumber) COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN TE_3E_PROD.dbo.NxAttachment AS DocName
  ON InvMasterID=DocName.ParentItemID
 LEFT OUTER JOIN TE_3E_Prod.dbo.Payor

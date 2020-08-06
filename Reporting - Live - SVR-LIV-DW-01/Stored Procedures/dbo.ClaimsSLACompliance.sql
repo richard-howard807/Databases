@@ -18,6 +18,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -153,6 +154,17 @@ SELECT client_name AS [Client Name]
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
 	ELSE NULL END) BETWEEN 54 AND 63 THEN 'Orange'
+WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	ELSE NULL END)<0 THEN 'Transparent' 
+
+	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	ELSE NULL END) IS NULL THEN 'Transparent' 
+	
+	
 	ELSE 'Red'
 	END AS RagWithouthSub
 ,referral_reason

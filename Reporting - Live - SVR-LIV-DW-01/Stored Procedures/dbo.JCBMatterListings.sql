@@ -5,13 +5,15 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[JCBMatterListings]
 AS
 BEGIN
 
 	SELECT
 		case_id
-		, dim_matter_header_current.client_code + '/' + CAST(CAST(dim_matter_header_current.matter_number AS INT) AS VARCHAR)	[Converge Ref]
 		, CASE 
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2002-12-30' AND '2004-04-30' THEN 'GB00004225LI02A'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2004-05-01' AND '2005-04-30' THEN 'GB00004225LI04A'
@@ -56,7 +58,8 @@ BEGIN
 			END AS 'Year of Account'
 		, dim_detail_critical_mi.[agency_worker] [Agency worker]
 	,claimant_name AS [Claimant Name]
-,claimantsols_name  AS [Claimant Solicitor]
+	,dim_detail_claim.[dst_claimant_solicitor_firm ]
+,claimantsols_name  AS [Claimant Solicitor_directory]
 	, dim_detail_core_details.[date_instructions_received] [Date Claim Notified]
 		, CASE 
 		       WHEN date_closed_case_management IS NULL 
@@ -82,7 +85,7 @@ BEGIN
 		, dim_detail_incident.[jcb_body_part] [JCB Body part]
 		, dim_detail_core_details.[proceedings_issued] [Litigated]
 	    , dim_detail_court.[date_proceedings_issued] [Date proceedings issued]
-		, ISNULL(dim_detail_critical_mi.[portal_claim], 'No') [Portal claim]
+		, LOWER(ISNULL(dim_detail_critical_mi.[portal_claim], 'no')) [Portal claim]
 		, dim_detail_critical_mi.[settled_within_portal] [Settled within Portal]
 		, dim_detail_incident.[portal_drop_out_reason] [Portal drop out reason]		
 		, dim_detail_core_details.present_position [Current Position]
@@ -153,7 +156,8 @@ BEGIN
 		
 
 		,[Claim Number] = NULL
-		,[Insured] = [insuredclient_name]
+		,[Insured] = CASE WHEN [insuredclient_name] LIKE '%Excavators%' THEN 'J C Bamford Excavators Limited' ELSE [insuredclient_name] END 
+		,dst_insured_client_name AS InsuredNameDetail
 		,[Policy #] = insurerclient_reference
 		,[Loss Type / coverage code] = NULL
 		,[TPA Office location] = NULL
@@ -172,6 +176,7 @@ BEGIN
 		       ELSE 0 END AS OpenorconcludedLast12Months
 
 			   , LastBillDate.bill_date
+			   ,dim_matter_header_current.client_code + '-' + dim_matter_header_current.matter_number AS [Converge Ref]
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -219,6 +224,10 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
 LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care
  ON fact_detail_future_care.client_code = dim_matter_header_current.client_code
  AND fact_detail_future_care.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER  JOIN red_dw.dbo.fact_dimension_main 
+ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+ ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
  
  LEFT JOIN red_dw.[dbo].[dim_client_involvement] ON dim_client_involvement.client_code = dim_matter_header_current.client_code AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 
@@ -241,6 +250,13 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_curr_key ORDER BY bill_date DE
 
 		AND ISNULL(outcome_of_case,'') <> 'Exclude from reports'
 		AND ISNULL(dim_detail_critical_mi.[claim_status], '') != 'Cancelled'
+		AND (  work_type_name   LIKE ('PL%')
+               OR work_type_name  LIKE ('EL%')
+               OR work_type_name  LIKE ('Disease%')
+
+		)
+
+	
 
 		--AND dim_matter_header_current.client_code='J26479' AND dim_matter_header_current.matter_number='00001268'
 	

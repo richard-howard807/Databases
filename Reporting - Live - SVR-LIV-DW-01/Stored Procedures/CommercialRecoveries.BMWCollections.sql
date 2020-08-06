@@ -14,6 +14,7 @@ GO
 
 
 
+
 CREATE   PROCEDURE [CommercialRecoveries].[BMWCollections]
 (
 @StartDate AS DATE
@@ -49,7 +50,8 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'MG'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'R&B'
 WHEN clNo='FW22613' THEN 'Mini'
 WHEN clNo='W15335' THEN 'Alphera'
-WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet'END AS Client
+--WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' - removed as they now have their own report
+END AS Client
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
 
 FROM [MS_PROD].config.dbFile
@@ -84,7 +86,8 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'BMW'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'BMW'
 WHEN clNo='FW22613' THEN 'BMW'
 WHEN clNo='W15335' THEN 'Alphera'
-WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet'END)=@ClientName
+--WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' - removed as they now have their own report
+END)=@ClientName
 
 END
 GO
