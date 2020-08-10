@@ -5,16 +5,6 @@ GO
 
 
 
-
-
-
-
-
-
-
-
-
-
 CREATE   PROCEDURE [CommercialRecoveries].[BMWCollections]
 (
 @StartDate AS DATE
@@ -25,11 +15,11 @@ AS
 BEGIN
 --DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE 
---SET @StartDate='2019-11-01'
---SET @EndDate='2019-11-30'
+--SET @StartDate='2020-07-27'
+--SET @EndDate='2020-08-10'
 
 --DECLARE @ClientName AS NVARCHAR(100)
---SET @ClientName='BMW'
+--SET @ClientName='Alphabet'
 
 
 SELECT
@@ -50,7 +40,7 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'MG'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'R&B'
 WHEN clNo='FW22613' THEN 'Mini'
 WHEN clNo='W15335' THEN 'Alphera'
---WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' - removed as they now have their own report
+WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' 
 END AS Client
 ,ISNULL(ComRecClientBalance,0) AS ClientBalance
 
@@ -86,7 +76,7 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'BMW'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'BMW'
 WHEN clNo='FW22613' THEN 'BMW'
 WHEN clNo='W15335' THEN 'Alphera'
---WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' - removed as they now have their own report
+WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' 
 END)=@ClientName
 
 END
