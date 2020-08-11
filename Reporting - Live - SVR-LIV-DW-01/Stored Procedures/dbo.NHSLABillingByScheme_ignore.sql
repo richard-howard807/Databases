@@ -4,7 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE [dbo].[NHSLABillingByScheme] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
+
+CREATE PROCEDURE [dbo].[NHSLABillingByScheme_ignore] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
 (
 @Scheme AS VARCHAR(MAX)
 ,@EndDate AS DATETIME
@@ -47,7 +48,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
 
 WHERE LOWER([nhs_scheme]) = LOWER(@Scheme)
 AND ( [output_wip_fee_arrangement]='Hourly rate' OR LOWER([nhs_scheme])='inquest funding' OR ([nhs_scheme]='CNST' AND [output_wip_fee_arrangement]<>'Hourly rate'  AND [nhs_instruction_type]='Inquest - associated claim') )
-
+--AND ms_fileid=4604971
 SELECT Matters.Client,Matters.Matter,WorkRate AS ChargeRate
 ,Number + ' ' + Timekeeper.DisplayName AS tt_feecod
 ,ClientRef

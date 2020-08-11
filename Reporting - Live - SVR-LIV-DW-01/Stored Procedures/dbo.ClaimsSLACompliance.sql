@@ -19,6 +19,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -102,7 +103,8 @@ SELECT client_name AS [Client Name]
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
-	, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
+	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
 	ELSE NULL END AS [Days without Subsequent Report]
@@ -146,7 +148,8 @@ SELECT client_name AS [Client Name]
 	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=63 THEN 'LimeGreen'
 	--		ELSE 'Transparent' END [Update Report RAG]
 
-,CASE WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+,CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 'Transparent'
+WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
 	ELSE NULL END) BETWEEN 0 AND 53 THEN 'Limegreen'

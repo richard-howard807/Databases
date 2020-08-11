@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
@@ -14,7 +15,7 @@ GO
 
 
 
-CREATE PROCEDURE [nhs].[BillingByScheme] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
+CREATE PROCEDURE [nhs].[BillingBySchemeCBCodesOnly] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
 (
     @Scheme AS VARCHAR(MAX),
     @EndDate AS DATETIME
@@ -162,7 +163,7 @@ BEGIN
           )
           AND CONVERT(DATE, WorkDate) <= @EndDate
           AND UnbilledWIP.IsActive = 1
-		  AND ISNULL(TimeType,'') NOT IN ('CB10','CB11','CB12')
+		  AND ISNULL(TimeType,'')  IN ('CB10','CB11','CB12')
     GROUP BY Matters.Client,
              Matters.Matter,
              UnbilledWIP.WorkRate,
@@ -180,97 +181,97 @@ BEGIN
              Number,
              Matters.AltNumber,
              [InstructionType]
-    UNION
-    SELECT Matters.Client,
-           Matters.Matter,
-           UnbilledWIP.WorkRate AS ChargeRate,
-           NULL AS mg_feearn,
-           ClientRef,
-           [Schema],
-           FeesClient,
-           FeesMatter,
-           Claimant,
-           Defendant,
-           cl_clname,
-           [Scheme],
-           [FeeArrangement],
-           [Fee Arrangement Filter],
-           [InstructionType],
-           NULL AS MinutesWorked,
-           NULL AS NetAmount,
-           REPLACE(UnbilledWIP.Narrative_UnformattedText, 'Supplier: ', '') AS DisbNotes,
-           ClientRef AS DisbClientRef,
-           Matters.Client AS DisbClient,
-           Matters.Matter AS DisbMatter,
-           COALESCE(VchrDetail.Amount, UnbilledWIP.WorkAmt) AS DisbAmount,
-           --,ISNULL(VchrTax.CalcAmt,0) AS DisbVAT
-           COALESCE(VchrDetail.Amount, UnbilledWIP.WorkAmt) * (tax.Rate / 100) AS DisbVAT,
-           NULL DisbJoin,
-           Timekeeper.DisplayName AS AccountsUser,
-           [FeeArrangement] [DisbsFeeArrangement],
-           NULL AS HourlyRate,
-           Number AS FE,
-           2 AS xOrder,
-           Matters.AltNumber AS AltNumber
-		  --CostCard.WorkAmt AS [UnbilledDisbs]
-    FROM
-    (
-        SELECT ISNULL(
-                         RTRIM(LEFT(Matter.LoadNumber, CHARINDEX('-', Matter.LoadNumber) - 1)),
-                         RTRIM(LEFT(Matter.AltNumber, CHARINDEX('-', Matter.AltNumber) - 1))
-                     ) AS Client,
-               ISNULL(
-                         SUBSTRING(Matter.LoadNumber, CHARINDEX('-', Matter.LoadNumber) + 1, LEN(Matter.LoadNumber)),
-                         SUBSTRING(Matter.AltNumber, CHARINDEX('-', Matter.AltNumber) + 1, LEN(Matter.AltNumber))
-                     ) AS Matter,
-               Matter.MattIndex,
-               LoadNumber AS LoadNumber,
-               AltNumber AS AltNumber
-        FROM TE_3E_Prod.dbo.Matter
-    ) AS Matters
-        INNER JOIN TE_3E_Prod.dbo.CostCard AS UnbilledWIP
-            ON Matters.MattIndex = UnbilledWIP.Matter
-        LEFT JOIN TE_3E_Prod.dbo.Timekeeper
-            ON UnbilledWIP.Timekeeper = TkprIndex
-        --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
-        --ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
-        INNER JOIN #Details AS Details
-            ON Matters.Client = Details.client COLLATE DATABASE_DEFAULT
-               AND Matters.Matter = Details.matter COLLATE DATABASE_DEFAULT
-        LEFT OUTER JOIN TE_3E_Prod.dbo.VchrDetail AS VchrDetail
-            ON UnbilledWIP.CostIndex = VchrDetail.CostCard
-        LEFT OUTER JOIN
-        (
-            SELECT [TaxLkUp] [TaxCode],
-                   [Rate]
-            FROM [TE_3E_Prod].[dbo].[TaxDate]
-            WHERE NxEndDate = '9999-12-31 00:00:00.000'
-        ) tax
-            ON UnbilledWIP.TaxCode = tax.[TaxCode]
+   -- UNION
+   -- SELECT Matters.Client,
+   --        Matters.Matter,
+   --        UnbilledWIP.WorkRate AS ChargeRate,
+   --        NULL AS mg_feearn,
+   --        ClientRef,
+   --        [Schema],
+   --        FeesClient,
+   --        FeesMatter,
+   --        Claimant,
+   --        Defendant,
+   --        cl_clname,
+   --        [Scheme],
+   --        [FeeArrangement],
+   --        [Fee Arrangement Filter],
+   --        [InstructionType],
+   --        NULL AS MinutesWorked,
+   --        NULL AS NetAmount,
+   --        REPLACE(UnbilledWIP.Narrative_UnformattedText, 'Supplier: ', '') AS DisbNotes,
+   --        ClientRef AS DisbClientRef,
+   --        Matters.Client AS DisbClient,
+   --        Matters.Matter AS DisbMatter,
+   --        COALESCE(VchrDetail.Amount, UnbilledWIP.WorkAmt) AS DisbAmount,
+   --        --,ISNULL(VchrTax.CalcAmt,0) AS DisbVAT
+   --        COALESCE(VchrDetail.Amount, UnbilledWIP.WorkAmt) * (tax.Rate / 100) AS DisbVAT,
+   --        NULL DisbJoin,
+   --        Timekeeper.DisplayName AS AccountsUser,
+   --        [FeeArrangement] [DisbsFeeArrangement],
+   --        NULL AS HourlyRate,
+   --        Number AS FE,
+   --        2 AS xOrder,
+   --        Matters.AltNumber AS AltNumber
+		 -- --CostCard.WorkAmt AS [UnbilledDisbs]
+   -- FROM
+   -- (
+   --     SELECT ISNULL(
+   --                      RTRIM(LEFT(Matter.LoadNumber, CHARINDEX('-', Matter.LoadNumber) - 1)),
+   --                      RTRIM(LEFT(Matter.AltNumber, CHARINDEX('-', Matter.AltNumber) - 1))
+   --                  ) AS Client,
+   --            ISNULL(
+   --                      SUBSTRING(Matter.LoadNumber, CHARINDEX('-', Matter.LoadNumber) + 1, LEN(Matter.LoadNumber)),
+   --                      SUBSTRING(Matter.AltNumber, CHARINDEX('-', Matter.AltNumber) + 1, LEN(Matter.AltNumber))
+   --                  ) AS Matter,
+   --            Matter.MattIndex,
+   --            LoadNumber AS LoadNumber,
+   --            AltNumber AS AltNumber
+   --     FROM TE_3E_Prod.dbo.Matter
+   -- ) AS Matters
+   --     INNER JOIN TE_3E_Prod.dbo.CostCard AS UnbilledWIP
+   --         ON Matters.MattIndex = UnbilledWIP.Matter
+   --     LEFT JOIN TE_3E_Prod.dbo.Timekeeper
+   --         ON UnbilledWIP.Timekeeper = TkprIndex
+   --     --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
+   --     --ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
+   --     INNER JOIN #Details AS Details
+   --         ON Matters.Client = Details.client COLLATE DATABASE_DEFAULT
+   --            AND Matters.Matter = Details.matter COLLATE DATABASE_DEFAULT
+   --     LEFT OUTER JOIN TE_3E_Prod.dbo.VchrDetail AS VchrDetail
+   --         ON UnbilledWIP.CostIndex = VchrDetail.CostCard
+   --     LEFT OUTER JOIN
+   --     (
+   --         SELECT [TaxLkUp] [TaxCode],
+   --                [Rate]
+   --         FROM [TE_3E_Prod].[dbo].[TaxDate]
+   --         WHERE NxEndDate = '9999-12-31 00:00:00.000'
+   --     ) tax
+   --         ON UnbilledWIP.TaxCode = tax.[TaxCode]
 
-			--unbilled disbursements
-			--LEFT OUTER JOIN (SELECT * FROM TE_3E_Prod.dbo.CostCard
-			--				WHERE InvMaster IS NULL
-			--				AND IsActive=1
-			--				AND IsNB=0
-			--				AND IsNoCharge=0) AS CostCard ON CostCard.Matter = Matters.MattIndex
+			----unbilled disbursements
+			----LEFT OUTER JOIN (SELECT * FROM TE_3E_Prod.dbo.CostCard
+			----				WHERE InvMaster IS NULL
+			----				AND IsActive=1
+			----				AND IsNB=0
+			----				AND IsNoCharge=0) AS CostCard ON CostCard.Matter = Matters.MattIndex
 
-    --LEFT OUTER JOIN (SELECT VchrTax.Voucher,SUM(VchrTax.CalcAmt) AS CalcAmt 
-    --			    FROM  TE_3E_Prod.dbo.VchrTax AS VchrTax
-    --			    WHERE  VchrTax.CalcAmt>0 AND VchrTax.IsActive=1
-    --			    GROUP BY VchrTax.Voucher
+   -- --LEFT OUTER JOIN (SELECT VchrTax.Voucher,SUM(VchrTax.CalcAmt) AS CalcAmt 
+   -- --			    FROM  TE_3E_Prod.dbo.VchrTax AS VchrTax
+   -- --			    WHERE  VchrTax.CalcAmt>0 AND VchrTax.IsActive=1
+   -- --			    GROUP BY VchrTax.Voucher
 
-    --			    ) AS VchrTax
-    -- ON VchrDetail.Voucher=VchrTax.Voucher 
+   -- --			    ) AS VchrTax
+   -- -- ON VchrDetail.Voucher=VchrTax.Voucher 
 
-    WHERE UnbilledWIP.WIPRemoveDate IS NULL
-          AND CONVERT(DATE, UnbilledWIP.WorkDate) <= @EndDate
-          AND UnbilledWIP.IsActive = 1
-          AND
-          (
-              Matters.LoadNumber LIKE '%-%'
-              OR Matters.AltNumber LIKE '%-%'
-          );
+   -- WHERE UnbilledWIP.WIPRemoveDate IS NULL
+   --       AND CONVERT(DATE, UnbilledWIP.WorkDate) <= @EndDate
+   --       AND UnbilledWIP.IsActive = 1
+   --       AND
+   --       (
+   --           Matters.LoadNumber LIKE '%-%'
+   --           OR Matters.AltNumber LIKE '%-%'
+   --       );
 
 
 

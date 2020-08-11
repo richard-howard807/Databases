@@ -19,8 +19,8 @@ DECLARE @cnt INT = 0
 DECLARE @TestEmail AS VARCHAR(MAX)
 DECLARE @TestCC AS VARCHAR(MAX)
 
-SET @TestEmail='jamie.sturgess@weightmans.com'
-SET @TestCC='jamie.sturgess@weightmans.com '
+SET @TestEmail='kevin.hansen@weightmans.com'
+SET @TestCC='kevin.hansen@weightmans.com '
 
 DECLARE
 	@Client  VARCHAR(8),
@@ -51,7 +51,7 @@ DECLARE
 	
 
 DECLARE @test AS INT
-SET @Test=1
+SET @Test=0
 SET @vImportance='HIGH'
 
 IF OBJECT_ID('tempdb..#ClientBalances') IS NOT NULL DROP TABLE #ClientBalances
