@@ -14,6 +14,8 @@ BEGIN
 
 	SELECT
 		case_id
+		   , REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
+    + REPLACE(LTRIM(REPLACE(RTRIM([master_matter_number]), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference]
 		, CASE 
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2002-12-30' AND '2004-04-30' THEN 'GB00004225LI02A'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2004-05-01' AND '2005-04-30' THEN 'GB00004225LI04A'
@@ -59,6 +61,7 @@ BEGIN
 		, dim_detail_critical_mi.[agency_worker] [Agency worker]
 	,claimant_name AS [Claimant Name]
 	,dim_detail_claim.[dst_claimant_solicitor_firm ]
+	
 ,claimantsols_name  AS [Claimant Solicitor_directory]
 	, dim_detail_core_details.[date_instructions_received] [Date Claim Notified]
 		, CASE 
@@ -67,7 +70,8 @@ BEGIN
 			   THEN 'Open'
 			   ELSE 'Closed' END [Claim Status]
 		, date_closed_case_management [Date Closed]
-		, dim_detail_core_details.[suspicion_of_fraud] [Fraud Indicators]		
+		, dim_detail_core_details.[suspicion_of_fraud] [Fraud Indicators]	
+		, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 1 ELSE 0 END AS openclosed
 		, CASE 
 				WHEN work_type_name LIKE 'EL%'
 				  OR work_type_name LIKE 'Disease%'
@@ -79,14 +83,35 @@ BEGIN
 		, dim_detail_core_details.[is_there_an_issue_on_liability] [Liability Postition]
 		, ISNULL(dim_detail_incident.[accident_site], dim_detail_core_details.[jcb_rolls_royce_site]) [Accident site]
 	,work_type_name AS [Causes Code]
+	, CASE WHEN dim_matter_worktype.work_type_name LIKE 'Disease -%' THEN 'dis' ELSE 'no' END AS disease
 		, ISNULL(dim_detail_core_details.[injury_type],dim_detail_hire_details.[description_of_injury] ) [Description of Injury]
 	 , dim_detail_core_details.[brief_details_of_claim] [Description of Incident]
 		, dim_detail_incident.[body_position] [Body position]
 		, dim_detail_incident.[jcb_body_part] [JCB Body part]
 		, dim_detail_core_details.[proceedings_issued] [Litigated]
 	    , dim_detail_court.[date_proceedings_issued] [Date proceedings issued]
-		, LOWER(ISNULL(dim_detail_critical_mi.[portal_claim], 'no')) [Portal claim]
-		, dim_detail_critical_mi.[settled_within_portal] [Settled within Portal]
+
+
+,		
+CASE WHEN 
+
+dim_detail_critical_mi.portal_claim IN
+(
+'no',
+'No                                                          '
+)
+THEN 'No' ELSE 'Yes'END AS  [Portal claim]
+, CASE WHEN 
+
+
+ISNULL(dim_detail_critical_mi.portal_claim, '')IN
+(
+'no',
+'No'                                                  
+) THEN 'N/A' ELSE 'Yes' END AS   [Settled within Portal]
+		--, LOWER(ISNULL(dim_detail_critical_mi.[portal_claim], 'no')) [Portal claim]
+		
+	--	, dim_detail_critical_mi.[settled_within_portal] [Settled within Portal]
 		, dim_detail_incident.[portal_drop_out_reason] [Portal drop out reason]		
 		, dim_detail_core_details.present_position [Current Position]
 		, NULL [EL: Own Legal Costs]
@@ -154,8 +179,8 @@ BEGIN
 		,fact_finance_summary.[claimants_costs_paid] AS [Claimant Costs Paid] /*1.1 jl*/
 
 		
-
-		,[Claim Number] = NULL
+		, dim_court_involvement.court_reference [Claim Number]
+		--,[Claim Number] = NULL
 		,[Insured] = CASE WHEN [insuredclient_name] LIKE '%Excavators%' THEN 'J C Bamford Excavators Limited' ELSE [insuredclient_name] END 
 		,dst_insured_client_name AS InsuredNameDetail
 		,[Policy #] = insurerclient_reference
@@ -228,6 +253,7 @@ LEFT OUTER  JOIN red_dw.dbo.fact_dimension_main
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
  ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+ LEFT OUTER JOIN red_dw.dbo.dim_court_involvement ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
  
  LEFT JOIN red_dw.[dbo].[dim_client_involvement] ON dim_client_involvement.client_code = dim_matter_header_current.client_code AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 
@@ -247,12 +273,14 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_curr_key ORDER BY bill_date DE
 		AND  dim_matter_header_current.matter_number <> 'ML'
 		AND dim_department.department_code <> '0027'
 		AND  work_type_code!= '0032'	
+		AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >= '2017-07-01')
 
 		AND ISNULL(outcome_of_case,'') <> 'Exclude from reports'
 		AND ISNULL(dim_detail_critical_mi.[claim_status], '') != 'Cancelled'
 		AND (  work_type_name   LIKE ('PL%')
                OR work_type_name  LIKE ('EL%')
                OR work_type_name  LIKE ('Disease%')
+			   
 
 		)
 

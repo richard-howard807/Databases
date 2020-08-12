@@ -14,7 +14,7 @@ GO
 -- RH 20200604 Removed reporting exclusions from where clause and added as a column instead so revenue balances, #57252
 -- RH 20200604 Added cost handler revenue #55807
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
-
+-- RH 20200812 Added NHS fin years instead of Weightmans 
 
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
@@ -28,8 +28,14 @@ BEGIN
 
 
 
-
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
+
+	SELECT dim_bill_date.dim_bill_date_key, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_month_no, 
+		IIF(bill_fin_month_no <> 12, dim_bill_date.bill_fin_month_no + 1, 1) NHS_Fin_Month,
+		iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) NHS_Fin_Year
+		INTO #nhsdates
+	FROM red_dw..dim_bill_date
+	WHERE dim_bill_date.bill_fin_year > 2014
 
 	
 		SELECT PVIOT.client_code,
@@ -43,11 +49,11 @@ BEGIN
 			   INTO #Revenue
 		FROM (
 	
-			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
 			FROM red_dw.dbo.fact_bill_activity
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
-			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
+			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021)
+			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, NHS_Fin_Year
 			) AS revenue
 		PIVOT	
 			(
@@ -68,12 +74,12 @@ BEGIN
 			   INTO #Billed_hours
 		FROM (
 	
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
 			FROM red_dw.dbo.fact_bill_billed_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
-			GROUP BY client_code, matter_number, bill_fin_year
+			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, NHS_Fin_Year
 			) AS billedhours
 		PIVOT	
 			(
@@ -94,12 +100,12 @@ BEGIN
 			   INTO #Chargeable_hours
 		FROM (
 	
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
 			FROM red_dw.dbo.fact_billable_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
-			GROUP BY client_code, matter_number, bill_fin_year
+			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021)
+			GROUP BY client_code, matter_number, NHS_Fin_Year
 			) AS revenue
 		PIVOT	
 			(
@@ -119,14 +125,14 @@ BEGIN
 			   INTO #Disbursements
 		FROM (
 	
-			SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
+			SELECT client_code, matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
 			FROM red_dw.dbo.fact_bill_detail
-			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021)
 			AND charge_type='disbursements'
-	GROUP BY client_code,
+			GROUP BY client_code,
              matter_number,
-             bill_fin_year
+             NHS_Fin_Year
 			) AS disbursements
 		PIVOT	
 			(
