@@ -57,6 +57,7 @@ select distinct
        dim_detail_core_details.[date_instructions_received] [Date Recieved],
        replace(ltrim(replace(rtrim(fact_dimension_main.client_code), '0', ' ')), ' ', '0') + '.'
        + replace(ltrim(replace(rtrim(fact_dimension_main.matter_number), '0', ' ')), ' ', '0') [Solicitor Reference],
+	   dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number		AS [MS Reference],
 	   rtrim(WPS275) [Zurich claim number], 
        rtrim(dim_detail_health.[case_handler_review_comment]) [case_handler_review_comment],
        upper(rtrim(dim_detail_claim.[zurich_claimants_name])) [Claimant ],
