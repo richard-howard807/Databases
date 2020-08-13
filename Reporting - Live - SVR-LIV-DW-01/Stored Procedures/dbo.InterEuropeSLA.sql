@@ -44,6 +44,8 @@ BEGIN
 	, NextTrialDate.[Next Trial Date] AS [Date of Next Trial]
 	, DATEDIFF(DAY, GETDATE(),NextTrialDate.[Next Trial Date]) AS [Days to Trial]
 	, DATEDIFF(DAY, date_subsequent_sla_report_sent, NextTrialDate.[Next Trial Date]) AS [Days since last report to Trial date (SLA 35 days)]
+	, grpageas_motor_date_of_receipt_of_clients_file_of_papers AS [Date Receipt of Clients File]
+	, DATEDIFF(DAY, ISNULL(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received), GETDATE()) AS [Days Since File Received]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current

@@ -77,11 +77,14 @@ IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 SELECT client_name AS [Client Name]
 	, dim_matter_header_current.client_code AS [Client Code]
 	, dim_matter_header_current.matter_number AS [Matter Number]
+	
 	, matter_description AS [Matter Description]
 	, name AS [Matter Owner]
 	, hierarchylevel4hist AS [Team]
 	, hierarchylevel3hist AS [Department]
 	, CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Status]
+	 , REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
+    + REPLACE(LTRIM(REPLACE(RTRIM([master_matter_number]), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference]
 	, dim_detail_core_details.present_position AS [Present Position]
 	, date_opened_case_management AS [Date Opened]
 	, date_closed_case_management AS [Date Closed]
@@ -107,6 +110,7 @@ SELECT client_name AS [Client Name]
 	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
+	WHEN date_costs_settled IS NOT NULL THEN NULL 
 	ELSE NULL END AS [Days without Subsequent Report]
 	, 1 AS [Number of Files]
 	,days.days_to_first_report_lifecycle
@@ -171,12 +175,19 @@ WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDa
 	ELSE 'Red'
 	END AS RagWithouthSub
 ,referral_reason
-,CASE WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
-
-THEN 1 ELSE 0 END AS NoBlankInitial
+,CASE WHEN (date_initial_report_sent IS NULL
+AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' )
+THEN 1 
+WHEN dim_detail_core_details.date_initial_report_due >= GETDATE()  THEN 1 ELSE 0 
+END AS NoBlankInitial
 ,CASE WHEN date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
 
-THEN 1 ELSE 0 END AS NoBlankSub
+THEN 1
+WHEN dim_matter_header_current.date_opened_case_management <= DATEADD(DAY, -90, GETDATE()) THEN 0 ELSE 1 
+
+
+
+END AS NoBlankSub
 
 ,dim_detail_core_details.delegated
 
