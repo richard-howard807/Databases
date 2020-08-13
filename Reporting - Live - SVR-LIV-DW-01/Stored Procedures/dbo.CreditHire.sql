@@ -17,6 +17,7 @@ BEGIN
 
 SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_matter_header_current.[matter_number] AS [Matter Number],
+		RTRIM(dim_matter_header_current.[client_code])+'-'+dim_matter_header_current.[matter_number] AS [Weightmans Reference],
 		dim_matter_header_current.matter_owner_full_name AS [Matter Owner],
 		dim_fed_hierarchy_history.hierarchylevel4hist AS [Team],
 		dim_department.[department_name] AS [Matter Department],
@@ -45,7 +46,7 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_claim.[date_of_accident] AS [Date of Accident],
 		ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date]) AS [Hire Start Date],
 		dim_detail_hire_details.[hire_end_date] AS [Hire End Date],
-		DATEDIFF(DAY, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date]),dim_detail_hire_details.[hire_end_date]) AS [Days in Hire],
+		DATEDIFF(DAY, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date]),ISNULL(dim_detail_hire_details.[hire_end_date], GETDATE())) AS [Days in Hire],
 		dim_detail_hire_details.[cho_reference] AS [CHO Reference],
 		dim_detail_hire_details.[chn_cho_vehicle_registration] AS [CHO Vehicle Reg],
 		dim_detail_hire_details.[chq_hire_group_billed] AS [Hire Group Billed],
@@ -64,7 +65,8 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_hire_details.[date_copley_offer_sent] AS [Date of Copley Offer Sent],
 		dim_detail_hire_details.[chm_third_party_vehicle_make_and_model] AS [Third Party Vehicle (make, model],
 		dim_detail_hire_details.[credit_hire_vehicle_make_and_model] AS [Credit Hire Vehicle (make, model],
-		CASE WHEN chv_date_hire_paid IS NULL OR date_claim_concluded IS NULL THEN 'Open' ELSE 'Concluded' END AS [Status]
+		CASE WHEN chv_date_hire_paid IS NULL OR date_claim_concluded IS NULL THEN 'Open' ELSE 'Concluded' END AS [Status],
+		DATEDIFF(DAY, date_of_accident, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date])) AS [Days til Hire]
 
 
 FROM red_dw.dbo.fact_dimension_main

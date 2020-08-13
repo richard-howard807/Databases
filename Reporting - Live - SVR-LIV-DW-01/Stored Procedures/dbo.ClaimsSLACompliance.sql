@@ -75,6 +75,8 @@ IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 	AND tskActive=1
 
 SELECT client_name AS [Client Name]
+, dim_matter_header_current.master_client_code
+, dim_matter_header_current.master_matter_number
 	, dim_matter_header_current.client_code AS [Client Code]
 	, dim_matter_header_current.matter_number AS [Matter Number]
 	
@@ -105,15 +107,50 @@ SELECT client_name AS [Client Name]
 		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
-	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
+	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
+	
+
+
+,CASE 
+	WHEN RTRIM(dim_detail_core_details.present_position) IN (
+																'Claim and costs concluded but recovery outstanding',
+																'Claim and costs concluded but recovery outstanding',
+																'Final bill sent - unpaid',
+																'To be closed/minor balances to be clear'
+															) THEN 
+		NULL
+	WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 
+		NULL
+	WHEN date_claim_concluded IS NOT NULL THEN
+		NULL
+	WHEN date_costs_settled IS NOT NULL THEN 
+		NULL
+	WHEN date_subsequent_sla_report_sent IS NULL THEN 
+		dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE())
+	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN 
+		dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE())
+	ELSE
+		NULL
+END				AS [Days without Subsequent Report] 
+
+
+
+
+
+
+	
+	
 	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
 	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
-	WHEN date_costs_settled IS NOT NULL THEN NULL 
-	ELSE NULL END AS [Days without Subsequent Report]
+	WHEN date_costs_settled IS NOT NULL THEN NULL
+
+ELSE NULL END AS [Days without Subsequent Report]
 	, 1 AS [Number of Files]
-	,days.days_to_first_report_lifecycle
+
+	,CASE WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN NULL ELSE days.days_to_first_report_lifecycle END AS avglifecycle 
+	, days.days_to_first_report_lifecycle
 	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
 	,FICProcess.tskDue
 	,FICProcess.tskCompleted
