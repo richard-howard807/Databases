@@ -8,6 +8,8 @@ GO
 -- Author:		J.Bonner
 -- Create date: 2020/06/15
 -- Description:	#59161 new 1-1 report to include data from new 1-1 form, LTA still using old 1-1 form
+
+-- 20200814 RH - Added holidays to exclusions #59161
 -- ====================================================================================
 
 CREATE PROCEDURE [dbo].[new_monthly_121_status_report_v1]
@@ -158,7 +160,7 @@ LEFT OUTER JOIN (SELECT fact_employee_attendance.employeeid
 							, SUM(fact_employee_attendance.durationdays) / CAST(DATEDIFF(DAY, @StartDate, @EndDate) + 1 AS DECIMAL(10, 2)) [ExcludeCount]
 				 FROM red_dw.dbo.fact_employee_attendance
 				 WHERE fact_employee_attendance.startdate BETWEEN @StartDate AND @EndDate
-						AND fact_employee_attendance.category <> 'Holiday'
+					--	AND fact_employee_attendance.category <> 'Holiday'
 				 GROUP BY employeeid)	AS [Excluded]  	ON red_dw.dbo.dim_employee.employeeid = Excluded.employeeid 	
 
 INNER JOIN #Division AS Division ON Division.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel2hist COLLATE DATABASE_DEFAULT
@@ -172,7 +174,7 @@ WHERE 	(red_dw.dbo.dim_employee.leftdate IS NULL OR red_dw.dbo.dim_employee.left
 		AND ISNULL(Excluded.ExcludeCount,0) < 0.5
 		AND DATEDIFF(d,dim_employee.employeestartdate, @StartDate) > 15 -- over half of month in work 
 		AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - LTA','Legal Ops - Claims')
-		AND deleted_from_cascade = 0
+		AND ISNULL(deleted_from_cascade,0) = 0
 --	AND dim_fed_hierarchy_history.name = 'Susan Carville'
 
 
