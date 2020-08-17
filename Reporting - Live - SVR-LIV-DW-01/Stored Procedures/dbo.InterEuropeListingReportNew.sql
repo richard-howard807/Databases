@@ -16,13 +16,11 @@ BEGIN
 
     SET NOCOUNT ON;
     SELECT 
-		SUBSTRING(h_current.client_code, PATINDEX('%[^0]%', h_current.client_code), LEN(h_current.client_code))
-			+ '.' +
-			SUBSTRING(h_current.matter_number, PATINDEX('%[^0]%', h_current.matter_number), LEN(h_current.matter_number))	AS [Weightmans Reference]
+		h_current.master_client_code + '.' + h_current.master_matter_number	AS [Weightmans Reference]
 	--	, LTRIM(RTRIM(client_involv.client_reference))																		AS [Insurer Client Reference]
 		, MSbillingAddress.[Insurer Reference] [Insurer Client Reference]
 		--, LTRIM(RTRIM(client_involv.insuredclient_name))																	AS [Insurer Client]
-		,foreigninsurer.[Insurer Name] AS [Insurer Client]
+		,foreigninsurer.name																								AS [Insurer Client]
 		, CAST(core_details.date_instructions_received AS DATE)																AS [Date Instructions Received]
 		, CASE
 			WHEN core_details.referral_reason = 'Costs dispute' THEN
@@ -145,7 +143,7 @@ BEGIN
 			
 LEFT JOIN
         (
-            SELECT fileID,
+            SELECT dbAssociates.fileID,
                    assocType,
                    contName AS [Insurer Name],
                    assocAddressee AS [Addressee],
@@ -168,9 +166,12 @@ LEFT JOIN
                     ON assocdefaultaddID = dbAddress1.addID
                 LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress2 WITH (NOLOCK)
                     ON contDefaultAddress = dbAddress2.addID
+				LEFT OUTER JOIN MS_Prod.config.dbFile
+					ON dbFile.fileID = dbAssociates.fileID
+				LEFT OUTER JOIN MS_Prod.config.dbClient
+					ON dbClient.clID = dbFile.clID
             WHERE assocType = 'CLIENT'
-
-			
+				AND dbClient.clNo = '351402'
         )
         --WHERE assocType='INSURERCLIENT' ) 
 
@@ -179,39 +180,61 @@ LEFT JOIN
         AS MSbillingAddress
             ON h_current.ms_fileid = MSbillingAddress.fileID
                AND MSbillingAddress.XOrder = 1
+	
+
+	LEFT OUTER JOIN (
+						SELECT 
+							dim_matter_header_current.master_client_code
+							, dim_matter_header_current.master_matter_number
+							, dim_involvement_full.capacity_description
+							, dim_involvement_full.name
+						FROM red_dw.dbo.fact_dimension_main
+							INNER JOIN red_dw.dbo.dim_matter_header_current
+								ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+							LEFT OUTER JOIN red_dw.dbo.dim_involvement_full
+								ON dim_involvement_full.dim_involvement_full_bridge_key = fact_dimension_main.dim_involvement_full_bridge_key
+						WHERE
+							dim_matter_header_current.master_client_code ='351402'
+							AND dim_involvement_full.capacity_code = 'FORINS'
+					) AS foreigninsurer
+			ON foreigninsurer.master_client_code = h_current.master_client_code
+				AND foreigninsurer.master_matter_number = h_current.master_matter_number
 
 
-
-			   LEFT JOIN
-        (
-            SELECT fileID,
-                   assocType,
-                   contName AS [Insurer Name],
-                   assocAddressee AS [Addressee],
-                   CASE
-                       WHEN assocdefaultaddID IS NOT NULL THEN
-                           ISNULL(dbAddress1.addLine1, '') + ' ' + ISNULL(dbAddress1.addLine2, '') + ' '
-                           + ISNULL(dbAddress1.addLine3, '') + ' ' + ISNULL(dbAddress1.addLine4, '') + ' '
-                           + ISNULL(dbAddress1.addLine5, '') + ' ' + ISNULL(dbAddress1.addPostcode, '')
-                       ELSE
-                           ISNULL(dbAddress2.addLine1, '') + ' ' + ISNULL(dbAddress2.addLine2, '') + ' '
-                           + ISNULL(dbAddress2.addLine3, '') + ' ' + ISNULL(dbAddress2.addLine4, '') + ' '
-                           + ISNULL(dbAddress2.addLine5, '') + ' ' + ISNULL(dbAddress2.addPostcode, '')
-                   END AS [Insurer Address],
-                   dbAssociates.assocRef AS [Insurer Reference],
-                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
-            FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
-                INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
-                    ON dbAssociates.contID = dbContact.contID
-                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress1 WITH (NOLOCK)
-                    ON assocdefaultaddID = dbAddress1.addID
-                LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress2 WITH (NOLOCK)
-                    ON contDefaultAddress = dbAddress2.addID
-            WHERE assocType = 'INSURERCLIENT'
-
+			 --  LEFT JOIN
+    --    (
+    --        SELECT dbAssociates.fileID,
+    --               assocType,
+    --               contName AS [Insurer Name],
+    --               assocAddressee AS [Addressee],
+    --               CASE
+    --                   WHEN assocdefaultaddID IS NOT NULL THEN
+    --                       ISNULL(dbAddress1.addLine1, '') + ' ' + ISNULL(dbAddress1.addLine2, '') + ' '
+    --                       + ISNULL(dbAddress1.addLine3, '') + ' ' + ISNULL(dbAddress1.addLine4, '') + ' '
+    --                       + ISNULL(dbAddress1.addLine5, '') + ' ' + ISNULL(dbAddress1.addPostcode, '')
+    --                   ELSE
+    --                       ISNULL(dbAddress2.addLine1, '') + ' ' + ISNULL(dbAddress2.addLine2, '') + ' '
+    --                       + ISNULL(dbAddress2.addLine3, '') + ' ' + ISNULL(dbAddress2.addLine4, '') + ' '
+    --                       + ISNULL(dbAddress2.addLine5, '') + ' ' + ISNULL(dbAddress2.addPostcode, '')
+    --               END AS [Insurer Address],
+    --               dbAssociates.assocRef AS [Insurer Reference],
+    --               ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
+    --        FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
+    --            INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
+    --                ON dbAssociates.contID = dbContact.contID
+    --            LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress1 WITH (NOLOCK)
+    --                ON assocdefaultaddID = dbAddress1.addID
+    --            LEFT OUTER JOIN MS_Prod.dbo.dbAddress AS dbAddress2 WITH (NOLOCK)
+    --                ON contDefaultAddress = dbAddress2.addID
+				--LEFT OUTER JOIN MS_Prod.config.dbFile
+				--	ON dbFile.fileID = dbAssociates.fileID
+				--LEFT OUTER JOIN MS_Prod.config.dbClient
+				--	ON dbClient.clID = dbFile.clID
+    --        WHERE assocType = 'INSURERCLIENT'
+				--AND dbClient.clNo = '351402'
 			
-        ) AS foreigninsurer ON foreigninsurer.fileID = MSbillingAddress.fileID
-				AND foreigninsurer.XOrder = 1 
+    --    ) AS foreigninsurer ON foreigninsurer.fileID = MSbillingAddress.fileID
+				--AND foreigninsurer.XOrder = 1 
 	WHERE 
 		h_current.client_code = '00351402'
 		AND h_current.matter_number <> 'ML'
