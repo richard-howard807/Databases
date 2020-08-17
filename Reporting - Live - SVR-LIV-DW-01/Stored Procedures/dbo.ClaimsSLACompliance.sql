@@ -3,23 +3,6 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2019-10-28
@@ -43,29 +26,31 @@ BEGIN
 	--For testing purposes
 	--===========================================================
 	--DECLARE  @Team AS VARCHAR(MAX) = 'Motor Management'
---,@Name AS VARCHAR(MAX) = ''
---	,@StartDate AS DATE = '2019-01-01'
---	,@EndDate AS DATE = '2019-07-24'
---	,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs outstanding,To be closed/minor balances to be clear, Missing, Claim concluded but costs outstanding'
---	,@ClientGroup AS VARCHAR(MAX)  = ''
---	,@Status AS VARCHAR (30) = 'Closed'
+	--,@Name AS VARCHAR(MAX) = '1856'
+	--,@StartDate AS DATE = '2020-02-17'
+	--,@EndDate AS DATE = '2020-08-17'
+	--,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs concluded but recovery outstanding|Claim and costs outstanding|Claim concluded but costs outstanding|Final bill due - claim and costs concluded|Final bill sent - unpaid|Missing|To be closed/minor balances to be clear'            
+	--,@ClientGroup AS VARCHAR(MAX)  = 'None'
+	--,@Status AS VARCHAR (30) = 'Open|Closed'
 
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 	IF OBJECT_ID('tempdb..#Name') IS NOT NULL   DROP TABLE #Name
 	IF OBJECT_ID('tempdb..#ClientGroup') IS NOT NULL   DROP TABLE #ClientGroup
 	IF OBJECT_ID('tempdb..#PresentPosition') IS NOT NULL   DROP TABLE #PresentPosition
 	IF OBJECT_ID('tempdb..#Status') IS NOT NULL   DROP TABLE #Status
+	IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL DROP TABLE #FICProcess
 
 	SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
 	SELECT ListValue  INTO #Name FROM 	dbo.udt_TallySplit('|', @Name)
 	SELECT ListValue  INTO #ClientGroup FROM 	dbo.udt_TallySplit('|', @ClientGroup)
 	SELECT ListValue  INTO #PresentPosition FROM 	dbo.udt_TallySplit('|', @PresentPosition)
 	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit('|', @Status)
+
 
 	SELECT fileID, tskDesc, tskDue, tskCompleted 
 	INTO #FICProcess
@@ -132,21 +117,14 @@ SELECT client_name AS [Client Name]
 	ELSE
 		NULL
 END				AS [Days without Subsequent Report] 
-
-
-
-
-
-
 	
-	
-	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
-	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-	WHEN date_claim_concluded IS NOT NULL THEN NULL
-	WHEN date_costs_settled IS NOT NULL THEN NULL
+--	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
+--	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+--	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+--	WHEN date_claim_concluded IS NOT NULL THEN NULL
+--	WHEN date_costs_settled IS NOT NULL THEN NULL
 
-ELSE NULL END AS [Days without Subsequent Report]
+--ELSE NULL END AS [Days without Subsequent Report]
 	, 1 AS [Number of Files]
 
 	,CASE WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN NULL ELSE days.days_to_first_report_lifecycle END AS avglifecycle 
