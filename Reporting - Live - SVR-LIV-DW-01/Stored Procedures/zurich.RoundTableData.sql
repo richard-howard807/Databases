@@ -19,12 +19,15 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 		, matter_description AS [Matter Description]
 		, matter_owner_full_name AS [Case Manager]
-		, hierarchylevel3hist AS [Department]
+		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' OR work_type_name LIKE 'Core LG%' THEN 'Police & Local Govt'
+			ELSE hierarchylevel3hist END AS [Department]
+		, work_type_name AS [Claim Type]
 		, CASE WHEN client_group_name='Zurich' THEN 'Zurich' ELSE 'All' END AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
+		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
 		, dst_claimant_solicitor_firm AS [Claimant's Solicitor]
 		, outcome_of_case AS [Outcome of Case]
@@ -52,6 +55,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.dim_department
+ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')

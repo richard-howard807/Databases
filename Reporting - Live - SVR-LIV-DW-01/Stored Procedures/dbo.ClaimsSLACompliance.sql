@@ -93,22 +93,17 @@ SELECT client_name AS [Client Name]
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
-	
 
-
-,CASE 
+, CASE 
 	WHEN RTRIM(dim_detail_core_details.present_position) IN (
 																'Claim and costs concluded but recovery outstanding',
-																'Claim and costs concluded but recovery outstanding',
+																'Claim concluded but costs outstanding',
+																'Final bill due - claim and costs concluded',
 																'Final bill sent - unpaid',
-																'To be closed/minor balances to be clear'
+																'To be closed/minor balances to be clear'            
 															) THEN 
 		NULL
 	WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 
-		NULL
-	WHEN date_claim_concluded IS NOT NULL THEN
-		NULL
-	WHEN date_costs_settled IS NOT NULL THEN 
 		NULL
 	WHEN date_subsequent_sla_report_sent IS NULL THEN 
 		dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE())
@@ -116,8 +111,10 @@ SELECT client_name AS [Client Name]
 		dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE())
 	ELSE
 		NULL
-END				AS [Days without Subsequent Report] 
-	
+  END				AS [Days without Subsequent Report]
+
+
+
 --	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
 --	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 --	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
@@ -168,6 +165,13 @@ END				AS [Days without Subsequent Report]
 	--		ELSE 'Transparent' END [Update Report RAG]
 
 ,CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 'Transparent'
+	WHEN RTRIM(dim_detail_core_details.present_position) IN (
+																'Claim and costs concluded but recovery outstanding',
+																'Claim concluded but costs outstanding',
+																'Final bill due - claim and costs concluded',
+																'Final bill sent - unpaid',
+																'To be closed/minor balances to be clear'            
+															) THEN 'Transparent'
 WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
@@ -185,24 +189,31 @@ WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDa
 	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
 	WHEN date_claim_concluded IS NOT NULL THEN NULL
 	ELSE NULL END) IS NULL THEN 'Transparent' 
-	
-	
 	ELSE 'Red'
 	END AS RagWithouthSub
 ,referral_reason
-,CASE WHEN (date_initial_report_sent IS NULL
-AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' )
-THEN 1 
-WHEN dim_detail_core_details.date_initial_report_due >= GETDATE()  THEN 1 ELSE 0 
-END AS NoBlankInitial
-,CASE WHEN date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes'
-
-THEN 1
-WHEN dim_matter_header_current.date_opened_case_management <= DATEADD(DAY, -90, GETDATE()) THEN 0 ELSE 1 
 
 
+--, CASE 
+--	WHEN (date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND dim_detail_core_details.date_initial_report_due < GETDATE()-1) THEN 
+--		1 
+--	ELSE 
+--		0 
+--  END				AS NoBlankInitial
 
-END AS NoBlankSub
+, CASE 
+	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN
+		1
+	ELSE
+		0
+  END			AS NoBlankInitial
+
+, CASE 
+	WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND GETDATE() > DATEADD(DAY, 90, dim_matter_header_current.date_opened_case_management))  THEN 
+		1
+	ELSE 
+		0 
+  END				 AS NoBlankSub
 
 ,dim_detail_core_details.delegated
 
@@ -220,7 +231,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days
 ON days.master_fact_key = fact_dimension_main.master_fact_key
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 INNER JOIN #Name AS Name ON Name.ListValue COLLATE DATABASE_DEFAULT = fee_earner_code COLLATE DATABASE_DEFAULT
-INNER JOIN #ClientGroup AS ClientGroup ON ISNULL(dim_matter_header_current.client_group_name,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
+INNER JOIN #ClientGroup AS ClientGroup ON ISNULL(CASE WHEN dim_matter_header_current.client_group_name = '' THEN 'None' ELSE dim_matter_header_current.client_group_name END,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
 INNER JOIN #PresentPosition AS Position ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(dim_detail_core_details.present_position,'Missing') COLLATE DATABASE_DEFAULT
 INNER JOIN #Status AS [Status] ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
 
@@ -241,5 +252,9 @@ AND ((dim_matter_header_current.date_opened_case_management >= @StartDate OR @St
 --'A2002-00015763' , 'A2002-00015827' , 'A2002-00015612'
 --)
 
+
 END
+
+
+
 GO

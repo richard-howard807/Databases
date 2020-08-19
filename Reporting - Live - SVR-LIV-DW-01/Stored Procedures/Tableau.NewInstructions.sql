@@ -87,7 +87,8 @@ THEN 1 ELSE 0 END AS showit
  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+ ON red_dw.dbo.dim_matter_header_current.fee_earner_code=fed_code
+ AND date_opened_practice_management BETWEEN dss_start_date AND dss_end_date
  LEFT OUTER JOIN red_dw.dbo.dim_date 
  ON calendar_date=CAST(date_opened_case_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 

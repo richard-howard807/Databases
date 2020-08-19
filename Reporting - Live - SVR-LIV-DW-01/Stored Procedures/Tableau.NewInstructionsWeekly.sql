@@ -25,6 +25,7 @@ BEGIN
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
 		, dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team]
+		, name AS [Matter Owner]
 		, ISNULL(dim_client.client_group_name, dim_client.client_name) AS [Client Group Name]
 		, segment AS [Segment]
 		, sector AS [Sector]
@@ -90,7 +91,8 @@ BEGIN
  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+ ON red_dw.dbo.dim_matter_header_current.fee_earner_code=fed_code
+ AND date_opened_practice_management BETWEEN dss_start_date AND dss_end_date
  LEFT OUTER JOIN red_dw.dbo.dim_date 
  ON calendar_date=CAST(date_opened_case_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 
@@ -105,9 +107,9 @@ BEGIN
  ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
  LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
- INNER  JOIN red_dw.dbo.dim_detail_outcome 
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome 
  ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
- AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
+ --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
  WHERE date_opened_case_management>='2019-01-01'
  AND date_opened_case_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
@@ -116,6 +118,7 @@ BEGIN
 									WHERE current_cal_week='Current')
  AND reporting_exclusions=0
  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
+ --AND name ='Natasha Jordan'
 
     
 END
