@@ -27,11 +27,11 @@ BEGIN
 	--===========================================================
 	--DECLARE  @Team AS VARCHAR(MAX) = 'Motor Management'
 	--,@Name AS VARCHAR(MAX) = '1856'
-	--,@StartDate AS DATE = '2020-02-17'
-	--,@EndDate AS DATE = '2020-08-17'
+	--,@StartDate AS DATE = '2020-02-20'
+	--,@EndDate AS DATE = '2020-08-20'
 	--,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs concluded but recovery outstanding|Claim and costs outstanding|Claim concluded but costs outstanding|Final bill due - claim and costs concluded|Final bill sent - unpaid|Missing|To be closed/minor balances to be clear'            
 	--,@ClientGroup AS VARCHAR(MAX)  = 'None'
-	--,@Status AS VARCHAR (30) = 'Open|Closed'
+	--,@Status AS VARCHAR (30) = 'Open'
 
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -365,15 +365,7 @@ SELECT
 			0
 	  END				AS [Subsequent Report Due in 10 Working Days]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' AND
-						RTRIM(dim_detail_core_details.present_position) IN (
-																		'Final bill due - claim and costs concluded',
-																		'Final bill sent - unpaid',
-																		'To be closed/minor balances to be clear'            
-																	) THEN 
-			0
-		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL 
-			AND #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN
+		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN
 			1
 		ELSE 
 			0
@@ -418,7 +410,6 @@ WHERE
 
 
 END
-
 
 
 GO
