@@ -17,10 +17,9 @@ BEGIN
 
 		SELECT DISTINCT fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
-		, date_opened_case_management AS [Date Opened]
+		, dim_matter_header_history.date_opened_practice_management AS [Date Opened]
 		, cal_week_in_year AS [Week Number]
-		, CAST(DATEADD(dd, -(DATEPART(dw, date_opened_case_management)-1), date_opened_case_management) AS DATE) [Week Start]
-		, date_opened_practice_management
+		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_history.date_opened_practice_management)-1), dim_matter_header_history.date_opened_practice_management) AS DATE) [Week Start]
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
@@ -81,26 +80,27 @@ BEGIN
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
-		 , CASE WHEN date_opened_case_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+		 , CASE WHEN dim_matter_header_history.date_opened_practice_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
 			
 
- FROM red_dw.dbo.fact_dimension_main
- LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
- ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
- LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON red_dw.dbo.dim_matter_header_current.fee_earner_code=fed_code
- AND date_opened_practice_management BETWEEN dss_start_date AND dss_end_date
+ FROM red_dw.dbo.dim_matter_header_history
+ LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
+ ON fact_dimension_main.client_code = dim_matter_header_history.client_code
+ AND fact_dimension_main.matter_number = dim_matter_header_history.matter_number
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ON dim_matter_header_history.fee_earner_code = dim_fed_hierarchy_history.fed_code
+AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
  LEFT OUTER JOIN red_dw.dbo.dim_date 
- ON calendar_date=CAST(date_opened_case_management AS DATE)
+ ON calendar_date=CAST(dim_matter_header_history.date_opened_practice_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 
  ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
  LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
- ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_history.dim_matter_worktype_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
  ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
  LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
@@ -111,15 +111,18 @@ BEGIN
  ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
- WHERE date_opened_case_management>='2019-01-01'
- AND date_opened_case_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+ WHERE dim_matter_header_history.date_opened_practice_management>='2019-01-01'
+ AND dim_matter_header_history.date_opened_practice_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current')
- AND reporting_exclusions=0
+
  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
  --AND name ='Natasha Jordan'
-
-    
+ -- AND hierarchylevel3hist='Motor'
+ --AND dim_matter_header_history.date_opened_practice_management >= '2020-07-01' 
+ --AND dim_matter_header_history.date_opened_practice_management <= '2020-07-31'
+ AND dim_matter_header_history.dss_version = 1
+ AND reporting_exclusions=0    
 END
 GO

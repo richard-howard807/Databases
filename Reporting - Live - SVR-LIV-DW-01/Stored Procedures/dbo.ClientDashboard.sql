@@ -7,6 +7,8 @@ GO
 -- Create date: 2020-08-11
 -- Description:	#66654, Board Client SLA dashboard
 -- =============================================
+-- ES #68393, added client debt over 180 days
+-- ==============================================
 CREATE PROCEDURE [dbo].[ClientDashboard]
 	
 
@@ -20,6 +22,8 @@ SELECT DISTINCT
 	dim_client.client_group_name AS [Client Group Name]
 	, YTDRevenue.[YTD Revenue]
 	, PYYTDRevenue.[PY YTD Revenue]
+	, Debt.[Debt Over 180 Days]
+	, [PY Debt].[PY Debt Over 180 Days]
 	, YTDInstructions.[No. Instructions] [YTD Instructions]
 	, PYYTDInstructions.[No. Instructions] AS [PY YTD Instructions]
 	, Exceptions.no_exceptions AS [No. Exceptions]
@@ -152,6 +156,57 @@ LEFT OUTER JOIN (
 										,'00000142' --pwc
 										)
 			GROUP BY client_group_name) AS [Exceptions] ON Exceptions.client_group_name = dim_client.client_group_name
+
+LEFT OUTER JOIN (SELECT client_group_name
+					, SUM(outstanding_total_bill) AS [Debt Over 180 Days]
+				FROM red_dw.dbo.fact_debt_monthly
+				LEFT OUTER JOIN red_dw.dbo.dim_days_banding
+				ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
+				INNER JOIN red_dw.dbo.dim_client
+				ON dim_client.dim_client_key = fact_debt_monthly.dim_client_key
+				AND dim_client.client_group_code IN ('00000001' --Zurich
+											,'00000003' --NHS Resolution   
+											,'00000002' --MIB
+											,'00000006' --Royal Mail
+											,'00000067' --Ageas
+											,'00000013' --AIG
+											,'00000142' --pwc
+											)
+				INNER JOIN red_dw.dbo.dim_date
+				ON dim_transaction_date_key=dim_date_key
+				AND debt_month=(SELECT DISTINCT fin_month 
+								FROM red_dw.dbo.dim_date
+								WHERE current_fin_year='Current'
+								AND current_fin_month='Previous')
+
+				WHERE  daysbanding='Greater than 180 Days'
+
+				GROUP BY client_group_name) AS [Debt] ON Debt.client_group_name = dim_client.client_group_name
+
+LEFT OUTER JOIN (SELECT client_group_name
+					, SUM(outstanding_total_bill) AS [PY Debt Over 180 Days]
+				FROM red_dw.dbo.fact_debt_monthly
+				LEFT OUTER JOIN red_dw.dbo.dim_days_banding
+				ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
+				INNER JOIN red_dw.dbo.dim_client
+				ON dim_client.dim_client_key = fact_debt_monthly.dim_client_key
+				AND dim_client.client_group_code IN ('00000001' --Zurich
+											,'00000003' --NHS Resolution   
+											,'00000002' --MIB
+											,'00000006' --Royal Mail
+											,'00000067' --Ageas
+											,'00000013' --AIG
+											,'00000142' --pwc
+											)
+				INNER JOIN red_dw.dbo.dim_date
+				ON dim_transaction_date_key=dim_date_key
+				AND debt_month=(SELECT DISTINCT fin_month FROM red_dw.dbo.dim_date
+				WHERE current_fin_year='Previous'
+				AND cal_month_no=DATEPART(MONTH, GETDATE())-1)
+
+				WHERE  daysbanding='Greater than 180 Days'
+
+				GROUP BY client_group_name) AS [PY Debt] ON [PY Debt].client_group_name = dim_client.client_group_name
 
 WHERE dim_client.client_group_code IN ('00000001' --Zurich
 							,'00000003' --NHS Resolution   

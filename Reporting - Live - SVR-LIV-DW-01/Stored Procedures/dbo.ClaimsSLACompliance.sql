@@ -315,7 +315,7 @@ SELECT
 	  END				AS NoBlankInitial
 
 	, CASE 
-		WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND GETDATE() > DATEADD(DAY, 90, dim_matter_header_current.date_opened_case_management))  THEN 
+		WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND GETDATE() > DATEADD(DAY, ISNULL(ClientSLAs.[Update Report SLA (days)], 90), dim_matter_header_current.date_opened_case_management))  THEN 
 			1
 		ELSE 
 			0 
@@ -410,6 +410,5 @@ WHERE
 
 
 END
-
 
 GO
