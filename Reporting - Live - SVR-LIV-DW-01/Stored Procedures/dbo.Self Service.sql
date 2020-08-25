@@ -25,7 +25,7 @@ GO
 -- RH 20200604 Added cost handler revenue #55807
 -- JB 20200611 Added is_this_part_of_a_campaign #61388
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
-
+-- JB 20200825 Added date claim concluded date last changed #68418
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -357,6 +357,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 		   
     dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
 	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(date_claim_concluded AS DATE)) AS [Fin Year Claim Concluded],
+	dim_detail_outcome.date_claim_concluded_date_last_changed		AS [Date "Date Claim Concluded" Last Changed],
     fact_finance_summary.damages_interims AS [Interim Damages],
     CASE
         WHEN fact_finance_summary.[damages_paid] IS NULL
