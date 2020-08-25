@@ -27,11 +27,11 @@ BEGIN
 	--===========================================================
 	--DECLARE  @Team AS VARCHAR(MAX) = 'Motor Management'
 	--,@Name AS VARCHAR(MAX) = '1856'
-	--,@StartDate AS DATE = '2020-02-20'
-	--,@EndDate AS DATE = '2020-08-20'
+	--,@StartDate AS DATE = '2020-02-24'
+	--,@EndDate AS DATE = '2020-08-24'
 	--,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs concluded but recovery outstanding|Claim and costs outstanding|Claim concluded but costs outstanding|Final bill due - claim and costs concluded|Final bill sent - unpaid|Missing|To be closed/minor balances to be clear'            
 	--,@ClientGroup AS VARCHAR(MAX)  = 'None'
-	--,@Status AS VARCHAR (30) = 'Open'
+	--,@Status AS VARCHAR (30) = 'Open|Closed'
 
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -179,7 +179,7 @@ SELECT
 	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
 
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' AND
+		WHEN do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -209,9 +209,12 @@ SELECT
 	,FICProcess.tskDesc
 	--Client SLA's
 	, [File Opening SLA (days)]
+	, ISNULL(ClientSLAs.[File Opening SLA (days)], 2)		AS [File Opening SLA hidden on report for highlighting]
 	, [Initial Report SLA (days)]
-	, [Update Report SLA (days)]
-	, [Update Report SLA]
+	, ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)	AS [Initial Report SLA hidden on report for highlighting]
+	, ClientSLAs.[Update Report SLA]
+	, ClientSLAs.[Update Report SLA (working days)]
+	, ISNULL(ClientSLAs.[Update Report SLA (working days)], 63)		AS [Update Report SLA hidden on report for highlighting]
 	, CASE WHEN date_instructions_received IS NULL THEN 
 				'Amber'
 			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<0 THEN 
@@ -322,7 +325,7 @@ SELECT
 	  END				 AS NoBlankSub
 	, dim_detail_core_details.delegated
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' AND
+		WHEN do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -336,7 +339,7 @@ SELECT
 			0
 	  END										AS [Count Initial Report Due In 5 Working Days]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' AND
+		WHEN do_clients_require_an_initial_report = 'No' OR 
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -351,7 +354,7 @@ SELECT
 	  END										AS [Count Initial Report Is Overdue]
 	, #ClientReportDates.date_subsequent_report_due			AS [Date Subsequent Report Due]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' AND
+		WHEN do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -410,5 +413,6 @@ WHERE
 
 
 END
+
 
 GO
