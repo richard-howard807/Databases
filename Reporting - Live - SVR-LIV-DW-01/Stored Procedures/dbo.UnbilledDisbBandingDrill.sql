@@ -3,6 +3,10 @@ GO
 SET ANSI_NULLS ON
 GO
 
+--==========================================================
+-- Amendments
+-- ES 20200825 #69196 Added last bill date and last bill flag
+--==========================================================
 
 CREATE PROCEDURE [dbo].[UnbilledDisbBandingDrill] --EXEC [dbo].[UnbilledDisbBanding] '201912'
 (
@@ -28,7 +32,8 @@ Client,Matter,matter_description,date_opened_practice_management,date_closed_pra
 ,AllData.[Fee Arrangement]
 ,AllData.[Fixed Fee Amount]
 ,SUM(AllData.WIP) WIP 
-
+,AllData.[Date of Last Bill]
+,AllData.[Last Bill (Interim or Final]
 
 FROM 
 (
@@ -42,14 +47,17 @@ SELECT a.client_code AS  Client
 ,hierarchylevel4hist AS [Team]
 ,display_name As [Display Name]
 ,display_name AS AccountsUser
-,matter_description,date_opened_practice_management,date_closed_practice_management
+,matter_description
+,dim_matter_header_current.date_opened_practice_management
+,dim_matter_header_current.date_closed_practice_management
 ,client_name
 ,unbilled_hard_disbursements AS HardCost
 ,unbilled_soft_disbursements AS SoftCost
 ,dim_matter_header_current.fee_arrangement [Fee Arrangement]
 ,dim_matter_header_current.fixed_fee_amount [Fixed Fee Amount]
-, fact_finance_summary.wip [WIP]
-
+,fact_finance_summary.wip [WIP]
+,last_bill_date AS [Date of Last Bill]
+,CASE WHEN final_bill_flag=1 THEN 'Final' ELSE 'Interim' END AS [Last Bill (Interim or Final]
 ,a.workdate AS DisbDate
 ,CASE WHEN DATEDIFF(DAY,a.workdate,EOMONTH(transaction_calendar_date)) BETWEEN 0 AND 30 THEN '0-30 Days'
 WHEN DATEDIFF(DAY,a.workdate,EOMONTH(transaction_calendar_date)) BETWEEN 31 AND 90 THEN '31-90 Days'
@@ -68,7 +76,10 @@ INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK) 
  ON dim_matter_header_current.fee_earner_code=fed_code collate database_default AND dss_current_flag='Y'
-LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.client_code = a.client_code AND fact_finance_summary.matter_number = a.matter_number
+LEFT JOIN red_dw.dbo.fact_finance_summary 
+ON fact_finance_summary.client_code = a.client_code AND fact_finance_summary.matter_number = a.matter_number
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
+ON fact_matter_summary_current.master_fact_key = a.master_fact_key
  WHERE dim_bill_key=0
 AND total_unbilled_disbursements <> 0
 --AND reporting_exclusions=0  -- Requested by steve Scullion to remove
@@ -80,6 +91,8 @@ GROUP BY Client,Matter,matter_description,date_opened_practice_management,date_c
 --,DisbNotes
 --,DisbDate
 ,[Display Name]
+,AllData.[Date of Last Bill]
+,AllData.[Last Bill (Interim or Final]
 
 HAVING SUM(DisbAmount)<>0
 

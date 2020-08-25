@@ -20,17 +20,17 @@ BEGIN
 	, date_instructions_received AS [Date Instructions Received]
 	, date_opened_case_management AS [Date Opened in MS]
 	, CASE WHEN ll00_have_we_had_an_extension_for_the_initial_report='Yes' THEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_report_due, GETDATE())
-		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](ISNULL(date_instructions_received,date_opened_case_management), GETDATE()) END AS [Days file at Weightmans/ days to report due if extension  (working days)]
+		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management), GETDATE()) END AS [Days file at Weightmans/ days to report due if extension  (working days)]
 	, CASE WHEN (CASE WHEN ll00_have_we_had_an_extension_for_the_initial_report='Yes' THEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_report_due, GETDATE())
-		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](ISNULL(date_instructions_received,date_opened_case_management), GETDATE()) END) <=7 THEN 'LimeGreen'
+		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management), GETDATE()) END) <=7 THEN 'LimeGreen'
 		WHEN (CASE WHEN ll00_have_we_had_an_extension_for_the_initial_report='Yes' THEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_report_due, GETDATE())
-		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](ISNULL(date_instructions_received,date_opened_case_management), GETDATE()) END) <=9 THEN 'Orange'
+		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management), GETDATE()) END) <=9 THEN 'Orange'
 		WHEN (CASE WHEN ll00_have_we_had_an_extension_for_the_initial_report='Yes' THEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_report_due, GETDATE())
-		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](ISNULL(date_instructions_received,date_opened_case_management), GETDATE()) END) >=10 THEN 'Red' END AS [Days to Report RAG]
+		ELSE [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management), GETDATE()) END) >=10 THEN 'Red' END AS [Days to Report RAG]
 	, ll00_have_we_had_an_extension_for_the_initial_report AS [Extention Requested]
 	, date_report_due AS [Date Initial Report Due]
 	, date_initial_report_sent AS [Date Intial Report Sent]
-	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](ISNULL(date_instructions_received,date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
+	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
 	, date_subsequent_sla_report_sent AS [Date of Last Subsequent Report]
 	, AllSubsDates.AllSubsDate AS [Subsequent Report Dates]
 	, DATEDIFF(DAY, date_subsequent_sla_report_sent, GETDATE()) AS [Days Since Subsequent Report Sent]

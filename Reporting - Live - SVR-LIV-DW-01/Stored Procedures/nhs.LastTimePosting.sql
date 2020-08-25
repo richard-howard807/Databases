@@ -27,6 +27,7 @@ BEGIN
 	, last_time_transaction_date AS [Date of Last Time Posting]
 	, DATEDIFF(DAY,last_time_transaction_date, GETDATE()) AS [Number of Days Since Last Time Posting]
 	, is_this_a_linked_file AS [Is this a Linked Matter?]
+	, lead_file_matter_number_client_matter_number AS [Lead File Matter Number]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -44,7 +45,7 @@ ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact
 
 WHERE dim_matter_header_current.master_client_code='N1001'
 AND date_claim_concluded IS NULL
-AND dim_matter_header_current.date_closed_case_management IS NULL
+AND ms_only=1
 AND (referral_reason LIKE 'Dispute%' OR referral_reason LIKE 'Infant Approval%')
 AND DATEDIFF(DAY,last_time_transaction_date, GETDATE())>30
 
