@@ -88,22 +88,22 @@ BEGIN
 			WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NOT NULL THEN 
 				CASE 
 					-- Needing to make sure future date is a weekday
-					WHEN DATENAME(wk, DATEADD(MONTH, 3, dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Saturday' THEN
-						DATEADD(MONTH, 3, dim_detail_core_details.date_subsequent_sla_report_sent)+2
-					WHEN DATENAME(wk, DATEADD(MONTH, 3, dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Sunday' THEN
-						DATEADD(MONTH, 3, dim_detail_core_details.date_subsequent_sla_report_sent)+1
+					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Saturday' THEN
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+2
+					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Sunday' THEN
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+1
 					ELSE 
-						DATEADD(MONTH, 3, dim_detail_core_details.date_subsequent_sla_report_sent)
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)
 				END
 			WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
 				CASE 
 					-- Needing to make sure future date is a weekday
-					WHEN DATENAME(wk, DATEADD(MONTH, 3, dim_detail_core_details.date_initial_report_sent)) = 'Saturday' THEN
-						DATEADD(MONTH, 3, dim_detail_core_details.date_initial_report_sent)+2
-					WHEN DATENAME(wk, DATEADD(MONTH, 3, dim_detail_core_details.date_initial_report_sent)) = 'Sunday' THEN
-						DATEADD(MONTH, 3, dim_detail_core_details.date_initial_report_sent)+1
+					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Saturday' THEN
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+2
+					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Sunday' THEN
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+1
 					ELSE 
-						DATEADD(MONTH, 3, dim_detail_core_details.date_initial_report_sent)
+						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)
 				END
 			ELSE 
 				NULL
@@ -273,41 +273,52 @@ SELECT
 	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=63 THEN 'LimeGreen'
 	--		ELSE 'Transparent' END [Update Report RAG]
 
-	,CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 
-			'Transparent'
-		WHEN RTRIM(dim_detail_core_details.present_position) IN (
-																	'Final bill due - claim and costs concluded',
-																	'Final bill sent - unpaid',
-																	'To be closed/minor balances to be clear'            
-																) THEN 
-			'Transparent'
+	--,CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 
+	--		'Transparent'
+	--	WHEN RTRIM(dim_detail_core_details.present_position) IN (
+	--																'Final bill due - claim and costs concluded',
+	--																'Final bill sent - unpaid',
+	--																'To be closed/minor balances to be clear'            
+	--															) THEN 
+	--		'Transparent'
+	--	WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL AND 
+	--			dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
+	--		'Orange'
+	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
+	--				ELSE NULL END) BETWEEN 0 AND 53 THEN
+	--		'Limegreen'
+	--	 WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
+	--				ELSE NULL END) BETWEEN 54 AND 63 THEN 
+	--		'Amber'
+	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
+	--				ELSE NULL END)<0 THEN 
+	--		'Transparent' 
+
+	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
+	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
+	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
+	--				ELSE NULL END) IS NULL THEN 
+	--		'Transparent' 
+	--	ELSE 
+	--		'Red'
+	--	END								 AS RagWithouthSub
+	, CASE 
 		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL AND 
 				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			'Orange'
-		WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-					WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-					WHEN date_claim_concluded IS NOT NULL THEN NULL
-					ELSE NULL END) BETWEEN 0 AND 53 THEN
-			'Limegreen'
-		 WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-					WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-					WHEN date_claim_concluded IS NOT NULL THEN NULL
-					ELSE NULL END) BETWEEN 54 AND 63 THEN 
-			'Amber'
-		WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-					WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-					WHEN date_claim_concluded IS NOT NULL THEN NULL
-					ELSE NULL END)<0 THEN 
-			'Transparent' 
-
-		WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-					WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-					WHEN date_claim_concluded IS NOT NULL THEN NULL
-					ELSE NULL END) IS NULL THEN 
-			'Transparent' 
-		ELSE 
+		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN 
 			'Red'
-		END								 AS RagWithouthSub
+		WHEN #ClientReportDates.date_subsequent_report_due IS NULL THEN
+			'Transparent'
+		ELSE
+			'LimeGreen'
+	  END								 AS RagWithouthSub
 	,referral_reason
 	,  CASE 
 		WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' 

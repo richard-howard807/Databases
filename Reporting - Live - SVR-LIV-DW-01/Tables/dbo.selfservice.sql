@@ -107,6 +107,7 @@ CREATE TABLE [dbo].[selfservice]
 [Date of Trial] [datetime] NULL,
 [Date Claim Concluded] [datetime] NULL,
 [Fin Year Claim Concluded] [int] NULL,
+[Date "Date Claim Concluded" Last Changed] [datetime] NULL,
 [Interim Damages] [numeric] (13, 2) NULL,
 [Damages Paid by Client ] [numeric] (15, 2) NULL,
 [Outsource Damages Paid (WPS278+WPS279+WPS281)] [numeric] (13, 2) NULL,
