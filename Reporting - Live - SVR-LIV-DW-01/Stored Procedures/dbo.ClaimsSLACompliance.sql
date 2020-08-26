@@ -69,8 +69,10 @@ BEGIN
 		dim_matter_header_current.master_client_code
 		, dim_matter_header_current.master_matter_number
 		, CASE 
+			WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
+				[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
 			WHEN date_initial_report_due IS NULL THEN 
-				[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),10) 
+				[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
 			ELSE 
 				date_initial_report_due 
 			END						AS [initial_report_due]
@@ -216,9 +218,9 @@ SELECT
 	, ClientSLAs.[Update Report SLA (working days)]
 	, ISNULL(ClientSLAs.[Update Report SLA (working days)], 63)		AS [Update Report SLA hidden on report for highlighting]
 	, CASE WHEN date_instructions_received IS NULL THEN 
-				'Amber'
+				'Orange'
 			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<0 THEN 
-				'Amber'
+				'Orange'
 			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)<=[File Opening SLA (days)] THEN 
 				'LimeGreen'
 			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END)>[File Opening SLA (days)] THEN 
@@ -231,7 +233,7 @@ SELECT
 				'Transparent' 
 	  END					AS [File Opening RAG]
 	, CASE WHEN date_initial_report_sent IS NULL THEN 
-				'Amber'
+				'Orange'
 			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<0 THEN 
 				'Orange'
 			WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<=[Initial Report SLA (days)] THEN 
@@ -250,7 +252,7 @@ SELECT
 				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS  DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
 				'Orange'
 			WHEN days.days_to_first_report_lifecycle IS NULL THEN 
-				'Amber'
+				'Orange'
 			WHEN (days.days_to_first_report_lifecycle)<0 THEN 
 				'Transparent'
 			WHEN (days.days_to_first_report_lifecycle)<=[Initial Report SLA (days)] THEN 
@@ -273,44 +275,8 @@ SELECT
 	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=63 THEN 'LimeGreen'
 	--		ELSE 'Transparent' END [Update Report RAG]
 
-	--,CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN 
-	--		'Transparent'
-	--	WHEN RTRIM(dim_detail_core_details.present_position) IN (
-	--																'Final bill due - claim and costs concluded',
-	--																'Final bill sent - unpaid',
-	--																'To be closed/minor balances to be clear'            
-	--															) THEN 
-	--		'Transparent'
-	--	WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL AND 
-	--			dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
-	--		'Orange'
-	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
-	--				ELSE NULL END) BETWEEN 0 AND 53 THEN
-	--		'Limegreen'
-	--	 WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
-	--				ELSE NULL END) BETWEEN 54 AND 63 THEN 
-	--		'Amber'
-	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
-	--				ELSE NULL END)<0 THEN 
-	--		'Transparent' 
-
-	--	WHEN (CASE WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
-	--				WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
-	--				WHEN date_claim_concluded IS NOT NULL THEN NULL
-	--				ELSE NULL END) IS NULL THEN 
-	--		'Transparent' 
-	--	ELSE 
-	--		'Red'
-	--	END								 AS RagWithouthSub
 	, CASE 
-		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL AND 
-				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
+		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			'Orange'
 		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN 
 			'Red'
@@ -329,7 +295,13 @@ SELECT
 	  END				AS NoBlankInitial
 
 	, CASE 
-		WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND GETDATE() > DATEADD(DAY, ISNULL(ClientSLAs.[Update Report SLA (days)], 90), dim_matter_header_current.date_opened_case_management))  THEN 
+		WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND 
+				RTRIM(dim_detail_core_details.present_position) NOT IN (
+																		'Final bill due - claim and costs concluded',
+																		'Final bill sent - unpaid',
+																		'To be closed/minor balances to be clear'            
+																	) 
+				AND GETDATE() > DATEADD(DAY, ISNULL(ClientSLAs.[Update Report SLA (days)], 90), dim_matter_header_current.date_opened_case_management))  THEN 
 			1
 		ELSE 
 			0 
@@ -365,15 +337,7 @@ SELECT
 	  END										AS [Count Initial Report Is Overdue]
 	, #ClientReportDates.date_subsequent_report_due			AS [Date Subsequent Report Due]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' OR
-						RTRIM(dim_detail_core_details.present_position) IN (
-																		'Final bill due - claim and costs concluded',
-																		'Final bill sent - unpaid',
-																		'To be closed/minor balances to be clear'            
-																	) THEN
-			0
-		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL AND 
-				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
+		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			1
 		ELSE 
 			0
@@ -424,6 +388,5 @@ WHERE
 
 
 END
-
 
 GO
