@@ -32,7 +32,7 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_core_details.[track] AS [Track],
 		dim_matter_header_current.[matter_description] AS [Matter Description],
 		dim_client_involvement.[insurerclient_reference] AS [Client Reference],
-		dim_claimant_thirdparty_involvement.[claimantsols_name] AS [Claimant Solicitors],
+		ISNULL(dim_detail_claim.[dst_claimant_solicitor_firm ],dim_claimant_thirdparty_involvement.[claimantsols_name]) AS [Claimant Solicitors],
 		dim_claimant_address.postcode AS [Claimant Postcode],
 		COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho]), dim_detail_hire_details.[other], dim_agents_involvement.cho_name)  AS [Credit Hire Organisation],
 		fact_detail_paid_detail.[hire_claimed] AS [Amount of Hire Claimed],
@@ -65,8 +65,11 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_hire_details.[date_copley_offer_sent] AS [Date of Copley Offer Sent],
 		dim_detail_hire_details.[chm_third_party_vehicle_make_and_model] AS [Third Party Vehicle (make, model],
 		dim_detail_hire_details.[credit_hire_vehicle_make_and_model] AS [Credit Hire Vehicle (make, model],
-		CASE WHEN chv_date_hire_paid IS NULL OR date_claim_concluded IS NULL THEN 'Open' ELSE 'Concluded' END AS [Status],
-		DATEDIFF(DAY, date_of_accident, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date])) AS [Days til Hire]
+		CASE WHEN date_closed_case_management IS NULL OR date_claim_concluded IS NULL OR fact_detail_paid_detail.[amount_hire_paid] IS null THEN 'Open' ELSE 'Concluded' END AS [Status],
+		DATEDIFF(DAY, date_of_accident, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date])) AS [Days til Hire],
+		dim_detail_hire_details.[credit_hire_organisation_cho] AS [CHO],
+		CAST(CAST([Claimant_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Claimant Postcode Latitude],
+		CAST(CAST([Claimant_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Claimant Postcode Longitude]
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -100,6 +103,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_client
 ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_address
 ON dim_claimant_address.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] ON [Claimant_Postcode].Postcode=dim_claimant_address.postcode 
 
 WHERE date_opened_case_management>='20150101'
 AND reporting_exclusions=0

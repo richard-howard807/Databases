@@ -20,9 +20,9 @@ BEGIN
 	, matter_description AS [Matter Description]
 	, matter_owner_full_name AS [Case Manager]
 	, date_opened_case_management AS [Date Opened]
-	, NULL AS [Niche Ref]
+	, txtNiceRef AS [Niche Ref]
 	, dim_detail_advice.[dvpo_victim_postcode] AS [Victim Postcode]
-	, NULL AS [Perpetrator Postcode]
+	, txtPerpPC AS [Perpetrator Postcode]
 	, CASE WHEN dim_matter_header_current.master_client_code='451638' THEN dim_detail_claim.[borough] 
 		WHEN dim_matter_header_current.master_client_code='113147' THEN dim_detail_claim.[district] 
 		ELSE NULL END AS [Division]
@@ -32,11 +32,11 @@ BEGIN
 	, cboVictGender AS [Victim Gender]
 	, curVictAge AS [Victim Age]
 	, cboVictSuppApp AS [Victim Supports]
-	, NULL AS [Application Contested]
+	, cboAppContested AS [Application Contested]
 	, cboInterApp AS [Interim Granted]
-	, NULL AS [If Contested, Date of Next Hearing]
-	, NULL AS [Full Order Granted]
-	, NULL AS [Length of Order]
+	, dteContestHear AS [If Contested, Date of Next Hearing]
+	, cboFullGranted AS [Full Order Granted]
+	, txtOrderLenght AS [Length of Order]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -55,6 +55,12 @@ LEFT OUTER JOIN (SELECT fileID
 					, red_dw.dbo.get_ms_code_lkup_val('GENDER',cboVictGender) cboVictGender
 					, red_dw.dbo.get_ms_code_lkup_val('VICTSUPPAP',cboVictSuppApp) cboVictSuppApp
 					, red_dw.dbo.get_ms_code_lkup_val('INTERAPP',cboInterApp) cboInterApp
+					, txtPerpPC
+					, red_dw.dbo.get_ms_code_lkup_val('YESNO', cboAppContested) cboAppContested
+					, dteContestHear
+					, red_dw.dbo.get_ms_code_lkup_val('YESNO', cboFullGranted) cboFullGranted
+					, txtOrderLenght
+					, txtNiceRef
 				 FROM MS_Prod.dbo.udMIPAPolice
 				 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 				 ON fileID=ms_fileid
