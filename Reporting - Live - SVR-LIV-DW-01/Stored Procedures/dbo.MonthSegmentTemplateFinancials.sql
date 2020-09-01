@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MonthSegmentTemplateFinancials]
 (
 @Period AS NVARCHAR(MAX)
@@ -43,12 +44,28 @@ SELECT Targets.segmentname,
 	   @MinDate,
 	   DATEADD(MONTH,1,(@MinDate)) AS NextMonth
 	   
-FROM (SELECT segmentname,sectorname,SUM(target_value) AS TargetRevenue
-FROM red_dw.dbo.fact_segment_target_upload
-WHERE [year]=@FinYear
-AND segmentname=@SegmentName
+FROM (
+ SELECT Segments.segmentname,Segments.sectorname,SUM(target_value) AS TargetRevenue
+FROM 
+(SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
+       MS_Prod.dbo.udSubSegment.description AS [sectorname] 
+FROM MS_Prod.dbo.udSubSegment
+INNER JOIN MS_Prod.dbo.udSegment
+ ON segment=udsegment.code
+WHERE udSegment.description=@SegmentName
+ ) AS Segments
+LEFT OUTER JOIN red_dw.dbo.fact_segment_target_upload
+ ON fact_segment_target_upload.sectorname = Segments.sectorname COLLATE DATABASE_DEFAULT
+ AND fact_segment_target_upload.segmentname = Segments.segmentname COLLATE DATABASE_DEFAULT
+-- AND Segments.segmentname=@SegmentName COLLATE DATABASE_DEFAULT
 AND financial_month<=@FinMonth
-GROUP BY segmentname,sectorname
+GROUP BY Segments.segmentname,Segments.sectorname
+--SELECT segmentname,sectorname,SUM(target_value) AS TargetRevenue
+--FROM red_dw.dbo.fact_segment_target_upload
+--WHERE [year]=@FinYear
+--AND segmentname=@SegmentName
+--AND financial_month<=@FinMonth
+--GROUP BY segmentname,sectorname
 ) AS Targets
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS RevenueYTD
 FROM red_dw.dbo.fact_bill_activity
@@ -60,8 +77,8 @@ WHERE bill_fin_year= @FinYear
 AND bill_fin_month_no<=@FinMonth
 AND segment=@SegmentName
 GROUP BY  segment,sector) AS CurrentYear
- ON Targets.segmentname=CurrentYear.segment
- AND Targets.sectorname=CurrentYear.sector
+ ON Targets.segmentname=CurrentYear.segment COLLATE DATABASE_DEFAULT 
+ AND Targets.sectorname=CurrentYear.sector COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS PreviousRevenue
 FROM red_dw.dbo.fact_bill_activity
 INNER JOIN red_dw.dbo.dim_bill_date
@@ -73,8 +90,8 @@ AND bill_fin_month_no<=@FinMonth
 AND segment=@SegmentName
 
 GROUP BY  segment,sector) AS Previous
- ON Targets.segmentname=Previous.segment
- AND Targets.sectorname=Previous.sector
+ ON Targets.segmentname=Previous.segment COLLATE DATABASE_DEFAULT
+ AND Targets.sectorname=Previous.sector  COLLATE DATABASE_DEFAULT
 
 LEFT OUTER JOIN 
 (
@@ -86,8 +103,8 @@ WHERE
 
 GROUP BY Segment,Sector
 ) AS NextMonth
- ON UPPER(Targets.segmentname)=UPPER(NextMonth.Segment)
- AND UPPER(Targets.sectorname)=UPPER(NextMonth.Sector)
+ ON UPPER(Targets.segmentname)=UPPER(NextMonth.Segment) COLLATE DATABASE_DEFAULT
+ AND UPPER(Targets.sectorname)=UPPER(NextMonth.Sector) COLLATE DATABASE_DEFAULT
 
 ORDER BY Targets.sectorname
 

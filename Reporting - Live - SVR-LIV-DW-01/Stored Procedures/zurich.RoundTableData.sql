@@ -19,7 +19,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 		, matter_description AS [Matter Description]
 		, matter_owner_full_name AS [Case Manager]
-		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' OR work_type_name LIKE 'Core LG%' THEN 'Police & Local Govt'
+		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
+			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
 			ELSE hierarchylevel3hist END AS [Department]
 		, work_type_name AS [Claim Type]
 		, 'All' AS [Client]
@@ -36,7 +37,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, date_costs_settled AS [Date Costs Settled]
 		, total_tp_costs_paid AS [Total Third Party Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
+	     END AS [NHS Scheme]
 		, 1 AS [Number of Records]
+		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2017-01-01' THEN 0
+			WHEN date_claim_concluded<'2017-01-01'  THEN 0
+			ELSE 1 END AS [Date Filter]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -59,10 +66,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.dim_department
 ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_health
+ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
-AND date_opened_case_management>='2017-01-01'
+AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2017-01-01' THEN 0
+			WHEN date_claim_concluded<'2017-01-01'  THEN 0
+			ELSE 1 END=1
 AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 
@@ -73,7 +84,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 		, matter_description AS [Matter Description]
 		, matter_owner_full_name AS [Case Manager]
-		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' OR work_type_name LIKE 'Core LG%' THEN 'Police & Local Govt'
+		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
+			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
 			ELSE hierarchylevel3hist END AS [Department]
 		, work_type_name AS [Claim Type]
 		, 'Zurich' AS [Client]
@@ -90,7 +102,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, date_costs_settled AS [Date Costs Settled]
 		, total_tp_costs_paid AS [Total Third Party Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
+	     END AS [NHS Scheme]
 		, 1 AS [Number of Records]
+		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2017-01-01' THEN 0
+			WHEN date_claim_concluded<'2017-01-01'  THEN 0
+			ELSE 1 END AS [Date Filter]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -113,10 +131,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.dim_department
 ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_health
+ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
-AND date_opened_case_management>='2017-01-01'
+AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2017-01-01' THEN 0
+			WHEN date_claim_concluded<'2017-01-01'  THEN 0
+			ELSE 1 END=1
 AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 AND client_group_name='Zurich'
