@@ -20,23 +20,23 @@ BEGIN
 	, matter_description AS [Matter Description]
 	, matter_owner_full_name AS [Case Manager]
 	, date_opened_case_management AS [Date Opened]
-	, txtNiceRef AS [Niche Ref]
+	, dim_detail_advice.niche_ref	AS [Niche Ref]
 	, dim_detail_advice.[dvpo_victim_postcode] AS [Victim Postcode]
-	, txtPerpPC AS [Perpetrator Postcode]
+	, dim_detail_advice.dvpo_perpetrator_postcode AS [Perpetrator Postcode]
 	, CASE WHEN dim_matter_header_current.master_client_code='451638' THEN dim_detail_claim.[borough] 
 		WHEN dim_matter_header_current.master_client_code='113147' THEN dim_detail_claim.[district] 
 		ELSE NULL END AS [Division]
-	, curPerpAge AS [Perpetrator Age]
-	, cboPerpGender AS [Perpetrator Gender]
-	, cboPerpType AS [Perpetrator Type]
-	, cboVictGender AS [Victim Gender]
-	, curVictAge AS [Victim Age]
-	, cboVictSuppApp AS [Victim Supports]
-	, cboAppContested AS [Application Contested]
-	, cboInterApp AS [Interim Granted]
-	, dteContestHear AS [If Contested, Date of Next Hearing]
-	, cboFullGranted AS [Full Order Granted]
-	, txtOrderLenght AS [Length of Order]
+	, dim_detail_advice.dvpo_perpetrator_age AS [Perpetrator Age]
+	, dim_detail_advice.dvpo_perpetrator_gender AS [Perpetrator Gender]
+	, dim_detail_advice.dvpo_perpetrator_type AS [Perpetrator Type]
+	, dim_detail_advice.dvpo_victim_gender AS [Victim Gender]
+	, dim_detail_advice.dvpo_victim_age AS [Victim Age]
+	, dim_detail_advice.dvpo_victim_supports AS [Victim Supports]
+	, dim_detail_advice.dvpo_application_contested AS [Application Contested]
+	, dim_detail_advice.dvpo_interim_application AS [Interim Granted]
+	, dim_detail_advice.dvpo_if_contested_date_of_next_hearing AS [If Contested, Date of Next Hearing]
+	, dim_detail_advice.dvpo_full_order_granted  AS [Full Order Granted]
+	, dim_detail_advice.dvpo_length_of_order AS [Length of Order]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -47,24 +47,6 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-LEFT OUTER JOIN (SELECT fileID
-					, curPerpAge
-					, red_dw.dbo.get_ms_code_lkup_val('GENDER',cboPerpGender) cboPerpGender
-					, red_dw.dbo.get_ms_code_lkup_val('PERPTYPE',cboPerpType) cboPerpType
-					, curVictAge
-					, red_dw.dbo.get_ms_code_lkup_val('GENDER',cboVictGender) cboVictGender
-					, red_dw.dbo.get_ms_code_lkup_val('VICTSUPPAP',cboVictSuppApp) cboVictSuppApp
-					, red_dw.dbo.get_ms_code_lkup_val('INTERAPP',cboInterApp) cboInterApp
-					, txtPerpPC
-					, red_dw.dbo.get_ms_code_lkup_val('YESNO', cboAppContested) cboAppContested
-					, dteContestHear
-					, red_dw.dbo.get_ms_code_lkup_val('YESNO', cboFullGranted) cboFullGranted
-					, txtOrderLenght
-					, txtNiceRef
-				 FROM MS_Prod.dbo.udMIPAPolice
-				 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
-				 ON fileID=ms_fileid
-				 WHERE dim_matter_header_current.master_client_code IN ('451638','113147')) AS [MSDetails] ON MSDetails.fileID=ms_fileid
 
 WHERE dim_matter_header_current.master_client_code IN ('451638','113147')
 AND work_type_name ='PL - Pol - Stalking Protection Order'
