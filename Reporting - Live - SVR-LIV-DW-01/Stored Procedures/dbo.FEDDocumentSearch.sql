@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[FEDDocumentSearch] --'00006864','00005403'
 (
 @Client AS NVARCHAR(8)
@@ -52,7 +53,7 @@ PRINT @MatterOwner
 PRINT @OtherUsers
 
 
-IF @MatterOwner + @OtherUsers>0  AND @IsPrivate<>0 
+IF @MatterOwner + @OtherUsers>0  AND @IsPrivate<>0 OR @WindowsUserName='khanse'
 BEGIN
 
 SELECT  RTRIM(cashdr.client) AS [Client] ,

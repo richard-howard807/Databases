@@ -8,6 +8,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[MonthSegmentTemplateFinancials]
 (
 @Period AS NVARCHAR(MAX)
@@ -47,7 +50,8 @@ SELECT Targets.segmentname,
 FROM (
  SELECT Segments.segmentname,Segments.sectorname,SUM(target_value) AS TargetRevenue
 FROM 
-(SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
+(
+SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
        MS_Prod.dbo.udSubSegment.description AS [sectorname] 
 FROM MS_Prod.dbo.udSubSegment
 INNER JOIN MS_Prod.dbo.udSegment
@@ -57,8 +61,9 @@ WHERE udSegment.description=@SegmentName
 LEFT OUTER JOIN red_dw.dbo.fact_segment_target_upload
  ON fact_segment_target_upload.sectorname = Segments.sectorname COLLATE DATABASE_DEFAULT
  AND fact_segment_target_upload.segmentname = Segments.segmentname COLLATE DATABASE_DEFAULT
--- AND Segments.segmentname=@SegmentName COLLATE DATABASE_DEFAULT
+AND Segments.segmentname=@SegmentName COLLATE DATABASE_DEFAULT
 AND financial_month<=@FinMonth
+AND  [year]=@FinYear
 GROUP BY Segments.segmentname,Segments.sectorname
 --SELECT segmentname,sectorname,SUM(target_value) AS TargetRevenue
 --FROM red_dw.dbo.fact_segment_target_upload
@@ -95,13 +100,13 @@ GROUP BY  segment,sector) AS Previous
 
 LEFT OUTER JOIN 
 (
-SELECT Segment,
-Sector,SUM([Opportunity Value]) AS NextMonth
+SELECT UPPER(Segment) AS Segment,
+UPPER(Sector) AS Sector,SUM([Opportunity Value]) AS NextMonth
 FROM Visualisation.dbo.IA_Client_Data
 WHERE 
 [Expected Close Date] BETWEEN  DATEADD(MONTH,1,(@MinDate)) AND DATEADD(DAY,-1,DATEADD(MONTH,2,(@MinDate)))
 
-GROUP BY Segment,Sector
+GROUP BY UPPER(Segment),UPPER(Sector)
 ) AS NextMonth
  ON UPPER(Targets.segmentname)=UPPER(NextMonth.Segment) COLLATE DATABASE_DEFAULT
  AND UPPER(Targets.sectorname)=UPPER(NextMonth.Sector) COLLATE DATABASE_DEFAULT
