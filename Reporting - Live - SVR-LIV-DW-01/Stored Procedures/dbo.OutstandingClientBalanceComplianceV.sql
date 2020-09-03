@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Regulatory'	,'PDGHSC'
 (
 @Department AS NVARCHAR(MAX)
@@ -47,7 +48,7 @@ SELECT
 ,[manager_name]			= BCM.usrFullName + ' (' + BCM.usrInits  + ')'
 ,[manager_email]		= BCM.usrEmail 				
 ,[fee_earner]			= fee.usrInits	
-,CASE WHEN cboCliBalance='BREACH' THEN 'Breach' 
+,CASE WHEN cboCliBalance='BREACH' THEN  'Potential Breach' 
 WHEN cboCliBalance='NOACTION' THEN 'No Action Required'   
 WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,txtCommentCli	 txtCommentsCli

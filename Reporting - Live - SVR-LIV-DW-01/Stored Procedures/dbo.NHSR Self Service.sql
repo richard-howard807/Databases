@@ -897,7 +897,50 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 
     WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )
-		  AND dim_matter_header_current.client_group_name = 'NHS Resolution'
+		  AND (dim_matter_header_current.client_group_name = 'NHS Resolution'
+		  OR fact_dimension_main.client_code IN (
+		  
+'00043006',
+'00013994',
+'00043006',
+'00195691',
+'00334312',
+'00451649',
+'00452904',
+'00468733',
+'00516358',
+'00658192',
+'00707938',
+'00720451',
+'00742694',
+'00866428',
+'09008761',
+'125409T',
+'51130A',
+'TR00006',
+'TR00010',
+'TR00023',
+'TR00024',
+'W15380',
+'W15414',
+'W15508',
+'W15524',
+'W15602',
+'W15605',
+'W18173',
+'W18543',
+'W18697',
+'W18762',
+'W19835',
+'W19836',
+'W20891',
+'W21443',
+'W21617'))
+
+
+
+
+
         --  AND dim_matter_header_current.reporting_exclusions = 0
           AND
           (

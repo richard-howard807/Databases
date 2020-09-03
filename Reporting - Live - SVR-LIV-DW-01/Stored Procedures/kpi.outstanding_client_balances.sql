@@ -5,6 +5,7 @@ GO
 
 
 
+
 --SELECT * FROM red_dw.dbo.dim_fed_hierarchy_history WHERE name LIKE 'Adrian%'
 
 
@@ -180,9 +181,9 @@ SELECT DISTINCT
 ,[manager_email]		= BCM.usrEmail 				
 ,[fee_earner]			= fee.usrInits	
 -- below added per Ticket 296230 
-,CASE WHEN cboCliBalance='BREACH' THEN 'Breach' 
+,CASE WHEN cboCliBalance='BREACH' THEN 'Potential Breach' 
 WHEN cboCliBalance='NOACTION' THEN 'No Action Required'   
-WHEN cboCliBalance='ACTION' THEN 'Action Required' End cboCliBalance
+WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,txtCommentCli	txtCommentsCli
 ,dteLastReview					
 FROM 
