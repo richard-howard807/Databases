@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -38,7 +39,67 @@ END  AS ElapsedDays
 ,ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0) AS [Total Billed]
 , ISNULL(vat_billed,0) AS TotalVat
 ,disbursement_balance AS [UnbilledDisbs]
+,aig_rates_assigned_in_ascent
+,         CONCAT_WS(',',
+             CASE WHEN dim_detail_client.aig_litigation_number IS NULL
+                       OR dim_detail_client.aig_litigation_number = '' THEN
+                      'No LIT Number'
+             END ,
+			 CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent='LIT not in ASCENT' THEN 'LIT not in ASCENT' END,
 
+CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN 
+(
+'FRAUDC - Fraud Hourly','AUTOCO - Motor Hourly'
+,'CASUAM - Casualty Major Loss'
+,'CASUAC - Casualty Hourly'
+,'AUTOML - Motor Major Loss'
+,'HLTHCR - Healthcare Hourly'
+,'ENVIRC - Environmental Hourly'
+,'ENVIRM - Environmental Hourly'
+,'RECVCA - Recovery'
+,'AUTOEX - Motor Hourly'
+) AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Hourly' 
+AND ISNULL(referral_reason,'')<>'Costs dispute'
+THEN 'Incorrect fee scale' END,
+
+CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN 
+(
+'AUTOCA - Motor Fixed Fee'
+,'CASUCA - Casualty Fixed Fee'
+,'CASUMA - Casualty Fixed Fee'
+
+) 
+AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Fixed Fee' 
+AND ISNULL(referral_reason,'')<>'Costs dispute'
+THEN 'Incorrect fee scale' END,
+             CASE WHEN dim_detail_client.aig_litigation_number LIKE 'LIT-%'
+                       AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
+                       AND ISNULL(fact_detail_cost_budgeting.[aig_fixed_fee_budget_fees],0) = 0 
+                       AND ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0) =0 
+                       AND ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) = 0 
+					   AND ISNULL(lead_budget_details.budget_approved,'') = ''
+					   AND ISNULL(lead_budget_details.total_budget_uploaded,0) = 0
+                       AND ISNULL(lead_budget_details.date_budget_uploaded,'') ='' 
+					  					   
+					   THEN
+                      'No budget figures'
+             END,
+             CASE WHEN ISNULL(dim_detail_client.has_budget_been_approved, '') = 'Rejected' THEN
+                      'Rejected Budget'
+             END,
+             CASE WHEN ISNULL(dim_detail_client.has_budget_been_approved, '') = 'No' THEN
+                      'Awaiting budget approval'
+             END
+			 --,
+    --         CASE WHEN ISNULL(dim_detail_client.aig_litigation_number, '') LIKE '%[*]LIT-%' THEN
+    --                  'Incorrect fee scale'
+    --         END,
+    --         CASE WHEN ISNULL(dim_detail_client.aig_litigation_number, '') LIKE '%[#]LIT-%' THEN
+    --                  'LIT not on Collaborati'
+    --         END
+	) 
+			 
+			 [exception]
 
 
 
@@ -57,6 +118,25 @@ LEFT JOIN red_dw.dbo.fact_detail_cost_budgeting
 LEFT JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+  LEFT OUTER JOIN  (
+				SELECT dim_detail_client.aig_litigation_number
+					,MAX(dim_detail_client.date_budget_uploaded) date_budget_uploaded
+					,MAX(cost_budgeting.total_budget_uploaded) total_budget_uploaded
+					,MAX(dim_detail_client.has_budget_been_approved) budget_approved
+				FROM red_dw.dbo.fact_dimension_main main
+				INNER JOIN red_dw.dbo.dim_matter_header_current header ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
+				INNER JOIN red_dw.dbo.dim_detail_client dim_detail_client ON dim_detail_client.dim_detail_client_key = main.dim_detail_client_key
+				INNER JOIN red_dw.dbo.fact_detail_cost_budgeting cost_budgeting ON cost_budgeting.master_fact_key = main.master_fact_key
+
+				WHERE 1=1
+					--AND dim_detail_client.aig_litigation_number = 'LIT-21253'
+					AND header.client_group_code = '00000013'
+					AND header.reporting_exclusions <> 1
+					AND UPPER(dim_detail_client.aig_litigation_number) LIKE '%LIT%'
+					AND dim_detail_client.aig_litigation_number <> 'No LIT'
+					AND dim_detail_client.aig_litigation_number IS NOT NULL 
+				GROUP BY dim_detail_client.aig_litigation_number
+						) lead_budget_details ON lead_budget_details.aig_litigation_number = dim_detail_client.aig_litigation_number
 
  
  
