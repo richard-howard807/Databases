@@ -12,7 +12,7 @@ GO
 
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
-	@start_date AS DATE
+		@start_date AS DATE
 		, @end_date AS DATE
 		, @def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)
@@ -26,9 +26,9 @@ BEGIN
 --==============================================================================================================================================
 --DECLARE @start_date AS DATE = '2020-04-01'
 --		, @end_date AS DATE = '2020-08-31'
---		, @def_trust AS VARCHAR(MAX) = 'Missing|5 Boroughs Partnership NHS Foundation Trust|Aintree University Hospital NHS Foundation Trust|Airedale NHS Foundation Trust|Barking, Havering and Redbridge University Hospitals NHS|Barking, Havering and Redbridge University Hospitals NHS Tru|Barnet and Chase Farm NHS Foundation Trust|Barnet, Enfield and Haringey Mental Health NHS Trust|Barnsley Hospital NHS Foundation Trust|Barts Health NHS Trust|Basildon and Thurrock University Hospitals NHS FND Trust|Basildon and Thurrock University Hospitals NHS Foundation Tr|Birmingham Community Healthcare NHS Trust|Birmingham Cross City Clinical Commissioning Group|Birmingham South Central Clinical Commissioning Group|Birmingham and Solihull Mental Health NHS Foundation Trust|Black Country Partnership NHS Foundation Trust|Blackpool Teaching Hospitals NHS Foundation Trust|Bolton NHS Foundation Trust|Bolton Primary Care Trust|Bradford Teaching Hospitals NHS Foundation Trust|Bridgewater Community Healthcare NHS Foundation Trust|Brighton and Sussex University Hospitals NHS Trust|Bromley Clinical Commissioning Group|Buckinghamshire Healthcare NHS Trust|Burton Hospitals NHS Foundation Trust|Bury Clinical Commissioning Group|Calderdale and Huddersfield NHS Foundation Trust|Calderstones Partnership NHS Foundation Trust|Camden and Islington NHS Foundation Trust|Central London Community Healthcare NHS Trust|Central Manchester University Hospitals NHS Foundation Trust|Central and North West London NHS Foundation Trust|Chelsea & Westminster Hospital NHS Foundation Trust|Cheshire and Wirral Partnership NHS Foundation Trust|Chesterfield Royal Hospital NHS Foundation Trust|Countess of Chester Hospital NHS Foundation Trust|County Durham and Darlington NHS Trust|Coventry and Warwickshire Partnership NHS Trust|Cumbria Partnership NHS Foundation Trust|Department of Health|Derbyshire Healthcare NHS Foundation Trust|Doncaster and Bassetlaw Hospitals NHS Foundation Trust|Dorset County Hospital NHS Foundation Trust|Dorset HealthCare University NHS Foundation Trust|Dudley & Walsall Mental Health Partnership Trust|Dudley Clinical Commissioning Group|Dudley Group NHS Foundation Trust (The)|Dudley Group of Hospitals NHS Foundation Trust (The)|Dudley Primary Care Trust|Ealing Hospital NHS Trust|East Cheshire NHS Trust|East Kent Hospitals University NHS Foundation Trust|East Lancashire Hospitals NHS Trust|East Midlands Ambulance Service NHS Trust|East Sussex Healthcare NHS Trust|East and North Hertfordshire NHS Trust|East of England Ambulance NHS Trust|Epsom and St Helier University Hospitals NHS Trust|Frimley Health NHS Foundation Trust|Gateshead Health NHS Foundation Trust|George Eliot Hospital NHS Trust|Great Ormond Street Hospital for Children NHS FND Trust|Great Ormond Street Hospital for Children NHS Foundation Tru|Great Western Hospitals NHS Foundation Trust|Greater Manchester West Mental Health NHS Foundation Trust|Hampshire Hospitals NHS Foundation Trust|Haringey Clinical Commissioning Group|Health Protection Agency|Heart Of England NHS Foundation Trust|Heart of England NHS Foundation Trust|Herefordshire Primary Care Trust|Heywood, Middleton & Rochdale Primary Care Trust|Homerton University Hospital NHS Foundation Trust|Hounslow and Richmond Community NHS Trust|Humber NHS Foundation Trust|Imperial College Healthcare NHS Trust|James Paget University Hospitals NHS Foundation Trust|Knowsley Clinical Commissioning Group|Lancashire Care NHS Foundation Trust|Lancashire Teaching Hospitals NHS Foundation Trust|Leeds Teaching Hospitals NHS Trust|Leeds and York Partnership NHS Foundation Trust|Leicester City Primary Care Trust|Leicestershire Partnership NHS Trust|Lewisham and Greenwich NHS Trust|Liverpool Clinical Commissioning Group|Liverpool Community Health Trust|Liverpool Heart and Chest Hospital NHS Foundation|London Ambulance Service NHS Trust|London North West Healthcare NHS Trust|Luton and Dunstable University Hospital NHS Foundation Trust|Maidstone and Tunbridge Wells NHS Trust|Manchester Mental Health and Social Care Trust|Manchester University NHS Foundation Trust|Mersey Care NHS Foundation Trust|Mersey Care NHS Trust|Mid Staffordshire Hospital NHS Foundation Trust|Mid-Essex Primary Care Trust|Midlands Partnership NHS Trust|Milton Keynes Hospital NHS Foundation Trust|Moorfields Eye Hospital NHS Foundation Trust|N/A - GPI matter|NHS Blood and Transplant|NHS Commissioning Board Authority|NHS Direct|NHS England|Newcastle-Upon-Tyne Hospitals NHS Foundation Trust|Norfolk & Suffolk NHS Foundation Trust|North Cumbria University Hospitals NHS Trust|North East Essex Clinical Commissioning Group|North East Essex Primary Care Trust|North East London NHS Foundation Trust|North Essex Partnership NHS Foundation Trust|North Middlesex University Hospital NHS Trust|North West Ambulance NHS Trust|North/South/Central Manchester Clinical Commissioning Group|Nottingham University Hospitals NHS Trust|Other|Oxford Radcliiffe Hospitals NHS Trust|Oxford University Hospitals NHS Trust|Oxfordshire Clinical Commissioning Group|Oxleas NHS Foundation Trust|Pennine Acute Hospitals NHS Trust (The)|Pennine Care NHS Foundation Trust|Peterborough and Stamford Hospitals NHS Foundation Trust|Poole Hospital NHS Foundation Trust|Portsmouth Hospitals NHS Trust|Princess Alexandra Hospital NHS Trust|Queen Victoria Hospital NHS Foundation Trust|Redditch and Bromsgrove Clinical Commissioning Group|Royal Brompton and Harefield NHS Foundation Trust|Royal Cornwall Hospitals NHS Trust|Royal Free London NHS Foundation Trust|Royal Liverpool & Broadgreen University Hosp NHS Trust (The)|Royal Liverpool and Broadgreen University Hospitals NHS Trus|Royal Surrey County Hospital NHS Foundation Trust|Salford Royal NHS Foundation Trust|Sandwell & West Birmingham Hospitals NHS Trust|Secretary of State for Health|Sheffield Health and Social Care NHS Foundation Trust|Sheffield Teaching Hospitals NHS Foundation Trust|Shrewsbury and Telford Hospital NHS Trust|South Central Ambulance Service NHS Foundation Trust|South Essex Partnership University NHS Foundation Trust|South London & Maudsley NHS Foundation Trust|South Staffordshire & Shropshire Healthcare NHS FND Trust|South Staffordshire & Shropshire Healthcare NHS Foundation T|South Warwickshire Clinical Commissioning Group|South Western Ambulance Service NHS Foundation Trust|Southend University Hospital NHS Foundation Trust|Southern Health NHS Foundation Trust|Southport and Ormskirk Hospital NHS Trust|Southwark Clinical Commissioning Group|St Helens & Knowsley Teaching Hospitals NHS Trust|St Helens and Knowsley Hospitals NHS Trust|Staffordshire & Stoke-on-Trent Partnership NHS Trust|Stockport NHS Foundation Trust|Surrey & Borders Partnership NHS Foundation Trust|Surrey Primary Care Trust|Surrey and Sussex Healthcare NHS Trust|Sussex Partnership NHS Foundation Trust|Tameside And Glossop Clinical Commissioning Group|Tameside Hospital NHS Foundation Trust|Tameside and Glossop Integrated Care NHS Foundation Trust|Tavistock and Portman NHS Foundation Trust|Tees Esk & Wear Valleys NHS Trust|The Christie NHS Foundation Trust|The Clatterbridge Cancer Centre NHS Foundation Trust|The Hillingdon Hospitals NHS Foundation Trust|The Royal Berkshire NHS Foundation Trust|The Royal Bournemouth and Christchurch Hospitals NHS Foundat|The Royal Marsden NHS Foundation Trust|The Royal Orthopaedic Hospital NHS Foundation Trust|The Royal Wolverhampton NHS Trust|The Walton Centre NHS Foundation Trust|Torbay & Southern Devon Health & Care NHS Trust|United Lincolnshire Hospitals NHS Trust|University College London Hospitals NHS Foundation Trust|University Hospital Of North Staffordshire NHS Trust|University Hospital Of South Manchester NHS Foundation Trust|University Hospitals Birmingham NHS Foundation Trust|University Hospitals Bristol NHS Foundation Trust|University Hospitals Coventry and Warwickshire NHS Trust|University Hospitals Derby and Burton NHS Foundation Trust|University Hospitals Of Leicester NHS Trust|University Hospitals Of Morecambe Bay NHS Foundation Trust|University Hospitals of North Midlands NHS Trust|Walsall Healthcare NHS Trust|Warrington & Halton Hospitals NHS Foundation Trust|Warrington Clinical Commissioning Group|Warwickshire Primary Care Trust|West Hertfordshire Hospitals NHS Trust|West London Mental Health NHS Trust|West Middlesex University Hospital NHS Trust|West Midlands Ambulance Service NHS Trust|Western Sussex Hospitals NHS Foundation Trust|Wiltshire Clinical Commissioning Group|Wirral Clinical Commissioning Group|Wirral Community NHS Trust|Wirral University Teaching Hospital NHS Foundation Trust|Wolverhampton City Clinical Commissioning Group|Worcestershire Acute Hospitals NHS Trust|Worcestershire Health and Care NHS Trust|Wrightington, Wigan & Leigh NHS Foundation Trust|Wye Valley NHS Trust|York Teaching Hospital NHS Foundation Trust|Yorkshire Ambulance Service NHS Trust' 
+--		, @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust' 
 --		, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
---		, @instruction_type AS VARCHAR(MAX) = 'Breast screenings - group action|C&W Group Action|C-Difficile|CFF 100 (Non-PA)|CFF 100 (PA)|CFF 250 (Non-PA)|CFF 250 (PA)|CFF 50 (Non-PA)|CFF 50 (PA)|Clinical - Delegated, FF|Clinical - Non DA|Clinical - Non DA (ENS)|Clinical - Non DA - FF|DPA/Defamation etc|Derbyshire Healthcare Group Action|EL/PL - PADs|EL/PL - old delegated matters|EL/PL DA|EL/PL Non DA|ELS - Non DA|East Lancs Group Action|East Sussex Group Action|Expert Report + LoR - Limited|Expert Report - Limited|Full Investigation - Limited|HIV Recall Group|ISS 250|ISS 250 Advisory|Inquest - C|Inquest - NC|Inquest - associated claim|Inquests|Letter of Response - Limited|Lot 3 work|MTW Group Action|Mediation - capped fee|Mid Staffs Group Action|Missing|NCFF 25|OSINT & Claims Validation|OSINT - Sch 1 FF|OSINT - Sch 2 - FF|OSINT - Sch 2 - HR|Other|RG - UHNM Group Action|Schedule 1|Schedule 2|Schedule 3|Schedule 4|Schedule 4 (ENS)|Schedule 5 (ENS)|TB Group Midlands Partnership|UHNS Group Action|Worcester Group Action'
+--		, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1'
 --		, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
 
 --==========================================================================================================================================================================================
@@ -83,6 +83,40 @@ SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit(
 SELECT 
 	dim_matter_header_current.client_code
 	, dim_matter_header_current.matter_number
+	, (CASE WHEN key_date_rag.rag = 'orange' THEN 'amber' ELSE key_date_rag.rag END) + ' - ' + 
+		CAST(FORMAT(key_date_rag.date_due, 'd', 'en-gb') AS VARCHAR(10)) + ' -' + key_date_rag.task_desccription		AS [key_date_rag_trigger]
+	, CASE	
+		WHEN dim_detail_court.date_of_trial >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_trial) <= GETDATE() THEN
+			'red - ' + CAST(FORMAT(dim_detail_court.date_of_trial, 'd', 'en-gb') AS VARCHAR(10)) + ' - trial date in 6 months'
+	  END				AS [trial_date_rag_trigger]
+	, CASE
+		WHEN dim_detail_court.date_of_first_day_of_trial_window >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_first_day_of_trial_window) <= GETDATE() THEN
+			'red - ' + CAST(FORMAT(dim_detail_court.date_of_first_day_of_trial_window, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
+	  END				AS [trial_window_rag_trigger]
+	, CASE
+		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
+			'red - proceedings yes/publicity yes'
+	  END				AS [proceedings_publicity_rag_trigger]
+	, CASE
+		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_claim_novel_contentious_repercussive) = 'Yes' THEN
+			'red - proceedings yes/repercussive yes'
+	  END				AS [proceedings_repercussive_rag_trigger]
+	, CASE
+		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
+			'red - proceedings yes/liability no'
+	  END				AS [proceedings_liability_rag_trigger]
+	, CASE
+		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
+			'amber - proceedinds no/publicity yes'
+	  END				AS [no_proceedings_publicity_rag_trigger]
+	, CASE
+		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_claim_novel_contentious_repercussive) = 'Yes' THEN
+			'amber - proceedings no/repercussive yes'
+	  END				AS [no_proceedings_repercussive_rag_trigger]
+	, CASE
+		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
+			'amber - proceedings no/liability no'
+	  END				AS [no_proceedings_liability_rag_trigger]
 	, CASE	
 		WHEN key_date_rag.rag = 'red' THEN
 			'Red'
@@ -136,6 +170,7 @@ FROM red_dw.dbo.dim_matter_header_current
 								WHEN (LOWER(dim_tasks.task_desccription) LIKE '%conference%' AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
 									'orange'
 								END	AS [rag]
+							, ROW_NUMBER() OVER(PARTITION BY dim_tasks.client_code, dim_tasks.matter_number ORDER BY dim_date.calendar_date) AS [xorder]
 						FROM red_dw.dbo.fact_tasks
 							INNER JOIN red_dw.dbo.dim_tasks
 								ON dim_tasks.dim_tasks_key = fact_tasks.dim_tasks_key
@@ -161,6 +196,7 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
+	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
 
 
 --==============================================================================================================================================================
@@ -245,6 +281,9 @@ FROM (
 
 SELECT 
 	#rag_status.[Risk Rating]							AS [Risk Rating]
+	, ISNULL(#rag_status.trial_date_rag_trigger + ', ', '') + ISNULL(#rag_status.trial_window_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_publicity_rag_trigger + ', ', '') + 
+		ISNULL(#rag_status.proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_liability_rag_trigger + ', ', '') + ISNULL(RTRIM(#rag_status.key_date_rag_trigger) COLLATE Latin1_General_CI_AS + ', ', '')	+ 
+		ISNULL(#rag_status.no_proceedings_publicity_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_liability_rag_trigger + ', ', '') AS [rag_trigger]
 	, dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
@@ -284,7 +323,34 @@ SELECT
 	, ''		AS [Actions for the Trust to Address and Deadline]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)		AS [Date Claim Concluded]
 	, dim_detail_outcome.outcome_of_case			AS [Outcome of Case]
-	, dim_detail_health.nhs_damages_tranche			AS [Damages Tranch]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0 AND 5000 THEN
+					'£0 - £5,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
+					'£5,001 - £10,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
+					'£10,001 - £25,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
+					'£25,001 - £50000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
+					'£50,001+'
+			END 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0 AND 50000 THEN
+					'£0 - £50,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
+					'£50,001 - £250,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
+					'£250,001 - £500,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
+					'£500,001 - £1,000,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
+					'£1,000,001+'
+			END
+	END							AS [Damages Tranche]
 	, dim_detail_health.nhs_stage_of_settlement		AS [Stage of Settlement]
 	, fact_finance_summary.damages_paid		AS [Damages Paid]
 	, CAST(dim_detail_health.zurichnhs_date_final_bill_sent_to_client AS DATE)		AS [Date Final Bill Sent]
