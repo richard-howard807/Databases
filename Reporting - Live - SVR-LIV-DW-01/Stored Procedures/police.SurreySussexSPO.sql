@@ -26,6 +26,23 @@ BEGIN
 	, CASE WHEN dim_matter_header_current.master_client_code='451638' THEN dim_detail_claim.[borough] 
 		WHEN dim_matter_header_current.master_client_code='113147' THEN dim_detail_claim.[district] 
 		ELSE NULL END AS [Division]
+	, CASE
+		WHEN dim_matter_header_current.master_client_code = '113147' THEN 
+			CASE 
+				WHEN dim_detail_claim.district IN ('Adur and Worthing', 'Arun', 'Chicester', 'Crawley', 'Gatwick', 'Horsham', 'Mid Sussex') THEN
+					'Sussex West'
+				WHEN dim_detail_claim.district IN ('Eastbourne', 'Hastings', 'Lewes', 'Rother', 'Wealden') THEN
+					'Sussex East'
+				WHEN dim_detail_claim.district = 'Brighton and Hove' THEN
+					'Sussex Brighton & Hove'
+				ELSE 
+					dim_detail_claim.district
+			END 
+		WHEN dim_matter_header_current.master_client_code = '451638' THEN	
+			dim_detail_claim.borough
+		ELSE
+			NULL 
+	  END								AS [Mapped Division]
 	, dim_detail_advice.dvpo_perpetrator_age AS [Perpetrator Age]
 	, dim_detail_advice.dvpo_perpetrator_gender AS [Perpetrator Gender]
 	, dim_detail_advice.dvpo_perpetrator_type AS [Perpetrator Type]
