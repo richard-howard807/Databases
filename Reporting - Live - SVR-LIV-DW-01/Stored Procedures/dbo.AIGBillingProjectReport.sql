@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -86,10 +87,51 @@ THEN 'Incorrect fee scale' END,
              END,
              CASE WHEN ISNULL(dim_detail_client.has_budget_been_approved, '') = 'Rejected' THEN
                       'Rejected Budget'
-             END,
-             CASE WHEN ISNULL(dim_detail_client.has_budget_been_approved, '') = 'No' THEN
-                      'Awaiting budget approval'
-             END
+             END--,
+,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND ISNULL(dim_detail_client.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
+AND 
+(ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
+--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
+ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
+) < 
+(ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0)) + ISNULL(fact_detail_cost_budgeting.[aig_fixed_fee_budget_fees],0)+ISNULL(disbursement_balance,0)
+THEN 'Insufficient budget' END 
+
+,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND ISNULL(dim_detail_client.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
+AND 
+(ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
+--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
+ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
+) < 
+ISNULL(total_amount_billed,0)  + ISNULL(fact_detail_cost_budgeting.[aig_fixed_fee_budget_fees] ,0)+ISNULL(disbursement_balance,0)
+THEN 'Insufficient budget' END
+-------------- Fixed Fee (Above) ------------------
+,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND ISNULL(dim_detail_client.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
+AND 
+(
+--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
+ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
+ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
+) < 
+(ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0))  + ISNULL(wip,0)+ISNULL(disbursement_balance,0)
+THEN 'Insufficient budget' END 
+
+,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND ISNULL(dim_detail_client.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
+AND 
+(--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
+ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
+ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
+) < 
+ISNULL(total_amount_billed,0)  + ISNULL(wip,0)+ISNULL(disbursement_balance,0)
+THEN 'Insufficient budget' END
+-------------- Hourly (Above) ------------------
+--CASE WHEN ISNULL(dim_detail_client.has_budget_been_approved, '') = 'No' THEN
+             --         'Awaiting budget approval'
+             --END
 			 --,
     --         CASE WHEN ISNULL(dim_detail_client.aig_litigation_number, '') LIKE '%[*]LIT-%' THEN
     --                  'Incorrect fee scale'
@@ -100,6 +142,8 @@ THEN 'Incorrect fee scale' END,
 	) 
 			 
 			 [exception]
+
+
 
 
 
