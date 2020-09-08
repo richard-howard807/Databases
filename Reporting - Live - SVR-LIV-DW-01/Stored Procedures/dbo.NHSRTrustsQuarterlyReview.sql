@@ -397,7 +397,7 @@ FROM red_dw.dbo.fact_dimension_main
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client BETWEEN @start_date AND @end_date)
+	AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client > @start_date)
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 
 ORDER BY	
