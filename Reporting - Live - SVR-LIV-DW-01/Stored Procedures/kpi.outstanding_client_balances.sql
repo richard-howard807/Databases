@@ -26,18 +26,54 @@ AS
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 -- For testing purposes
-	--DECLARE @FedCodes VARCHAR(max)= '1089|1089|1089|1089|1089'
-	--DECLARE @Level VARCHAR(100) = 'Firm'
-	
+	--DECLARE @FedCodes VARCHAR(max)= '31290,31403,34526,34552,36587,37342,41913,66277,126751,126781,126784,126788,126791,126793,126795,126798,126801,126803,126806,126807,126813,126816,126817'
+	--DECLARE @Level VARCHAR(100) = 'Area Managed'
 	
 
-	DECLARE @ListOfFedCodes TABLE
-	(FedCode VARCHAR(max) NOT NULL)
 
-	INSERT INTO @ListOfFedCodes
-	        ( FedCode )
+	--DECLARE @ListOfFedCodes TABLE
+	--(FedCode VARCHAR(max) NOT NULL)
+
+	--INSERT INTO @ListOfFedCodes
+	--        ( FedCode )
 	
-	SELECT distinct val FROM [dbo].[split_delimited_to_rows] (@FedCodes,'|')
+
+	--SELECT distinct val FROM [dbo].[split_delimited_to_rows] (@FedCodes,',')
+	IF OBJECT_ID('tempdb..#FedCodeList') IS NOT NULL   DROP TABLE #FedCodeList
+
+	CREATE TABLE #FedCodeList  (
+	ListValue  NVARCHAR(MAX)
+	)
+	IF @Level  <> 'Individual'
+		BEGIN
+		PRINT ('not Individual')
+	DECLARE @sql NVARCHAR(MAX)
+
+	SET @sql = '
+		use red_dw;
+		DECLARE @nDate AS DATE = GETDATE()
+	
+		SELECT DISTINCT
+			dim_fed_hierarchy_history_key
+		FROM red_Dw.dbo.dim_fed_hierarchy_history 
+		WHERE dim_fed_hierarchy_history_key IN ('+@FedCodes+')'
+
+
+	INSERT into #FedCodeList 
+	exec sp_executesql @sql
+		end
+	
+	
+		IF  @Level  = 'Individual'
+		BEGIN
+		PRINT ('Individual')
+		INSERT into #FedCodeList 
+		SELECT ListValue
+		FROM dbo.udt_TallySplit(',', @FedCodes)
+	
+		END
+
+
 
 	--SELECT * FROM @ListOfFedCodes
 
@@ -72,7 +108,7 @@ SELECT
 ,[user_email_address]	= fee.usrEmail 
 ,[department]			= [Practice Area] 
 ,[team]					= Team	
-,[division]				= hierarchylevel2
+,[division]				= Teams.hierarchylevel2
 ,[matt_index]			= MattIndex
 ,[manager_name]			= BCM.usrFullName + ' (' + BCM.usrInits  + ')'
 ,[manager_email]		= BCM.usrEmail 				
@@ -130,14 +166,15 @@ FROM
 	INNER JOIN MS_Prod.config.dbClient	ON dbFile.clID=dbClient.clID
 	INNER JOIN MS_PROD.dbo.udExtFile	ON dbFile.fileID=udExtFile.fileID
 	INNER JOIN MS_PROD.dbo.dbUser fee	ON fee.usrID = dbFile.filePrincipleID
-	INNER JOIN @ListOfFedCodes filter ON fee.usrInits  = filter.FedCode
+	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON fee.usrInits = dim_fed_hierarchy_history.fed_code COLLATE DATABASE_DEFAULT
+	INNER JOIN #FedCodeList filter ON  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = filter.ListValue
 	INNER JOIN MS_PROD.dbo.dbUser BCM ON BCM.usrID = dbFile.fileresponsibleID
 	LEFT OUTER JOIN (SELECT fed_code
 							,hierarchylevel2,hierarchylevel3 AS [Practice Area]
 							,hierarchylevel4 AS [Team]
 						FROM red_dw.dbo.dim_fed_hierarchy_current
 						WHERE dss_current_flag='Y') AS Teams
-	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
+	 ON fee.usrInits=Teams.fed_code COLLATE DATABASE_DEFAULT
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
