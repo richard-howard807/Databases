@@ -131,6 +131,14 @@ BEGIN
 		 END AS SLATab
 		 , dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report]
 		 , dim_detail_practice_area.[date_report_due] 
+		 ,CASE 
+			WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
+				[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE), 10)
+			WHEN dim_detail_core_details.date_initial_report_due IS NULL THEN 
+				[dbo].[AddWorkDaysToDate](CAST(dim_matter_header_current.date_opened_practice_management AS date), 10)
+			ELSE 
+				dim_detail_core_details.date_initial_report_due 
+			END						AS [NEW_initial_report_due]
 		 ,dim_detail_core_details.[axa_reason_outside_of_pas]
 		 ,suspicion_of_fraud
 		 ,fact_finance_summary.[damages_reserve]
@@ -148,6 +156,8 @@ BEGIN
 			-(CASE WHEN DATENAME(dw, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management)) = 'Sunday' THEN 1 ELSE 0 END)
 			-(CASE WHEN DATENAME(dw, dim_detail_core_details.[date_initial_report_sent]) = 'Saturday' THEN 1 ELSE 0 END)
 			 ELSE NULL END AS OpenToSent
+
+, dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), dim_detail_core_details.date_initial_report_sent)		AS [NewOpenToSent]
 
 ,CASE  WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL  THEN 
         	(DATEDIFF(dd, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management), dim_detail_practice_area.[date_report_due] ))-- + 1)

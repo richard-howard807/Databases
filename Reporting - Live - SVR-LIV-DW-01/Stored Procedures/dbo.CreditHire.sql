@@ -67,7 +67,12 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_hire_details.[credit_hire_vehicle_make_and_model] AS [Credit Hire Vehicle (make, model],
 		CASE WHEN date_closed_case_management IS NULL OR date_claim_concluded IS NULL OR fact_detail_paid_detail.[amount_hire_paid] IS null THEN 'Open' ELSE 'Concluded' END AS [Status],
 		DATEDIFF(DAY, date_of_accident, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date])) AS [Days til Hire],
-		dim_detail_hire_details.[credit_hire_organisation_cho] AS [CHO],
+		CASE WHEN dim_detail_hire_details.[credit_hire_organisation_cho]='ClaimsFast' THEN 'Claims Fast'
+			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'Enterprise Rent%' THEN 'Enterprise Rent-a-Car'
+			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'Kindertons%' THEN 'Kindertons'
+			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'OnHire%' THEN 'On Hire'
+			ELSE dim_detail_hire_details.[credit_hire_organisation_cho] end
+			AS [CHO],
 		CAST(CAST([Claimant_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Claimant Postcode Latitude],
 		CAST(CAST([Claimant_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Claimant Postcode Longitude]
 

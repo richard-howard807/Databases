@@ -80,7 +80,7 @@ BEGIN
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
-		 , CASE WHEN dim_matter_header_history.date_opened_practice_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+		 , CASE WHEN dim_matter_header_history.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
@@ -112,7 +112,7 @@ AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hi
  --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
  WHERE dim_matter_header_history.date_opened_practice_management>='2019-01-01'
- AND dim_matter_header_history.date_opened_practice_management<(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+ AND dim_matter_header_history.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current')
@@ -125,4 +125,5 @@ AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hi
  AND dim_matter_header_history.dss_version = 1
  AND reporting_exclusions=0    
 END
+
 GO
