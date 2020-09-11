@@ -167,6 +167,7 @@ FROM
 	INNER JOIN MS_PROD.dbo.udExtFile	ON dbFile.fileID=udExtFile.fileID
 	INNER JOIN MS_PROD.dbo.dbUser fee	ON fee.usrID = dbFile.filePrincipleID
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON fee.usrInits = dim_fed_hierarchy_history.fed_code COLLATE DATABASE_DEFAULT
+	AND dss_current_flag='Y'
 	INNER JOIN #FedCodeList filter ON  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = filter.ListValue
 	INNER JOIN MS_PROD.dbo.dbUser BCM ON BCM.usrID = dbFile.fileresponsibleID
 	LEFT OUTER JOIN (SELECT fed_code
