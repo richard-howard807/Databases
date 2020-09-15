@@ -121,14 +121,14 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 	INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
 	INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
-	INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
+	INNER JOIN #Handler AS Handler ON Handler.ListValue =REPLACE( matter_owner_full_name,  '''','')
 	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue =CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END
 	
 	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 
 	WHERE 
-		dim_matter_header_current.date_closed_case_management IS NULL
-		AND dim_matter_header_current.reporting_exclusions=0
+		--dim_matter_header_current.date_closed_case_management IS NULL
+		dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
 		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
 		AND dim_detail_outcome.date_claim_concluded IS NULL
@@ -136,6 +136,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
+
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR total_points_calc IS NOT null)
 
 		--AND fic_fraud_transfer='Yes'
 		-- fic score

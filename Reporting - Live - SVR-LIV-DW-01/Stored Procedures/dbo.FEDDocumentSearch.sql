@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[FEDDocumentSearch] --'00006864','00005403'
 (
 @Client AS NVARCHAR(8)
@@ -53,7 +55,7 @@ PRINT @MatterOwner
 PRINT @OtherUsers
 
 
-IF @MatterOwner + @OtherUsers>0  AND @IsPrivate<>0 OR @WindowsUserName='khanse'
+IF @MatterOwner + @OtherUsers>0  AND @IsPrivate<>0 --OR @WindowsUserName='khanse'
 BEGIN
 
 SELECT  RTRIM(cashdr.client) AS [Client] ,
@@ -80,9 +82,9 @@ FROM    axxia01.dbo.cashdr AS cashdr
         INNER JOIN axxia01.dbo.documt AS Docs ON cashdr.case_id = Docs.case_id
                                                  AND casact.document_no = Docs.document_no
                                                  AND casact.activity_seq = Docs.activity_seq
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.docbpath ON Docs.path_no = docbpath.path_no
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.docversn AS docversion ON Docs.document_no=docversion.document_no
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.wpdefn ON UPPER(RTRIM(Docs.wp_code)) = UPPER(RTRIM(wpdefn.wp_code))
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.docbpath ON Docs.path_no = docbpath.path_no
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.docversn AS docversion ON Docs.document_no=docversion.document_no
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.wpdefn ON UPPER(RTRIM(Docs.wp_code)) = UPPER(RTRIM(wpdefn.wp_code))
 WHERE   casact.document_no > 0
 AND cashdr.client=@Client AND cashdr.matter=@Matter
 --AND cashdr.date_closed>=CONVERT(DATE,DATEADD(MONTH,-18,GETDATE()),103)
@@ -117,9 +119,9 @@ FROM    axxia01.dbo.cashdr AS cashdr
         INNER JOIN axxia01.dbo.documt AS Docs ON cashdr.case_id = Docs.case_id
                                                  AND casact.document_no = Docs.document_no
                                                  AND casact.activity_seq = Docs.activity_seq
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.docbpath ON Docs.path_no = docbpath.path_no
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.docversn AS docversion ON Docs.document_no=docversion.document_no
-        LEFT OUTER JOIN ARTIION.axxia01.dbo.wpdefn ON UPPER(RTRIM(Docs.wp_code)) = UPPER(RTRIM(wpdefn.wp_code))
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.docbpath ON Docs.path_no = docbpath.path_no
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.docversn AS docversion ON Docs.document_no=docversion.document_no
+        LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].axxia01.dbo.wpdefn ON UPPER(RTRIM(Docs.wp_code)) = UPPER(RTRIM(wpdefn.wp_code))
 WHERE   casact.document_no > 0
 AND cashdr.client=@Client AND cashdr.matter=@Matter
 --AND cashdr.date_closed>=CONVERT(DATE,DATEADD(MONTH,-18,GETDATE()),103)

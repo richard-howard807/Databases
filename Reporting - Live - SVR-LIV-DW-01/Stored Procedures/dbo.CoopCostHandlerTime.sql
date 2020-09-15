@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 ===================================================
 ===================================================
@@ -56,6 +57,9 @@ AS
 		, ISNULL(SUM(cost_time.sarah_evans), 0)												AS [sarah_evans_wip]
 		, ISNULL(SUM(cost_time.stephanie_mcbride), 0)										AS [stephanie_mcbride_wip]
 		, ISNULL(SUM(cost_time.stuart_naylor), 0)											AS [stuart_naylor_wip]
+		,ISNULL(SUM(cost_time.Jon_Lord), 0)  AS [Jon_Lord_wip]
+		,ISNULL(SUM(cost_time.Cathal_Reynolds), 0) AS [Cathal_Reynolds_wip]
+
 		, ISNULL(SUM(cost_time.ella_collett), 0) +
 			ISNULL(SUM(cost_time.andrew_currah), 0) +
 			ISNULL(SUM(cost_time.beth_price), 0) +
@@ -77,7 +81,10 @@ AS
 			ISNULL(SUM(cost_time.michaela_cheshire), 0) +
 			ISNULL(SUM(cost_time.sarah_evans), 0) +
 			ISNULL(SUM(cost_time.stephanie_mcbride), 0) +
-			ISNULL(SUM(cost_time.stuart_naylor), 0)											AS [total_costs_wip]
+			ISNULL(SUM(cost_time.stuart_naylor), 0)+ 
+			ISNULL(SUM(cost_time.Jon_Lord), 0)+ 
+			ISNULL(SUM(cost_time.Cathal_Reynolds), 0)
+			AS [total_costs_wip]
 	INTO #costhandlers
 	FROM (
 			SELECT
@@ -214,7 +221,17 @@ AS
 						SUM(wip_value)
 					ELSE
 						0
-				  END																	AS [stuart_naylor]
+				  END AS [stuart_naylor]
+				  ,CASE WHEN cost_handlers.fed_code IN ('CRE','4493') THEN SUM(wip_value)
+					ELSE
+						0
+				  END AS [Cathal_Reynolds]
+			  ,CASE WHEN cost_handlers.fed_code IN ('5644') THEN SUM(wip_value)
+					ELSE
+						0
+				  END AS [Jon_Lord]
+
+				  
 			FROM red_dw.dbo.fact_wip
 				LEFT OUTER JOIN (
 									SELECT 
@@ -226,7 +243,7 @@ AS
 													'2033','4410','LOH','LFO1','LFO','3662','KFI',
 													'4878','5386','WIJ','5522','IST','5113','GME',
 													'3113','EPO2','EPO1','EPO','4234','6172','CHS1',
-													'CHS','4348','COI','4877','BCO'
+													'CHS','4348','COI','4877','BCO','CRE','4493','5644'
 												   )
 								) AS cost_handlers
 					ON cost_handlers.dim_fed_hierarchy_history_key = red_dw.dbo.fact_wip.dim_fed_hierarchy_history_key
@@ -286,6 +303,10 @@ AS
 		, ISNULL(sarah_evans_wip, 0)																AS [Sarah Evans WIP]
 		, ISNULL(stephanie_mcbride_wip, 0)															AS [Stephanie McBride WIP]
 		, ISNULL(stuart_naylor_wip, 0)																AS [Stuart Naylor WIP]
+		, ISNULL(Jon_Lord_wip, 0)																	AS [Jon Lord WIP]
+		, ISNULL(Cathal_Reynolds_wip, 0)														    AS [Cathal Reynolds WIP]
+
+
 		, ISNULL(total_costs_wip, 0)																AS [Total Costs WIP]
 	FROM 
 		red_dw.dbo.dim_matter_header_current 

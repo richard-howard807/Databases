@@ -14,6 +14,8 @@ GO
 -- ES 2020-03-12 42547 Amended the logic to look at the FIC Process task rather than
 --						filter based on the FIC score which is based on case details
 -- ES 2020-06-09 58589 Removed fixed fee from total calc
+-- ES 2020-09-15 amended logic to look at the history of the date the score was inserted if there is no task information as the task has been deleted on the frontend, requested by Mandy Hudson
+-- ES 2020-09-15 added client group name parameter requested by Bob H
 --==============================================
 CREATE  PROCEDURE [fraud].[fic_results_report_test]
 
@@ -22,6 +24,7 @@ CREATE  PROCEDURE [fraud].[fic_results_report_test]
     --@Month AS VARCHAR(100)
     @Level AS VARCHAR(100)
 	,@Status AS VARCHAR(MAX)
+	,@ClientGroupName varchar(MAX)
 )
 	
 AS
@@ -37,6 +40,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
     	CREATE TABLE #FedCodeList  (
 ListValue  NVARCHAR(MAX)
 )
+
+IF OBJECT_ID('tempdb..#ClientGroupName') IS NOT NULL   DROP TABLE #ClientGroupName
 
 IF OBJECT_ID('tempdb..#Status') IS NOT NULL   DROP TABLE #Status
 
@@ -88,6 +93,10 @@ exec sp_executesql @sql
 
 	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit(',', @Status)
 
+		CREATE TABLE #ClientGroupName 
+	( ListValue NVARCHAR(200) collate Latin1_General_BIN)
+	INSERT INTO #ClientGroupName
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @ClientGroupName) 
 	
 	 SELECT 
 		 [Client Code] = dim_matter_header_current.client_code
@@ -118,8 +127,8 @@ exec sp_executesql @sql
 		 ,date_received 
 		 ,date_intel_report_sent
 		 ,FICProcess.tskDue
-		 ,FICProcess.tskCompleted
-		 ,FICProcess.tskDesc
+		 ,(CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) AS [tskCompleted]
+		 ,CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskDesc IS NULL THEN 'FIC Process' ELSE FICProcess.tskDesc END AS [tskDesc]
 		 ,ms_fileid
 		 ,work_type_group
 		 ,CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END AS [Client Group Name]
@@ -129,21 +138,21 @@ exec sp_executesql @sql
 		,fact_finance_summary.defence_costs_reserve AS [Defence Costs Reserve]
 		,CASE WHEN FICProcess.tskDue IS NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [CountNoprocessdue]
 	  
-		,CASE WHEN FICProcess.tskDue IS NOT NULL AND FICProcess.tskCompleted IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
-		,CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
+		,CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
+		,CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
 		,CASE WHEN  dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END AS [countless15]
 		,CASE WHEN  dim_detail_fraud.total_points_calc >= 15 THEN 1 ELSE 0 END AS [countmore15]
 	
 		, CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
 		END AS [countfixeddefence]
-		, CASE WHEN FICProcess.tskCompleted IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscorenotcompleted]
+		, CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscorenotcompleted]
 ----------------------------
  	,(CASE WHEN FICProcess.tskDue IS NULL THEN 1 ELSE 0 END +
-	CASE WHEN FICProcess.tskDue IS NOT NULL AND FICProcess.tskCompleted IS NULL THEN 1 ELSE 0 END + 
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END +
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END +
-		CASE WHEN FICProcess.tskCompleted IS NOT NULL AND dim_detail_fraud.total_points_calc > 15 THEN 1 ELSE 0 END) -
-		CASE WHEN FICProcess.tskCompleted IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END
+	CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END + 
+		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END +
+		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END +
+		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc > 15 THEN 1 ELSE 0 END) -
+		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END
 		--CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
 		--END 
 		AS TOTAL 
@@ -184,8 +193,12 @@ exec sp_executesql @sql
 	--INNER JOIN #Department AS Department ON Department.ListValue = hierarchylevel3hist 
 	--INNER JOIN #Team AS Team ON Team.ListValue = hierarchylevel4hist 
 	--INNER JOIN #Handler AS Handler ON Handler.ListValue = matter_owner_full_name 
-	--INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END 
+	INNER JOIN #ClientGroupName AS ClientGroupName ON ClientGroupName.ListValue = CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END 
 	
+	LEFT OUTER JOIN (SELECT totalpointscalc, ds_sh_ms_udficcommon_history.dss_start_date, ds_sh_ms_udficcommon_history.dss_end_date, ds_sh_ms_udficcommon_history.fileid
+					FROM red_dw.dbo.ds_sh_ms_udficcommon_history
+					WHERE ds_sh_ms_udficcommon_history.dss_current_flag='Y') AS [ScoreDate] ON [ScoreDate].fileID=dim_matter_header_current.ms_fileid
+
 	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
 
 	INNER JOIN #Status ON #Status.ListValue = CASE WHEN date_claim_concluded IS NULL THEN 'Open' ELSE 'Closed' END

@@ -15,11 +15,12 @@ BEGIN
 
 	SET NOCOUNT ON;
 
-		SELECT DISTINCT fact_dimension_main.client_code AS [Client Code]
+		SELECT DISTINCT RTRIM(fact_dimension_main.client_code)+'-'+dim_matter_header_current.matter_number AS [Ref]
+		, fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
-		, dim_matter_header_history.date_opened_practice_management AS [Date Opened]
+		, dim_matter_header_current.date_opened_practice_management AS [Date Opened]
 		, cal_week_in_year AS [Week Number]
-		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_history.date_opened_practice_management)-1), dim_matter_header_history.date_opened_practice_management) AS DATE) [Week Start]
+		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_current.date_opened_practice_management)-1), dim_matter_header_current.date_opened_practice_management) AS DATE) [Week Start]
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
@@ -80,27 +81,29 @@ BEGIN
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
-		 , CASE WHEN dim_matter_header_history.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+		 , CASE WHEN dim_matter_header_current.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
 			
 
- FROM red_dw.dbo.dim_matter_header_history
+ FROM red_dw.dbo.dim_matter_header_current
  LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
- ON fact_dimension_main.client_code = dim_matter_header_history.client_code
- AND fact_dimension_main.matter_number = dim_matter_header_history.matter_number
+ ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
-ON dim_matter_header_history.fee_earner_code = dim_fed_hierarchy_history.fed_code
-AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
+ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+--AND dim_matter_header_history.dss_version=1
+--AND date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
+--ON dim_matter_header_history.fee_earner_code = dim_fed_hierarchy_history.fed_code
+--AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
  LEFT OUTER JOIN red_dw.dbo.dim_date 
- ON calendar_date=CAST(dim_matter_header_history.date_opened_practice_management AS DATE)
+ ON calendar_date=CAST(dim_matter_header_current.date_opened_practice_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 
  ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
  LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
- ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_history.dim_matter_worktype_key
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
  ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
  LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
@@ -111,19 +114,21 @@ AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hi
  ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 
- WHERE dim_matter_header_history.date_opened_practice_management>='2019-01-01'
- AND dim_matter_header_history.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
+ WHERE dim_matter_header_current.date_opened_practice_management>='2019-01-01'
+ AND dim_matter_header_current.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current')
 
  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
  --AND name ='Natasha Jordan'
- -- AND hierarchylevel3hist='Motor'
- --AND dim_matter_header_history.date_opened_practice_management >= '2020-07-01' 
- --AND dim_matter_header_history.date_opened_practice_management <= '2020-07-31'
- AND dim_matter_header_history.dss_version = 1
+-- AND hierarchylevel3hist='Casualty'
+ --AND hierarchylevel4hist='Litigation Leeds'
+ --AND dim_matter_header_current.date_opened_practice_management >= '2020-05-01' 
+ --AND dim_matter_header_current.date_opened_practice_management <= '2020-05-30'
  AND reporting_exclusions=0    
+--AND fact_dimension_main.client_code='00451638' AND fact_dimension_main.matter_number='00004477'--00451638-00004477
+
 END
 
 GO
