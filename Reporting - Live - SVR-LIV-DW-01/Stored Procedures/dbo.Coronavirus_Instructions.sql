@@ -16,6 +16,42 @@ BEGIN
 -- interfering with SELECT statements.
 SET NOCOUNT ON;
 
+--=======================================================================================================================================================================================
+-- Revenue table
+--=======================================================================================================================================================================================
+IF OBJECT_ID('tempdb..#Revenue') IS NOT NULL
+        DROP TABLE #Revenue;
+
+SELECT PVIOT.client_code,
+		PVIOT.matter_number,
+		PVIOT.[202003],
+		PVIOT.[202004],
+		PVIOT.[202005],
+		PVIOT.[202006],
+		PVIOT.[202007],
+		PVIOT.[202008],
+		PVIOT.[202009],
+		PVIOT.[202010],
+		PVIOT.[202011]
+		INTO #Revenue
+FROM (
+	
+	SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_cal_month bill_cal_month, SUM(fact_bill_activity.bill_amount) Revenue
+	FROM red_dw.dbo.fact_bill_activity
+	INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+	WHERE dim_bill_date.bill_cal_month IN (202003,202004,202005,202006,202007,202008,202009,202010,202011)
+	GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_cal_month
+	) AS revenue
+PIVOT	
+	(
+	SUM(Revenue)
+	FOR bill_cal_month IN ([202003],[202004],[202005],[202006],[202007],[202008],[202009],[202010],[202011])
+	) AS PVIOT
+
+--=======================================================================================================================================================================================
+--=======================================================================================================================================================================================
+
+
 
 SELECT 
 	dim_matter_header_current.master_client_code + '/'
@@ -40,6 +76,15 @@ SELECT
 			+ ISNULL(fact_finance_summary.defence_costs_vat, 0)														AS [Total Amount Billed]
 	, fact_finance_summary.wip																						AS [WIP]
 	, fact_finance_summary.disbursement_balance																		AS [Unbilled Disbursements]
+	, #Revenue.[202003]																								AS [March 2020 Revenue]
+	, #Revenue.[202004]																								AS [April 2020 Revenue]
+	, #Revenue.[202005]																								AS [May 2020 Revenue]
+	, #Revenue.[202006]																								AS [June 2020 Revenue]
+	, #Revenue.[202007]																								AS [July 2020 Revenue]
+	, #Revenue.[202008]																								AS [August 2020 Revenue]
+	, #Revenue.[202009]																								AS [September 2020 Revenue]
+	, #Revenue.[202010]																								AS [October 2020 Revenue]
+	, #Revenue.[202011]																								AS [November 2020 Revenue]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -53,6 +98,9 @@ FROM red_dw.dbo.fact_dimension_main
 		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.dim_client
 		ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+	LEFT OUTER JOIN #Revenue
+		ON #Revenue.client_code = dim_matter_header_current.client_code
+			AND #Revenue.matter_number = dim_matter_header_current.matter_number
 WHERE
 	LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 	OR (
