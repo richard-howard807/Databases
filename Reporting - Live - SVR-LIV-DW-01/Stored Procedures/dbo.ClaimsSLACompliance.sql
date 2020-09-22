@@ -154,6 +154,7 @@ SELECT
 	, dim_matter_header_current.matter_number AS [Matter Number]
 	, matter_description AS [Matter Description]
 	, name AS [Matter Owner]
+	, dim_matter_header_current.fee_earner_code
 	, hierarchylevel4hist AS [Team]
 	, hierarchylevel3hist AS [Department]
 	, CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Status]
@@ -382,15 +383,27 @@ FROM red_dw.dbo.fact_dimension_main
 		ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN #ClientReportDates
 		ON #ClientReportDates.master_client_code = dim_matter_header_current.master_client_code AND #ClientReportDates.master_matter_number = dim_matter_header_current.master_matter_number
-
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 WHERE 
 	reporting_exclusions=0
 	AND hierarchylevel2hist='Legal Ops - Claims'
 	AND (date_closed_case_management IS NULL 
 		OR date_closed_case_management>='2017-01-01')
 	AND ((dim_matter_header_current.date_opened_case_management >= @StartDate OR @StartDate IS NULL) AND  dim_matter_header_current.date_opened_case_management<=  @EndDate  OR @EndDate IS NULL) 
-
-
+	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
+	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
+	AND (dim_detail_core_details.referral_reason IS NULL OR RTRIM(LOWER(dim_detail_core_details.referral_reason)) <> 'in house')
+	AND dim_matter_header_current.dim_matter_worktype_key <> 609 --Secondments worktype key
+	-- clause to exclude "General File" matters
+	AND dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number NOT IN (
+		'10015-3', 'M1001-7699', '94212-1', 'N12105-238', 'TR00023-61', 'A1001-6044', 'M1001-24582', '2443L-9', 'W15531-506', 'N1001-12300', 
+		'N1001-12469', '113147-999', '125409T-21', '732022-2', 'N1001-14159', '754485-1', '516358-8', 'W15373-1858', '9008076-900285', '451638-999', 
+		'738632-3', '451638-204', '451638-208', '901838-1', '451638-236', 'N1001-7080', '113147-448', '113147-1036', '451638-1120', 'W16551-1', '13994-7', 
+		'A2002-14012', 'W18337-2', 'M00001-11111288', '659-8', 'W18791-1', '113147-1749', '468733-8', '113147-1823', 'TR00023-1001', '610426-135', 
+		'N1001-16961', '662257-2', 'W19835-1', '113147-2016', 'W15508-229', '10466-103', 'W18762-5', 'W15414-23', 'W20163-69', 'N1001-17768', '720451-1029', 
+		'W17369-25', '113147-2543', '113147-2592', '451638-3592', '451638-3667', '451638-3751', 'W23663-1', 'W23671-1', 'W23696-1'
+		)
 END
 
 GO
