@@ -18,6 +18,7 @@ BEGIN
 		SELECT DISTINCT RTRIM(fact_dimension_main.client_code)+'-'+dim_matter_header_current.matter_number AS [Ref]
 		, fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
+		, dim_matter_header_current.matter_description AS [Matter Description]
 		, dim_matter_header_current.date_opened_practice_management AS [Date Opened]
 		, cal_week_in_year AS [Week Number]
 		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_current.date_opened_practice_management)-1), dim_matter_header_current.date_opened_practice_management) AS DATE) [Week Start]
@@ -25,7 +26,9 @@ BEGIN
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
 		, dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team]
-		, name AS [Matter Owner]
+		, dim_fed_hierarchy_history.[name] AS [Matter Owner]
+		, [hierarchy_current].[hierarchylevel4hist] AS [Current Team]
+		, [hierarchy_current].[name] AS [Current Matter Owner]
 		, ISNULL(dim_client.client_group_name, dim_client.client_name) AS [Client Group Name]
 		, segment AS [Segment]
 		, sector AS [Sector]
@@ -35,13 +38,6 @@ BEGIN
 		, proceedings_issued AS [Proceedings Issued]
 		, dim_detail_finance.output_wip_fee_arrangement AS [Fee Arrangement]
 		, dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud]
-		, CASE WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)=0 THEN '£0'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=50000 THEN '£1-£50,000'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=100000 THEN '£50,000-£100,000'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=250000 THEN '£100,000-£250,000'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=1000000 THEN '£250,000-£1m'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=3000000 THEN '£1m-£3m'
-				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)>3000000 THEN '>£3m' ELSE '£0' END AS [Damages Banding]
 		, CASE WHEN dim_client.client_group_code='00000067' THEN dim_client.client_group_name --Ageas
 			WHEN dim_client.client_group_code='00000013' THEN dim_client.client_group_name --AIG
 			WHEN dim_client.client_group_code='00000131' THEN dim_client.client_group_name --Aviva
@@ -113,6 +109,8 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome 
  ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
  --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
+ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS [hierarchy_current]
+ ON hierarchy_current.dim_fed_hierarchy_history_key = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
 
 
  WHERE dim_matter_header_current.date_opened_practice_management>='2019-01-01'
@@ -120,7 +118,7 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current')
 
- AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
+ AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
  --AND name ='Natasha Jordan'
 -- AND hierarchylevel3hist='Casualty'
  --AND hierarchylevel4hist='Litigation Leeds'

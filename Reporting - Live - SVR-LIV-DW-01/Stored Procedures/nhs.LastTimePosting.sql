@@ -9,6 +9,8 @@ GO
 			--Healthcare want more governance around fee earners moving cases forward and completing outcome MI asap 
 			--so can you please create a new report that will list cases that haven’t been worked on in over 30 days. 
 -- =============================================
+-- ES 2020-09-16 Amended logic to exclude closed cases
+-- =============================================
 CREATE PROCEDURE [nhs].[LastTimePosting]
 	-- Add the parameters for the stored procedure here
 	
@@ -48,6 +50,8 @@ AND date_claim_concluded IS NULL
 AND ms_only=1
 AND (referral_reason LIKE 'Dispute%' OR referral_reason LIKE 'Infant Approval%')
 AND DATEDIFF(DAY,last_time_transaction_date, GETDATE())>30
+AND dim_matter_header_current.reporting_exclusions=0
+AND dim_matter_header_current.date_closed_case_management IS NULL
 
 ORDER BY [Number of Days Since Last Time Posting] DESC
 

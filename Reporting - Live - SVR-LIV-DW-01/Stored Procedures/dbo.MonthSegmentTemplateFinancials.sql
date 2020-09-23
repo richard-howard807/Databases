@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MonthSegmentTemplateFinancials]
 (
 @Period AS NVARCHAR(MAX)
@@ -57,6 +58,8 @@ FROM MS_Prod.dbo.udSubSegment
 INNER JOIN MS_Prod.dbo.udSegment
  ON segment=udsegment.code
 WHERE udSegment.description=@SegmentName
+AND udSegment.active=1
+AND udSubSegment.active=1
  ) AS Segments
 LEFT OUTER JOIN red_dw.dbo.fact_segment_target_upload
  ON fact_segment_target_upload.sectorname = Segments.sectorname COLLATE DATABASE_DEFAULT

@@ -12,17 +12,20 @@ AS
 BEGIN
 
 	SET NOCOUNT ON;
-
 SELECT 
-CASE WHEN work_type_name IN ('Commercial Contracts','Commercial drafting (advice)','Company','Competition Law','Contract','Contract Supplier'                       
-,'Defamation','Direct Selling','Events','Health and Safety - Advisory/Consultancy','Health and Safety - Defending','Health and Safety - Prosecuting','Health and Safety - Training'            
-,'Injunction','Injunctions','Intellectual property','Judicial Review','Non-contentious IP & IT Contracts','Partnership','Partnerships & JVs','Private Equity','Procurement'                             
-,'Recoveries','Share Structures & Company Reorganisatio') THEN 'Contracts, Commercials, Procurement, Health and Safety' 
-WHEN work_type_name IN( 'Comm conveyancing (business premises)','Due Dilligence','Landlord & Tenant - Commercial','Landlord & Tenant - Disrepair'           
-,'Landlord & Tenant - Residential','Leases-granting,taking,assigning,renewin','Reactive Training','Remortgage','Residential conveyancing (houses/flats)' 
-,'Right to buy','Social Housing - Property','Training') THEN 'Homelessness, Housing Management, Home Ownership, Asset Management'                            
-ELSE 'Other' END AS [LOT/Category]
-, fact_finance_summary.total_amount_billed AS [Total gross bills]
+	RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
+	,dim_matter_header_current.[matter_description] AS [Matter Description]
+	, dim_matter_worktype.[work_type_name] AS [Work Type]
+	, dim_matter_header_current.date_opened_case_management AS [Date Case Opened]
+	, clientcontact_name AS [Instructing Officer]
+	, dim_fed_hierarchy_history.[name] AS [Case Manager]
+	, dim_fed_hierarchy_history.jobtitle
+	, CASE WHEN CAST(fact_finance_summary.commercial_costs_estimate AS VARCHAR(100)) = ''
+	   OR  CAST(fact_finance_summary.commercial_costs_estimate AS VARCHAR(100))  IS NULL 
+	   THEN CAST(fact_finance_summary.fixed_fee_amount AS VARCHAR(100)) 
+	   ELSE CAST(fact_finance_summary.commercial_costs_estimate AS VARCHAR(100))
+	   END AS [Estimated total gross fee OR fixed fee - £]
+	, fact_finance_summary.total_amount_billed AS [Total gross bills since the file was opened (inc. disbs & VAT) - £]
 
 
 

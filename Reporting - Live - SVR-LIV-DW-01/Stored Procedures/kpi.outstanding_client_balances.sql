@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 --SELECT * FROM red_dw.dbo.dim_fed_hierarchy_history WHERE name LIKE 'Adrian%'
 
 
@@ -59,15 +61,15 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		WHERE dim_fed_hierarchy_history_key IN ('+@FedCodes+')'
 
 
-	INSERT into #FedCodeList 
-	exec sp_executesql @sql
-		end
+	INSERT INTO #FedCodeList 
+	EXEC sp_executesql @sql
+		END
 	
 	
 		IF  @Level  = 'Individual'
 		BEGIN
 		PRINT ('Individual')
-		INSERT into #FedCodeList 
+		INSERT INTO #FedCodeList 
 		SELECT ListValue
 		FROM dbo.udt_TallySplit(',', @FedCodes)
 	
@@ -179,6 +181,9 @@ FROM
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
+		AND Teams.fed_code NOT IN ('5182','5214','5246','6023','6102','6302','6437'
+,'1610','1809','5594','5820','5848','6138','4611') -- Exclude Com Rec users requested by James Holman 16.09.20
+
 END
 ELSE
 BEGIN
@@ -278,6 +283,8 @@ FROM
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
+		AND Teams.fed_code NOT IN ('5182','5214','5246','6023','6102','6302','6437'
+,'1610','1809','5594','5820','5848','6138') -- Exclude Com Rec users requested by James Holman 16.09.20
 
 END
 

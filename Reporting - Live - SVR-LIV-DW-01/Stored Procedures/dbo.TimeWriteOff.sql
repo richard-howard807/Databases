@@ -29,7 +29,7 @@ BEGIN
 	--DECLARE @Level VARCHAR(100)='Firm'
 
 
-SELECT ListValue  INTO #FedCodeList FROM dbo.udt_TallySplit(',', @FedCode)
+SELECT ListValue COLLATE Latin1_General_BIN ListValue INTO #FedCodeList FROM dbo.udt_TallySplit(',', @FedCode)
 --SELECT * FROM #FedCodeList
 
 SELECT [dim_transaction_date_key]
@@ -129,12 +129,12 @@ and fin_year=(select  fin_year from red_dw.dbo.dim_date
 				AND fin_day_in_month = 1 )
 --AND fact_write_off_monthly.client_code = 'W19106' AND fact_write_off_monthly.matter_number = '00000002'
 --and [matter_owner]='4972'
-and dim_fed_hierarchy_history.dim_fed_hierarchy_history_key in 
+and dim_fed_hierarchy_history.fed_code in 
 (
-select (case when @Level = 'Firm' then dim_fed_hierarchy_history_key else NULL END) 
+select (case when @Level = 'Firm' then dim_fed_hierarchy_history.fed_code else NULL END) 
 from red_dw.dbo.dim_fed_hierarchy_history
 union
-select (case when @Level IN ('Individual', 'Area Managed') then ListValue else null end) from #FedCodeList
+select (case when @Level IN ('Individual', 'Area Managed') then ListValue else null end) from #FedCodeList WHERE #FedCodeList.ListValue <> 'Unknown'
 
 )
 

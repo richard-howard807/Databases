@@ -165,7 +165,9 @@ matter_owner_full_name,
 dim_fed_hierarchy_history.hierarchylevel2hist as 'business_line',
 dim_fed_hierarchy_history.hierarchylevel3hist as 'practice_area',
 dim_fed_hierarchy_history.hierarchylevel4hist as 'team',
-output_wip_fee_arrangement AS output_wip_fee_arrangement
+output_wip_fee_arrangement AS output_wip_fee_arrangement,
+fixed_fee,
+fixed_fee_amount
 
 INTO #disbs 
 
@@ -219,8 +221,8 @@ w.[31 - 90 days],
 w.[Greater than 90 Days],
 w.[<0 Days],
 w.[Total Wip],
-w.fixed_fee,
-w.fixed_fee_amount,
+COALESCE(w.fixed_fee, d.fixed_fee) fixed_fee,
+COALESCE(w.fixed_fee_amount, d.fixed_fee_amount) fixed_fee_amount,
 w.fee_earner_code,
 w.output_wip_percentage_complete, d.disbursement_balance 
 INTO #joined

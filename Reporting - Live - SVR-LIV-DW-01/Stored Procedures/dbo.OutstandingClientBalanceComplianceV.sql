@@ -6,7 +6,8 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Regulatory'	,'PDGHSC'
+
+CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Litigation'	,'Litigation Leeds'
 (
 @Department AS NVARCHAR(MAX)
 ,@Team AS NVARCHAR(MAX)
@@ -118,7 +119,8 @@ INNER JOIN #Team AS Team ON RTRIM(LTRIM(Team.ListValue ))  COLLATE DATABASE_DEFA
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
-	
+	AND Teams.fed_code NOT IN ('5182','5214','5246','6023','6102','6302','6437'
+,'1610','1809','5594','5820','5848','6138') -- Exclude Com Rec users requested by James Holman 16.09.20
 	
 END 
 

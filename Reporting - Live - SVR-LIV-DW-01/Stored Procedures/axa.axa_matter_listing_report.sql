@@ -18,6 +18,7 @@ GO
 -- ES 22/04/2020 - added Does the claimant have a PI claim? and Date of Last Bill and Date Last Worked, 56563
 -- JL 13/05/2020 - removed date_instructions_received is not null as per ticket 58054
 -- ES 16/07/2020 - #64836 added client code 220044, amended tp costs paid  detail, added date costs settled, unbilled disbs and unpaid bill balance
+-- JL 22/09/2020 - #72988 added in axa instruction type as per Helen Fox
 ---------- =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
@@ -133,6 +134,8 @@ BEGIN
 		   , last_time_transaction_date AS [Date Last Worked]
 		   , dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
 		   , CASE WHEN clients_claims_handler_surname_forename IN ('Spinks, Stephen','Lockheart, Steven','Bokhari, Iram','Rogers, Elizabeth','Nicolaou, Andy','Tuer, Robert') THEN 1 ELSE 0 END AS [London Casualty Team Matters]
+		   , dim_detail_client.axa_instruction_type
+
 
 
 
@@ -170,6 +173,7 @@ BEGIN
             ON dim_defendant_involvement.dim_defendant_involvem_key = fact_dimension_main.dim_defendant_involvem_key
 	 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_initial 
 			ON fact_detail_reserve_initial.master_fact_key = fact_dimension_main.master_fact_key
+		LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 			
 			LEFT JOIN red_dw.dbo.dim_involvement_full clsol 
 			ON clsol.dim_involvement_full_key = tp_ref.claimantsols_1_key

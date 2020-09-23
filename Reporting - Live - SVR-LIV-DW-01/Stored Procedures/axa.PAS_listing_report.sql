@@ -157,7 +157,7 @@ BEGIN
 			-(CASE WHEN DATENAME(dw, dim_detail_core_details.[date_initial_report_sent]) = 'Saturday' THEN 1 ELSE 0 END)
 			 ELSE NULL END AS OpenToSent
 
-, dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), dim_detail_core_details.date_initial_report_sent)		AS [NewOpenToSent]
+,dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), dim_detail_core_details.date_initial_report_sent) 	AS [NewOpenToSent]
 
 ,CASE  WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL  THEN 
         	(DATEDIFF(dd, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management), dim_detail_practice_area.[date_report_due] ))-- + 1)
@@ -166,6 +166,16 @@ BEGIN
 			-(CASE WHEN DATENAME(dw, dim_detail_practice_area.[date_report_due] ) = 'Saturday' THEN 1 ELSE 0 END)
 			 ELSE NULL END AS OpenToExtension
 
+--ES #71990
+, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Papers Received]
+
+, CASE WHEN dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report]='Yes' 
+THEN dbo.ReturnElapsedDaysExcludingBankHolidays(GETDATE(),dim_detail_core_details.[date_initial_report_due]) 
+ELSE dbo.ReturnElapsedDaysExcludingBankHolidays( COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), GETDATE()) END	AS [DaysDue]
+
+,CASE WHEN dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report]='Yes' 
+THEN dbo.ReturnElapsedDaysExcludingBankHolidays(dim_detail_core_details.[date_initial_report_due],dim_detail_core_details.[date_initial_report_sent])
+ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), dim_detail_core_details.date_initial_report_sent) END AS [DaysToSend]
 
 
     FROM red_dw.dbo.fact_dimension_main

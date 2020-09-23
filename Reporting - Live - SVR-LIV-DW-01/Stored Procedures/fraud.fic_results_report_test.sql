@@ -16,6 +16,7 @@ GO
 -- ES 2020-06-09 58589 Removed fixed fee from total calc
 -- ES 2020-09-15 amended logic to look at the history of the date the score was inserted if there is no task information as the task has been deleted on the frontend, requested by Mandy Hudson
 -- ES 2020-09-15 added client group name parameter requested by Bob H
+-- ES 2020-09-18 amended fic logic to look at quetsions as the tasks show as completed if the process was cancelled
 --==============================================
 CREATE  PROCEDURE [fraud].[fic_results_report_test]
 
@@ -35,7 +36,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 
 
-	IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL   DROP TABLE #FICProcess
+IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL   DROP TABLE #FICProcess
+
 	DROP TABLE  IF EXISTS #FedCodeList
     	CREATE TABLE #FedCodeList  (
 ListValue  NVARCHAR(MAX)
@@ -84,12 +86,112 @@ exec sp_executesql @sql
 	--SELECT ListValue  INTO #ClientGroupName FROM 	dbo.udt_TallySplit(',', @ClientGroupName)
 
 
-	SELECT fileID, tskDesc, tskDue, tskCompleted 
+	--SELECT fileID, tskDesc, tskDue, tskCompleted 
+	--INTO #FICProcess
+	--FROM MS_Prod.dbo.dbTasks
+	--WHERE (tskDesc LIKE 'FIC Process'
+	--OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
+	--AND tskActive=1
+
+
+	SELECT Process.fileid
+	, Process.totalpointscalc
+	, Process.Completed
+	, CASE WHEN Process.Completed=1 THEN tskDesc ELSE NULL END AS [tskDesc]
+	, CASE WHEN Process.Completed=1 THEN tskDue ELSE NULL END AS [tskDue]
+	, CASE WHEN Process.Completed=1 THEN tskCompleted ELSE NULL END AS [tskCompleted]
 	INTO #FICProcess
-	FROM MS_Prod.dbo.dbTasks
-	WHERE (tskDesc LIKE 'FIC Process'
-	OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
-	AND tskActive=1
+FROM (
+	SELECT ds_sh_ms_udficmotor.fileid
+	, ds_sh_ms_udficcommon.totalpointscalc
+	, CASE WHEN ds_sh_ms_udficmotor.cbomotorintelty IS NOT NULL 
+		OR ds_sh_ms_udficmotor.cbonoofoccupant IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbomultiaccid IS NOT NULL
+        OR ds_sh_ms_udficmotor.cboothpartyconc IS NOT NULL
+        OR ds_sh_ms_udficmotor.cboinconsistdmg IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbomultioccupan IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbovagueadmit IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbofailureassis IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbohighriskunem IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbolateearlyacc IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbophantomtp IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbounustpbehaiv IS NOT NULL
+        OR ds_sh_ms_udficmotor.cboaccmancomp IS NOT NULL
+        OR ds_sh_ms_udficmotor.cbolowvalue IS NOT NULL 
+		OR ds_sh_ms_udficdisease.cboprevsamedise IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbountruestatem IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboincorrectpor IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbomulticachecr IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboirisothersol IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbo20yrslastexp IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboprevothdisea IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbo1stclaimdef IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboworklocdisp IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbonowitnesses IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbonolongertrad IS NOT NULL
+        or ds_sh_ms_udficdisease.cboposdefnopers IS NOT NULL
+        OR ds_sh_ms_udficdisease.txthandlerfeel IS NOT NULL
+		OR ds_sh_ms_udficdisease.cbonoretdeclar IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbofailclarific IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbomedrecrefus IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboothinvestref IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbocontraalleg IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbotipoff IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboprevconv IS NOT NULL
+		OR ds_sh_ms_udficdisease.cboproblemempl IS NOT NULL 
+		OR ds_sh_ms_udficdisease.cbowrongtruemul IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboallsurv IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbofabrheadloss IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboexagheadloss IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbomednotconsis IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboevidinconsis IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbonoidexam IS NOT NULL
+        OR ds_sh_ms_udficdisease.cboothexcclaim IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbogprecsnorev IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbonoassesaahl IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbonoasscentile IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbogprecnotinn IS NOT NULL
+        OR ds_sh_ms_udficdisease.cbohearless25 IS NOT NULL 
+		OR ds_sh_ms_udficelpl.cbotipofffraud IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbodisgruntempl IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboprevhistory IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboinconsistcla IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboearlysetofr IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbopersonalpres IS NOT NULL
+        OR ds_sh_ms_udficelpl.cborefusecoop IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboageabilincon IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowitownagenda IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowituncoop IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowitfraudlink IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowitnessincon IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowitrefusesig IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboaccidentrep IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbocircsinconsi IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbonowitnesses IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbowitnessevid IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbosimilclaims IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbounusualinjur IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboinjuryincon IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbogpattenddel IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbotimeoffwork IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbolackofevid IS NOT NULL
+        OR ds_sh_ms_udficelpl.cboexagclaim IS NOT NULL
+        OR ds_sh_ms_udficelpl.cbofabheadloss IS NOT NULL 
+		THEN 1 ELSE 0 END AS [Completed]
+
+	FROM red_dw.dbo.ds_sh_ms_udficcommon
+	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficmotor
+	ON ds_sh_ms_udficmotor.fileid = ds_sh_ms_udficcommon.fileid
+	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficdisease
+	ON ds_sh_ms_udficdisease.fileid = ds_sh_ms_udficcommon.fileid
+	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficelpl
+	ON ds_sh_ms_udficelpl.fileid = ds_sh_ms_udficcommon.fileid
+	) AS [Process]
+	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
+					FROM MS_Prod.dbo.dbTasks
+					WHERE (tskDesc LIKE 'FIC Process'
+					OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
+					AND tskActive=1) AS [Tasks] ON Tasks.fileID = Process.fileid
 
 	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit(',', @Status)
 
@@ -113,22 +215,15 @@ exec sp_executesql @sql
 					ELSE DATEDIFF(DAY,date_opened_case_management, date_closed_case_management) END AS [Days Opened]
 					,dim_fed_hierarchy_history.name [FeeEarnerName]
 
-		 ,fic =	 total_points_calc 
+		 ,fic =	 FICProcess.totalpointscalc
 
-		 ,dim_detail_fraud.el_points AS FRA130
-		 ,dim_detail_fraud.pl_points AS FRA131
-		 ,dim_detail_fraud.motor_freight_liveried_points AS FRA133
-		 ,dim_detail_fraud.motor_personal_line_insurance_points AS FRA134
-		 ,dim_detail_fraud.disease_points AS FRA135
-		 ,dim_detail_fraud.rmg_el_points AS FRA137
-		 ,dim_detail_fraud.rmg_pl_points AS FRA129
 		 ,fic_fraud_transfer_date [fic_review_date]
 		 ,fic_fraud_transfer [fic_revew]
 		 ,date_received 
 		 ,date_intel_report_sent
 		 ,FICProcess.tskDue
-		 ,(CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) AS [tskCompleted]
-		 ,CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskDesc IS NULL THEN 'FIC Process' ELSE FICProcess.tskDesc END AS [tskDesc]
+		 ,(CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) AS [tskCompleted]
+		 ,CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskDesc IS NULL THEN 'FIC Process' ELSE FICProcess.tskDesc END AS [tskDesc]
 		 ,ms_fileid
 		 ,work_type_group
 		 ,CASE WHEN (client_group_name IS NULL OR client_group_name='') THEN  client_name ELSE client_group_name END AS [Client Group Name]
@@ -136,23 +231,23 @@ exec sp_executesql @sql
 		,ISNULL(fact_finance_summary.[fixed_fee_amount], 0) AS [Fixed Fee Amount]
 		,RTRIM(ISNULL(dim_detail_finance.[output_wip_fee_arrangement], 0)) AS [Fee Arrangement]
 		,fact_finance_summary.defence_costs_reserve AS [Defence Costs Reserve]
-		,CASE WHEN FICProcess.tskDue IS NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [CountNoprocessdue]
+		,CASE WHEN FICProcess.tskDue IS NULL AND FICProcess.totalpointscalc IS NULL THEN 1 ELSE 0 END AS [CountNoprocessdue]
 	  
-		,CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
-		,CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
-		,CASE WHEN  dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END AS [countless15]
-		,CASE WHEN  dim_detail_fraud.total_points_calc >= 15 THEN 1 ELSE 0 END AS [countmore15]
+		,CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END AS [countcompleteddate]
+		,CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND FICProcess.totalpointscalc IS NULL THEN 1 ELSE 0 END AS [countblankscore]
+		,CASE WHEN  FICProcess.totalpointscalc < 15 THEN 1 ELSE 0 END AS [countless15]
+		,CASE WHEN  FICProcess.totalpointscalc >= 15 THEN 1 ELSE 0 END AS [countmore15]
 	
 		, CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
 		END AS [countfixeddefence]
-		, CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscorenotcompleted]
+		, CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND FICProcess.totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscorenotcompleted]
 ----------------------------
  	,(CASE WHEN FICProcess.tskDue IS NULL THEN 1 ELSE 0 END +
-	CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END + 
-		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc IS NULL THEN 1 ELSE 0 END +
-		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc < 15 THEN 1 ELSE 0 END +
-		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND dim_detail_fraud.total_points_calc > 15 THEN 1 ELSE 0 END) -
-		CASE WHEN (CASE WHEN dim_detail_fraud.total_points_calc>0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END
+	CASE WHEN FICProcess.tskDue IS NOT NULL AND (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL THEN 1 ELSE 0 END + 
+		CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND FICProcess.totalpointscalc IS NULL THEN 1 ELSE 0 END +
+		CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND FICProcess.totalpointscalc < 15 THEN 1 ELSE 0 END +
+		CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NOT NULL AND FICProcess.totalpointscalc > 15 THEN 1 ELSE 0 END) -
+		CASE WHEN (CASE WHEN FICProcess.totalpointscalc>=0 AND FICProcess.tskCompleted IS NULL THEN ScoreDate.dss_start_date ELSE FICProcess.tskCompleted END) IS NULL AND FICProcess.totalpointscalc IS NOT NULL THEN 1 ELSE 0 END
 		--CASE WHEN (dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee ' AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0  ) OR (ISNULL(fact_finance_summary.defence_costs_reserve,0) = 0 ) THEN 1 ELSE 0
 		--END 
 		AS TOTAL 
@@ -165,9 +260,9 @@ exec sp_executesql @sql
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease') 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR total_points_calc IS NOT null)
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
 		THEN 1 ELSE 0 END AS [Number of Matters]
-		, CASE WHEN dim_detail_fraud.total_points_calc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
+		, CASE WHEN FICProcess.totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
 		, CASE WHEN date_claim_concluded IS NULL THEN 'Open' else 'Closed' END AS [Status]
 
 	FROM 
@@ -197,9 +292,110 @@ exec sp_executesql @sql
 	
 	LEFT OUTER JOIN (SELECT totalpointscalc, ds_sh_ms_udficcommon_history.dss_start_date, ds_sh_ms_udficcommon_history.dss_end_date, ds_sh_ms_udficcommon_history.fileid
 					FROM red_dw.dbo.ds_sh_ms_udficcommon_history
-					WHERE ds_sh_ms_udficcommon_history.dss_current_flag='Y') AS [ScoreDate] ON [ScoreDate].fileID=dim_matter_header_current.ms_fileid
+					WHERE ds_sh_ms_udficcommon_history.dss_current_flag='Y') AS [ScoreDate] ON [ScoreDate].fileid=dim_matter_header_current.ms_fileid
 
-	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileID = ms_fileid
+--	LEFT OUTER JOIN (
+--	SELECT Process.fileid
+--	, Process.totalpointscalc
+--	, Process.Completed
+--	, CASE WHEN Process.Completed=1 THEN tskDesc ELSE NULL END AS [tskDesc]
+--	, CASE WHEN Process.Completed=1 THEN tskDue ELSE NULL END AS [tskDue]
+--	, CASE WHEN Process.Completed=1 THEN tskCompleted ELSE NULL END AS [tskCompleted]
+--FROM (
+--	SELECT ds_sh_ms_udficmotor.fileid
+--	, ds_sh_ms_udficcommon.totalpointscalc
+--	, CASE WHEN ds_sh_ms_udficmotor.cbomotorintelty IS NOT NULL 
+--		OR ds_sh_ms_udficmotor.cbonoofoccupant IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbomultiaccid IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cboothpartyconc IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cboinconsistdmg IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbomultioccupan IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbovagueadmit IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbofailureassis IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbohighriskunem IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbolateearlyacc IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbophantomtp IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbounustpbehaiv IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cboaccmancomp IS NOT NULL
+--        OR ds_sh_ms_udficmotor.cbolowvalue IS NOT NULL 
+--		OR ds_sh_ms_udficdisease.cboprevsamedise IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbountruestatem IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboincorrectpor IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbomulticachecr IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboirisothersol IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbo20yrslastexp IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboprevothdisea IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbo1stclaimdef IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboworklocdisp IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbonowitnesses IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbonolongertrad IS NOT NULL
+--        or ds_sh_ms_udficdisease.cboposdefnopers IS NOT NULL
+--        OR ds_sh_ms_udficdisease.txthandlerfeel IS NOT NULL
+--		OR ds_sh_ms_udficdisease.cbonoretdeclar IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbofailclarific IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbomedrecrefus IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboothinvestref IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbocontraalleg IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbotipoff IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboprevconv IS NOT NULL
+--		OR ds_sh_ms_udficdisease.cboproblemempl IS NOT NULL 
+--		OR ds_sh_ms_udficdisease.cbowrongtruemul IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboallsurv IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbofabrheadloss IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboexagheadloss IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbomednotconsis IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboevidinconsis IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbonoidexam IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cboothexcclaim IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbogprecsnorev IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbonoassesaahl IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbonoasscentile IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbogprecnotinn IS NOT NULL
+--        OR ds_sh_ms_udficdisease.cbohearless25 IS NOT NULL 
+--		OR ds_sh_ms_udficelpl.cbotipofffraud IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbodisgruntempl IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboprevhistory IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboinconsistcla IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboearlysetofr IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbopersonalpres IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cborefusecoop IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboageabilincon IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowitownagenda IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowituncoop IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowitfraudlink IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowitnessincon IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowitrefusesig IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboaccidentrep IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbocircsinconsi IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbonowitnesses IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbowitnessevid IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbosimilclaims IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbounusualinjur IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboinjuryincon IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbogpattenddel IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbotimeoffwork IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbolackofevid IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cboexagclaim IS NOT NULL
+--        OR ds_sh_ms_udficelpl.cbofabheadloss IS NOT NULL 
+--		THEN 1 ELSE 0 END AS [Completed]
+
+--	FROM red_dw.dbo.ds_sh_ms_udficcommon
+--	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficmotor
+--	ON ds_sh_ms_udficmotor.fileid = ds_sh_ms_udficcommon.fileid
+--	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficdisease
+--	ON ds_sh_ms_udficdisease.fileid = ds_sh_ms_udficcommon.fileid
+--	LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficelpl
+--	ON ds_sh_ms_udficelpl.fileid = ds_sh_ms_udficcommon.fileid
+--	) AS [Process]
+--	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
+--					FROM MS_Prod.dbo.dbTasks
+--					WHERE (tskDesc LIKE 'FIC Process'
+--					OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
+--					AND tskActive=1) AS Task ON Task.fileID = [Process].fileid
+--	--WHERE fileid='5041964'
+--	) AS [FICProcess] ON FICProcess.fileid = dim_matter_header_current.ms_fileid
+
+	LEFT OUTER JOIN #FICProcess FICProcess ON FICProcess.fileid = ms_fileid
 
 	INNER JOIN #Status ON #Status.ListValue = CASE WHEN date_claim_concluded IS NULL THEN 'Open' ELSE 'Closed' END
 
@@ -214,7 +410,7 @@ exec sp_executesql @sql
 	AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR total_points_calc IS NOT null)
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
 
  AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
               (

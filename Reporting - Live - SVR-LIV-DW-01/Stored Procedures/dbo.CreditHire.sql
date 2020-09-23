@@ -74,7 +74,22 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 			ELSE dim_detail_hire_details.[credit_hire_organisation_cho] end
 			AS [CHO],
 		CAST(CAST([Claimant_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Claimant Postcode Latitude],
-		CAST(CAST([Claimant_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Claimant Postcode Longitude]
+		CAST(CAST([Claimant_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Claimant Postcode Longitude],
+		fact_finance_summary.[damages_paid_to_date]  AS [Damages Paid],
+		fact_finance_summary.[damages_reserve] AS [Damages Reserve],
+		CASE WHEN fact_detail_paid_detail.hire_claimed >=0 AND fact_detail_paid_detail.hire_claimed<=10000 THEN '£0-£10,000'
+			WHEN fact_detail_paid_detail.hire_claimed >10000 AND fact_detail_paid_detail.hire_claimed<=25000 THEN '£10,001-£25,000'
+			WHEN fact_detail_paid_detail.hire_claimed >25000 AND fact_detail_paid_detail.hire_claimed<=50000 THEN '£25,001-£50,000'
+			WHEN fact_detail_paid_detail.hire_claimed >50000 AND fact_detail_paid_detail.hire_claimed<=100000 THEN '£50,001-£100,000'
+			WHEN fact_detail_paid_detail.hire_claimed >100000  THEN '£100,001+' ELSE NULL END AS [Value Banding],
+		CASE WHEN Claimant_Postcode.Postcode LIKE 'E%'
+					OR Claimant_Postcode.Postcode LIKE 'EC%'
+					OR Claimant_Postcode.Postcode LIKE 'N%'
+					OR Claimant_Postcode.Postcode LIKE 'NW%'
+					OR Claimant_Postcode.Postcode LIKE 'SE%'
+					OR Claimant_Postcode.Postcode LIKE 'SW%'
+					OR Claimant_Postcode.Postcode LIKE 'W%'
+					OR Claimant_Postcode.Postcode LIKE 'WC%' THEN 'London' ELSE 'Other' END AS [Area]
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -109,10 +124,16 @@ ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_address
 ON dim_claimant_address.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] ON [Claimant_Postcode].Postcode=dim_claimant_address.postcode 
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+ON fact_finance_summary.master_fact_key=fact_dimension_main.master_fact_key
 
 WHERE date_opened_case_management>='20150101'
 AND reporting_exclusions=0
 AND dim_detail_core_details.credit_hire='Yes'
+AND dim_detail_core_details.are_we_dealing_with_the_credit_hire='Yes'
+AND dim_fed_hierarchy_history.hierarchylevel3hist='Motor'
+AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports' 
+AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Returned to Client'
 
 END
 GO
