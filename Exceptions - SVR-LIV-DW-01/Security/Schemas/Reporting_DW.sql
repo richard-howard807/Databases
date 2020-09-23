@@ -1,0 +1,3 @@
+CREATE SCHEMA [Reporting_DW]
+AUTHORIZATION [SBC\sgrego]
+GO
