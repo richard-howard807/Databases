@@ -134,8 +134,8 @@ BEGIN
 		   , dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
 		   , CASE WHEN clients_claims_handler_surname_forename IN ('Spinks, Stephen','Lockheart, Steven','Bokhari, Iram','Rogers, Elizabeth','Nicolaou, Andy','Tuer, Robert') THEN 1 ELSE 0 END AS [London Casualty Team Matters]
 		   , dim_detail_client.axa_instruction_type
-
-
+		   ,fact_detail_elapsed_days.[elapsed_days_damages]
+		   , fact_detail_elapsed_days.[elapsed_days_costs]
 
 
     FROM red_dw.dbo.fact_dimension_main
@@ -186,7 +186,9 @@ BEGIN
 			LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 			ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 
-		
+		 LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days
+            ON fact_detail_elapsed_days.client_code = dim_matter_header_current.client_code
+			AND  fact_detail_elapsed_days.matter_number = dim_matter_header_current.matter_number
 		
 
 
