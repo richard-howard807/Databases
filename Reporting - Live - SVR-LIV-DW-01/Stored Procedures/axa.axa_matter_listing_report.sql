@@ -128,7 +128,6 @@ BEGIN
 		   , dim_detail_claim.[dst_insured_client_name] AS [DST Insured Client Name]
 		   , dim_detail_core_details.[do_clients_require_an_initial_report] AS [Initial Report Required?]
 		   , dim_detail_core_details.[date_initial_report_due] AS [Date Initial Report Due]
-		   , dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
 		   , dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the claimant have a PI claim?]
 		   , last_bill_date AS [Date of Last Bill]
 		   , last_time_transaction_date AS [Date Last Worked]
