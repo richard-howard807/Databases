@@ -54,7 +54,6 @@ BEGIN
                                        'Other'
                                END,
            -- Extra fields for the dashboard
-           [Date initial report sent] = dim_detail_core_details.date_initial_report_sent,
            [Indemnity Saving] = ISNULL(fact_finance_summary.total_reserve, 0)
                                 - ISNULL(fact_detail_paid_detail.damages_paid, 0)
                                 + ISNULL(fact_finance_summary.total_tp_costs_paid, 0)
