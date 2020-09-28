@@ -19,7 +19,7 @@ GO
 -- JL 13/05/2020 - removed date_instructions_received is not null as per ticket 58054
 -- ES 16/07/2020 - #64836 added client code 220044, amended tp costs paid  detail, added date costs settled, unbilled disbs and unpaid bill balance
 -- JL 22/09/2020 - #72988 added in axa instruction type as per Helen Fox
----------- =============================================
+------------ =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
 BEGIN
@@ -28,6 +28,8 @@ BEGIN
     SELECT [Date instructions received] = dim_detail_core_details.date_instructions_received,
            [Line of Business] = dim_matter_worktype.work_type_name,
            [Weightmans FE] = fee_earner.name,
+		   [Team] = fee_earner.hierarchylevel4hist,
+		   [Department] = fee_earner.hierarchylevel3hist,
            [Weightmans Reference ] = RTRIM(fact_dimension_main.client_code) + '-' + fact_dimension_main.matter_number,
            [AXA CS Handler] = dim_detail_core_details.clients_claims_handler_surname_forename,
            [AXA CS Reference] = ISNULL(client_ref.insurerclient_reference,insrref.reference),
