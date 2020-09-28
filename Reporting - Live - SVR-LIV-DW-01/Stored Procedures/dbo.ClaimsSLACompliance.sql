@@ -8,50 +8,23 @@ GO
 -- Create date: 2019-10-28
 -- Description:	New report for Claims SLA Compliance
 -- =============================================
+-- ===========================================================================================================================
+-- Changed SP to populate Reporting.dbo.ClaimsSLAComplianceTable instead, to speed up the report rather than running it live
+-- ===========================================================================================================================
 
 CREATE PROCEDURE [dbo].[ClaimsSLACompliance]
-	(
-	@Team AS VARCHAR(MAX) 
-	,@Name AS VARCHAR(MAX)
-	,@StartDate AS DATE
-	,@EndDate AS DATE
-	,@ClientGroup AS VARCHAR(MAX) 
-	,@Status AS VARCHAR(MAX) 
-	,@PresentPosition AS VARCHAR(MAX) 
-	
-)
+
 AS
 BEGIN
-
-	--For testing purposes
-	--===========================================================
-	--DECLARE  @Team AS VARCHAR(MAX) = 'Motor Management'
-	--,@Name AS VARCHAR(MAX) = '1856'
-	--,@StartDate AS DATE = '2020-02-24'
-	--,@EndDate AS DATE = '2020-08-24'
-	--,@PresentPosition AS VARCHAR(MAX) = 'Claim and costs concluded but recovery outstanding|Claim and costs outstanding|Claim concluded but costs outstanding|Final bill due - claim and costs concluded|Final bill sent - unpaid|Missing|To be closed/minor balances to be clear'            
-	--,@ClientGroup AS VARCHAR(MAX)  = 'None'
-	--,@Status AS VARCHAR (30) = 'Open|Closed'
-
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
-	IF OBJECT_ID('tempdb..#Name') IS NOT NULL   DROP TABLE #Name
-	IF OBJECT_ID('tempdb..#ClientGroup') IS NOT NULL   DROP TABLE #ClientGroup
-	IF OBJECT_ID('tempdb..#PresentPosition') IS NOT NULL   DROP TABLE #PresentPosition
-	IF OBJECT_ID('tempdb..#Status') IS NOT NULL   DROP TABLE #Status
+	IF OBJECT_ID('Reporting.dbo.ClaimsSLAComplianceTable') IS NOT NULL DROP TABLE  Reporting.dbo.ClaimsSLAComplianceTable
+
 	IF OBJECT_ID('tempdb..#FICProcess') IS NOT NULL DROP TABLE #FICProcess
 	IF OBJECT_ID('tempdb..#ClientReportDates') IS NOT NULL DROP TABLE #ClientReportDates
-
-	SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
-	SELECT ListValue  INTO #Name FROM 	dbo.udt_TallySplit('|', @Name)
-	SELECT ListValue  INTO #ClientGroup FROM 	dbo.udt_TallySplit('|', @ClientGroup)
-	SELECT ListValue  INTO #PresentPosition FROM 	dbo.udt_TallySplit('|', @PresentPosition)
-	SELECT ListValue  INTO #Status FROM 	dbo.udt_TallySplit('|', @Status)
-
 
 	SELECT fileID, tskDesc, tskDue, tskCompleted 
 	INTO #FICProcess
@@ -123,16 +96,6 @@ BEGIN
 				AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 		LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
 			ON days.master_fact_key = fact_dimension_main.master_fact_key
-		INNER JOIN #Team AS Team 
-			ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
-		INNER JOIN #Name AS Name 
-			ON Name.ListValue COLLATE DATABASE_DEFAULT = fee_earner_code COLLATE DATABASE_DEFAULT
-		INNER JOIN #ClientGroup AS ClientGroup 
-			ON ISNULL(CASE WHEN dim_matter_header_current.client_group_name = '' THEN 'None' ELSE dim_matter_header_current.client_group_name END,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
-		INNER JOIN #PresentPosition AS Position 
-			ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(dim_detail_core_details.present_position,'Missing') COLLATE DATABASE_DEFAULT
-		INNER JOIN #Status AS [Status] 
-			ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
 		LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
 			ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
 	WHERE 
@@ -140,7 +103,6 @@ BEGIN
 		AND hierarchylevel2hist = 'Legal Ops - Claims'
 		AND (date_closed_case_management IS NULL 
 			OR date_closed_case_management >= '2017-01-01')
-		AND ((dim_matter_header_current.date_opened_case_management >= @StartDate OR @StartDate IS NULL) AND  dim_matter_header_current.date_opened_case_management <= @EndDate OR @EndDate IS NULL) 
 					
 --=========================================================================================================================================================================================================================================================================
 --=========================================================================================================================================================================================================================================================================
@@ -148,6 +110,7 @@ BEGIN
 
 SELECT 
 	client_name AS [Client Name]
+	, dim_matter_header_current.client_group_name
 	, dim_matter_header_current.master_client_code
 	, dim_matter_header_current.master_matter_number
 	, dim_matter_header_current.client_code AS [Client Code]
@@ -166,21 +129,16 @@ SELECT
 	, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, date_initial_report_sent AS [Date Initial Report Sent]
 	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
-	--, receipt_of_instructions AS [Date Receipt of File Papers]
 	, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Receipt of File Papers]
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, #ClientReportDates.initial_report_due				AS [Date Initial Report Due (if extended)]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
-	--, CASE WHEN date_initial_report_due IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, GETDATE()) ELSE NULL END AS [Days without Initial Report]
 	, CASE WHEN do_clients_require_an_initial_report = 'No' THEN NULL
-	--WHEN dim_detail_core_details.delegated='Yes' THEN NULL
 		WHEN date_initial_report_sent IS NOT NULL THEN NULL
 		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())
 		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
-	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent) AS [Days to Send Subsequent Report]
-
 	, CASE 
 		WHEN do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
@@ -196,13 +154,6 @@ SELECT
 		ELSE
 			NULL
 	  END				AS [Days without Subsequent Report]
---	, CASE WHEN ISNULL(do_clients_require_an_initial_report,'Yes')='No' THEN NULL 
---	WHEN date_subsequent_sla_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, GETDATE()) 
---	WHEN date_subsequent_sla_report_sent IS NOT NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(date_subsequent_sla_report_sent, GETDATE()) 
---	WHEN date_claim_concluded IS NOT NULL THEN NULL
---	WHEN date_costs_settled IS NOT NULL THEN NULL
-
---ELSE NULL END AS [Days without Subsequent Report]
 	, 1					AS [Number of Files]
 	,CASE WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN NULL ELSE days.days_to_first_report_lifecycle END AS avglifecycle 
 	, days.days_to_first_report_lifecycle
@@ -228,20 +179,6 @@ SELECT
 			ELSE 
 				'Transparent' 
 	  END					AS [File Opening RAG]
-	--, CASE 
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<0 THEN 
-	--			'Orange'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<=[Initial Report SLA (days)] THEN 
-	--			'LimeGreen'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))>[Initial Report SLA (days)] THEN 
-	--			'Red'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))<=10 THEN 
-	--			'LimeGreen'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent))>10 THEN 
-	--			'Red'
-	--		ELSE 
-	--			'Transparent' 
-	--	END				AS [Initial Report RAG]
 	, CASE 
 			WHEN date_initial_report_sent IS NULL AND 
 				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS  DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
@@ -255,15 +192,6 @@ SELECT
 			ELSE 
 				'Transparent' 
 		END					AS [NEW Initial Report RAG]
-				
-	--, CASE WHEN date_subsequent_sla_report_sent IS NULL THEN 'Amber'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<0 THEN 'Orange'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=[Update Report SLA (days)] THEN 'LimeGreen'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>[Update Report SLA (days)] THEN 'Red'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))>63 THEN 'Red'
-	--		WHEN (dbo.ReturnElapsedDaysExcludingBankHolidays(date_initial_report_sent, date_subsequent_sla_report_sent))<=63 THEN 'LimeGreen'
-	--		ELSE 'Transparent' END [Update Report RAG]
-
 	, CASE 
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			'Orange'
@@ -291,26 +219,6 @@ SELECT
 			'LimeGreen'
 	  END								 AS RagWithouthSub
 	,referral_reason
-	--,  CASE 
-	--	WHEN date_initial_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' 
-	--		AND #ClientReportDates.initial_report_due < GETDATE()-1 THEN 
-	--		1 
-	--	ELSE 
-	--		0 
-	--  END				AS NoBlankInitial
-
-	--, CASE 
-	--	WHEN (date_subsequent_sla_report_sent IS NULL AND ISNULL(do_clients_require_an_initial_report,'Yes')='Yes' AND 
-	--			RTRIM(dim_detail_core_details.present_position) NOT IN (
-	--																	'Final bill due - claim and costs concluded',
-	--																	'Final bill sent - unpaid',
-	--																	'To be closed/minor balances to be clear'            
-	--																) 
-	--			AND GETDATE() > DATEADD(DAY, ISNULL(ClientSLAs.[Update Report SLA (days)], 90), dim_matter_header_current.date_opened_case_management))  THEN 
-	--		1
-	--	ELSE 
-	--		0 
-	--  END				 AS NoBlankSub
 	, dim_detail_core_details.delegated
 	, CASE 
 		WHEN do_clients_require_an_initial_report = 'No' OR
@@ -354,7 +262,7 @@ SELECT
 			0
 	  END				AS [Subsequent Report is Overdue]
 
-
+INTO Reporting.dbo.ClaimsSLAComplianceTable
 FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -367,16 +275,6 @@ FROM red_dw.dbo.fact_dimension_main
 			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
 		ON days.master_fact_key = fact_dimension_main.master_fact_key
-	INNER JOIN #Team AS Team 
-		ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
-	INNER JOIN #Name AS Name 
-		ON Name.ListValue COLLATE DATABASE_DEFAULT = fee_earner_code COLLATE DATABASE_DEFAULT
-	INNER JOIN #ClientGroup AS ClientGroup 
-		ON ISNULL(CASE WHEN dim_matter_header_current.client_group_name = '' THEN 'None' ELSE dim_matter_header_current.client_group_name END,'None')=ClientGroup.ListValue COLLATE DATABASE_DEFAULT
-	INNER JOIN #PresentPosition AS Position 
-		ON RTRIM(Position.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(dim_detail_core_details.present_position,'Missing') COLLATE DATABASE_DEFAULT
-	INNER JOIN #Status AS [Status] 
-		ON RTRIM([Status].ListValue)  = (CASE WHEN dim_matter_header_current.date_closed_case_management  IS NULL THEN 'Open' ELSE 'Closed' END) COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN #FICProcess FICProcess 
 		ON FICProcess.fileID = ms_fileid
 	LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
@@ -390,7 +288,6 @@ WHERE
 	AND hierarchylevel2hist='Legal Ops - Claims'
 	AND (date_closed_case_management IS NULL 
 		OR date_closed_case_management>='2017-01-01')
-	AND ((dim_matter_header_current.date_opened_case_management >= @StartDate OR @StartDate IS NULL) AND  dim_matter_header_current.date_opened_case_management<=  @EndDate  OR @EndDate IS NULL) 
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
 	AND (dim_detail_core_details.referral_reason IS NULL OR RTRIM(LOWER(dim_detail_core_details.referral_reason)) <> 'in house')
@@ -402,8 +299,11 @@ WHERE
 		'738632-3', '451638-204', '451638-208', '901838-1', '451638-236', 'N1001-7080', '113147-448', '113147-1036', '451638-1120', 'W16551-1', '13994-7', 
 		'A2002-14012', 'W18337-2', 'M00001-11111288', '659-8', 'W18791-1', '113147-1749', '468733-8', '113147-1823', 'TR00023-1001', '610426-135', 
 		'N1001-16961', '662257-2', 'W19835-1', '113147-2016', 'W15508-229', '10466-103', 'W18762-5', 'W15414-23', 'W20163-69', 'N1001-17768', '720451-1029', 
-		'W17369-25', '113147-2543', '113147-2592', '451638-3592', '451638-3667', '451638-3751', 'W23663-1', 'W23671-1', 'W23696-1'
+		'W17369-25', '113147-2543', '113147-2592', '451638-3592', '451638-3667', '451638-3751', 'W23663-1', 'W23671-1', 'W23696-1', 'TR00023-999', 'TR00010-999',
+		'N1001-8667', 'N1001-9879', 'N1001-13752', 'N1001-7817', 'R1001-5933', '739845-99', 'W15572-721', '748359-999', 'W15434-166', '9008076-900999', '1328-227'
 		)
 END
+
+
 
 GO
