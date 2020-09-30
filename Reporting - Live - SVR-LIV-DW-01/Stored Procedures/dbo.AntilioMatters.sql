@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[AntilioMatters]
 AS
 BEGIN
@@ -20,7 +21,7 @@ SELECT master_client_code + '-' + master_matter_number AS [WeightmansReference]
 ,dim_detail_outcome.[date_claim_concluded] AS [Date Claim Concluded]
 ,fact_finance_summary.[damages_paid_to_date] AS [Damages Paid]
 ,dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
-,fact_finance_summary.[total_tp_costs_paid_to_date] AS [TP Costs Paid ]
+,fact_finance_summary.[claimants_costs_paid] AS [TP Costs Paid ]
 ,fact_detail_elapsed_days.[elapsed_days_damages] AS [Elapsed Days to Damages Concluded]
 
 FROM red_dw.dbo.dim_matter_header_current
@@ -50,5 +51,5 @@ WHERE master_client_code='W21348'
 AND reporting_exclusions=0
 AND proceedings_issued='Yes'
 AND date_closed_case_management IS NULL
-ENd
+END
 GO

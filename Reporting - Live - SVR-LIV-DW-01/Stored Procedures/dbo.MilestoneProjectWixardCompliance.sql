@@ -5,6 +5,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[MilestoneProjectWixardCompliance]
 
 AS 
@@ -21,25 +23,31 @@ SELECT hierarchylevel2hist AS Division
 ,CASE WHEN Milestones.Completed=0 THEN 1 ELSE 0 END  AS [WizardIncomplete]
 ,Milestones.DateLastCompleted AS [LastTimeRan]
 ,DATEDIFF(DAY,Milestones.DateLastCompleted,GETDATE()) AS [DaysSinceWizardLastCompleted]
-,client_code AS [Client]
-,matter_number AS [Matter]
+,dim_matter_header_current.client_code AS [Client]
+,dim_matter_header_current.matter_number AS [Matter]
 ,matter_description AS [MatterDescription]
 ,name AS [MatterOwner]
+,dim_matter_header_current.present_position
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+ AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN (SELECT fileID,SUM(CASE WHEN tskComplete=1 THEN 1 ELSE 0 END) AS Completed
 ,SUM(CASE WHEN tskComplete=0 THEN 1 ELSE 0 END) AS Incompleted
 ,MAX(tskCompleted) AS [DateLastCompleted]
-FROM [SVR-LIV-MSP-01].MS_TEST.dbo.dbTasks
+FROM MS_Prod.dbo.dbTasks
 WHERE tskType='MILESTONE'
-AND tskDesc LIKE '%Stage%' AND tskDesc LIKE '%Wizard%'
+AND tskDesc LIKE '%Milestone Wizard%' 
 AND tskactive=1
 GROUP BY fileID) AS Milestones
  ON ms_fileid=Milestones.fileID
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND dss_current_flag='Y' AND activeud=1
 AND date_closed_case_management IS NULL
+AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
+AND ISNULL(referral_reason,'')<>'Advice only'
 
 
 END

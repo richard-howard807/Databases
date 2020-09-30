@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 --================================================
 --ES 20200713 #64332
 
@@ -23,7 +26,7 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 ,txtClaNum2 AS [ClaimNumber]
 ,txtCurenStatNot AS [Reporting Notes]
 ,usrFullName AS [WeightmansHandler]
-,CASE WHEN fileStatus ='LIVE' THEN 'Open' ELSE 'Closed' END AS FileStatus
+,CASE WHEN CostcutterStatus.dteSettled IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
 ,dbFile.Created AS [DateOpened]
 ,fileClosed AS [DateClosed]
 ,DATEDIFF(DAY,dbFile.Created,fileClosed) AS [DaysOpened]
@@ -38,15 +41,16 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 WHEN CostcutterStatus='Insolvency' THEN CostcutterStatus + ' - ' + InsolvancyStatus	
 WHEN CostcutterStatus='Insolvency Proceedings' THEN 'Insolvency Proceedings'
 WHEN CostcutterStatus='Post Judgment Enforcement' THEN CostcutterStatus + ' - ' + CostcutterStatus.EnforcementStatus	
-WHEN CostcutterStatus='Pre Proceedings' THEN CostcutterStatus + ' - ' + CostcutterStatus.PreStatus
+WHEN CostcutterStatus LIKE 'Pre Proceedings%' THEN CostcutterStatus + ' - ' + CostcutterStatus.PreStatus
 END AS CostcutterStatus
-,CASE WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyType='Personal Insolvency'  THEN CostcutterStatus.InsolvancyType + '-' + CostcutterStatus.Personal 
+,CASE WHEN CostcutterStatus LIKE 'Pre Proceedings%' THEN 'N/A'
+WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyType='Personal Insolvency'  THEN CostcutterStatus.InsolvancyType + '-' + CostcutterStatus.Personal 
 WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyType='Corporate and Personal Insolvency'  THEN CostcutterStatus.InsolvancyType + '-' + CostcutterStatus.Corporate
 END AS [Insolvency proceedings]
-,CASE WHEN CostcutterStatus='Court Proceedings' THEN CostcutterStatus.CourtStatus ELSE NULL END AS [Court proceedings]
+,CASE WHEN CostcutterStatus LIKE 'Pre Proceedings%'  THEN 'N/A' WHEN CostcutterStatus='Court Proceedings' THEN CostcutterStatus.CourtStatus ELSE NULL END AS [Court proceedings]
 ,ActionReq AS ActionRequired
 ,HearingDate
-,defence_costs_billed AS [Revenue]
+,ISNULL(defence_costs_billed,0) AS [Revenue]
 ,CostcutterStatus.CostsRecovered AS [Costs Recovered from o/s]
 ,(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0) AS [Net Payment to Costcutter £]
 ,CASE WHEN (ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0)<=0 THEN NULL ELSE defence_costs_billed/(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0)) END AS [Net % to Costcutter]
@@ -71,6 +75,7 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRInsolvency
  ON udCRInsolvency.fileID = dbFile.fileID
 LEFT OUTER JOIN MS_Prod.dbo.udCRIssueDetails
  ON udCRIssueDetails.fileID = dbFile.fileID
+
 LEFT OUTER JOIN 
 (
 SELECT MS_Prod.dbo.udCRLedgerSL.fileID
@@ -124,6 +129,7 @@ SELECT fileID
 ,ActionReq.cdDesc AS ActionReq
 ,curTermination AS [Termination]
 ,curCostRecOS AS [CostsRecovered]
+,dteSettled
 FROM ms_prod.dbo.udCRCostcutterDetails
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus
  ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'

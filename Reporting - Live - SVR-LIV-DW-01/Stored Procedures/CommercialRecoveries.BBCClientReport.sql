@@ -12,11 +12,14 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BBCClientReport]
 AS
 BEGIN
 SELECT dbFile.fileID 
 ,clNo
+,MS_Prod.config.dbFile.Created AS [Date Opened]
+,MS_Prod.config.dbFile.fileClosed AS [Date Closed]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [Date Inst Rcvd]
 ,txtCliRef AS [GK Account No]
 ,NULL AS [In/Out]

@@ -8,6 +8,7 @@ GO
 
 
 
+
 --SELECT * FROM red_dw.dbo.dim_fed_hierarchy_history WHERE name LIKE 'Adrian%'
 
 
@@ -121,7 +122,8 @@ WHEN cboCliBalance='NOACTION' THEN 'No Action Required'
 WHEN cboCliBalance='ACTION' THEN 'Action Required' End cboCliBalance
 ,txtCommentCli	 txtCommentsCli
 ,dteLastReview
-	
+,FileReferences.insuredclient_reference
+,FileReferences.insurerclient_reference		
 				
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
@@ -178,7 +180,12 @@ FROM
 						FROM red_dw.dbo.dim_fed_hierarchy_current
 						WHERE dss_current_flag='Y') AS Teams
 	 ON fee.usrInits=Teams.fed_code COLLATE DATABASE_DEFAULT
-
+	LEFT OUTER JOIN (
+	SELECT ms_fileid,insuredclient_reference,insurerclient_reference FROM red_dw.dbo.dim_client_involvement
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.client_code = dim_client_involvement.client_code
+ AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
+  ON dbFile.fileID=FileReferences.ms_fileid
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
 		AND Teams.fed_code NOT IN ('5182','5214','5246','6023','6102','6302','6437'
@@ -228,7 +235,9 @@ SELECT DISTINCT
 WHEN cboCliBalance='NOACTION' THEN 'No Action Required'   
 WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,txtCommentCli	txtCommentsCli
-,dteLastReview					
+,dteLastReview	
+,FileReferences.insuredclient_reference
+,FileReferences.insurerclient_reference	
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
 			,COALESCE(MAX(CASE WHEN  PositiveBalance=1  THEN  [post_date] ELSE NULL END)
@@ -280,7 +289,12 @@ FROM
 	FROM red_dw.dbo.dim_fed_hierarchy_current
 	WHERE dss_current_flag='Y') AS Teams
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
-
+	LEFT OUTER JOIN (
+	SELECT ms_fileid,insuredclient_reference,insurerclient_reference FROM red_dw.dbo.dim_client_involvement
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.client_code = dim_client_involvement.client_code
+ AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
+  ON dbFile.fileID=FileReferences.ms_fileid
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
 		AND Teams.fed_code NOT IN ('5182','5214','5246','6023','6102','6302','6437'

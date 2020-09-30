@@ -49,7 +49,7 @@ SELECT Combined.SourceSystemID
 ,[ModifiedDate]
 
 FROM 
-(SELECT  CAST('\\fw1\documents\' + CAST(CAST(REPLACE(Client,'FW','') AS INT) AS VARCHAR(MAX)) + '\' + CAST(CAST(Matter AS INT) AS VARCHAR(MAX)) + '\' 
+(SELECT  CAST('\\svr-liv-fs-09\Documents\' + CAST(CAST(REPLACE(Client,'FW','') AS INT) AS VARCHAR(MAX)) + '\' + CAST(CAST(Matter AS INT) AS VARCHAR(MAX)) + '\' 
 + REPLACE(REPLACE(REPLACE((SUBSTRING([Document Source],CHARINDEX('>',[Document Source])+1,LEN([Document Source]))),'See document',''),'<\a>',''),' ','')  AS VARCHAR(1000)) AS [DocumentSource]
 ,CAST(LEFT([Additional Description],150) AS VARCHAR(150))  AS [DocumentTitle]
 ,CAST([DocumentNumber] AS VARCHAR(1000))AS [DocumentNumber] 
@@ -64,7 +64,7 @@ SourceSystemID
 ,[Date Added]
 ,CAST(ROW_NUMBER() OVER(ORDER BY [Additional Description] ASC)  AS VARCHAR(100)) AS [DocumentNumber]
 ,REPLACE(REPLACE((SUBSTRING([Additional Description],CHARINDEX('<a',[Additional Description])+1,LEN([Additional Description])))
-,'a href=file://fw1/Documents/','\\fw1\documents'),'/','\') AS [Document Source]
+,'a href=file://fw1/Documents/','\\svr-liv-fs-09\Documents'),'/','\') AS [Document Source]
 ,[Additional Description]
 ,Client,Matter
  FROM #FWDocsUnstructuredReport

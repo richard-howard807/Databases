@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceTMEMail] 
 (
 @EmailAddress AS NVARCHAR(MAX)
@@ -58,7 +59,8 @@ WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,dteLastReview
 ,TMName
 ,[TMEmail]
-				
+,FileReferences.insuredclient_reference
+,FileReferences.insurerclient_reference
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
 			,COALESCE(MAX(CASE WHEN  PositiveBalance=1  THEN  [post_date] ELSE NULL END)
@@ -116,7 +118,12 @@ FROM
 						 ON  dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 						WHERE dss_current_flag='Y' AND activeud=1) AS Teams
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
-
+	LEFT OUTER JOIN (
+	SELECT ms_fileid,insuredclient_reference,insurerclient_reference FROM red_dw.dbo.dim_client_involvement
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.client_code = dim_client_involvement.client_code
+ AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
+  ON dbFile.fileID=FileReferences.ms_fileid
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
 	AND Teams.TMEmail NOT IN ('john.schorah@weightmans.com','stuart.jones@weightmans.com','andrew.cooper@weightmans.com')
@@ -165,7 +172,8 @@ WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,dteLastReview
 ,TMName
 ,[TMEmail]
-				
+,FileReferences.insuredclient_reference
+,FileReferences.insurerclient_reference				
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
 			,COALESCE(MAX(CASE WHEN  PositiveBalance=1  THEN  [post_date] ELSE NULL END)
@@ -223,6 +231,12 @@ FROM
 						 ON  dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 						WHERE dss_current_flag='Y' AND activeud=1) AS Teams
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
+	LEFT OUTER JOIN (
+	SELECT ms_fileid,insuredclient_reference,insurerclient_reference FROM red_dw.dbo.dim_client_involvement
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.client_code = dim_client_involvement.client_code
+ AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
+  ON dbFile.fileID=FileReferences.ms_fileid
 
 	WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 	AND Teams.hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
