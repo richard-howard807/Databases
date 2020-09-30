@@ -6,3 +6,11 @@ CREATE TABLE [Accounts].[LocalGovernmentClients]
 [Ranking] [bigint] NULL
 ) ON [PRIMARY]
 GO
+GRANT DELETE ON  [Accounts].[LocalGovernmentClients] TO [SBC\DWH_SSASAdmin]
+GO
+GRANT INSERT ON  [Accounts].[LocalGovernmentClients] TO [SBC\DWH_SSASAdmin]
+GO
+GRANT SELECT ON  [Accounts].[LocalGovernmentClients] TO [SBC\DWH_SSASAdmin]
+GO
+GRANT UPDATE ON  [Accounts].[LocalGovernmentClients] TO [SBC\DWH_SSASAdmin]
+GO
