@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-
+--SELECT * FROM dbo.IA_Client_Data
 
 
 CREATE PROCEDURE [dbo].[IAClientData]
@@ -17,7 +17,7 @@ BEGIN
 SELECT opportunitysn AS [Opportunity Number]
 	,Company.dim_client_key AS dim_client_key
 	,ISNULL(target_company,Company.client_name) AS [Client Name]
-	,Company.generator_status AS [Client Category]
+	,Lists.list_name AS [Client Category]
 	,dim_be_opportunities.title AS [Opportunity Name]
 	,type AS [Opportunity Type]
 	,dim_be_opportunities.client_type AS [Revenue Type]
@@ -57,7 +57,7 @@ SELECT opportunitysn AS [Opportunity Number]
 	,close_date AS ActualClosedDate
 
 INTO dbo.IA_Client_Data
-
+--SELECT *
 FROM red_dw.dbo.dim_be_opportunities
 LEFT JOIN red_dw.dbo.fact_be_opportunities
  ON fact_be_opportunities.dim_be_opportunities_key = dim_be_opportunities.dim_be_opportunities_key
@@ -71,31 +71,30 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=Company.client_partner_code AND dss_current_flag='Y'
  LEFT OUTER JOIN red_dw.dbo.dim_employee AS [Lead]
  ON [Lead].dim_employee_key=dim_lead_emp_key
-LEFT OUTER JOIN (SELECT dim_client_key
-,MAX(activity_calendar_date) AS NextEngement
- FROM red_dw.dbo.dim_ia_activities
-INNER JOIN red_dw.dbo.dim_activity_date
- ON activity_date_key=dim_activity_date_key
+
+LEFT OUTER JOIN ( SELECT DISTINCT companyid
+,MIN(activity_date) AS [NextEngement]
+FROM red_dw.dbo.dim_ia_activities
 INNER JOIN red_dw.dbo.dim_ia_activity_type
  ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
- --Maybe have filter activity type
- GROUP BY dim_client_key
- HAVING MAX(activity_calendar_date)>=GETDATE()) AS NextEngement
-  ON NextEngement.dim_client_key = Company.dim_client_key
+ WHERE dim_ia_activities.activity_date>GETDATE()+1
+ GROUP BY companyid) AS NextEngement
+  ON NextEngement.companyid = dim_be_opportunities.ia_client_id
+
 LEFT OUTER JOIN 
 (
- SELECT dim_client_key
+ SELECT companyid
 ,MAX(activity_calendar_date) AS LastEngement
  FROM red_dw.dbo.dim_ia_activities
 INNER JOIN red_dw.dbo.dim_activity_date
  ON activity_date_key=dim_activity_date_key
 INNER JOIN red_dw.dbo.dim_ia_activity_type
  ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
- --Maybe have filter activity type
- GROUP BY dim_client_key
- HAVING MAX(activity_calendar_date)<GETDATE()
+WHERE dim_ia_activities.activity_date<=GETDATE()
+ GROUP BY companyid
 ) AS LastEngement
- ON LastEngement.dim_client_key = Company.dim_client_key
+ ON LastEngement.companyid = dim_be_opportunities.ia_client_id
+
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS Revenue
 FROM red_dw.dbo.fact_bill_activity
 INNER JOIN red_dw.dbo.dim_bill_date
@@ -108,6 +107,7 @@ GROUP BY  segment,sector
 ) AS ActualRevenue
  ON ActualRevenue.sector = COALESCE(Company.sector,industries)
  AND  ActualRevenue.segment = COALESCE(Company.segment,practice_groups)
+
 LEFT OUTER JOIN 
 (
 SELECT segmentname,sectorname,SUM(target_value) AS TargetRevenue FROM red_dw.dbo.fact_segment_target_upload
@@ -119,8 +119,22 @@ GROUP BY segmentname,sectorname
  AND COALESCE(Company.segment,practice_groups)=Targets.segmentname
 --WHERE Company.dim_client_key <>0
 --AND Company.client_name IS NOT NULL
+
+LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
+	, dim_ia_lists.list_name
+	, dim_ia_contact_lists.ia_client_id
+	  FROM red_dw.dbo.dim_ia_lists
+	  INNER JOIN red_dw.dbo.dim_ia_contact_lists ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
+	  where dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
+	  AND dim_ia_contact_lists.dim_client_key<>0) AS [Lists]
+	  ON Lists.ia_client_id=dim_be_opportunities.ia_client_id
+
 WHERE UPPER(dim_be_opportunities.title)  NOT LIKE '%TEST%' AND UPPER(dim_be_opportunities.title)  NOT LIKE '%ERROR%'
+--AND dim_be_opportunities.target_company='Zurich Insurance Plc'
+
+ORDER BY [Client Name]
 END
 
 --SELECT * FROM red_dw.dbo.dim_be_opportunities
+--WHERE dim_be_opportunities.target_company='4th Dimension Innovation Ltd'
 GO

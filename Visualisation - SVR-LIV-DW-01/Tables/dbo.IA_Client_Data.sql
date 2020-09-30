@@ -3,7 +3,7 @@ CREATE TABLE [dbo].[IA_Client_Data]
 [Opportunity Number] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [dim_client_key] [int] NOT NULL,
 [Client Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
-[Client Category] [varchar] (50) COLLATE Latin1_General_BIN NULL,
+[Client Category] [nvarchar] (150) COLLATE Latin1_General_BIN NULL,
 [Opportunity Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Opportunity Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Revenue Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,

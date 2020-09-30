@@ -368,8 +368,8 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		--advice details
 		, dim_detail_advice.client AS [Client]
         , dim_detail_advice.issue AS [Issue]
-        , dim_detail_advice.job_title_of_caller_tgipe AS [Job Title of Caller]
-        , dim_detail_advice.job_title_of_employee AS [Job Title of Employee]
+        , REPLACE(dim_detail_advice.job_title_of_caller_tgipe,'Do not use - ','') AS [Job Title of Caller]
+        , REPLACE(dim_detail_advice.job_title_of_employee,'Do not use - ','') AS [Job Title of Employee]
 		, dim_detail_advice.job_title_of_caller_pizza_hut [Job Title of Caller PH]
         , dim_detail_advice.name_of_caller AS [Name of Caller]
         , dim_detail_advice.name_of_employee AS [Name of Employee]
@@ -377,10 +377,10 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 
         , dim_detail_advice.secondary_issue AS [Secondary Issue]
 		, dim_detail_advice.region AS [Region]
-        , dim_detail_advice.[site] AS [Site]
+        , REPLACE(dim_detail_advice.[site],'Do not use - ','') AS [Site]
         , dim_detail_advice.[status] AS [Status]
         , dim_detail_advice.employment_start_date  AS [Employment Start Date]
-        , dim_detail_advice.[tgif_classification] AS [TGIF Classifications]
+        , REPLACE(dim_detail_advice.[tgif_classification],'Do not use - ','') AS [TGIF Classifications]
         , dim_detail_advice.[outcome] AS [Advice Outcome] 
         , dim_detail_advice.issue_hr AS [Issue HR]
         , dim_detail_advice.job_title_of_caller_hr  AS [Job Title of Caller HR]
@@ -636,7 +636,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail
 LEFT OUTER JOIN red_dw.dbo.dim_detail_plot_details ON dim_detail_plot_details.dim_detail_plot_detail_key = fact_dimension_main.dim_detail_plot_detail_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting ON fact_detail_cost_budgeting.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_advice ON dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
-LEFT OUTER JOIN Visualisation.[dbo].[TGIPostcodes] ON RTRIM([TGIPostcodes].Branch)=dim_detail_advice.site COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN Visualisation.[dbo].[TGIPostcodes] ON RTRIM([TGIPostcodes].Branch)=REPLACE(dim_detail_advice.[site],'Do not use - ','') COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
