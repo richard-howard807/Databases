@@ -129,9 +129,9 @@ and fin_year=(select  fin_year from red_dw.dbo.dim_date
 				AND fin_day_in_month = 1 )
 --AND fact_write_off_monthly.client_code = 'W19106' AND fact_write_off_monthly.matter_number = '00000002'
 --and [matter_owner]='4972'
-and dim_fed_hierarchy_history.fed_code in 
+and dim_fed_hierarchy_history.dim_fed_hierarchy_history_key in 
 (
-select (case when @Level = 'Firm' then dim_fed_hierarchy_history.fed_code else NULL END) 
+select (case when @Level = 'Firm' then dim_fed_hierarchy_history.dim_fed_hierarchy_history_key else NULL END) 
 from red_dw.dbo.dim_fed_hierarchy_history
 union
 select (case when @Level IN ('Individual', 'Area Managed') then ListValue else null end) from #FedCodeList WHERE #FedCodeList.ListValue <> 'Unknown'
