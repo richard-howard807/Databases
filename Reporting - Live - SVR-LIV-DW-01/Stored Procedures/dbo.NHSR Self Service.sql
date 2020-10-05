@@ -15,7 +15,7 @@ GO
 -- RH 20200604 Added cost handler revenue #55807
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
 -- RH 20200812 Added NHS fin years instead of Weightmans 
-
+-- JB 20201005 Added percent_of_clients_liability_awarded_agreed_post_insts_applied and settlement_on_litigation_risk_basis, after outcome of case
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -341,6 +341,8 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            END AS [Other Defendant's Costs Reserve (Net)],
            fact_detail_future_care.disease_total_estimated_settlement_value AS [Disease Total Estimated Settlement Value ],
            dim_detail_outcome.[outcome_of_case] AS [Outcome of Case],
+		   fact_detail_client.percent_of_clients_liability_awarded_agreed_post_insts_applied	AS [Percent of Clients Liability Agreed/Awarded],
+		   dim_detail_outcome.settlement_on_litigation_risk_basis		AS [Percent Estimate of Reduction for Litigation Risk],
            dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis],
            dim_detail_court.[date_of_trial] AS [Date of Trial],
            dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
