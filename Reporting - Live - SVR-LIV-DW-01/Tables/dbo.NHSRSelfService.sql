@@ -109,6 +109,8 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Other Defendant's Costs Reserve (Net)] [numeric] (13, 2) NULL,
 [Disease Total Estimated Settlement Value ] [numeric] (13, 2) NULL,
 [Outcome of Case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Percent of Clients Liability Agreed/Awarded] [numeric] (13, 2) NULL,
+[Percent Estimate of Reduction for Litigation Risk] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Settlement basis] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Date of Trial] [datetime] NULL,
 [Date Claim Concluded] [datetime] NULL,
