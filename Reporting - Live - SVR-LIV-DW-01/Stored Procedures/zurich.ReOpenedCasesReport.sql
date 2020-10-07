@@ -24,8 +24,8 @@ BEGIN
     -- For Testing Purposes
 	--DECLARE @StartDate Datetime
 	--DECLARE @EndDate Datetime
-	--SET @StartDate = '20160701'
-	--SET @EndDate = '20160727'
+	--SET @StartDate = '20200930'
+	--SET @EndDate = '20201007'
 
 
 	DROP TABLE IF EXISTS  [tempdb].dbo.#results;
@@ -83,7 +83,7 @@ GROUP BY ms_fileid
 		, claimant_name [Claimant Name]
 		, date_instructions_received		[Date Instructed] 
 		, date_claim_concluded			[Date Settled]
-		, reason_for_settlement		[Reason fo Settlement]
+		, dim_detail_claim.reason_for_settlement		[Reason fo Settlement]
 		, reason_for_reopening_request			[Reason for Reopening Request]
 		, converge_disease_reserve			[Current Reserve]
 		, dim_detail_critical_mi.claim_status
