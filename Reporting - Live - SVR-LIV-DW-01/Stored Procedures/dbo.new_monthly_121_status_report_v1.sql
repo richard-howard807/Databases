@@ -168,6 +168,7 @@ INNER JOIN #Department AS Department ON Department.ListValue COLLATE DATABASE_DE
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel4hist COLLATE DATABASE_DEFAULT
 
 WHERE 	(red_dw.dbo.dim_employee.leftdate IS NULL OR red_dw.dbo.dim_employee.leftdate > GETDATE()) 
+		AND (dim_employee.leaverlastworkdate IS NULL OR dim_employee.leaverlastworkdate > GETDATE())
 		AND ISNULL(dim_fed_hierarchy_history.leaver, 0) = 0
 		AND LOWER(red_dw.dbo.dim_employee.jobtitle) NOT LIKE '%trainee%'
 		AND red_dw.dbo.dim_employee.employeestartdate <= @StartDate
