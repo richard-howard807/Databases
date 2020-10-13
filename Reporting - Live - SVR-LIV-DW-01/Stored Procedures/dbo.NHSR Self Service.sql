@@ -16,6 +16,7 @@ GO
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
 -- RH 20200812 Added NHS fin years instead of Weightmans 
 -- JB 20201005 Added percent_of_clients_liability_awarded_agreed_post_insts_applied and settlement_on_litigation_risk_basis, after outcome of case
+-- JB 20201013 Added reason_for_settlement as requested by Emma James
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -346,6 +347,7 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis],
            dim_detail_court.[date_of_trial] AS [Date of Trial],
            dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
+		   dim_detail_outcome.reason_for_settlement	AS [Reason For Settlement],
            fact_finance_summary.damages_interims AS [Interim Damages],
            CASE
                WHEN fact_finance_summary.[damages_paid] IS NULL
