@@ -9,7 +9,6 @@ GO
 -- Ticket:		#68460
 -- Description:	New report for NHSR Trusts Quarterly Review
 -- =============================================
-
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
 		@start_date AS DATE
@@ -20,11 +19,12 @@ CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 		, @referral_reason AS VARCHAR(MAX)	
 )
 AS
+
 BEGIN
 
 -- For testing
 --==============================================================================================================================================
---DECLARE @start_date AS DATE = '2020-04-01'
+--DECLARE @start_date AS DATE = '2020-01-01'
 --		, @end_date AS DATE = '2020-08-31'
 --		, @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust' 
 --		, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
@@ -56,6 +56,7 @@ BEGIN
 --============================================================================================================================================================================================
 
 DECLARE @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
+DECLARE @last_year AS DATE = DATEADD(MONTH, -11, GETDATE()+1)-DAY(GETDATE())
 
 -- SET NOCOUNT ON added to prevent extra result sets from
 -- interfering with SELECT statements.
@@ -195,8 +196,10 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND key_date_rag.matter_number = dim_matter_header_current.matter_number
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
+	AND dim_matter_header_current.ms_only = 1
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
+	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
 
 
 --==============================================================================================================================================================
@@ -280,81 +283,132 @@ FROM (
 
 
 SELECT 
-	#rag_status.[Risk Rating]							AS [Risk Rating]
+	CASE
+		WHEN #rag_status.[Risk Rating] = 'Red' THEN
+			'1 - red'
+		WHEN #rag_status.[Risk Rating] = 'Orange' THEN
+			'2 - amber'
+		ELSE
+			'3 - green'
+	END				AS [risk_rating_order]
+	, #rag_status.[Risk Rating]							AS [Risk Rating]
 	, ISNULL(#rag_status.trial_date_rag_trigger + ', ', '') + ISNULL(#rag_status.trial_window_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_publicity_rag_trigger + ', ', '') + 
 		ISNULL(#rag_status.proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_liability_rag_trigger + ', ', '') + ISNULL(RTRIM(#rag_status.key_date_rag_trigger) COLLATE Latin1_General_CI_AS + ', ', '')	+ 
 		ISNULL(#rag_status.no_proceedings_publicity_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_liability_rag_trigger + ', ', '') AS [rag_trigger]
 	, dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
-	, dim_matter_header_current.matter_owner_full_name		AS [Panel Case Handler]
-	, dim_client_involvement.insurerclient_reference		AS [NHSR Ref]
-	, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
-	, dim_detail_health.nhs_scheme		AS [Scheme]
+	--, dim_matter_header_current.matter_owner_full_name		AS [Panel Case Handler]
+	--, dim_client_involvement.insurerclient_reference		AS [NHSR Ref]
+	--, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
+	--, dim_detail_health.nhs_scheme		AS [Scheme]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
 	, dim_claimant_thirdparty_involvement.claimant_name			AS [Claimant Name]
 	, dim_detail_core_details.injury_type		AS [Injury Type]
 	, CAST(dim_detail_core_details.incident_date AS DATE)		AS [Incident Date]
 	, dim_detail_core_details.brief_details_of_claim			AS [Brief Details of Claim]
 	, #witness_list_table.witness_list		AS [Witnesses]
-	, dim_detail_health.nhs_speciality					AS [Specialty]
-	, dim_detail_health.nhs_estimated_financial_year_of_settlement			AS [EYS]
+	, dim_detail_health.nhs_speciality					AS [Speciality]
+	--, dim_detail_health.nhs_estimated_financial_year_of_settlement			AS [EYS]
 	, dim_detail_health.nhs_probability				AS [Probability]
-	, ''		AS [Any Investigation, Complaint, Safeguarding Involvement]
+	--, ''		AS [Any Investigation, Complaint, Safeguarding Involvement]
 	, dim_detail_health.nhs_any_publicity			AS [Any Publicity]
-	, dim_detail_health.nhs_claim_novel_contentious_repercussive		AS [Novel, Contentious or Reprecussive]
+	, dim_detail_health.nhs_claim_novel_contentious_repercussive		AS [Novel, Contentious or Repercussive]
 	, dim_detail_core_details.is_there_an_issue_on_liability		AS [Is There an Issue on Liability?]
-	, dim_detail_health.nhs_liability				AS [Liability Position]
-	, dim_detail_core_details.proceedings_issued		AS [Proceedings Issued?]
-	, CAST(dim_detail_core_details.date_proceedings_issued AS DATE)		AS [Date Proceedings Issued]
-	, CAST(dim_detail_core_details.date_instructions_received AS DATE)		AS [Date Instructions Received]
-	, dim_detail_core_details.referral_reason			AS [Referral Reason]
+	--, dim_detail_health.nhs_liability				AS [Liability Position]
+	--, dim_detail_core_details.proceedings_issued		AS [Proceedings Issued?]
+	--, CAST(dim_detail_core_details.date_proceedings_issued AS DATE)		AS [Date Proceedings Issued]
+	--, CAST(dim_detail_core_details.date_instructions_received AS DATE)		AS [Date Instructions Received]
+	--, dim_detail_core_details.referral_reason			AS [Referral Reason]
 	, dim_detail_core_details.present_position		AS [Present Position]
 	, fact_finance_summary.damages_reserve		AS [Damages Reserve]
-	, ''		AS [Offers]
-	, COALESCE(dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name)		AS [Claimant Solicitors]
+	--, ''		AS [Offers]
+	--, COALESCE(dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name)		AS [Claimant Solicitors]
 	, #key_date_list_table.key_date_list			AS [Key Dates Approaching]
-	, CAST(dim_detail_court.date_of_trial AS DATE)			AS [Date of Trial]
-	, CAST(dim_detail_court.date_of_first_day_of_trial_window AS DATE)		AS [First Day of Trial Window]
-	, CAST(dim_detail_court.date_end_of_trial_window AS DATE)			AS [End of Trial Window]
-	, ''		AS [Status of Claim]
-	, ''		AS [Strategy/Risks]
-	, ''		AS [Safety and Learning]
-	, ''		AS [Actions for the Trust to Address and Deadline]
+	--, CAST(dim_detail_court.date_of_trial AS DATE)			AS [Date of Trial]
+	--, CAST(dim_detail_court.date_of_first_day_of_trial_window AS DATE)		AS [First Day of Trial Window]
+	--, CAST(dim_detail_court.date_end_of_trial_window AS DATE)			AS [End of Trial Window]
+	, dim_detail_health.claim_status		AS [Status of Claim]
+	--, ''		AS [Strategy/Risks]
+	--, ''		AS [Safety and Learning]
+	--, ''		AS [Actions for the Trust to Address and Deadline]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)		AS [Date Claim Concluded]
-	, dim_detail_outcome.outcome_of_case			AS [Outcome of Case]
+	, LEFT(DATENAME(MONTH, dim_detail_outcome.date_claim_concluded), 3) + '-' + FORMAT(dim_detail_outcome.date_claim_concluded, 'yy')	AS [chart_date_claim_concluded]
+	--, dim_detail_outcome.outcome_of_case			AS [Outcome of Case]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN
+			'non-clinical'
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN
+			'clinical'
+		ELSE
+			NULL
+	  END					AS [clinical/non-clinical]
+	, CASE
+		--non-clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
+			1
+		ELSE
+			0
+	  END							AS [Non-Clinical Settled Past 12 Months]
+	, CASE
+		--clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') 
+		AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
+			1
+		ELSE	
+			0
+	  END							AS [Clinical Settled Past 12 Months]
 	, CASE
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
 			CASE 
-				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0 AND 5000 THEN
-					'£0 - £5,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'1. £0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 5000 THEN
+					'2. £1 - £5,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
-					'£5,001 - £10,000'
+					'3. £5,001 - £10,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
-					'£10,001 - £25,000'
+					'4. £10,001 - £25,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
-					'£25,001 - £50000'
+					'5. £25,001 - £50000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
-					'£50,001+'
+					'6. £50,001+'
 			END 
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
 			CASE 
-				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0 AND 50000 THEN
-					'£0 - £50,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'1. £0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 50000 THEN
+					'2. £1 - £50,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
-					'£50,001 - £250,000'
+					'3. £50,001 - £250,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
-					'£250,001 - £500,000'
+					'4. £250,001 - £500,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
-					'£500,001 - £1,000,000'
+					'5. £500,001 - £1,000,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
-					'£1,000,001+'
+					'6. £1,000,001+'
 			END
 	END							AS [Damages Tranche]
-	, dim_detail_health.nhs_stage_of_settlement		AS [Stage of Settlement]
-	, fact_finance_summary.damages_paid		AS [Damages Paid]
-	, CAST(dim_detail_health.zurichnhs_date_final_bill_sent_to_client AS DATE)		AS [Date Final Bill Sent]
-	, CAST(dim_matter_header_current.date_opened_practice_management AS date)		AS [Date Opened]
+	--, dim_detail_health.nhs_stage_of_settlement		AS [Stage of Settlement]
+	, CASE
+		--non-clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
+			fact_finance_summary.damages_paid		
+		ELSE
+			0
+	  END				AS [Non-Clinical Damages Paid Past 12 Months]
+	, CASE
+		--clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') 
+		AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
+					fact_finance_summary.damages_paid		
+		ELSE
+			0
+	  END				AS [Clinical Damages Paid Past 12 Months]
+	--, CAST(dim_detail_health.zurichnhs_date_final_bill_sent_to_client AS DATE)		AS [Date Final Bill Sent]
+	--, CAST(dim_matter_header_current.date_opened_practice_management AS date)		AS [Date Opened]
+	, dim_detail_core_details.associated_matter_numbers			AS [Associated Matter Numbers]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -400,13 +454,13 @@ WHERE
 	AND dim_matter_header_current.date_opened_practice_management <= @end_date
 	AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client > @start_date)
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
-
+	AND dim_matter_header_current.ms_only = 1
+	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
 ORDER BY	
-	dim_matter_header_current.date_opened_practice_management	
+	risk_rating_order
+	, [Claimant Name]
 
 END
-
-
 
 
 GO
