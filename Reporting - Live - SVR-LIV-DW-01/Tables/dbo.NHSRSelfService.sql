@@ -114,6 +114,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Settlement basis] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Date of Trial] [datetime] NULL,
 [Date Claim Concluded] [datetime] NULL,
+[Reason For Settlement] [nvarchar] (800) COLLATE Latin1_General_BIN NULL,
 [Interim Damages] [numeric] (13, 2) NULL,
 [Damages Paid by Client ] [numeric] (15, 2) NULL,
 [Outsource Damages Paid (WPS278+WPS279+WPS281)] [numeric] (13, 2) NULL,
