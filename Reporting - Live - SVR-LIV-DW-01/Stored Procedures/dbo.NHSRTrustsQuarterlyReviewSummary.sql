@@ -69,7 +69,6 @@ SELECT udt_TallySplit.ListValue  INTO #specialty FROM 	dbo.udt_TallySplit('|', @
 SELECT udt_TallySplit.ListValue  INTO #instruction_type FROM 	dbo.udt_TallySplit('|', @instruction_type)
 SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit('|', @referral_reason)
 
-
 SELECT 
 	dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
@@ -168,8 +167,31 @@ WHERE
 	AND dim_detail_outcome.date_claim_concluded >= @last_year
 	AND dim_matter_header_current.ms_only = 1
 
+/*
+Chart in the report wasnt generating all months (or at all) if there was no closures in month/year for selected trust
+The below union ensures data is populated for each month in past 12 months
+*/
+
+UNION
+
+SELECT
+	NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, dim_date.calendar_date
+	, LEFT(DATENAME(MONTH, dim_date.calendar_date), 3) + '-' + FORMAT(dim_date.calendar_date, 'yy')
+	, 0
+	, 0
+	, NULL
+	, NULL
+	, NULL
+FROM
+	red_dw.dbo.dim_date
+WHERE
+	dim_date.calendar_date BETWEEN @last_year AND GETDATE()
 
 END
-
 
 GO
