@@ -96,32 +96,64 @@ SELECT
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
 			CASE 
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
-					'1. £0'
+					1
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 5000 THEN
-					'2. £1 - £5,000'
+					2
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
-					'3. £5,001 - £10,000'
+					3
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
-					'4. £10,001 - £25,000'
+					4
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
-					'5. £25,001 - £50000'
+					5
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
-					'6. £50,001+'
+					6
 			END 
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
 			CASE 
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
-					'1. £0'
+					1
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 50000 THEN
-					'2. £1 - £50,000'
+					2
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
-					'3. £50,001 - £250,000'
+					3
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
-					'4. £250,001 - £500,000'
+					4
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
-					'5. £500,001 - £1,000,000'
+					5
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
-					'6. £1,000,001+'
+					6
+			END
+	END							AS [Damages Tranche Order]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'£0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 5000 THEN
+					'£1 - £5,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
+					'£5,001 - £10,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
+					'£10,001 - £25,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
+					'£25,001 - £50000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
+					'£50,001+'
+			END 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'£0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 50000 THEN
+					'£1 - £50,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
+					'£50,001 - £250,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
+					'£250,001 - £500,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
+					'£500,001 - £1,000,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
+					'£1,000,001+'
 			END
 	END							AS [Damages Tranche]
 	, CASE
@@ -187,8 +219,8 @@ SELECT
 	, NULL
 	, NULL
 	, NULL
-FROM
-	red_dw.dbo.dim_date
+	, NULL
+FROM red_dw.dbo.dim_date
 WHERE
 	dim_date.calendar_date BETWEEN @last_year AND GETDATE()
 
