@@ -130,6 +130,7 @@ BEGIN
 		 END AS SLATab
 		 , dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report]
 		 , dim_detail_practice_area.[date_report_due] 
+		 --JB #71181
 		 ,CASE 
 			WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
 				[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE), 10)
@@ -149,13 +150,21 @@ BEGIN
 			-(CASE WHEN DATENAME(dw, GETDATE()) = 'Saturday' THEN 1 ELSE 0 END)
 			 ELSE NULL END AS OpenToNow
 
+	--JB #75850
+	, CASE  
+		WHEN dim_detail_core_details.[date_initial_report_sent] IS NULL  THEN 
+			dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), GETDATE())
+		ELSE
+			NULL
+	  END			AS NewOpenToNow
+
 ,CASE  WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL  THEN 
         	(DATEDIFF(dd, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management), dim_detail_core_details.[date_initial_report_sent]))-- + 1)
 			-(DATEDIFF(wk, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management), dim_detail_core_details.[date_initial_report_sent]) * 2)
 			-(CASE WHEN DATENAME(dw, COALESCE(dim_detail_core_details.[date_instructions_received],dim_matter_header_current.date_opened_case_management)) = 'Sunday' THEN 1 ELSE 0 END)
 			-(CASE WHEN DATENAME(dw, dim_detail_core_details.[date_initial_report_sent]) = 'Saturday' THEN 1 ELSE 0 END)
 			 ELSE NULL END AS OpenToSent
-
+--JB #71181
 ,dbo.ReturnElapsedDaysExcludingBankHolidays(COALESCE(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers, dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_practice_management), dim_detail_core_details.date_initial_report_sent) 	AS [NewOpenToSent]
 
 ,CASE  WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL  THEN 
