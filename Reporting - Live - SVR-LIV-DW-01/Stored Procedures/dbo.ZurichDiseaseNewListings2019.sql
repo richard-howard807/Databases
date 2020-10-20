@@ -9,6 +9,7 @@ GO
 -- Description:	Script to drive the Zurich Disease Matters 
 
 -- RH | 09/10/2019 - Amended to show latest child record only and remove deleted Zurich references from result set.
+-- JB 2020-10-20 - added date proceedings issued 
 -- =============================================
 
 CREATE PROCEDURE [dbo].[ZurichDiseaseNewListings2019]
@@ -131,7 +132,7 @@ coalesce(dim_detail_core_details.[was_litigation_avoidable],dim_detail_core_deta
 dim_detail_litigation.are_weightmans_on_the_court_record, 
 [Defence Cost Reserve], 
 [Claimants Cost Reserve] [Claimants Cost Reserve ]
-
+, CAST(dim_detail_court.date_proceedings_issued AS DATE)	AS [Date Proceedings Issued]
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
         on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -172,7 +173,8 @@ from red_dw.dbo.fact_dimension_main
 		left outer join red_dw.dbo.dim_detail_critical_mi on dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
  --   LEFT JOIN  red_dw.dbo.dim_parent_detail parent ON parent.client_code = fact_dimension_main.client_code AND parent.matter_number = fact_dimension_main.matter_number
 	--LEFT JOIN red_dw.dbo.fact_child_detail child ON child.dim_parent_key = parent.dim_parent_key AND child.parent = parent.sequence_no
-
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_court
+		ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
    
     left outer join
     (
@@ -356,8 +358,7 @@ where (
 
 	-- AND WPS275 IS NOT null
 	-- AND red_dw.dbo.dim_matter_header_current.master_client_code = 'Z1001' AND red_dw.dbo.dim_matter_header_current.master_matter_number = '70165'	
-
-
+	
 	;
 
 
