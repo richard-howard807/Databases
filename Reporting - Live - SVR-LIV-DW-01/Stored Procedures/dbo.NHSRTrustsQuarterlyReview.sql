@@ -257,6 +257,7 @@ FROM (
 			dim_tasks.client_code = 'N1001'
 			AND RTRIM(dim_tasks.task_type_description) = 'Key Date'
 			AND dim_date.calendar_date >= GETDATE()
+			AND LOWER(dim_tasks.task_desccription) LIKE '%today%'
 	) AS a
 	CROSS APPLY
 	(
@@ -274,6 +275,9 @@ FROM (
 			AND dim_date.calendar_date >= GETDATE()
 			AND a.client_code = b.client_code
 			AND a.matter_number = b.matter_number
+			AND LOWER(dim_tasks.task_desccription) LIKE '%today%'
+		ORDER BY
+			dim_date.calendar_date
 		FOR XML PATH('')
 	) c (key_date_list)
 
