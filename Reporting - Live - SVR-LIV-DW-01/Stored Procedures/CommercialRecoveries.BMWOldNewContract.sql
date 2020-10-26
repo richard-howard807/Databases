@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BMWOldNewContract] --EXEC [CommercialRecoveries].[BMWOldNewContract] '2019-10-01','2019-10-30','Old'
 (@StartDate  AS DATE
 ,@EndDate  AS  DATE
@@ -35,7 +36,7 @@ BEGIN
 
 SELECT clNo +'-' + fileNo AS [Ref]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS Created
-,txtCliRef AS [Agreement No]	
+,ISNULL(Ref.assocRef,txtCliRef) AS [Agreement No]	
 ,NULL AS [Invoice No]	
 ,Defendant AS [Customer Name]	
 ,CASE WHEN cboCatDesc='7' THEN 'Fixed Fees' 
@@ -78,7 +79,10 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
  ON udCRAccountInformation.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.dbUser
  ON filePrincipleID=dbUser.usrID
-
+LEFT OUTER JOIN (SELECT fileID, assocRef FROM ms_prod.config.dbAssociates
+WHERE assocType='CLIENT'
+AND assocRef IS NOT NULL) AS Ref
+ ON Ref.fileID = dbFile.fileID
 WHERE (
 
 (CRSystemSourceID  LIKE '22135-%' OR clNo='FW22135')
@@ -101,7 +105,7 @@ ELSE
 BEGIN
 SELECT clNo +'-' + fileNo AS [Ref]
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS Created
-,txtCliRef AS [Agreement No]	
+,ISNULL(Ref.assocRef,txtCliRef) AS [Agreement No]	
 ,NULL AS [Invoice No]	
 ,Defendant AS [Customer Name]	
 ,CASE WHEN cboCatDesc='7' THEN 'Fixed Fees' 
@@ -144,7 +148,10 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
  ON udCRAccountInformation.fileID = dbFile.fileID
  LEFT OUTER JOIN [MS_PROD].dbo.dbUser
  ON filePrincipleID=dbUser.usrID
-
+LEFT OUTER JOIN (SELECT fileID, assocRef FROM ms_prod.config.dbAssociates
+WHERE assocType='CLIENT'
+AND assocRef IS NOT NULL) AS Ref
+ ON Ref.fileID = dbFile.fileID
 WHERE (
 
 (CRSystemSourceID  LIKE '22135-%' OR clNo='FW22135')

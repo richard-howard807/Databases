@@ -122,10 +122,12 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  --AND name ='Natasha Jordan'
 -- AND hierarchylevel3hist='Casualty'
  --AND hierarchylevel4hist='Litigation Leeds'
- --AND dim_matter_header_current.date_opened_practice_management >= '2020-05-01' 
+ --AND dim_matter_header_current.date_opened_practice_management >= '2020-10-01' 
  --AND dim_matter_header_current.date_opened_practice_management <= '2020-05-30'
  AND reporting_exclusions=0    
 --AND fact_dimension_main.client_code='00451638' AND fact_dimension_main.matter_number='00004477'--00451638-00004477
+--excluded as bulk opened thousands of matters, BH
+and dim_matter_worktype.work_type_name<>'Wills Archive'
 
 END
 

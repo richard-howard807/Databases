@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[LeedsDeedsNonPunch]
 (
 @Search AS NVARCHAR(MAX)
@@ -34,8 +35,8 @@ cdtitl AS Title,
        cdreqd AS RequestedBy,
        csdesc AS CurrentStatus
 
-FROM [SVR-LIV-3PTY-01].fw_deeds.dbo.cdfile,
-     [SVR-LIV-3PTY-01].fw_deeds.dbo.csfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[cdfile],
+     [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[csfile]
 WHERE cdstat = csidno
  
  END 
@@ -65,8 +66,8 @@ cdtitl AS Title,
        cdreqd AS RequestedBy,
        csdesc AS CurrentStatus
 
-FROM [SVR-LIV-3PTY-01].fw_deeds.dbo.cdfile,
-     [SVR-LIV-3PTY-01].fw_deeds.dbo.csfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[cdfile],
+     [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[csfile]
 WHERE cdstat = csidno
  AND cdsurn LIKE '%' + @Search + '%'
  END 

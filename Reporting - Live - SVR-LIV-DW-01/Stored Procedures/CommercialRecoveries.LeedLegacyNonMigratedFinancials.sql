@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedLegacyNonMigratedFinancials]
 (
 @SourceSystemID AS NVARCHAR(100)
@@ -46,7 +47,7 @@ SELECT clsern AS [Item]
 ,cloffa AS [Office]
 ,clclia AS [Client]
 ,clbill AS [Bill]
-FROM [SVR-LIV-3PTY-01].fw_fwact.dbo.clfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[fwact].[dbo].[clfile]
 WHERE RTRIM(CAST(clclin AS NVARCHAR(20))) + '-' + RTRIM(CAST(clmatn AS NVARCHAR(20)))=@SourceSystemID
  ORDER BY clsern ASC
 

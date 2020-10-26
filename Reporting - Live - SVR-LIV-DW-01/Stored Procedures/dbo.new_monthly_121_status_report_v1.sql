@@ -10,6 +10,7 @@ GO
 -- Description:	#59161 new 1-1 report to include data from new 1-1 form, LTA still using old 1-1 form
 
 -- 20200814 RH - Added holidays to exclusions #59161
+-- 20201021 ES - Removed James Allsop, he is on permanent secondment #76177
 -- ====================================================================================
 
 CREATE PROCEDURE [dbo].[new_monthly_121_status_report_v1]
@@ -24,12 +25,12 @@ CREATE PROCEDURE [dbo].[new_monthly_121_status_report_v1]
 AS
 
 	
---DECLARE @CalendarMonth VARCHAR(32) = '202006'
---		,@Division AS VARCHAR(MAX) = 'Legal Ops - Claims'
---		--,@Department AS VARCHAR(MAX) = 'Healthcare'
---		,@Department AS VARCHAR(MAX) = 'Casualty|Claims Management|Disease|Healthcare|Large Loss|Motor'
---		,@Team AS VARCHAR(MAX) = 'Risk Pool|North West Healthcare 2|North West Healthcare 1|Niche Costs|Motor North and Midlands|Motor Manchester|Motor Management|Motor Mainstream|Motor Liverpool and Birmingham|Motor Liverpool|Motor Fraud|Motor Credit Hire|London Healthcare|Large Loss Midlands|Large Loss Manchester and Leeds|Large Loss Manchester 2|Large Loss Management|Large Loss London|Large Loss Liverpool 2|Large Loss Liverpool 1|Large Loss Liverpool|Healthcare Management|Fraud and Credit Hire Liverpool|Disease Midlands 2|Disease Midlands 1 and South|Disease Management|Disease Liverpool 3|Disease Liverpool 2|Disease Liverpool 1|Disease Leicester|Disease Birmingham 4|Disease Birmingham 3|Disease Birmingham 2 and London|Disease Birmingham 1|Clinical London|Clinical Liverpool and Manchester|Clinical Birmingham|Claims Management|Casualty Manchester|Casualty Management|Casualty London|Casualty Liverpool and Glasgow|Casualty Liverpool 2|Casualty Liverpool 1|Casualty Leicester|Casualty Glasgow|Casualty Birmingham 2|Casualty Birmingham 1|Casualty Birmingham|Birmingham Healthcare 2|Birmingham Healthcare 1'
---		--,@Team AS VARCHAR(MAX) = 'North West Healthcare 2|North West Healthcare 1|London Healthcare|Healthcare Management|Birmingham Healthcare 2|Birmingham Healthcare 1'
+--DECLARE @CalendarMonth VARCHAR(32) = '202009'
+--		,@Division AS VARCHAR(MAX) = 'Legal Ops - LTA'
+--		,@Department AS VARCHAR(MAX) = 'Real Estate'
+----		,@Department AS VARCHAR(MAX) = 'Casualty|Claims Management|Disease|Healthcare|Large Loss|Motor'
+----		,@Team AS VARCHAR(MAX) = 'Risk Pool|North West Healthcare 2|North West Healthcare 1|Niche Costs|Motor North and Midlands|Motor Manchester|Motor Management|Motor Mainstream|Motor Liverpool and Birmingham|Motor Liverpool|Motor Fraud|Motor Credit Hire|London Healthcare|Large Loss Midlands|Large Loss Manchester and Leeds|Large Loss Manchester 2|Large Loss Management|Large Loss London|Large Loss Liverpool 2|Large Loss Liverpool 1|Large Loss Liverpool|Healthcare Management|Fraud and Credit Hire Liverpool|Disease Midlands 2|Disease Midlands 1 and South|Disease Management|Disease Liverpool 3|Disease Liverpool 2|Disease Liverpool 1|Disease Leicester|Disease Birmingham 4|Disease Birmingham 3|Disease Birmingham 2 and London|Disease Birmingham 1|Clinical London|Clinical Liverpool and Manchester|Clinical Birmingham|Claims Management|Casualty Manchester|Casualty Management|Casualty London|Casualty Liverpool and Glasgow|Casualty Liverpool 2|Casualty Liverpool 1|Casualty Leicester|Casualty Glasgow|Casualty Birmingham 2|Casualty Birmingham 1|Casualty Birmingham|Birmingham Healthcare 2|Birmingham Healthcare 1'
+--,@Team AS VARCHAR(MAX) = 'Real Estate Liverpool 1'
 
 	
 	DECLARE @StartDate  DATE = (SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month=@CalendarMonth)
@@ -177,6 +178,7 @@ WHERE 	(red_dw.dbo.dim_employee.leftdate IS NULL OR red_dw.dbo.dim_employee.left
 		AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - LTA','Legal Ops - Claims')
 		AND ISNULL(deleted_from_cascade,0) = 0
 --	AND dim_fed_hierarchy_history.name = 'Susan Carville'
+AND dim_fed_hierarchy_history.name <> 'James Allsop' --#76177
 
 
 --========================================================================================================================

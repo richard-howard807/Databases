@@ -19,6 +19,7 @@ GO
 -- JL 13/05/2020 - removed date_instructions_received is not null as per ticket 58054
 -- ES 16/07/2020 - #64836 added client code 220044, amended tp costs paid  detail, added date costs settled, unbilled disbs and unpaid bill balance
 -- JL 22/09/2020 - #72988 added in axa instruction type as per Helen Fox
+---JL 13/10/2020 - #73089 added in fileds as per ticket 
 ------------ =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
 AS
@@ -138,7 +139,10 @@ BEGIN
 		   , dim_detail_client.axa_instruction_type
 		   ,fact_detail_elapsed_days.[elapsed_days_damages]
 		   , fact_detail_elapsed_days.[elapsed_days_costs]
-
+		   ,dim_detail_core_details.axa_pas_status AS [PAS Status]
+		   ,dim_detail_core_details.axa_reason_outside_of_pas AS [Reason Outside of PAS]
+		   ,dim_detail_claim.axa_claim_strategy AS [Claim Strategy]
+		   ,dim_detail_core_details.axa_liability_position AS [Liability position]
 
     FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome

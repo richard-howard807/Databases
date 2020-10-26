@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 -- FW Wills
 CREATE PROCEDURE [dbo].[LeedsWills]
 (
@@ -62,8 +64,9 @@ wisurn AS Surname,
        --wilpan AS [],
        wichda AS [Last Checked]
 
-FROM [SVR-LIV-3PTY-01].fw_webdb.dbo.wifile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[wifile]
 WHERE wisurn LIKE '%'
+AND wicust IN (SELECT [Cust No] COLLATE DATABASE_DEFAULT	 FROM [dbo].[LeedsWillExclusions])
 
 ORDER BY CONVERT(INT, wicust) DESC;
 
@@ -124,8 +127,9 @@ wisurn AS Surname,
        --wilpan AS [],
        wichda AS [Last Checked]
 
-FROM [SVR-LIV-3PTY-01].fw_webdb.dbo.wifile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[wifile]
 WHERE wisurn LIKE '%' + @Search + '%'
+AND wicust IN (SELECT [Cust No] COLLATE DATABASE_DEFAULT	 FROM [dbo].[LeedsWillExclusions])
 
 ORDER BY CONVERT(INT, wicust) DESC;
 

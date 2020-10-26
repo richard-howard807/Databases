@@ -5,6 +5,9 @@ GO
 
 
 
+--JL 06-10-2020 - I have excluded "In House" as per Bob's request 
+
+
 
 
 CREATE PROCEDURE [dbo].[MilestoneProjectWixardCompliance]
@@ -21,8 +24,9 @@ SELECT hierarchylevel2hist AS Division
 ,1 AS [Number Live Matters]
 ,CASE WHEN Milestones.Completed>=1 THEN 1 ELSE 0 END  AS [WizardCompleted]
 ,CASE WHEN Milestones.Completed=0 THEN 1 ELSE 0 END  AS [WizardIncomplete]
-,Milestones.DateLastCompleted AS [LastTimeRan]
-,DATEDIFF(DAY,Milestones.DateLastCompleted,GETDATE()) AS [DaysSinceWizardLastCompleted]
+,CONVERT(DATE,Milestones.DateLastCompleted,103) AS [LastTimeRan]
+,DATEDIFF(DAY,CONVERT(DATE,Milestones.DateLastCompleted,103),GETDATE()) AS [DaysSinceWizardLastCompleted]
+,CONVERT(DATE,GETDATE(),103) AS TodaysDate
 ,dim_matter_header_current.client_code AS [Client]
 ,dim_matter_header_current.matter_number AS [Matter]
 ,matter_description AS [MatterDescription]
@@ -48,7 +52,8 @@ AND dss_current_flag='Y' AND activeud=1
 AND date_closed_case_management IS NULL
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND ISNULL(referral_reason,'')<>'Advice only'
-
+AND ISNULL(referral_reason,'')<> 'In House'
+--AND fed_code='5900'
 
 END
 GO

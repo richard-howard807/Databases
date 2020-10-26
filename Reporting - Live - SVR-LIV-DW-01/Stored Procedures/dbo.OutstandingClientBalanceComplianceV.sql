@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Litigation'	,'Litigation Leeds'
 (
 @Department AS NVARCHAR(MAX)
@@ -57,8 +58,7 @@ WHEN cboCliBalance='ACTION' THEN 'Action Required' END cboCliBalance
 ,dteLastReview
 ,TMName
 ,[TMEmail]
-,FileReferences.insuredclient_reference
-,FileReferences.insurerclient_reference				
+,ISNULL(FileReferences.insurerclient_reference,FileReferences.client_reference)	AS insurerclient_reference			
 FROM 
 	(SELECT MattIndex,SUM(ClientBalance) AS ClientBalance 
 			,COALESCE(MAX(CASE WHEN  PositiveBalance=1  THEN  [post_date] ELSE NULL END)
@@ -119,7 +119,7 @@ FROM
 INNER JOIN #Department AS Department  ON RTRIM(LTRIM(Department.ListValue)) COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Practice Area])) COLLATE DATABASE_DEFAULT
 INNER JOIN #Team AS Team ON RTRIM(LTRIM(Team.ListValue ))  COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Team] ))COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN (
-	SELECT ms_fileid,insuredclient_reference,insurerclient_reference FROM red_dw.dbo.dim_client_involvement
+	SELECT ms_fileid,insuredclient_reference,insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.client_code = dim_client_involvement.client_code
  AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences

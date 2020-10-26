@@ -10,7 +10,7 @@ GO
 -- 2020/05/26 RH -  Amended to take into account new fact_write_off design
 -- =============================================
 
-CREATE PROCEDURE [dbo].[TimeWriteOff]
+create PROCEDURE [dbo].[TimeWriteOfftesty]
 (
 @FedCode AS VARCHAR(MAX)
 ,@Month AS VARCHAR(100)

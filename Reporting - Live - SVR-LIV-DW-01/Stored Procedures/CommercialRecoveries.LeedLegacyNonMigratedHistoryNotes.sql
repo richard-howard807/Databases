@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedLegacyNonMigratedHistoryNotes]
 (
 @SourceSystemID AS NVARCHAR(100)
@@ -32,13 +33,13 @@ INSERT INTO #FWHistoryUnstructured
     hiamnt,
     hitype
 )
-select RTRIM(hiclin)+'-'+RTRIM(himatn) AS SourceSystemID
+SELECT RTRIM(hiclin)+'-'+RTRIM(himatn) AS SourceSystemID
 ,hinumb
 ,hidate
 ,hidesc
 ,hiamnt 
 ,hitype 
-FROM [SVR-LIV-3PTY-01].fw_webdb.dbo.dhifile 
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[dhifile]
 WHERE RTRIM(hiclin)+'-'+RTRIM(himatn)=@SourceSystemID
 ORDER BY SourceSystemID ASC, hinumb ASC
 

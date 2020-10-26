@@ -8,7 +8,7 @@ GO
 
 --================================================
 --ES 20200713 #64332
-
+--ES 20201006 #74606 added curSetSumAgreed
 --================================================
 
 
@@ -55,6 +55,7 @@ END AS [Insolvency proceedings]
 ,(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0) AS [Net Payment to Costcutter £]
 ,CASE WHEN (ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0)<=0 THEN NULL ELSE defence_costs_billed/(ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0)) END AS [Net % to Costcutter]
 ,CAST(master_matter_number AS INT) AS master_matter_number
+,CostcutterStatus.curSetSumAgreed AS [Settlement Sum Agreed]
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -130,6 +131,7 @@ SELECT fileID
 ,curTermination AS [Termination]
 ,curCostRecOS AS [CostsRecovered]
 ,dteSettled
+,curSetSumAgreed
 FROM ms_prod.dbo.udCRCostcutterDetails
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus
  ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'

@@ -38,6 +38,9 @@ INNER JOIN ms_prod.dbo.dbTasks
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
  ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
  AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
+ LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.client_code = dim_claimant_thirdparty_involvement.client_code 
+ AND dim_detail_outcome.matter_number = dim_claimant_thirdparty_involvement.matter_number
+ 
 LEFT OUTER JOIN (SELECT fileID,assocRef FROM MS_Prod.config.dbAssociates
 WHERE assocType='COMPRECUNITDWP'
 AND assocRef IS NOT NULL) AS CRUREf
@@ -47,6 +50,8 @@ AND date_closed_practice_management IS NULL
 AND tskDesc LIKE '%CRU Expiry due - today%'
 AND tskActive=1
 AND tskCompleted IS NULL
+AND dim_detail_outcome.date_claim_concluded IS NULL 
+
 AND CONVERT(DATE,tskDue,103) BETWEEN @StartDate AND @EndDate
 
 END

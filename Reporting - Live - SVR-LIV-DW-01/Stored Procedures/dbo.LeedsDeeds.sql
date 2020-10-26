@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- FW Deeds
 CREATE PROCEDURE [dbo].[LeedsDeeds]
 (
@@ -26,12 +27,12 @@ SELECT ddocod AS [Outlet No]
 ,ddfile.ddrequ AS [Requested]
 ,drfile.drdesc AS [Reason for Request]
 ,dsdesc AS [Current Status]
-FROM [SVR-LIV-3PTY-01].fw_deeds.dbo.ddfile
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.dsfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[ddfile]
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[dsfile]
  ON dsidno = ddstat
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.drfile
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[drfile]
  ON ddreas = dridno
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.dpfile
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[dpfile]
  ON ddarea=dpidno
 
 
@@ -53,12 +54,12 @@ SELECT ddocod AS [Outlet No]
 ,ddfile.ddrequ AS [Requested]
 ,drfile.drdesc AS [Reason for Request]
 ,dsdesc AS [Current Status]
-FROM [SVR-LIV-3PTY-01].fw_deeds.dbo.ddfile
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.dsfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[ddfile]
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[dsfile]
  ON dsidno = ddstat
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.drfile
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[drfile]
  ON ddreas = dridno
-LEFT OUTER JOIN [SVR-LIV-3PTY-01].fw_deeds.dbo.dpfile
+LEFT OUTER JOIN [SVR-LIV-SQL-04\LEGACYREADONLY].[deeds].[dbo].[dpfile]
  ON ddarea=dpidno
 WHERE ddname LIKE '%' + @Search + '%'
 

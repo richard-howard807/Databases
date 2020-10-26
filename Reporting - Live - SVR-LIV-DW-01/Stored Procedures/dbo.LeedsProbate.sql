@@ -2,8 +2,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- FW Probate
-Create PROCEDURE [dbo].[LeedsProbate]
+CREATE PROCEDURE [dbo].[LeedsProbate]
 (
 @Search AS NVARCHAR(MAX)
 ) 
@@ -35,7 +36,7 @@ SELECT prcust AS [Number]
 ,prretd AS [Returned Date]
 ,prchkd AS [Checked]
 ,prcomm AS [Comments]
-FROM [SVR-LIV-3PTY-01].fw_webdb.dbo.prfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[prfile]
 
 
 END 
@@ -66,7 +67,7 @@ SELECT prcust AS [Number]
 ,prretd AS [Returned Date]
 ,prchkd AS [Checked]
 ,prcomm AS [Comments]
-FROM [SVR-LIV-3PTY-01].fw_webdb.dbo.prfile
+FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[prfile]
 WHERE prsurn LIKE '%' + @Search + '%'
 
 END 
