@@ -68,7 +68,12 @@ SELECT
 	, owner_details.hierarchylevel2hist							AS [Division]
 	, owner_office.locationidud									AS [Office]
 	, 1															AS [Document Count]
+	, '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(Jobs.guid, 2) 
+		+ '\' + RIGHT(LEFT(Jobs.guid, 4), 2) + '\' + RIGHT(LEFT(Jobs.guid, 6), 2) 
+		+ '\' + RIGHT(Jobs.guid, LEN(Jobs.guid)-6) + '\' + Jobs.label + '.TIF' 		AS [document_link]
 FROM #deleted_documents
+	LEFT OUTER JOIN [SVR-LIV-3PTY-01].[FlowMatrix].dbo.Jobs
+		ON Jobs.job_id = #deleted_documents.job_id
 	LEFT OUTER JOIN red_dw.dbo.dim_employee AS user_details
 		ON user_details.windowsusername = #deleted_documents.username COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS owner_details
@@ -80,4 +85,6 @@ ORDER BY
 	#deleted_documents.event_time
 
 END
+
+
 GO
