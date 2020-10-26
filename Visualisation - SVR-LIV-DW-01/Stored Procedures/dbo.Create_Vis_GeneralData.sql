@@ -13,6 +13,8 @@ Description:		General Data MI to drive the Tableau Dashboards
 Current Version:	Initial Create
 ====================================================
 -- ES 03-02-2020 added revenue and hours per financial year, 45432
+-- ES 05-10-2020 #74471
+-- ES 06-01-2020 #73408 added stw details
 ====================================================
 --JL - 2020-01-17 Added in involvement table v 1.1
 */
@@ -501,6 +503,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, dim_detail_claim.stw_waste_or_water AS [STW Water or Waste]
 		, dim_detail_claim.stw_status AS [STW Status]
 		, CASE WHEN dim_detail_claim.class_of_business_stw ='Motor' THEN 'Motor' ELSE dim_detail_claim.stw_work_type END AS [STW Report Area]
+		, dim_detail_claim.stw_work_type AS [STW Worktype]
 		, dim_detail_claim.[class_of_business_stw] AS [STW Class of Business]
 		, dim_detail_critical_mi.[date_closed] AS [Critical MI Date Closed]
 		, [dbo].[ReturnElapsedDaysExcludingBankHolidays](dim_detail_core_details.date_instructions_received, dim_detail_core_details.[date_initial_report_sent]) AS [Working Days from Instruction Received to Initial Report]
@@ -548,6 +551,11 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 				--WHEN (ISNULL(dim_detail_critical_mi.claim_status,'') IN ('Open','Re-opened','Cancelled','Closed',NULL) OR claim_status IS NULL) ) THEN 1
 				WHEN dim_client.[client_code]='R00016' AND  dim_matter_header_current.[matter_number] = '00102745' THEN 1
 				ELSE 0 END AS [STW Report Filter]
+			, stw_recoveries_instructed_by AS [STW Recoveries Instructed By]
+			, stw_initial_checklist_result AS [STW Initial Checklist Result]
+			, fact_detail_recovery_detail.amount_recovery_sought AS [Amount Recovery Sought]
+
+
 
 
 		--AIG
@@ -586,6 +594,9 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, dim_experts_involvement.medicalexpert_name AS [Medical Expert Name] /*1.1*/
 		, dim_experts_involvement.claimantmedexp_name AS [Claiment Medical Expert Name]
 
+		, dim_detail_claim.number_of_claimants AS [Number of Claimants]
+		, dim_detail_outcome.costs_outcome AS [Costs Outcome]
+		, dim_detail_core_details.claimants_date_of_birth AS [Claimant's Date of Birth]
 		
 		,[Revenue 2016/2017]
 		,[Revenue 2017/2018]

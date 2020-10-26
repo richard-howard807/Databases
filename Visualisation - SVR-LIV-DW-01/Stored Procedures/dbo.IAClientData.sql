@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 --SELECT * FROM dbo.IA_Client_Data
 
 
@@ -17,11 +19,13 @@ BEGIN
 SELECT opportunitysn AS [Opportunity Number]
 	,Company.dim_client_key AS dim_client_key
 	,ISNULL(target_company,Company.client_name) AS [Client Name]
-	,Lists.list_name AS [Client Category]
+	,ISNULL(Lists.list_name,'Client (Excl Patron & Star)') AS [Client Category]
 	,dim_be_opportunities.title AS [Opportunity Name]
 	,type AS [Opportunity Type]
 	,dim_be_opportunities.client_type AS [Revenue Type]
-	,COALESCE(Company.segment,CASE WHEN practice_groups='OMB, Public Bodies' THEN 'OMB' ELSE practice_groups END) AS [Segment]
+	,COALESCE(Company.segment,CASE WHEN practice_groups='OMB, Public Bodies' THEN 'OMB' 
+									WHEN dim_be_opportunities.practice_groups='Public Bodies' THEN 'Public bodies'
+	ELSE practice_groups END) AS [Segment]
 	,REPLACE(REPLACE(COALESCE(Company.sector,
 	CASE WHEN industries='Local & Central Government, OMB Manchester' THEN  'OMB Manchester' 
 	
@@ -125,12 +129,15 @@ LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
 	, dim_ia_contact_lists.ia_client_id
 	  FROM red_dw.dbo.dim_ia_lists
 	  INNER JOIN red_dw.dbo.dim_ia_contact_lists ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
-	  where dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
-	  AND dim_ia_contact_lists.dim_client_key<>0) AS [Lists]
+	  WHERE dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
+	  AND dim_ia_contact_lists.dim_client_key<>0
+	  AND list_type_desc='Status'
+	  ) AS [Lists]
 	  ON Lists.ia_client_id=dim_be_opportunities.ia_client_id
 
 WHERE UPPER(dim_be_opportunities.title)  NOT LIKE '%TEST%' AND UPPER(dim_be_opportunities.title)  NOT LIKE '%ERROR%'
---AND dim_be_opportunities.target_company='Zurich Insurance Plc'
+--AND dim_be_opportunities.target_company='Severn Trent Water'
+--AND ISNULL(target_company,Company.client_name) LIKE '%Severn Trent Water%'
 
 ORDER BY [Client Name]
 END

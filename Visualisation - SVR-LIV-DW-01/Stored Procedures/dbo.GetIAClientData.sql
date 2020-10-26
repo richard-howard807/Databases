@@ -68,6 +68,8 @@ FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
 FROM MS_Prod.dbo.udSubSegment
 INNER JOIN MS_Prod.dbo.udSegment
  ON segment=udsegment.code
+where udSegment.active=1
+and udSubSegment.active=1
 ) AS Segments
 LEFT OUTER JOIN dbo.IA_Client_Data
  ON UPPER(Segment)=UPPER(Segments.segmentname) COLLATE DATABASE_DEFAULT
