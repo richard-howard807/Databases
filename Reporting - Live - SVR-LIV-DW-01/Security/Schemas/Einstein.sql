@@ -1,0 +1,3 @@
+CREATE SCHEMA [Einstein]
+AUTHORIZATION [dbo]
+GO
