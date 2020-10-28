@@ -5,9 +5,6 @@ GO
 
 
 
-
-
-
 CREATE PROCEDURE [dbo].[JCBMatterListings]
 AS
 BEGIN
@@ -35,6 +32,8 @@ BEGIN
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2018-05-01' AND '2019-04-30' THEN 'GB00004225LI18A'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2019-05-01' AND '2020-04-30' THEN 'GB00004225LI19A'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2020-05-01' AND '2021-04-30' THEN 'GB00004225LI20A'
+			-- JB - Ticket #67845
+			WHEN dim_matter_worktype.work_type_name LIKE 'Disease%' THEN 'TBA'
 		 END AS [XL reference]
 	,name  AS 'WeightmansHandler'
 		,CASE 
@@ -57,6 +56,8 @@ BEGIN
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2018-05-01' AND '2019-04-30' THEN '2018/2019'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2019-05-01' AND '2020-04-30' THEN '2019/2020'
 			WHEN dim_detail_core_details.[incident_date] BETWEEN '2020-05-01' AND '2021-04-30' THEN '2020/2021'
+			-- JB - Ticket #67845
+			WHEN dim_matter_worktype.work_type_name LIKE 'Disease%' THEN 'TBA'
 			END AS 'Year of Account'
 		, dim_detail_critical_mi.[agency_worker] [Agency worker]
 	,claimant_name AS [Claimant Name]

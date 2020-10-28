@@ -4,15 +4,21 @@ SET ANSI_NULLS ON
 GO
 
 CREATE PROCEDURE [dbo].[flow_matrix_deleted_docs]
-
+(
+@MMEmail AS NVARCHAR(MAX),
+@TMEmail AS NVARCHAR(MAX)
+)
 AS 
 
 BEGIN
 
 SET NOCOUNT ON;
 
-DECLARE @start_date AS DATE = CAST(DATEADD(WEEK, -3, GETDATE()) AS DATE)
+DECLARE @start_date AS DATE = CAST(DATEADD(DAY, -5, GETDATE()) AS DATE)
 		, @end_date AS DATE = GETDATE()
+		--For testing
+		--, @MMEmail AS NVARCHAR(MAX) = 'All'
+		--, @TMEmail AS NVARCHAR(MAX)	= 'All'
 
 --=========================================================================================================================================
 -- Table to gather flow matrix deleted documents data
@@ -52,7 +58,6 @@ FROM (
 
 --=======================================================================================================================================================
 
-
 SELECT 
 	#deleted_documents.job_id									AS [Job ID]
 	, #deleted_documents.event_time								AS [Deleted Date]	
@@ -61,12 +66,14 @@ SELECT
 	, #deleted_documents.process_id								AS [Location]
 	, #deleted_documents.pages									AS [Pages]
 	, #deleted_documents.owner									AS [Document Owner]
-	, owner_details.name										AS [Matter Manger]
-	, owner_details.reportingbcmname							AS [Team Manager]
-	, owner_details.hierarchylevel4hist							AS [Team]
-	, owner_details.hierarchylevel3hist							AS [Department]
-	, owner_details.hierarchylevel2hist							AS [Division]
-	, owner_office.locationidud									AS [Office]
+	, ISNULL(owner_details.name, 'Postroom')					AS [Matter Manager]
+	, owner_office.workemail									AS [Matter Manager Email]
+	, ISNULL(owner_details.worksforname, 'Claire Shields')		AS [Team Manager]
+	, ISNULL(owner_office.worksforemail, 'Claire.Shields@Weightmans.com')			AS [Team Manager Email]
+	, ISNULL(owner_details.hierarchylevel4hist, 'Facilities Management')			AS [Team]
+	, ISNULL(owner_details.hierarchylevel3hist, 'Facilities')						AS [Department]
+	, ISNULL(owner_details.hierarchylevel2hist, 'Business Services')				AS [Division]
+	, ISNULL(owner_office.locationidud, 'Liverpool')								AS [Office]
 	, 1															AS [Document Count]
 	, '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(Jobs.guid, 2) 
 		+ '\' + RIGHT(LEFT(Jobs.guid, 4), 2) + '\' + RIGHT(LEFT(Jobs.guid, 6), 2) 
@@ -80,7 +87,41 @@ FROM #deleted_documents
 		ON owner_details.windowsusername = #deleted_documents.owner COLLATE DATABASE_DEFAULT
 			AND owner_details.dss_current_flag='Y' AND (owner_details.activeud=1 OR owner_details.windowsusername IN ('cwahle','awilli07'))
 	LEFT OUTER JOIN red_dw.dbo.dim_employee AS owner_office
-		ON owner_office.windowsusername = #deleted_documents.owner COLLATE DATABASE_DEFAULT
+		ON owner_office.dim_employee_key = owner_details.dim_employee_key
+WHERE
+	ISNULL(owner_office.workemail, 'Postroom') IN (
+													SELECT
+														CASE
+															WHEN @MMEmail = 'All' THEN
+																COALESCE(dim_employee.workemail, postroom) 
+														END		AS email
+													FROM red_dw.dbo.dim_employee
+														FULL JOIN (
+																	SELECT 
+																		'Postroom' AS postroom
+																   ) AS postroom
+															ON postroom = dim_employee.workemail
+													UNION
+													SELECT 
+														dim_employee.workemail
+													FROM red_dw.dbo.dim_employee
+													WHERE
+														dim_employee.workemail = @MMEmail
+												)
+	AND ISNULL(owner_office.worksforemail, 'Claire.Shields@Weightmans.com') IN (
+																				SELECT
+																					CASE
+																						WHEN @TMEmail = 'All' THEN
+																							dim_employee.worksforemail
+																					END		AS email
+																				FROM red_dw.dbo.dim_employee
+																				UNION
+																				SELECT 
+																					dim_employee.worksforemail
+																				FROM red_dw.dbo.dim_employee
+																				WHERE
+																					dim_employee.worksforemail = @TMEmail
+																			   )
 ORDER BY
 	#deleted_documents.event_time
 
