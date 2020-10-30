@@ -30,7 +30,7 @@ AS
 
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-	SET @processdate = '20190501' -- not sure where this date gets passed through from so I am hardcoding to 20190501 as this is the start of the project
+	SET @processdate = '20190501' -- No billings before this date as this is the start of the scheme 
 	DECLARE @timekeepers TABLE (timekeeper INT)
 
 	/* Inserts timekeepers that have a record in client referral */
@@ -90,7 +90,7 @@ SELECT x.[entity number],
        x.timekeeper,
        x.mattindex,
        x.postdate,
-      x.billamt -  x.personalbillings  billamt,
+       x.billamt -  x.personalbillings  billamt,
        x.billhrs,
        x.workamt,
        x.workhrs,
@@ -130,11 +130,15 @@ FROM (
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
 		AND armaster.invdate >= @processdate
+		AND c.opendate >= '20190501'
+		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095
 	   --  AND timecard.timekeeper NOT IN (SELECT timekeeper FROM @timekeepers  ) -- Exclues any timecard transactions by client introducer
 	 --  AND timecard.timekeeper <> co.timekeeper
 
+
 	 UNION ALL
   -- Charges   
+
 	 SELECT c.entity AS 'entity number' ,
 		c.number AS 'client number' ,
 		c.clientindex ,
@@ -167,6 +171,8 @@ FROM (
 		 INNER JOIN red_dw.dbo.ds_sh_3e_armaster     AS armaster ON timebill.armaster = armaster.armindex
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
+		AND c.opendate >= '20190501'
+		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095
 		AND armaster.invdate >= @processdate
 
 ) x
@@ -280,7 +286,7 @@ FROM (
 		'Referral of Matters' AS ref_type ,
 		3 AS reftypeno
 		-- select mattprlftkpr.*
-	FROM   red_dw.dbo.ds_sh_3e_timecard					AS timecard_1
+	FROM red_dw.dbo.ds_sh_3e_timecard					AS timecard_1
 		INNER JOIN red_dw.dbo.ds_sh_3e_timebill			AS timebill_1 ON timebill_1.timecard = timecard_1.timeindex
 		INNER JOIN red_dw.dbo.ds_sh_3e_matter			AS matter_1 ON matter_1.mattindex = timecard_1.billmatter
 		INNER JOIN red_dw.dbo.ds_sh_3e_client			AS client_1 ON client_1.clientindex = matter_1.client
@@ -290,10 +296,9 @@ FROM (
 		INNER JOIN red_dw.dbo.ds_sh_3e_armaster       AS armaster ON timebill_1.armaster = armaster.armindex
 		LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_timekeeper	AS timekeeper_1 ON timekeeper_1.tkprindex = mattprlftkpr.timekeeper
 	WHERE  armaster.invdate >= @processdate
-	--AND matter_1.mattindex = 2985168
+		AND matter_1.opendate >= '20190501'
+		AND DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095
 
-	--	AND timecard_1.timekeeper NOT IN (SELECT timekeeper FROM @matter_refs ) -- excludes matter refs
-	   --AND timecard_1.timekeeper <> mattprlftkpr.timekeeper
 
 	UNION ALL
         -- Charges
@@ -328,7 +333,15 @@ FROM (
 		INNER JOIN red_dw.dbo.ds_sh_3e_armaster       AS armaster ON timebill_1.armaster = armaster.armindex
 		LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_timekeeper	AS timekeeper_1 ON timekeeper_1.tkprindex = mattprlftkpr.timekeeper
 	WHERE  armaster.invdate >= @processdate
+		AND matter_1.opendate >= '20190501'
+		AND DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095
+
 ) x 
+
+
+
+
+
 
 /* Kieran Donovan is a special case and started earlier I am adding his figures from 2018 separately*/
 
