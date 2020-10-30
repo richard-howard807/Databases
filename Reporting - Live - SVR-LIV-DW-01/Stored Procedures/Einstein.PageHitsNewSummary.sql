@@ -3,8 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-CREATE PROCEDURE [Einstein].[PageHitsNew] -- EXEC Einstein.PageHitsNew '2020-10-01','2020-10-28'
+CREATE PROCEDURE [Einstein].[PageHitsNewSummary] -- EXEC Einstein.PageHitsNew '2020-10-01','2020-10-28'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -13,6 +12,14 @@ CREATE PROCEDURE [Einstein].[PageHitsNew] -- EXEC Einstein.PageHitsNew '2020-10-
 AS
 BEGIN 
 
+SELECT AllData.Username 
+,[Name]
+,AllData.Team AS [Team]
+,AllData.PracticeArea AS [PracticeArea]
+,AllData.Timestamp AS [TIMEStamp]
+,SUM(AllData.NoHits) AS [Total Hits]
+,ROW_NUMBER() OVER(ORDER BY SUM(AllData.NoHits) DESC) AS [RowID]
+FROM (
 
 SELECT SiteURL AS SiteURL
        ,SUBSTRING(WebURL, 1, 15) AS URL
@@ -24,16 +31,12 @@ SELECT SiteURL AS SiteURL
        ,hierarchylevel3hist AS PracticeArea
        ,hierarchylevel4hist AS Team
        ,[TimeStamp] AS [Timestamp]
-	   ,hierarchylevel2hist AS [Section]
-       ,hierarchylevel3hist AS Category
-       ,hierarchylevel4hist AS SubCategory
-	   ,COUNT(*) AS [NoHits]
-
+       ,COUNT(*) AS [NoHits]
 
 FROM [SQL2008SVR_Einstein].[EinsteinTaxonomy].UsageLog.WSSUsageLog AS WSSUsageLog WITH (NOLOCK)
     INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
         ON REPLACE(WSSUsageLog.UserName, 'sbc\', '') = windowsusername COLLATE DATABASE_DEFAULT
-           AND dss_current_flag = 'Y' AND activeud=1
+           AND dss_current_flag = 'Y'
 
 WHERE CONVERT(DATE, WSSUsageLog.TimeStamp, 103) >= '2020-01-01'
       AND CONVERT(DATE, WSSUsageLog.TimeStamp, 103)
@@ -46,13 +49,18 @@ GROUP BY SiteURL,
          WebURL,
          windowsusername,
          name,
-		 hierarchylevel2hist,
          hierarchylevel3hist,
          hierarchylevel4hist,
          [Timestamp]
 
 
+) AS AllData
 
+GROUP BY AllData.Username 
+,[Name]
+,AllData.Team
+,AllData.PracticeArea 
+,AllData.Timestamp 
 
 
 END 

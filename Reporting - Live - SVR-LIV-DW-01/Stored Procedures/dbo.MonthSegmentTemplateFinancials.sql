@@ -12,6 +12,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MonthSegmentTemplateFinancials]
 (
 @Period AS NVARCHAR(MAX)
@@ -47,6 +48,10 @@ SELECT Targets.segmentname,
 	   @Period AS [Period],
 	   @MinDate,
 	   DATEADD(MONTH,1,(@MinDate)) AS NextMonth
+	   ,LastYearFull
+	   ,CurrentMonth.RevenueMTD
+	   ,TargetMonth
+	   ,NewcastleRevenue
 	   
 FROM (
  SELECT Segments.segmentname,Segments.sectorname,SUM(target_value) AS TargetRevenue
@@ -76,7 +81,10 @@ GROUP BY Segments.segmentname,Segments.sectorname
 --GROUP BY segmentname,sectorname
 ) AS Targets
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS RevenueYTD
+,SUM(CASE WHEN hierarchylevel3hist='Newcastle' AND segment IS NOT NULL THEN bill_amount ELSE 0 END) AS NewcastleRevenue
 FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_bill_activity.dim_fed_hierarchy_history_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.bill_date = fact_bill_activity.bill_date
 INNER JOIN red_dw.dbo.dim_client
@@ -87,6 +95,45 @@ AND segment=@SegmentName
 GROUP BY  segment,sector) AS CurrentYear
  ON Targets.segmentname=CurrentYear.segment COLLATE DATABASE_DEFAULT 
  AND Targets.sectorname=CurrentYear.sector COLLATE DATABASE_DEFAULT
+
+ LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS RevenueMTD
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @FinYear
+AND bill_fin_month_no=@FinMonth
+AND segment=@SegmentName
+GROUP BY  segment,sector) AS CurrentMonth
+ ON Targets.segmentname=CurrentMonth.segment COLLATE DATABASE_DEFAULT 
+ AND Targets.sectorname=CurrentMonth.sector COLLATE DATABASE_DEFAULT
+
+
+LEFT OUTER JOIN 
+(
+SELECT Segments.segmentname,Segments.sectorname,SUM(target_value) AS TargetMonth
+FROM 
+(
+SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
+       MS_Prod.dbo.udSubSegment.description AS [sectorname] 
+FROM MS_Prod.dbo.udSubSegment
+INNER JOIN MS_Prod.dbo.udSegment
+ ON segment=udsegment.code
+WHERE udSegment.description=@SegmentName
+AND udSegment.active=1
+AND udSubSegment.active=1
+ ) AS Segments
+LEFT OUTER JOIN red_dw.dbo.fact_segment_target_upload
+ ON fact_segment_target_upload.sectorname = Segments.sectorname COLLATE DATABASE_DEFAULT
+ AND fact_segment_target_upload.segmentname = Segments.segmentname COLLATE DATABASE_DEFAULT
+AND Segments.segmentname=@SegmentName COLLATE DATABASE_DEFAULT
+AND financial_month=@FinMonth
+AND  [year]=@FinYear
+GROUP BY Segments.segmentname,Segments.sectorname
+) AS TargetMonth
+  ON Targets.segmentname=TargetMonth.segmentname COLLATE DATABASE_DEFAULT 
+ AND Targets.sectorname=TargetMonth.sectorname COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS PreviousRevenue
 FROM red_dw.dbo.fact_bill_activity
 INNER JOIN red_dw.dbo.dim_bill_date
@@ -100,7 +147,23 @@ AND segment=@SegmentName
 GROUP BY  segment,sector) AS Previous
  ON Targets.segmentname=Previous.segment COLLATE DATABASE_DEFAULT
  AND Targets.sectorname=Previous.sector  COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT segment,sector,SUM(bill_amount) AS LastYearFull
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year=@FinYear-1
 
+AND segment=@SegmentName
+
+GROUP BY  segment,sector
+) AS LastYearFull
+
+ ON Targets.segmentname=LastYearFull.segment COLLATE DATABASE_DEFAULT
+ AND Targets.sectorname=LastYearFull.sector  COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN 
 (
 SELECT UPPER(Segment) AS Segment,
