@@ -53,7 +53,7 @@ BEGIN
 
 		DECLARE @brID NVARCHAR(15), @usrIDUpdating INT 
 		SET @brID = (SELECT brID FROM [MS_PROD].[dbo].dbBranch WHERE brCode = @office)
-		SET @usrIDUpdating = (SELECT usrID FROM [MS_PROD].[dbo].[dbUser] WHERE usrInits = @usrInits)
+		SET @usrIDUpdating = (SELECT TOP 1 usrID FROM [MS_PROD].[dbo].[dbUser] WHERE usrInits = @usrInits)
 
 
 BEGIN TRANSACTION
