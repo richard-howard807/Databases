@@ -1,0 +1,3 @@
+CREATE SCHEMA [SBC\jbonne]
+AUTHORIZATION [SBC\jbonne]
+GO
