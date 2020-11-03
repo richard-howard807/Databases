@@ -9,6 +9,7 @@ GO
 -- Description: to get multiple case details information
 -- =============================================
 -- LD 20180625 Added Claims Handler
+-- ES 20201102 Added tskActive logic, requested by Jake Whewell
 -- ============================================
 CREATE PROCEDURE [NHSLA].[health_billing_report]
 (
@@ -138,7 +139,7 @@ AND CONVERT(DATE,tskCompleted,103) BETWEEN @DateFrom AND @DateTo
 AND tskComplete=1
 AND dim_matter_header_current.client_code NOT IN ('00030645','95000C','00453737') 
 
-
+AND dbTasks.tskActive=1
 
 END
 

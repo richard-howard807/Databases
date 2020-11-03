@@ -71,10 +71,24 @@ SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit(
 
 SELECT 
 	dim_detail_claim.defendant_trust			AS [Trust]
+	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
+	, dim_claimant_thirdparty_involvement.claimant_name			AS [Claimant Name]
+	, dim_detail_core_details.injury_type					AS [Injury Type]
+	, CAST(dim_detail_core_details.incident_date AS DATE)			AS [Incident Date]
+	, dim_detail_core_details.brief_details_of_claim			AS [Brief Details of Claim]
+	, dim_detail_outcome.reason_for_settlement					AS [Reason For Settlement]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
 	, dim_detail_health.nhs_speciality					AS [Speciality]
 	, dim_detail_core_details.referral_reason		AS [Referral Reason]
+	, fact_finance_summary.damages_paid				AS [Damages Paid]
+	, dim_detail_health.nhs_scheme					AS [NHS Scheme]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN 
+			'Non-Clinical'
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN
+			'Clinical'
+	  END					AS [Clinical/Non-Clinical]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)		AS [Date Claim Concluded]
 	, LEFT(DATENAME(MONTH, dim_detail_outcome.date_claim_concluded), 3) + '-' + FORMAT(dim_detail_outcome.date_claim_concluded, 'yy')	AS [chart_date_claim_concluded]
 	, CASE
@@ -184,6 +198,10 @@ FROM red_dw.dbo.fact_dimension_main
 		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+	LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+		ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+	LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+		ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 	INNER JOIN #defendant_trust
 		ON (CASE WHEN RTRIM(dim_detail_claim.defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_claim.defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT 
 	INNER JOIN #specialty
@@ -208,6 +226,15 @@ UNION
 
 SELECT
 	NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
+	, NULL
 	, NULL
 	, NULL
 	, NULL

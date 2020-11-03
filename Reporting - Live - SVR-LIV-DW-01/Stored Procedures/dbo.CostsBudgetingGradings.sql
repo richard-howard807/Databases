@@ -4,80 +4,113 @@ SET ANSI_NULLS ON
 GO
 
 
+
 --exec [dbo].[CostsBudgetingGradings] NULL, 'Yes'
 
 CREATE PROCEDURE [dbo].[CostsBudgetingGradings]
 
-@Surname varchar(50),
-@Leavers char(3)
+@Surname VARCHAR(50),
+@Leavers CHAR(3)
 
 AS
 
 
+SELECT  Forename, Surname,employeeid AS employeeid ,[HierarchyLevel4] AS Team,AdmissionTypeUD,leftdate,Leaver, DATEDIFF(MONTH,leftdate,GETDATE()) AS MonthsLeft,AdmissionDateud,JobTitle,LevelIDUD,YearsSinceQualification,
+ CASE WHEN YearsSinceQualification >= 8  AND AdmissionTypeUD ='SRA' THEN 'A'
+ WHEN (AdmissionTypeUD = 'SRA' AND (YearsSinceQualification >=4 AND YearsSinceQualification <8)) OR (AdmissionTypeUD =  'FILEX' AND YearsSinceQualification >=4) THEN  'B'
+ WHEN (AdmissionTypeUD IN ('SRA','FILEX') AND YearsSinceQualification <4) OR  AdmissionTypeUD IN ('Association of Costs Lawyers','ILEX') THEN 'C'
+ELSE 'D' END AS Grade
+FROM 
+(SELECT dim_employee.employeeid,forename, surname, RTRIM(LTRIM(admissiontypeud)) AS AdmissionTypeUD, hierarchylevel4hist AS [HierarchyLevel4],leftdate,leaver, admissiondateud,postid,dim_employee.jobtitle,levelidud, 
 
-
-select Forename, Surname,cast(employeeid as uniqueidentifier) as employeeid ,[HierarchyLevel4] as Team,AdmissionTypeUD,leftdate,Leaver, DATEDIFF(month,leftdate,getdate()) as MonthsLeft,AdmissionDateud,JobTitle,LevelIDUD,YearsSinceQualification,
- case when YearsSinceQualification >= 8  and AdmissionTypeUD ='SRA' then 'A'
- when (AdmissionTypeUD = 'SRA' and (YearsSinceQualification >=4 and YearsSinceQualification <8)) or (AdmissionTypeUD =  'FILEX' and YearsSinceQualification >=4) then  'B'
- when (AdmissionTypeUD in ('SRA','FILEX') and YearsSinceQualification <4) or  AdmissionTypeUD in ('Association of Costs Lawyers','ILEX') then 'C'
-else 'D' end as Grade
+DATEDIFF(yy,admissiondateud,CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END) - 
+CASE WHEN DATEADD(YY,DATEDIFF(YY,admissiondateud,CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END),admissiondateud) > CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END THEN 1
+ELSE 0 END AS YearsSinceQualification FROM red_dw.dbo.dim_employee
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON  dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key AND dss_current_flag='Y' AND activeud=1
+	WHERE
 	
-from (
-select Employee.employeeid,forename, surname, rtrim(ltrim(admissiondateud)) as AdmissionTypeUD,[HierarchyLevel4],leftdate,leaver, AdmissionDateud,PostID,JobTitle,LevelIDUD, 
-
-DATEDIFF(yy,Admission.AdmissionDateud,case when leftdate >getdate()then getdate() else coalesce(leftdate ,GETDATE())end) - 
-case when DATEADD(YY,DATEDIFF(YY,Admission.AdmissionDateud,case when leftdate >getdate()then getdate() else coalesce(leftdate ,GETDATE())end),Admission.AdmissionDateud) > case when leftdate >getdate()then getdate() else coalesce(leftdate ,GETDATE())end then 1
-else 0 end as YearsSinceQualification
-
-from red_dw.dbo.ds_sh_employee as Employee
-left join (SELECT AdmissionDetails.employeeid,NULL AS AdmissionTypeud,admissiondateud
-from red_dw.dbo.ds_sh_employee_admission_details as AdmissionDetails
-
-Inner Join 
-
-(
-SELECT employeeid
-      ,max(sys_effectivedate) MaxEffectiveDate
-  FROM red_dw.dbo.ds_sh_employee_admission_details
+	CASE WHEN leftdate IS NULL THEN 1 
+WHEN @Leavers = 'Yes' AND leftdate IS NOT NULL OR leftdate IS NULL THEN 1
+ELSE 0 END = 1
+	
+	AND 
+	
+  CASE WHEN @Surname IS NULL THEN 1
+  WHEN 
   
-    group by employeeid) as MaxEffect
+  REPLACE(UPPER(surname),' ', '') LIKE UPPER('%' + REPLACE(@Surname, ' ','') + '%') THEN 1
+  ELSE 0 END = 1
+  ) AS AllData
+  WHERE AllData.forename <>'Unknown'
+
+
+
+--SELECT Forename, Surname,CAST(employeeid AS UNIQUEIDENTIFIER) AS employeeid ,[HierarchyLevel4] AS Team,AdmissionTypeUD,leftdate,Leaver, DATEDIFF(MONTH,leftdate,GETDATE()) AS MonthsLeft,AdmissionDateud,JobTitle,LevelIDUD,YearsSinceQualification,
+-- CASE WHEN YearsSinceQualification >= 8  AND AdmissionTypeUD ='SRA' THEN 'A'
+-- WHEN (AdmissionTypeUD = 'SRA' AND (YearsSinceQualification >=4 AND YearsSinceQualification <8)) OR (AdmissionTypeUD =  'FILEX' AND YearsSinceQualification >=4) THEN  'B'
+-- WHEN (AdmissionTypeUD IN ('SRA','FILEX') AND YearsSinceQualification <4) OR  AdmissionTypeUD IN ('Association of Costs Lawyers','ILEX') THEN 'C'
+--ELSE 'D' END AS Grade
+	
+--FROM (
+--SELECT Employee.employeeid,forename, surname, RTRIM(LTRIM(admissiondateud)) AS AdmissionTypeUD,[HierarchyLevel4],leftdate,leaver, AdmissionDateud,PostID,JobTitle,LevelIDUD, 
+
+--DATEDIFF(yy,Admission.AdmissionDateud,CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END) - 
+--CASE WHEN DATEADD(YY,DATEDIFF(YY,Admission.AdmissionDateud,CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END),Admission.AdmissionDateud) > CASE WHEN leftdate >GETDATE()THEN GETDATE() ELSE COALESCE(leftdate ,GETDATE())END THEN 1
+--ELSE 0 END AS YearsSinceQualification
+
+--FROM red_dw.dbo.ds_sh_employee AS Employee
+--LEFT JOIN (SELECT AdmissionDetails.employeeid,NULL AS AdmissionTypeud,admissiondateud
+--FROM red_dw.dbo.ds_sh_employee_admission_details AS AdmissionDetails
+
+--INNER JOIN 
+
+--(
+--SELECT employeeid
+--      ,MAX(sys_effectivedate) MaxEffectiveDate
+--  FROM red_dw.dbo.ds_sh_employee_admission_details
+  
+--    GROUP BY employeeid) AS MaxEffect
     
-    on MaxEffect.employeeid = AdmissionDetails.employeeid and MaxEffect.MaxEffectiveDate = AdmissionDetails.sys_effectivedate)
- as Admission on Employee.employeeid = Admission.employeeid
+--    ON MaxEffect.employeeid = AdmissionDetails.employeeid AND MaxEffect.MaxEffectiveDate = AdmissionDetails.sys_effectivedate)
+-- AS Admission ON Employee.employeeid = Admission.employeeid
 
 
-left join (SELECT MainJobs.employeeid ,postid,jobtitle,levelidud , hierarchylevel4, sys_activejob
-FROM red_dw.dbo.ds_sh_employee_jobs as MainJobs
+--LEFT JOIN (SELECT MainJobs.employeeid ,postid,jobtitle,levelidud , hierarchylevel4, sys_activejob
+--FROM red_dw.dbo.ds_sh_employee_jobs AS MainJobs
 
-INNER JOIN (
-SELECT employeeid
-      ,max(effective_start_date) as MaxEffectiveDate
-  FROM red_dw.dbo.ds_sh_employee_jobs
-  group by employeeid) as MaxRecord on MainJobs.employeeid = MaxRecord.employeeid and MainJobs.effective_start_date = MaxRecord.MaxEffectiveDate 
-LEFT JOIN red_dw.dbo.ds_sh_valid_hierarchy_x as Hierarchy on Hierarchy.hierarchynode = MainJobs.hierarchynode
+--INNER JOIN (
+--SELECT employeeid
+--      ,MAX(effective_start_date) AS MaxEffectiveDate
+--  FROM red_dw.dbo.ds_sh_employee_jobs
+--  GROUP BY employeeid) AS MaxRecord ON MainJobs.employeeid = MaxRecord.employeeid AND MainJobs.effective_start_date = MaxRecord.MaxEffectiveDate 
+--LEFT JOIN red_dw.dbo.ds_sh_valid_hierarchy_x AS Hierarchy ON Hierarchy.hierarchynode = MainJobs.hierarchynode
 
 
 
-  ) as MainJob on Employee.employeeid = MainJob.employeeid
-  where sys_ActiveJob = 1
+--  ) AS MainJob ON Employee.employeeid = MainJob.employeeid
+--  WHERE sys_ActiveJob = 1
   
-  ) as AllData
-  --where (DATEDIFF(month,leftdate,getdate()) <6 or leftdate is null )
+--  ) AS AllData
+--  --where (DATEDIFF(month,leftdate,getdate()) <6 or leftdate is null )
   
-  --and 
-	Where
+--  --and 
+--	WHERE
 	
-	Case when leftdate is null then 1 
-when @Leavers = 'Yes' and leftdate is not null or leftdate is null then 1
-else 0 end = 1
+--	CASE WHEN leftdate IS NULL THEN 1 
+--WHEN @Leavers = 'Yes' AND leftdate IS NOT NULL OR leftdate IS NULL THEN 1
+--ELSE 0 END = 1
 	
-	and 
+--	AND 
 	
-  Case when @Surname is null then 1
-  when 
+--  CASE WHEN @Surname IS NULL THEN 1
+--  WHEN 
   
-  REPLACE(UPPER(Surname),' ', '') like UPPER('%' + REPLACE(@Surname, ' ','') + '%') then 1
-  else 0 end = 1
+--  REPLACE(UPPER(Surname),' ', '') LIKE UPPER('%' + REPLACE(@Surname, ' ','') + '%') THEN 1
+--  ELSE 0 END = 1
   
-  order by Surname, Forename
+--  ORDER BY Surname, Forename
+--GO
+
+
 GO
