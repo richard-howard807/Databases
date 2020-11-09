@@ -357,7 +357,7 @@ where (
 
 
 	-- AND WPS275 IS NOT null
-	-- AND red_dw.dbo.dim_matter_header_current.master_client_code = 'Z1001' AND red_dw.dbo.dim_matter_header_current.master_matter_number = '70165'	
+	 --AND red_dw.dbo.dim_matter_header_current.master_client_code = 'Z1001' AND red_dw.dbo.dim_matter_header_current.master_matter_number = '79496'	
 	
 	;
 
