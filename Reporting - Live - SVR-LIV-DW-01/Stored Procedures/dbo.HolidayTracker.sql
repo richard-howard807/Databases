@@ -83,14 +83,33 @@ ON ds_sh_employee_jobs.employeeid = dim_employee.employeeid
 AND ds_sh_employee_jobs.dss_current_flag='Y'
 AND sys_activejob=1
 
-LEFT OUTER JOIN (SELECT employeeid, SUM(durationdays) AS durationdays , SUM(durationholidaydays) AS durationholidaydays
-				FROM red_dw.dbo.fact_employee_attendance
-				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
-										FROM red_dw.dbo.dim_date
-										WHERE current_fin_year='Current')
-						AND category='Holiday'
-						AND startdate<=GETDATE()
-				GROUP BY employeeid) AS [HolidaysTaken]
+--LEFT OUTER JOIN (SELECT employeeid, SUM(durationdays) AS durationdays , SUM(durationholidaydays) AS durationholidaydays
+--				FROM red_dw.dbo.fact_employee_attendance
+--				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
+--										FROM red_dw.dbo.dim_date
+--										WHERE current_fin_year='Current')
+--						AND category='Holiday'
+--						AND startdate<=GETDATE()
+--				GROUP BY employeeid) AS [HolidaysTaken]
+--ON [HolidaysTaken].employeeid = dim_employee.employeeid
+
+--Ticket 78243 - replaced holidays taken join above with below.
+LEFT OUTER JOIN (SELECT 
+					ds_sh_employee_attendance_dates.employeeid
+					, SUM(ds_sh_employee_attendance_dates.durationdays)		AS durationholidaydays
+				--SELECT ds_sh_employee_attendance_dates.*
+				FROM red_dw.dbo.ds_sh_employee_attendance_dates
+					INNER JOIN red_dw.dbo.dim_date
+						ON ds_sh_employee_attendance_dates.startdate = dim_date.calendar_date	
+				WHERE 1 = 1
+					--AND ds_sh_employee_attendance_dates.employeeid = 'C4413681-7195-4364-AA6F-B6A1DA22A127'
+					--AND dim_fed_hierarchy_history.hierarchylevel4hist = 'North West Healthcare 2'
+					AND dim_date.current_fin_year = 'Current'
+					AND ds_sh_employee_attendance_dates.startdate < GETDATE()
+					AND ds_sh_employee_attendance_dates.type = 'Holiday'
+					AND ds_sh_employee_attendance_dates.deleted_flag = 'N'
+				GROUP BY	
+					ds_sh_employee_attendance_dates.employeeid) AS [HolidaysTaken]
 ON [HolidaysTaken].employeeid = dim_employee.employeeid
 
 LEFT OUTER JOIN red_dw.dbo.fact_employee_days_fte 
