@@ -1,13 +1,13 @@
 CREATE TABLE [dbo].[BAR_segment_sector]
 (
-[segment] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
-[sector] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[segment] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[sector] [varchar] (40) COLLATE Latin1_General_BIN NULL,
 [dim_gl_date_key] [int] NULL,
 [gl_fin_month_no] [int] NULL,
 [gl_fin_year] [int] NULL,
-[gl_fin_period] [nvarchar] (20) COLLATE Latin1_General_BIN NULL,
+[gl_fin_period] [varchar] (20) COLLATE Latin1_General_BIN NULL,
 [gl_fin_month] [int] NULL,
-[gl_calendar_date] [datetime2] NULL,
+[gl_calendar_date] [datetime] NULL,
 [bill_amount] [numeric] (38, 2) NULL,
 [outstanding_total_bill] [numeric] (38, 2) NULL,
 [outstanding_total_bill_180_days] [numeric] (38, 2) NULL,

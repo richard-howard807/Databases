@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[GetIAClientData]
 
 AS 
@@ -12,7 +13,7 @@ BEGIN
 
 DECLARE @Period AS NVARCHAR(MAX)
 SET @Period=(SELECT bill_fin_period FROM red_dw.dbo.dim_bill_date
-WHERE bill_date =DATEADD(MONTH,-1,CONVERT(DATE,GETDATE(),103)))
+WHERE bill_date =DATEADD(MONTH,0,CONVERT(DATE,GETDATE(),103)))
 
 DECLARE @FinYear AS INT
 DECLARE @FinMonth AS INT
@@ -68,8 +69,8 @@ FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
 FROM MS_Prod.dbo.udSubSegment
 INNER JOIN MS_Prod.dbo.udSegment
  ON segment=udsegment.code
-where udSegment.active=1
-and udSubSegment.active=1
+WHERE udSegment.active=1
+AND udSubSegment.active=1
 ) AS Segments
 LEFT OUTER JOIN dbo.IA_Client_Data
  ON UPPER(Segment)=UPPER(Segments.segmentname) COLLATE DATABASE_DEFAULT

@@ -6,6 +6,7 @@ GO
 
 
 
+
 --SELECT * FROM dbo.IA_Client_Data
 
 
@@ -23,13 +24,13 @@ SELECT opportunitysn AS [Opportunity Number]
 	,dim_be_opportunities.title AS [Opportunity Name]
 	,type AS [Opportunity Type]
 	,dim_be_opportunities.client_type AS [Revenue Type]
-	,COALESCE(Company.segment,CASE WHEN practice_groups='OMB, Public Bodies' THEN 'OMB' 
+	,COALESCE(CASE WHEN practice_groups='OMB, Public Bodies' THEN 'OMB' 
 									WHEN dim_be_opportunities.practice_groups='Public Bodies' THEN 'Public bodies'
-	ELSE practice_groups END) AS [Segment]
-	,REPLACE(REPLACE(COALESCE(Company.sector,
+	ELSE practice_groups END,Company.segment) AS [Segment]
+	,REPLACE(REPLACE(COALESCE(
 	CASE WHEN industries='Local & Central Government, OMB Manchester' THEN  'OMB Manchester' 
 	
-	ELSE industries END)
+	ELSE industries END,Company.sector)
 	,'Motor Composites & Monoline','Motor Composites and Monoline')
 	,'Hotels & Leisure','Leisure & Hotels')
 	
