@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneUsageTrackerFE]
 (
 @FeeEarner AS NVARCHAR(20)
@@ -29,6 +30,7 @@ SELECT hierarchylevel2hist AS Division
 ,ISNULL(MilestoneTasks.[Processes Used],0) AS [Processes Used] 
 ,ISNULL(MilestoneTasks.Milestones,0) AS [Milestones Used]
 ,ISNULL([Precedents Used],0) AS [Precedents Used]
+,dim_matter_header_current.ms_fileid
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 ,hierarchylevel2hist 

@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [ClaimsMilestoneDashboard].[WriteOffs]
 AS
 BEGIN
@@ -22,6 +23,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE calendar_date >='2019-05-01'
 AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY calendar_date 
 ,dim_matter_header_current.client_code + '-' + dim_matter_header_current.matter_number 
 ,dim_fed_hierarchy_history.name 

@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
@@ -18,7 +20,7 @@ AS
 BEGIN
 SELECT clNo +'-'+ fileNo AS [CaseCode] 
 ,fileDesc AS [CaseDesc]
-,Reference AS [AlternativeRef]
+,InsuredREf.Reference AS [AlternativeRef]
 ,curOriginalBal AS [PrincipalDebt]
 ,CostcutterStatus.Termination AS [TerminationFees]
 ,ISNULL(curOriginalBal,0)+ISNULL(CostcutterStatus.Termination,0) AS [Total Debt]
@@ -108,8 +110,14 @@ LEFT OUTER JOIN MS_Prod.dbo.udCRAccountInformation
 GROUP BY udCRLedgerSL.fileID
 ) AS Ledger
  ON Ledger.fileID = dbFile.fileID
-LEFT OUTER JOIN (SELECT DISTINCT fileID,assocRef AS [Reference] FROM MS_Prod.config.dbAssociates
-WHERE assocType='INSUREDCLIENT'
+LEFT OUTER JOIN (SELECT DISTINCT dbfile.fileID,assocRef AS [Reference] FROM MS_Prod.config.dbAssociates
+INNER JOIN ms_prod.config.dbFile
+ ON dbFile.fileID = dbAssociates.fileID
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+WHERE assocType='CLIENT'
+AND clNo='W22511' 
+AND assocOrder='0'
 AND assocRef IS NOT NULL
 ) AS InsuredREf
  ON InsuredREf.fileID = dbFile.fileID

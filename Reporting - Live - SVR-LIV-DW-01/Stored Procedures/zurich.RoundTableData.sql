@@ -7,6 +7,8 @@ GO
 -- Create date: 2020-08-10
 -- Description:	#67543, Zurich round table data for dashboard and report 
 -- =============================================
+-- 20201106 ES #78099, added claimant representative to claimant sols logic
+-- =============================================
 CREATE PROCEDURE [zurich].[RoundTableData]
 	
 AS
@@ -30,7 +32,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
-		, dst_claimant_solicitor_firm AS [Claimant's Solicitor]
+		, ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantrep_name) AS [Claimant's Solicitor]
 		, outcome_of_case AS [Outcome of Case]
 		, date_claim_concluded AS [Date Claim Concluded]
 		, damages_paid AS [Damages Paid by Client]
@@ -68,6 +70,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_department
 ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_health
 ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
@@ -95,7 +99,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
-		, dst_claimant_solicitor_firm AS [Claimant's Solicitor]
+		, ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantrep_name) AS [Claimant's Solicitor]
 		, outcome_of_case AS [Outcome of Case]
 		, date_claim_concluded AS [Date Claim Concluded]
 		, damages_paid AS [Damages Paid by Client]
@@ -133,6 +137,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_department
 ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_health
 ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')

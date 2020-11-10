@@ -17,6 +17,7 @@ GO
 -- RH 20200812 Added NHS fin years instead of Weightmans 
 -- JB 20201005 Added percent_of_clients_liability_awarded_agreed_post_insts_applied and settlement_on_litigation_risk_basis, after outcome of case
 -- JB 20201013 Added reason_for_settlement as requested by Emma James
+-- JL 20201104 Added history as per ticket #77789
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -486,7 +487,16 @@ dim_detail_health.[nhs_da_success] AS [DA success],
 dim_detail_health.nhs_da_date  AS [DA date],
 dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to DA],
 
-           GETDATE() AS update_time,
+----#77789 added in below 6 fields jl----------------------
+HistoryReserves.[Highest peak firm damages reserve],
+HistoryReserves.[Highest peak defence costs reserve],
+HistoryReserves.[Highest peak claimant costs reserve],
+HistoryReservesv2.[Highest peak GD reserve],
+HistoryReservesv2.[Highest peak SD reserve],
+HistoryReservesv2.[Highest peak GD+SD damages reserve],
+-----------------------------------------------------------
+
+GETDATE() AS update_time,
                                
 
 
@@ -614,9 +624,37 @@ dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to
             ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
-       
+			
+--------------#77789 added in two history tables below JL-----------------------------------------------------
+LEFT OUTER JOIN (
+	SELECT 
+	max(curdamrescur) as [Highest peak firm damages reserve],
+	max(curdefcostrecur) as [Highest peak defence costs reserve],
+	max(curclacostrecur) as [Highest peak claimant costs reserve],
+	fileid
+	FROM
+	red_dw.dbo.dim_matter_header_current
+inner join  red_dw.dbo.ds_sh_ms_udmicurrentreserves_history on dim_matter_header_current.ms_fileid = ds_sh_ms_udmicurrentreserves_history.fileid
+ where dim_matter_header_current.client_group_name = 'NHS Resolution'
+	GROUP BY
+	fileid)AS HistoryReserves
+ON dim_matter_header_current.ms_fileid = HistoryReserves.fileid
 
+LEFT OUTER JOIN (   
 
+		SELECT 
+		max(curgdreserve) as [Highest peak GD reserve],
+		max(cursdreserve) as [Highest peak SD reserve],
+		max(curgdreserve) + max(cursdreserve) as [Highest peak GD+SD damages reserve],
+		fileid 
+		FROM red_dw.dbo.dim_matter_header_current
+		inner join red_dw.dbo.ds_sh_ms_udmipahealthcare_history on dim_matter_header_current.ms_fileid = ds_sh_ms_udmipahealthcare_history.fileid
+		WHERE dim_matter_header_current.client_group_name = 'NHS Resolution'
+		GROUP BY 
+		fileid
+	)AS HistoryReservesv2
+ON dim_matter_header_current.ms_fileid = HistoryReservesv2.fileid
+----------------------------------------------------------------------
         LEFT OUTER JOIN
         (
             SELECT fact_dimension_main.master_fact_key [fact_key],

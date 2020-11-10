@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- Ticket #71119 - JB - added in Last FY figures
 
 CREATE PROCEDURE [dbo].[ClaimMilestoneBenefits] --'2021-02 (Jun-2020)','2021-03 (Jul-2020)' 
@@ -395,6 +396,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE fin_period=@Period1
 AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY dim_fed_hierarchy_history.hierarchylevel3hist
 ,dim_fed_hierarchy_history.hierarchylevel4hist
 UNION
@@ -412,6 +415,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE fin_period=@Period2
 AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY dim_fed_hierarchy_history.hierarchylevel3hist
 ,dim_fed_hierarchy_history.hierarchylevel4hist
 
@@ -430,6 +435,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE dim_date.fin_year = @FinYear2-1
 AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY dim_fed_hierarchy_history.hierarchylevel3hist
 ,dim_fed_hierarchy_history.hierarchylevel4hist
 ) AS WriteOffs

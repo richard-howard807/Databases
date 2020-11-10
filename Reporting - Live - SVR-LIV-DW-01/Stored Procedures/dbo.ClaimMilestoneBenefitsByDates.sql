@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimMilestoneBenefitsByDates] --'2021-02 (Jun-2020)','2021-03 (Jul-2020)'
 (
 @StartDate1 AS DATE
@@ -278,6 +279,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
        = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE calendar_date BETWEEN @StartDate1 AND @EndDate1
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY dim_fed_hierarchy_history.hierarchylevel3hist
 ,dim_fed_hierarchy_history.hierarchylevel4hist
 UNION
@@ -294,6 +297,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_hea
        = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
 WHERE calendar_date BETWEEN @StartDate2 AND @EndDate2
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
+AND dim_write_off_date_key>=20180501
 GROUP BY dim_fed_hierarchy_history.hierarchylevel3hist
 ,dim_fed_hierarchy_history.hierarchylevel4hist
 ) AS WriteOffs

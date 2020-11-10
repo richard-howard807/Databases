@@ -5,6 +5,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 
 
@@ -32,6 +33,10 @@ SELECT hierarchylevel2hist AS Division
 ,matter_description AS [MatterDescription]
 ,name AS [MatterOwner]
 ,dim_matter_header_current.present_position
+,DATEDIFF(Day,'2020-09-28',CONVERT(DATE,GETDATE()-1,103)) AS LiveDays
+,DATEDIFF(Day,'2020-09-28','2021-01-31') AS Day1
+,DATEDIFF(Day,'2020-09-28','2021-04-30') AS Day2
+,DATEDIFF(Day,'2020-09-28','2021-07-31') AS Day3
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
