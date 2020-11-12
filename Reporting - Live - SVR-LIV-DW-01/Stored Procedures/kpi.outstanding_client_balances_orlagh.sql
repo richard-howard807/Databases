@@ -6,6 +6,7 @@ GO
 
 
 
+
 --SELECT * FROM red_dw.dbo.dim_fed_hierarchy_history WHERE name LIKE 'Adrian%'
 
 
@@ -148,7 +149,7 @@ FROM
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
 	 INNER JOIN #Team AS Team ON Team.ListValue COLLATE database_default = Team COLLATE database_default
 	LEFT OUTER JOIN (
-	SELECT ms_fileid,insuredclient_reference,insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
+	SELECT ms_fileid,insuredclient_reference,ISNULL(insurerclient_reference,insuredclient_reference) AS insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.client_code = dim_client_involvement.client_code
  AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
@@ -257,7 +258,7 @@ FROM
 	 ON fee.usrInits=fed_code COLLATE DATABASE_DEFAULT
  INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = Team COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN (
-	SELECT ms_fileid,insuredclient_reference,insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
+	SELECT ms_fileid,insuredclient_reference,ISNULL(insurerclient_reference,insuredclient_reference) AS insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.client_code = dim_client_involvement.client_code
  AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
