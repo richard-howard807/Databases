@@ -28,7 +28,7 @@ SELECT master_client_code AS Client
 ,cboQuarter
 ,AUDCOMP.cdDesc AS cboAuditComp
 ,  [red_dw].[dbo].[datetimelocal](dteDateAudit) dteDateAudit
-,txtClMtNo,udExtFile.txtReason
+,txtClMtNo,udRiskSearchList.txtReason
 --,txtCMFEDInits
 --,txtTMName
 --,SectionGroup.[Description] AS [cboPAClaim]
