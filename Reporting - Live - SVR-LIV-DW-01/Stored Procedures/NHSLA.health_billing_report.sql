@@ -125,16 +125,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK)
  ON dim_matter_header_current.client_code=dim_client_involvement.client_code
  AND dim_matter_header_current.matter_number=dim_client_involvement.matter_number 
  
- 
-
- 
-
- 
-
 WHERE tskType='MILESTONE' 
 
 
-AND tskDesc='NHSR Stage 1/Final Bill Request'
+AND (tskDesc='NHSR Stage 1/Final Bill Request' OR dbTasks.tskDesc = 'NHSR GPI Final Bill Request')
 AND CONVERT(DATE,tskCompleted,103) BETWEEN @DateFrom AND @DateTo
 AND tskComplete=1
 AND dim_matter_header_current.client_code NOT IN ('00030645','95000C','00453737') 
@@ -142,5 +136,7 @@ AND dim_matter_header_current.client_code NOT IN ('00030645','95000C','00453737'
 AND dbTasks.tskActive=1
 
 END
+
+
 
 GO
