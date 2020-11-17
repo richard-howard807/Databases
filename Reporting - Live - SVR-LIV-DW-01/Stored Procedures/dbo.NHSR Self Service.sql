@@ -488,7 +488,15 @@ dim_detail_health.nhs_da_date  AS [DA date],
 dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to DA],
 
 ----#77789 added in below 6 fields jl----------------------
-HistoryReserves.[Highest peak firm damages reserve],
+--HistoryReserves.[Highest peak firm damages reserve],
+
+
+--CASE WHEN HistoryReserves.[Highest peak firm damages reserve] IS NULL 
+--AND  fact_finace_summary.damages_reserve > fact_finance_summary.damages_reserve_initial THEN fact_finace_summary.damages_reserve
+--ELSE fact_finance_summary.damages_reserve_initial END AS History1,
+-- >  
+--ELSE HistoryReserves.[Highest peak firm damages reserve] END AS [Highest peak firm damages reserve],
+
 HistoryReserves.[Highest peak defence costs reserve],
 HistoryReserves.[Highest peak claimant costs reserve],
 HistoryReservesv2.[Highest peak GD reserve],

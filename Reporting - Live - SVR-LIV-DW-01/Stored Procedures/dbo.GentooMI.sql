@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[GentooMI]
 
 AS 
@@ -17,8 +18,11 @@ SELECT dim_matter_header_current.client_code AS [Client]
 ,branch_name AS [Office]
 ,work_type_name AS [Work Type]
 ,matter_owner_full_name AS [Fee Earner]
-
-
+,YEAR(date_opened_case_management) AS YearOpened
+,MONTH(date_opened_case_management) AS MonthNumberOpened
+,DATENAME(MONTH,date_opened_case_management)
+,1 AS [Number Instructions]
+,DATENAME(MONTH,date_opened_case_management) + '-' + CAST(YEAR(date_opened_case_management)  AS NVARCHAR(50)) AS [Period]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'

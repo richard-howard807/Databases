@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -74,6 +76,14 @@ ISNULL(fact_detail_paid_detail.[gd_paid_nhs],0) + ISNULL(fact_detail_paid_detail
 + ISNULL(fact_finance_summary.[recovery_defence_costs_via_third_party_contribution],0))  END   AS [Overall Settlement amount]
 
 
+,CASE WHEN fact_detail_paid_detail.[gd_paid_nhs] IS NULL AND fact_detail_paid_detail.[sd_paid_nhs] IS NULL THEN NULL ELSE 
+ISNULL(fact_detail_paid_detail.[gd_paid_nhs],0) + ISNULL(fact_detail_paid_detail.[sd_paid_nhs] ,0)
+-(ISNULL(fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution],0) 
+--+ISNULL(fact_finance_summary.[recovery_defence_costs_from_claimant],0) 
++ISNULL(fact_detail_recovery_detail.[recovery_claimants_costs_via_third_party_contribution],0) 
++ ISNULL(fact_finance_summary.[recovery_defence_costs_via_third_party_contribution],0))  END   AS [Total Damages Paid (Overall)]
+
+
 
 
 
@@ -117,7 +127,7 @@ ELSE NULL END AS [Trial success]
 ,red_dw.dbo.dim_detail_health.nhs_da_date  AS [DA date]
 ,dim_detail_health.[nhs_da_success] AS [DA success]
 ,CASE WHEN UPPER(dim_detail_core_details.referral_reason) LIKE '%DISPUTE%' THEN 1 ELSE 0 END  AS Dispute
-,CASE WHEN dim_detail_health.[nhs_who_dealt_with_costs] IN ('Keoghs','Acumension') THEN 1 ELSE  0 END AS KeoghsAcumension
+,CASE WHEN dim_detail_health.[nhs_who_dealt_with_costs] IN ('Keoghs','Acumension','Hill Dickinson') THEN 1 ELSE  0 END AS KeoghsAcumension
 ,dim_detail_core_details.referral_reason AS [Referal Reason]
 ,dim_detail_claim.[dst_claimant_solicitor_firm]
 ,dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] 
@@ -330,7 +340,7 @@ AND ms_only=1
 AND (date_closed_practice_management IS NULL OR date_closed_practice_management>='2019-04-01')
 AND reporting_exclusions=0
 
-and ((dim_detail_health.[zurichnhs_date_final_bill_sent_to_client]  >= @StartDate OR @StartDate is null) and  dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] <=  @EndDate  OR @EndDate is null) 
+AND ((dim_detail_health.[zurichnhs_date_final_bill_sent_to_client]  >= @StartDate OR @StartDate IS NULL) AND  dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] <=  @EndDate  OR @EndDate IS NULL) 
 AND RTRIM(dim_matter_header_current.client_code)+'-'+RTRIM(dim_matter_header_current.matter_number)  NOT IN 
 (
 'N00001-PPD001','N00001-VOL001','09011060-00000998','N00002-PPD001'

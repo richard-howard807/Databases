@@ -9,9 +9,14 @@ AS
 BEGIN
 
 SELECT matter_description AS [Case Name]
+,dim_matter_header_current.client_code AS [Client Code]
+,dim_matter_header_current.matter_number AS [Matter Number]
 ,RTRIM(dim_matter_header_current.client_code) + '.' +RTRIM(dim_matter_header_current.matter_number) AS Ref
 ,master_client_code + '.' + master_matter_number AS [Weightmans Ref]
 ,client_reference AS [Amour Reference]
+,CASE WHEN UPPER(matter_description) LIKE 'ELITE%' THEN 'Elite'
+WHEN UPPER(matter_description) LIKE 'TRADEX%' THEN 'Tradex'
+ELSE 'Armour' END AS Client
 ,dim_detail_core_details.[incident_date] AS [Incident Date]
 ,date_opened_case_management AS [Date file opened]
 ,date_closed_case_management AS [Date file closed (MS)]
@@ -70,8 +75,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
  
 WHERE master_client_code IN ('752920','W15608')
 AND reporting_exclusions=0
--- Removing Sam Gittoes files as per ticket #68466
-AND dim_matter_header_current.matter_owner_full_name <> 'Sam Gittoes'
+
 
 END 
 GO

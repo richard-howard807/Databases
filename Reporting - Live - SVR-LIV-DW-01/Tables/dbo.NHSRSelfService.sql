@@ -193,7 +193,6 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [DA success] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [DA date] [datetime] NULL,
 [Recommended to proceed to DA] [varchar] (255) COLLATE Latin1_General_BIN NULL,
-[Highest peak firm damages reserve] [money] NULL,
 [Highest peak defence costs reserve] [money] NULL,
 [Highest peak claimant costs reserve] [money] NULL,
 [Highest peak GD reserve] [money] NULL,

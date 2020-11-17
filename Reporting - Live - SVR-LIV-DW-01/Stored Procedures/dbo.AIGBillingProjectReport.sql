@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -50,15 +51,17 @@ END  AS ElapsedDays
 
 CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN 
 (
-'FRAUDC - Fraud Hourly','AUTOCO - Motor Hourly'
-,'CASUAM - Casualty Major Loss'
-,'CASUAC - Casualty Hourly'
+--'FRAUDC - Fraud Hourly'
+--,'AUTOCO - Motor Hourly'
+--,
+'CASUAM - Casualty Major Loss'
+--,'CASUAC - Casualty Hourly'
 ,'AUTOML - Motor Major Loss'
 ,'HLTHCR - Healthcare Hourly'
 ,'ENVIRC - Environmental Hourly'
 ,'ENVIRM - Environmental Hourly'
 ,'RECVCA - Recovery'
-,'AUTOEX - Motor Hourly'
+--,'AUTOEX - Motor Hourly'
 ) AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Hourly' 
 AND ISNULL(referral_reason,'')<>'Costs dispute'
 THEN 'Incorrect fee scale' END,
@@ -221,6 +224,7 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='A2002'
+--AND master_matter_number='15820'
 AND date_opened_case_management>='2019-02-01'
 AND date_closed_practice_management IS NULL
 AND 

@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[GentooBills]
 (
 @StartDate AS DATE
@@ -32,6 +33,9 @@ SELECT fact_bill.client_code AS [Client]
 ,amount_paid AS [Bill Amount Paid]
 ,last_pay_calendar_date AS [Last Payment]
 ,CASE WHEN final_bill_flag=1 THEN 'Final' ELSE 'Interim' END AS [Final or Interim]
+,bill_fin_month_name
+,bill_fin_year
+,bill_fin_month_name + '-' + CAST(bill_fin_year AS NVARCHAR(5)) AS [BillePeriod]
 FROM red_dw.dbo.fact_bill
 INNER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key

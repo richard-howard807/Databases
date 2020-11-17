@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingClientBalanceComplianceV] --'Litigation'	,'Litigation Leeds'
 (
 @Department AS NVARCHAR(MAX)
@@ -119,7 +120,7 @@ FROM
 INNER JOIN #Department AS Department  ON RTRIM(LTRIM(Department.ListValue)) COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Practice Area])) COLLATE DATABASE_DEFAULT
 INNER JOIN #Team AS Team ON RTRIM(LTRIM(Team.ListValue ))  COLLATE DATABASE_DEFAULT =RTRIM(LTRIM( [Team] ))COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN (
-	SELECT ms_fileid,insuredclient_reference,insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
+	SELECT ms_fileid,insuredclient_reference,ISNULL(insurerclient_reference,insuredclient_reference) AS insurerclient_reference,client_reference FROM red_dw.dbo.dim_client_involvement
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.client_code = dim_client_involvement.client_code
  AND dim_matter_header_current.matter_number = dim_client_involvement.matter_number) AS FileReferences
