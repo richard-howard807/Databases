@@ -6,7 +6,7 @@ CREATE TABLE [dbo].[IA_Activities_Data]
 [Date of Activity] [datetime] NULL,
 [CreatedBy] [nvarchar] (101) COLLATE Latin1_General_BIN NULL,
 [Client Name] [char] (80) COLLATE Latin1_General_BIN NULL,
-[Client Category] [varchar] (50) COLLATE Latin1_General_BIN NULL,
+[Client Category] [nvarchar] (150) COLLATE Latin1_General_BIN NOT NULL,
 [Segment] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Sector] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Days Since Last Contacted] [int] NULL,

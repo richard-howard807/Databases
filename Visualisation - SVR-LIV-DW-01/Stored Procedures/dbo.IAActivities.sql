@@ -19,7 +19,8 @@ SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,activity_calendar_date AS [Date of Activity]
 	,red_dw.dbo.dim_employee.forename + ' ' + surname AS CreatedBy
 	,dim_client.client_name AS [Client Name]
-	,dim_client.generator_status AS [Client Category]
+	--,dim_client.generator_status AS [Client Category]
+	,ISNULL(Lists.list_name,'Client (Excl Patron & Star)') AS [Client Category]
 	,dim_client.segment AS Segment
 	,dim_client.sector AS Sector
 	--,COALESCE(dbo.IA_Client_Data.[Client Name],dim_client.client_name) AS [Client Name]
@@ -38,7 +39,7 @@ SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,dim_ia_activities.dim_client_key AS ClientKey
 	--,ActualClosedDate
  INTO dbo.IA_Activities_Data
-
+--SELECT * 
  FROM red_dw.dbo.dim_ia_activities
 INNER JOIN red_dw.dbo.dim_activity_date
  ON activity_date_key=dim_activity_date_key
@@ -76,6 +77,17 @@ INNER JOIN red_dw.dbo.dim_ia_activity_type
  HAVING MAX(activity_calendar_date)<GETDATE()
 ) AS LastEngement
  ON LastEngement.dim_client_key = dim_client.dim_client_key
+ LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
+	, dim_ia_lists.list_name
+	, dim_ia_contact_lists.ia_client_id
+	  FROM red_dw.dbo.dim_ia_lists
+	  INNER JOIN red_dw.dbo.dim_ia_contact_lists ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
+	  WHERE dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
+	  AND dim_ia_contact_lists.dim_client_key<>0
+	  AND list_type_desc='Status'
+	  ) AS [Lists]
+	  ON Lists.ia_client_id=dim_ia_activities.ia_client_key
+
  WHERE dim_ia_activities.dim_client_key<>0
 
  END
