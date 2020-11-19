@@ -12,11 +12,11 @@ GO
 
 -- ==========================================================================================
 CREATE PROCEDURE [dbo].[MCC_Post_Billing]
---(
---	@StartDate DATE
---	,@EndDate DATE 
+(
+	@StartDate DATE
+	,@EndDate DATE 
 
---)	
+)	
 AS
 	-- For testing purposes
 	--DECLARE @StartDate DATE = '20201001'
@@ -32,7 +32,9 @@ AS
 			,dim_matter_header_current.matter_description	AS [Matter Description]
 			,fact_finance_summary.defence_costs_billed AS [Fees Billed to Date]
 			,SUM(bills.fees) AS [Fees]
+			,SUM(bills.fees_vat) AS [Fees VAT]
 			,SUM(bills.disbs) AS [Disbursements]
+			,SUM(bills.disbs_vat) AS [Disbursements VAT]
 			,SUM(bills.disbs_vat + bills.fees_vat) AS [VAT Amount]
 			,SUM(bills.fees+bills.disbs+bills.disbs_vat + bills.fees_vat)  [Total] 
 			,bills.bill_number AS [Invoice]
@@ -56,7 +58,7 @@ AS
 		INNER JOIN red_dw.dbo.dim_date billed_date ON fact_bill_detail.dim_bill_date_key = billed_date.dim_date_key
 		WHERE client_code IN ('00704563','177862R')  
 		AND fact_bill_detail.bill_number<>'PURGE'
-		--AND billed_date.calendar_date >= @StartDate AND billed_date.calendar_date <= @EndDate
+		AND billed_date.calendar_date >= @StartDate AND billed_date.calendar_date <= @EndDate
 	
 	GROUP BY client_code, matter_number, bill_number
 	) bills ON bills.client_code = dim_matter_header_current.client_code AND bills.matter_number = dim_matter_header_current.matter_number 

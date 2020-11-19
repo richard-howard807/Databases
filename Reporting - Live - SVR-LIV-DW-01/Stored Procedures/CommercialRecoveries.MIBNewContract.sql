@@ -19,6 +19,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBNewContract]--'2020-03-01','2020-03-26'
 (
 @StartDate AS DATE
@@ -61,11 +62,11 @@ DATEADD(DAY,180,DateOpened) ELSE DATEADD(DAY,360,DateOpened) END AS DATE) AS [De
 ,NULL AS [Measure2a]
 ,FirstPaymentDate AS FirstPaymentDate
 ,DATEDIFF(DAY,DateOpened,FirstPaymentDate) AS Measure3
-,CASE WHEN CCT.ClaimNumber1 IS NULL AND CCT.ClaimNumber2 IS NULL THEN 'Pre Litigation'  
+,CASE WHEN ISNULL(CCT.ClaimNumber1,'')='' AND ISNULL(CCT.ClaimNumber2,'')='' THEN 'Pre Litigation'  
 WHEN RIGHT(level_fee_earner,3)='JAL' THEN 'Defended' --'6138
 WHEN CHO.CHO_Interimdate IS NOT NULL OR CHO.CHO_Finalorderdated IS NOT NULL 
-OR Warrant.CWA_WarrantNumber IS NOT NULL OR AOE.ATT_AttachmentOfEarningsNO IS NOT NULL THEN 'Enforcement'
-WHEN CCT.ClaimNumber1 IS NOT NULL OR CCT.ClaimNumber2 IS NOT NULL THEN 'Litigated'
+OR ISNULL(Warrant.CWA_WarrantNumber,'')<>''OR ISNULL(AOE.ATT_AttachmentOfEarningsNO,'')<>'' THEN 'Enforcement'
+WHEN ISNULL(CCT.ClaimNumber1,'')<>'' OR ISNULL(CCT.ClaimNumber2,'')<>'' THEN 'Litigated'
 END AS NewStatusType
  FROM VFile_Streamlined.dbo.AccountInformation
  LEFT OUTER JOIN VFile_Streamlined.dbo.ClientScreens
@@ -193,11 +194,11 @@ DATEADD(DAY,180,[red_dw].[dbo].[datetimelocal](dbFile.Created)) ELSE DATEADD(DAY
 ,NULL AS [Measure2a]
 ,PaymentsAll.FirstPayment AS FirstPaymentDate
 ,DATEDIFF(DAY,MS_Prod.config.dbFile.Created,FirstPayment) AS Measure3
-,CASE WHEN txtClaNum9 IS NULL AND txtClaNum2 IS NULL THEN 'Pre Litigation'  
+,CASE WHEN ISNULL(txtClaNum9,'')='' AND ISNULL(txtClaNum2,'')='' THEN 'Pre Litigation'  
 WHEN usrAlias='6138' THEN 'Defended'
 WHEN dteInterim IS NOT NULL OR dteFinalOrder IS NOT NULL 
-OR txtWarrant IS NOT NULL OR txtAttachEarn IS NOT NULL THEN 'Enforcement'
-WHEN txtClaNum9 IS NOT NULL OR txtClaNum2 IS NOT NULL THEN 'Litigated'
+OR ISNULL(txtWarrant,'')<>'' OR ISNULL(txtAttachEarn,'')<>'' THEN 'Enforcement'
+WHEN ISNULL(txtClaNum9,'')<>'' OR ISNULL(txtClaNum2,'')<>'' THEN 'Litigated'
 END AS NewStatusType
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].dbo.udExtFile
