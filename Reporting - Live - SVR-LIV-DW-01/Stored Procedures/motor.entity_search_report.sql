@@ -102,12 +102,13 @@ AS
 
 	Create table #entity_search_results (
 
-			[Client] varchar (100)
+			  [Client] varchar (100)
 			, [Matter] varchar (100)
 			, [MS Ref] varchar (100)
 			, [Entity Name] varchar(4000)
 			, [Fee Earner] varchar (300)
 			, [Team] varchar (100)
+			, [Present Position] VARCHAR(255) -- Added 19/11/2020
 			, [Status] varchar(200)
 			, [Date Closed] date
 			, [Address] varchar(1000)
@@ -235,7 +236,7 @@ AS
 
 		
 		SELECT Distinct
-					MatterDetails.client_code AS  Client
+					 MatterDetails.client_code AS  Client
 					, MatterDetails.matter_number AS  Matter
 					, dd.Description [matter_description]
 					, dd.Capacity [InvolvementType]
@@ -463,6 +464,7 @@ WHERE a.CleanName LIKE '%' + @SearchDetail1 + '%'
 			, EntityName				  		AS	[Entity Name]
 			, header.matter_owner_full_name		AS	[Fee Earner]
 			, fed.hierarchylevel4hist			AS	[Team]
+			, core.[present_position]           AS  [Present Position] --Added 19/11/2020 - MT
 			, claim.[status]					AS	[Status]
 			, header.date_closed_case_management AS [Date Closed]
 			, [Address]
@@ -530,6 +532,7 @@ WHERE a.CleanName LIKE '%' + @SearchDetail1 + '%'
 			, EntityName				  	AS		[Entity Name]
 			, header.matter_owner_full_name	AS		[Fee Earner]
 			, fed.hierarchylevel4hist		AS		[Team]
+			, core.[present_position]       AS      [Present Position] -- Added 19/11/2020 - MT
 			, claim.[status]				AS		[Status]
 			, header.date_closed_case_management AS		 [Date Closed]
 			, [Address] 
@@ -592,6 +595,7 @@ WHERE a.CleanName LIKE '%' + @SearchDetail1 + '%'
 			, EntityName				  			[Entity Name]
 			, header.matter_owner_full_name			[Fee Earner]
 			, fed.hierarchylevel4hist				[Team]
+			, core.[present_position]       AS      [Present Position] -- Added 19/11/2020 - MT
 			, claim.[status]						[Status]
 			, header.date_closed_case_management		 [Date Closed]
 			, [Address]
@@ -655,6 +659,7 @@ WHERE a.CleanName LIKE '%' + @SearchDetail1 + '%'
 			, header.client_name					[Entity Name] -- need to get entity name
 			, header.matter_owner_full_name			[Fee Earner]
 			, fed.hierarchylevel4hist				[Team]
+			, core.[present_position]       AS      [Present Position] -- Added 19/11/2020 - MT
 			, claim.[status]						[Status]
 			,header.date_closed_case_management		 [Date Closed]
 			,'' [Address]
@@ -717,6 +722,7 @@ WHERE a.CleanName LIKE '%' + @SearchDetail1 + '%'
 			, [Entity Name] 
 			, [Fee Earner] 
 			, [Team] 
+			, [Present Position] -- Added 19/11/2020 - MT
 			, [Status] 
 			, [Date Closed] 
 			, [Address] 
