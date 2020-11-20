@@ -34,6 +34,7 @@ BEGIN
            a.matter_number AS matter,
            RTRIM(a.client_code) + '-' + a.matter_number [LoadNumber],
            matter_description AS case_public_desc1,
+		   a.matter_owner_full_name AS matter_owner,
            insurerclient_reference AS ClientRef,
            [nhs_scheme] AS [Schema],
            a.client_code AS FeesClient,
@@ -91,7 +92,10 @@ BEGIN
            NULL AS HourlyRate,
            Number AS FE,
            2 AS xOrder,
-           Matters.AltNumber AS AltNumber
+           Matters.AltNumber AS AltNumber,
+		   Details.case_public_desc1,
+		   Details.matter_owner,
+		   Timekeeper.DisplayName
 
     FROM
     (

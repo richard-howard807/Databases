@@ -4,13 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20170822
@@ -20,11 +13,13 @@ GO
 --				and also includes figures for current YTD and the last two financial years 
 --
 -- =============================================
+-- 1.1 #77976 amended logic requested by A-M
+-- =============================================
 
-  --exec [publicsector].[local_authority_insured_client] '20190501','20200801'
+  --exec [publicsector].[local_authority_sector_listing_test_OK] '20200501','20201031'
 -- added a soundex function to group
-create PROCEDURE [publicsector].[local_authority_sector_listing_test_OK] 
---	-- Add the parameters for the stored procedure here
+CREATE PROCEDURE [publicsector].[local_authority_sector_listing_test_OK] 
+-- Add the parameters for the stored procedure here
 	@period_from DATE
 	,@period_to DATE
 AS
@@ -34,8 +29,8 @@ BEGIN
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
 	-- For testing purposes
-   -- DECLARE @period_from DATE = '20190501'
-			--,@period_to DATE = '20191031'
+   -- DECLARE @period_from DATE = '20200501'
+			--,@period_to DATE = '20201031'
 	
 
 	DECLARE @previous_period_from DATE = DATEADD(yyyy,-1,@period_from)
@@ -71,9 +66,9 @@ BEGIN
 		, claim.dst_insured_client_name [Client/Insured Client Name]
 		, CASE WHEN claim.dst_insured_client_name IS NOT NULL THEN LTRIM(RTRIM(claim.dst_insured_client_name))
 			WHEN client.sector  IN ('Local & Central Government','Local and Central Government') THEN RTRIM(client.client_name)
-			ELSE RTRIM(claim.insured_client_name)
+			ELSE RTRIM(insured.insuredclient_name)
 			END [name_calculation]
-		, ISNULL(insuredclient_name,matter.client_name) [insuredclient_name] 
+		, insuredclient_name [insuredclient_name] 
 	--	, SOUNDEX(ISNULL(insuredclient_name,matter.client_name)) [Group] -- it works well in some instances but totally wrong in others
 		, matter.date_closed_case_management
 		, dept.department_code
@@ -144,68 +139,75 @@ BEGIN
 			INNER JOIN [red_dw].dbo.dim_detail_outcome outcome ON outcome.client_code = matter.client_code AND outcome.matter_number = matter.matter_number
 			INNER JOIN [red_dw].dbo.dim_detail_core_details core ON core.client_code = matter.client_code AND core.matter_number = matter.matter_number
 			INNER JOIN [red_dw].dbo.dim_matter_worktype worktype ON matter.dim_matter_worktype_key = worktype.dim_matter_worktype_key
-			 
+			--LEFT OUTER JOIN [red_dw].[dbo].[dim_client_involvement] insured ON insured.client_code = matter.client_code AND insured.matter_number = matter.matter_number
 			WHERE
 		
 			-- exclude test and ml matters
 			 matter.reporting_exclusions = 0
 			-- exclude from reports 
-			AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
+			--AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
 			--AND (core.[insured_sector] = 'Local & Central Government' OR core.[insured_sector] IS NULL)-----------------------AM
-			AND(
-			( client.sector =  'Local & Central Government') OR (core.[insured_sector] = 'Local & Central Government                                 ' )
-			OR( LOWER(matter.matter_description) LIKE '%council%' ) OR (LOWER(matter.matter_description) LIKE '%borough%') OR ( LOWER(matter.matter_description) LIKE '%mbc%')
+			--AND(
+			--( client.sector =  'Local & Central Government') OR (core.[insured_sector] = 'Local & Central Government                                 ' )
+			--OR( LOWER(insuredclient_name) LIKE '%council%' ) OR (LOWER(insuredclient_name) LIKE '%borough%') OR ( LOWER(insuredclient_name) LIKE '%mbc%')
 			--or( LOWER(insured_client_name) LIKE '%council%' ) OR (LOWER(claim.dst_insured_client_name) LIKE '%borough%') OR ( LOWER(claim.dst_insured_client_name) LIKE '%mbc%')
+			--)
 
-
-
-			)
-
-		
 			AND dim_bill_date.bill_fin_year >= @fin_year_minus2
 			GROUP BY fact_bill.client_code 
-					,fact_bill.matter_number 
+					,fact_bill.matter_number
 	) finances ON finances.client_code = matter.client_code AND finances.matter_number = matter.matter_number 
 
 WHERE 
 	-- exclude test and ml matters
 	matter.reporting_exclusions = 0
 	---- exclude from reports 
-	AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
+	--AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
 	-- insured sector is blank or is local and central goverment
 	
 
 ---------AND (core.[insured_sector] = 'Local & Central Government' OR core.[insured_sector] IS NULL)    AM 
-		AND( client.sector =  'Local & Central Government' OR core.[insured_sector] = 'Local & Central Government                                 ' )
+		--AND( client.sector =  'Local & Central Government' OR core.[insured_sector] = 'Local & Central Government                                 ' )
 	-- Total Billed for the whole file is not 0 or null
 	AND finance.total_amount_billed <> 0 
 	AND finance.total_amount_billed IS NOT NULL
 	AND finances.total_billed + finances.fees_total > 0 
-	-- exclude the worktypes where the code falls between 1000 and 1138 or 1355 and 1361
-	AND NOT worktype.work_type_code BETWEEN '1000' AND '1138'
-	AND NOT worktype.work_type_code BETWEEN '1355' AND '1361'
-	AND worktype.work_type_code NOT IN ('0007','0009','0010','0012','0014','0015','0022')
-	--AND core_or_lit.[type] = 'lit'
-	AND (	(	
-				dept.department_code = '0004'
-				AND client.sub_sector IN ('Insurance','Local & Central Government','Local and Central Government')
-			)
-			--=====================================
-			OR
+
+--1.1
+	---- exclude the worktypes where the code falls between 1000 and 1138 or 1355 and 1361
+	--AND NOT worktype.work_type_code BETWEEN '1000' AND '1138'
+	--AND NOT worktype.work_type_code BETWEEN '1355' AND '1361'
+	--AND worktype.work_type_code NOT IN ('0007','0009','0010','0012','0014','0015','0022')
+	----AND core_or_lit.[type] = 'lit'
+	--AND (	(	
+	--			dept.department_code = '0004'
+	--			AND 
+	--			client.sub_sector IN ('Insurance','Local & Central Government','Local and Central Government')
+	--		)
+	--		--=====================================
+	--		OR
 			
-			(
-				(
-					worktype.work_type_code BETWEEN '1200' AND '1354'
-					OR worktype.work_type_code = '0032'
-					OR worktype.work_type_code >= '1567'
-				)
-				AND core.[insured_sector] = 'Local & Central Government'
-			)
-			--============================
-			OR client.sub_sector IN ('Local & Central Government','Local and Central Government')
+	--		(
+	--			(
+	--				worktype.work_type_code BETWEEN '1200' AND '1354'
+	--				OR worktype.work_type_code = '0032'
+	--				OR worktype.work_type_code >= '1567'
+	--			)
+	--			AND core.[insured_sector] = 'Local & Central Government'
+	--		)
+	--		--============================
+	--		OR client.sub_sector IN ('Local & Central Government','Local and Central Government')
 			
 
-		 )
+	--	 )
+
+AND( (core.[insured_sector] = 'Local & Central Government                                 ' )
+			OR( LOWER(insuredclient_name) LIKE '%council%' ) OR (LOWER(insuredclient_name) LIKE '% borough%') OR ( LOWER(insuredclient_name) LIKE '%mbc%'))
+AND( worktype.work_type_group IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
+OR client.sector <>'Local & Central Government')
+
+--AND matter.client_code='M00001'
+--AND matter.matter_number='11111295'
 
 --=========================================================================================================
 	UNION ALL
@@ -222,9 +224,9 @@ WHERE
 		,claim.dst_insured_client_name [Client/Insured Client Name]
 		, CASE WHEN claim.dst_insured_client_name IS NOT NULL THEN LTRIM(RTRIM(claim.dst_insured_client_name))
 			WHEN client.sector  IN ('Local & Central Government','Local and Central Government') THEN RTRIM(client.client_name)
-			ELSE RTRIM(claim.insured_client_name)
+			ELSE RTRIM(insured.insuredclient_name)
 			END [name_calculation]
-		, ISNULL(insuredclient_name,matter.client_name) [insuredclient_name] 
+		, insuredclient_name [insuredclient_name] 
 	--	, SOUNDEX(ISNULL(insuredclient_name,matter.client_name)) [Group] -- it works well in some instances but totally wrong in others
 		, matter.date_closed_case_management
 		, dept.department_code
@@ -301,7 +303,7 @@ WHERE
 				-- exclude test and ml matters
 				 matter.reporting_exclusions = 0
 				-- exclude from reports 
-				AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
+				--AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
 				-- insured sector is blank or is local and central goverment
 				AND dim_bill_date.bill_fin_year >= @fin_year_minus2
 		
@@ -313,51 +315,43 @@ WHERE
 		-- exclude test and ml matters
 		 matter.reporting_exclusions = 0
 		---- exclude from reports 
-		AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
+		--AND (outcome.[outcome_of_case] <> 'Exclude from reports' OR outcome.[outcome_of_case] IS NULL ) 
 		-- Total Billed for the whole file is not 0 or null
 		AND finance.total_amount_billed <> 0 
 		AND finance.total_amount_billed IS NOT NULL
 		AND finances.total_billed + finances.fees_total > 0 
 		-- department is Local Government Lit and sub_sector is in ('Insurance','Local and Central Government') but exclude
 		-- the worktypes where the code falls between 1000 and 1138 or 1355 and 1361
-			AND( client.sector =  'Local & Central Government' OR core.[insured_sector] = 'Local & Central Government                                 ' )
-		AND (worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
-									OR worktype.work_type_code BETWEEN '1000' AND '1138' 
-									OR worktype.work_type_code BETWEEN '1128' AND '1134'
-									OR worktype.work_type_code BETWEEN '1355' AND '1361')
-		AND		(
-						(	dept.department_code = '0029'
-							AND (	worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
-									OR worktype.work_type_code BETWEEN '1128' AND '1134'
-									OR worktype.work_type_code BETWEEN '1355' AND '1361'
-								)	 
-						)
-						OR
-						(	matter.date_closed_case_management IS NULL OR matter.date_closed_case_management >= '20130101'
-							AND 
-								( worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
-									OR worktype.work_type_code BETWEEN '1000' AND '1138' 
-									OR worktype.work_type_code BETWEEN '1355' AND '1361'
+		--AND( client.sector =  'Local & Central Government' OR core.[insured_sector] = 'Local & Central Government                                 ' )
+		--AND (worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
+		--							OR worktype.work_type_code BETWEEN '1000' AND '1138' 
+		--							OR worktype.work_type_code BETWEEN '1128' AND '1134'
+		--							OR worktype.work_type_code BETWEEN '1355' AND '1361')
+		--AND		(
+		--				(	dept.department_code = '0029'
+		--					AND (	worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
+		--							OR worktype.work_type_code BETWEEN '1128' AND '1134'
+		--							OR worktype.work_type_code BETWEEN '1355' AND '1361'
+		--						)	 
+		--				)
+		--				OR
+		--				(	matter.date_closed_case_management IS NULL OR matter.date_closed_case_management >= '20130101'
+		--					AND 
+		--						( worktype.work_type_code IN  ('0007','0009','0010','0012','0014','0015','0022')
+		--							OR worktype.work_type_code BETWEEN '1000' AND '1138' 
+		--							OR worktype.work_type_code BETWEEN '1355' AND '1361'
 
-								)
-						)
+		--						)
+		--				)
 
-				)
+		--		)
+--1.1
+AND(( client.sector =  'Local & Central Government') OR (core.[insured_sector] = 'Local & Central Government                                 ' )
+			OR( LOWER(insuredclient_name) LIKE '%council%' ) OR (LOWER(insuredclient_name) LIKE '% borough%') OR ( LOWER(insuredclient_name) LIKE '%mbc%'))
+AND worktype.work_type_group NOT IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--AND matter.client_code='M00001'
+--AND matter.matter_number='11111292'
 
 
 END		
