@@ -296,13 +296,22 @@ SELECT
 			'3 - green'
 	END				AS [risk_rating_order]
 	, #rag_status.[Risk Rating]							AS [Risk Rating]
-	, ISNULL(#rag_status.trial_date_rag_trigger + ', ', '') + ISNULL(#rag_status.trial_window_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_publicity_rag_trigger + ', ', '') + 
-		ISNULL(#rag_status.proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_liability_rag_trigger + ', ', '') + ISNULL(RTRIM(#rag_status.key_date_rag_trigger) COLLATE Latin1_General_CI_AS + ', ', '')	+ 
-		ISNULL(#rag_status.no_proceedings_publicity_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_liability_rag_trigger + ', ', '') AS [rag_trigger]
+	--, ISNULL(#rag_status.trial_date_rag_trigger + ', ', '') + ISNULL(#rag_status.trial_window_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_publicity_rag_trigger + ', ', '') + 
+	--	ISNULL(#rag_status.proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.proceedings_liability_rag_trigger + ', ', '') + ISNULL(RTRIM(#rag_status.key_date_rag_trigger) COLLATE Latin1_General_CI_AS + ', ', '')	+ 
+	--	ISNULL(#rag_status.no_proceedings_publicity_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_repercussive_rag_trigger + ', ', '') + ISNULL(#rag_status.no_proceedings_liability_rag_trigger + ', ', '') AS [rag_trigger]
+	, #rag_status.trial_date_rag_trigger		AS [rag_trigger_1]
+	, #rag_status.trial_window_rag_trigger		AS [rag_trigger_2]
+	, #rag_status.proceedings_publicity_rag_trigger	AS [rag_trigger_3]
+	, #rag_status.proceedings_repercussive_rag_trigger	AS [rag_trigger_4]
+	, #rag_status.proceedings_liability_rag_trigger		AS [rag_trigger_5]
+	, RTRIM(#rag_status.key_date_rag_trigger)			AS [rag_trigger_6]
+	, #rag_status.no_proceedings_publicity_rag_trigger	AS [rag_trigger_7]
+	, #rag_status.no_proceedings_repercussive_rag_trigger	AS [rag_trigger_8]
+	, #rag_status.no_proceedings_liability_rag_trigger		AS [rag_trigger_9]
 	, dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
-	--, dim_matter_header_current.matter_owner_full_name		AS [Panel Case Handler]
+	, dim_matter_header_current.matter_owner_full_name		AS [Panel Case Handler]
 	--, dim_client_involvement.insurerclient_reference		AS [NHSR Ref]
 	--, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
 	--, dim_detail_health.nhs_scheme		AS [Scheme]

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetClosures 'BMW' ,'2020-08-01','2020-09-03'
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetClosures]
 (
@@ -58,7 +59,7 @@ WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22275%' THEN 'MG'
 WHEN clNo='FW22135' OR CRSystemSourceID LIKE '22222%' THEN 'R&B'
 WHEN clNo='FW22613' THEN 'Mini'
 WHEN clNo='W15335' THEN 'Alphera'
-WHEN clNo IN ('W20110','FW23557','890248') THEN 'Alphabet' 
+WHEN clNo IN ('W20110','FW23557') THEN 'Alphabet' 
 END)=@Client
 AND fileClosed BETWEEN @StartDate AND @EndDate
 

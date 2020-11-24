@@ -23,7 +23,7 @@ BEGIN
     -- For Testing Purposes
 
     --DECLARE @Scheme AS VARCHAR(200) = 'CNST'
-    --DECLARE @EndDate AS DATE = '20190131'
+    --DECLARE @EndDate AS DATE = '20201031'
 
 
     IF OBJECT_ID('tempdb..#Details') IS NOT NULL
@@ -95,7 +95,8 @@ BEGIN
            Matters.AltNumber AS AltNumber,
 		   Details.case_public_desc1,
 		   Details.matter_owner,
-		   Timekeeper.DisplayName
+		   CostCard.PostDate,
+		   dim_disbursement_cost_type.cost_type_description
 
     FROM
     (
@@ -129,6 +130,8 @@ BEGIN
                AND Matters.Matter = Details.matter COLLATE DATABASE_DEFAULT
         LEFT OUTER JOIN TE_3E_Prod.dbo.VchrDetail AS VchrDetail
             ON CostCard.CostIndex = VchrDetail.CostCard
+		LEFT OUTER JOIN red_dw.dbo.dim_disbursement_cost_type
+		ON cost_type_code=CostCard.CostType COLLATE DATABASE_DEFAULT
         LEFT OUTER JOIN
         (
             SELECT [TaxLkUp] [TaxCode],

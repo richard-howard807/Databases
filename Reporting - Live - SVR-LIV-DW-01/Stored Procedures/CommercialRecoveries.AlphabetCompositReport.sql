@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[AlphabetCompositReport]
 (
 @StartDate AS DATE
@@ -47,7 +48,7 @@ WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
 
  ON dbfile.fileid=Defendant.fileID
-WHERE clNo IN ('W20110','FW23557','890248') 
+WHERE clNo IN ('W20110','FW23557') 
 AND fileType='2038'
 AND cboCatDesc   IN ('7','0')
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) BETWEEN @StartDate AND @EndDate

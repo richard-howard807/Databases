@@ -73,6 +73,7 @@ SELECT
 	dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
+	, dim_matter_header_current.matter_owner_full_name	AS [Panel Case Handler]
 	, dim_claimant_thirdparty_involvement.claimant_name			AS [Claimant Name]
 	, dim_detail_core_details.injury_type					AS [Injury Type]
 	, CAST(dim_detail_core_details.incident_date AS DATE)			AS [Incident Date]
@@ -226,6 +227,7 @@ UNION
 
 SELECT
 	NULL
+	, NULL
 	, NULL
 	, NULL
 	, NULL
