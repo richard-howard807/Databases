@@ -80,7 +80,13 @@ SELECT
 	, dim_detail_core_details.brief_details_of_claim			AS [Brief Details of Claim]
 	, dim_detail_outcome.reason_for_settlement					AS [Reason For Settlement]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
-	, dim_detail_health.nhs_speciality					AS [Speciality]
+	--, dim_detail_health.nhs_speciality					AS [Speciality]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN
+			dim_matter_worktype.work_type_name
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN 
+			dim_detail_health.nhs_speciality	
+	  END											AS [Speciality]
 	, dim_detail_core_details.referral_reason		AS [Referral Reason]
 	, fact_finance_summary.damages_paid				AS [Damages Paid]
 	, dim_detail_health.nhs_scheme					AS [NHS Scheme]
@@ -189,6 +195,8 @@ SELECT
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
