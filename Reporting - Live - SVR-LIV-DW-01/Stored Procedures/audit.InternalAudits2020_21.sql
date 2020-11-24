@@ -12,12 +12,15 @@ GO
 
 
 CREATE PROCEDURE [audit].[InternalAudits2020_21]
+(
+	@nCode AS TINYINT
+)
 AS
 BEGIN
 
-DECLARE @Year AS NVARCHAR(100)
-SET @Year='2020/21'
-DECLARE @nCode TINYINT = 6 -- this is the dbCode for desc '2020/21' using this instead improved the running of the query.
+--DECLARE @Year AS NVARCHAR(100)
+--SET @Year='2020/21'
+--DECLARE @nCode TINYINT = 6 -- this is the dbCode for desc '2020/21' using this instead improved the running of the query.
 
 
 IF OBJECT_ID('tempdb..#MSAudits2021') IS NOT NULL DROP TABLE #MSAudits2021
