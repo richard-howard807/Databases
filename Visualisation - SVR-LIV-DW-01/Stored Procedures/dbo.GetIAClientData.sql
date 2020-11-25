@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [dbo].[GetIAClientData]
 
 AS 
@@ -31,8 +33,13 @@ SET @MinDate=(SELECT MIN(bill_date) AS MinDate FROM red_dw.dbo.dim_bill_date WHE
 PRINT @FinYear
 PRINT @FinMonth
 
+DECLARE @PreFinYear AS INT
+SET @PreFinYear=@FinYear-1
+
+PRINT @PreFinYear
+
 SELECT [Opportunity Number]
-	,dim_client_key
+	,IA_Client_Data.dim_client_key
 	,[Client Name]
 	,[Client Category]
 	,[Opportunity Name]
@@ -64,6 +71,8 @@ SELECT [Opportunity Number]
 	,[Outcome]
 	,[Outcome Reason]
 	,ActualClosedDate
+	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientRevenueYTD END AS ClientRevenueYTD
+	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientPrevRevenueYTD END AS ClientPrevRevenueYTD
 FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
        MS_Prod.dbo.udSubSegment.description AS [sectorname] 
 FROM MS_Prod.dbo.udSubSegment
@@ -102,7 +111,34 @@ GROUP BY  segment,sector) AS CurrentYear
 ) AS TargetstaRevenue
  ON UPPER(TargetstaRevenue.segmentname)=UPPER(Segments.segmentname) COLLATE DATABASE_DEFAULT
  AND UPPER(TargetstaRevenue.sectorname)=UPPER(Segments.sectorname) COLLATE DATABASE_DEFAULT
-
+---------------------Client Revenue for Bids Tab
+LEFT OUTER JOIN 
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientRevenueYTD
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @FinYear
+AND bill_fin_month_no<=@FinMonth
+GROUP BY  dim_client.dim_client_key
+) AS ClientRevenueYTD
+ ON ClientRevenueYTD.dim_client_key = IA_Client_Data.dim_client_key
+ --------------------------------------------------------------------
+ LEFT OUTER JOIN 
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientPrevRevenueYTD
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @PreFinYear
+AND bill_fin_month_no<=@FinMonth
+GROUP BY  dim_client.dim_client_key
+) AS ClientPrevRevenueYTD
+ ON ClientPrevRevenueYTD.dim_client_key = IA_Client_Data.dim_client_key
 
 
 --SELECT [Opportunity Number]

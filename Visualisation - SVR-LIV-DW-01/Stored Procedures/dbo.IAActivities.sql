@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[IAActivities]
 AS 
 
@@ -19,6 +21,7 @@ SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,activity_calendar_date AS [Date of Activity]
 	,red_dw.dbo.dim_employee.forename + ' ' + surname AS CreatedBy
 	,dim_client.client_name AS [Client Name]
+	,company_name AS [Company Name]
 	--,dim_client.generator_status AS [Client Category]
 	,ISNULL(Lists.list_name,'Client (Excl Patron & Star)') AS [Client Category]
 	,dim_client.segment AS Segment
@@ -38,6 +41,9 @@ SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,client_partner_name AS CRP
 	,dim_ia_activities.dim_client_key AS ClientKey
 	--,ActualClosedDate
+	,leftdate
+
+	
  INTO dbo.IA_Activities_Data
 --SELECT * 
  FROM red_dw.dbo.dim_ia_activities
@@ -89,6 +95,7 @@ INNER JOIN red_dw.dbo.dim_ia_activity_type
 	  ON Lists.ia_client_id=dim_ia_activities.ia_client_key
 
  WHERE dim_ia_activities.dim_client_key<>0
+ AND leftdate IS NULL
 
  END
 
