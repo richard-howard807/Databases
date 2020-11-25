@@ -15,6 +15,7 @@ RH 20200728 - Added percent split
 RH 20200803 - Amended exclusion logic so it excludes personal billings not all billings by any refferer
 
 RH 20200805 - Amened to include charges which are reported as revenue 'Fees'
+			- Report documentation \\sbc.root\usershares\Restricted\Business Services\Information Systems\Teams\Development\Business Intelligence\Documentation\Partners Billing Introductions and Referrals Documentation.docx
 
 exec [dbo].[Create_ROI_Data] '20190101'
 */
