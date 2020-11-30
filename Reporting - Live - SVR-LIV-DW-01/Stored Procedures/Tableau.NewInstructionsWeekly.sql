@@ -32,6 +32,7 @@ BEGIN
 		, ISNULL(dim_client.client_group_name, dim_client.client_name) AS [Client Group Name]
 		, segment AS [Segment]
 		, sector AS [Sector]
+		, dim_instruction_type.instruction_type AS [Instruction Type]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, dim_matter_worktype.work_type_name AS [Work Type] 
 		, dim_matter_worktype.work_type_group AS [Work Type Group]
@@ -111,6 +112,8 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  --AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
  LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS [hierarchy_current]
  ON hierarchy_current.dim_fed_hierarchy_history_key = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+ LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+ ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 
  WHERE dim_matter_header_current.date_opened_practice_management>='2019-01-01'
@@ -127,7 +130,7 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  AND reporting_exclusions=0    
 --AND fact_dimension_main.client_code='00451638' AND fact_dimension_main.matter_number='00004477'--00451638-00004477
 --excluded as bulk opened thousands of matters, BH
-and dim_matter_worktype.work_type_name<>'Wills Archive'
+and NOT dim_matter_worktype.work_type_name IN ('Wills Archive','Deeds Archive')
 
 END
 

@@ -18,6 +18,7 @@ GO
 -- JB 20201005 Added percent_of_clients_liability_awarded_agreed_post_insts_applied and settlement_on_litigation_risk_basis, after outcome of case
 -- JB 20201013 Added reason_for_settlement as requested by Emma James
 -- JL 20201104 Added history as per ticket #77789
+-- JL 20201126 Removed history as per above but replaced it with history case statement #77789
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -488,20 +489,37 @@ dim_detail_health.nhs_da_date  AS [DA date],
 dim_detail_health.nhs_recommended_to_proceed_to_da AS [Recommended to proceed to DA],
 
 ----#77789 added in below 6 fields jl----------------------
---HistoryReserves.[Highest peak firm damages reserve],
+--HistoryReserves.[Highest peak defence costs reserve],
+--HistoryReserves.[Highest peak claimant costs reserve],
+--HistoryReservesv2.[Highest peak GD reserve],
+--HistoryReservesv2.[Highest peak SD reserve],
+--HistoryReservesv2.[Highest peak GD+SD damages reserve],
+
+----Removed the above and replaced with the below #77789
+CASE WHEN HistoryReserves.[Highest peak defence costs reserve] > 0 THEN HistoryReserves.[Highest peak defence costs reserve]
+WHEN HistoryReserves.[Highest peak defence costs reserve]  IS NULL AND 
+ fact_finance_summary.defence_costs_reserve > fact_finance_summary.defence_costs_reserve_initial
+THEN fact_finance_summary.defence_costs_reserve
+ELSE fact_finance_summary.defence_costs_reserve_initial
+END AS  [Highest peak defence costs reserve],
+
+--Highest peak firm damages reserve]
+CASE WHEN HistoryReserves.[Highest peak firm damages reserve] > 0 THEN HistoryReserves.[Highest peak firm damages reserve]
+WHEN HistoryReserves.[Highest peak firm damages reserve]  IS NULL AND 
+ fact_finance_summary.damages_reserve > fact_finance_summary.damages_reserve_initial
+THEN fact_finance_summary.damages_reserve
+ELSE fact_finance_summary.damages_reserve_initial
+END AS [Highest peak firm damages reserve],
+
+--[Highest peak claimant costs reserve]
+CASE WHEN HistoryReserves.[Highest peak claimant costs reserve] > 0 THEN HistoryReserves.[Highest peak claimant costs reserve]
+WHEN HistoryReserves.[Highest peak claimant costs reserve]  IS NULL AND 
+ fact_detail_reserve_detail.claimant_costs_reserve_current > fact_finance_summary.tp_costs_reserve_initial
+THEN fact_detail_reserve_detail.claimant_costs_reserve_current
+ELSE fact_finance_summary.tp_costs_reserve_initial
+END AS [Highest peak claimant costs reserve],
 
 
---CASE WHEN HistoryReserves.[Highest peak firm damages reserve] IS NULL 
---AND  fact_finace_summary.damages_reserve > fact_finance_summary.damages_reserve_initial THEN fact_finace_summary.damages_reserve
---ELSE fact_finance_summary.damages_reserve_initial END AS History1,
--- >  
---ELSE HistoryReserves.[Highest peak firm damages reserve] END AS [Highest peak firm damages reserve],
-
-HistoryReserves.[Highest peak defence costs reserve],
-HistoryReserves.[Highest peak claimant costs reserve],
-HistoryReservesv2.[Highest peak GD reserve],
-HistoryReservesv2.[Highest peak SD reserve],
-HistoryReservesv2.[Highest peak GD+SD damages reserve],
 -----------------------------------------------------------
 
 GETDATE() AS update_time,

@@ -8,6 +8,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -25,6 +28,7 @@ SELECT dim_matter_header_current.client_code AS [Client]
 ,CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END  AS ElapsedDays
+,DATEDIFF(DAY,date_opened_case_management,date_claim_concluded) AS ElapsedConcluded
 ,wip AS [WIP]
 ,red_dw.dbo.dim_matter_header_current.present_position AS [Present Position]
 ,dim_matter_header_current.fixed_fee AS [Fixed Fee]
@@ -69,8 +73,9 @@ THEN 'Incorrect fee scale' END,
 CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN 
 (
 'AUTOCA - Motor Fixed Fee'
-,'CASUCA - Casualty Fixed Fee'
+--,'CASUCA - Casualty Fixed Fee'
 ,'CASUMA - Casualty Fixed Fee'
+,'CASUCA - Casualty Fixed Fee'
 
 ) 
 AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Fixed Fee' 
@@ -92,7 +97,7 @@ THEN 'Incorrect fee scale' END,
                       'Rejected Budget'
              END--,
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
-AND ISNULL(dim_detail_client.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
+AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
 --ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
@@ -102,7 +107,7 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
-AND ISNULL(dim_detail_client.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
+AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
 --ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
@@ -112,7 +117,7 @@ ISNULL(total_amount_billed,0)  + ISNULL(fact_detail_cost_budgeting.[aig_fixed_fe
 THEN 'Insufficient budget' END
 -------------- Fixed Fee (Above) ------------------
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
-AND ISNULL(dim_detail_client.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
+AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (
 --ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
@@ -123,7 +128,7 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
-AND ISNULL(dim_detail_client.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
+AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
 ISNULL(fact_detail_cost_budgeting.[aigtotalbudgethourlyrate],0) + 
@@ -165,7 +170,11 @@ LEFT JOIN red_dw.dbo.fact_detail_cost_budgeting
 LEFT JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-  LEFT OUTER JOIN  (
+LEFT JOIN red_dw.dbo.dim_detail_outcome
+ ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+ AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+
+LEFT OUTER JOIN  (
 				SELECT dim_detail_client.aig_litigation_number
 					,MAX(dim_detail_client.date_budget_uploaded) date_budget_uploaded
 					,MAX(cost_budgeting.total_budget_uploaded) total_budget_uploaded
