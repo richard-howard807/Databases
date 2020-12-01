@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -97,6 +98,7 @@ THEN 'Incorrect fee scale' END,
                       'Rejected Budget'
              END--,
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
@@ -107,6 +109,7 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
@@ -117,6 +120,7 @@ ISNULL(total_amount_billed,0)  + ISNULL(fact_detail_cost_budgeting.[aig_fixed_fe
 THEN 'Insufficient budget' END
 -------------- Fixed Fee (Above) ------------------
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (
@@ -128,6 +132,7 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
 (--ISNULL(fact_detail_cost_budgeting.[aigtotalbudgetfixedfee],0) + 
