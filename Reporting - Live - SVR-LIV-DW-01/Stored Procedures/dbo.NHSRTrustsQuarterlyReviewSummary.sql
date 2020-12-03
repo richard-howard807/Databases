@@ -117,32 +117,36 @@ SELECT
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
 			CASE 
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
-					1
+					'1 - ncl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 5000 THEN
-					2
+					'2 - ncl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
-					3
+					'3 - ncl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
-					4
+					'4 - ncl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
-					5
+					'5 - ncl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
-					6
+					'6 - ncl'
+				ELSE
+					'7 - ncl'
 			END 
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
 			CASE 
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
-					1
+					'1 - cl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 50000 THEN
-					2
+					'2 - cl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
-					3
+					'3 - cl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
-					4
+					'4 - cl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
-					5
+					'5 - cl'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
-					6
+					'6 - cl'
+				ELSE
+					'7 - cl'
 			END
 	END							AS [Damages Tranche Order]
 	, CASE
@@ -160,6 +164,8 @@ SELECT
 					'£25,001 - £50000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
 					'£50,001+'
+				ELSE
+					'Non-clinical N/A'
 			END 
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
 			CASE 
@@ -175,6 +181,8 @@ SELECT
 					'£500,001 - £1,000,000'
 				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
 					'£1,000,001+'
+				ELSE 
+					'Clinical N/A'
 			END
 	END							AS [Damages Tranche]
 	, CASE
