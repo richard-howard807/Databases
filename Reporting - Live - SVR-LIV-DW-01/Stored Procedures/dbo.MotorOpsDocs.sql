@@ -2,7 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE PROCEDURE [dbo].[MotorOpsDocs] --EXEC dbo.MotorOpsDocs 'AXA XL'
+
+CREATE PROCEDURE [dbo].[MotorOpsDocs] --EXEC dbo.MotorOpsDocs 'Ageas'
 (
 @Client AS NVARCHAR(MAX)
 ) 
@@ -13,12 +14,15 @@ SELECT master_client_code +'-'+master_matter_number AS [MattersphereRef]
 ,date_opened_case_management AS [Date Opened]
 ,date_closed_case_management AS [Date Closed]
 ,name AS [Case Handler]
+,hierarchylevel2hist AS [Division]
+,hierarchylevel3hist AS [Department]
+,hierarchylevel4hist AS [Team]
 ,LEFT(DATENAME(MONTH,date_instructions_received),3) + ' ' + CAST(YEAR(date_instructions_received) AS NVARCHAR(5)) AS ReceivedPeriod
 ,date_instructions_received AS [Date Instructions Recevied]
 ,LEFT(DATENAME(MONTH,date_claim_concluded),3) + ' '  + CAST(YEAR(date_claim_concluded) AS NVARCHAR(5)) AS ConcludedPeriod
 ,date_claim_concluded AS [Date Claim Concluded]
-,CASE WHEN date_claim_concluded BETWEEN DateAdd(Year, -1, DateAdd(Month, DateDiff(Month, 0, GetDate()), 0) - 1) + 1 AND   DateAdd(Month, DateDiff(Month, 0, GetDate()), 0) - 1 THEN 1 ELSE 0 END AS ConcludedNo
-,CASE WHEN date_instructions_received BETWEEN DateAdd(Year, -1, DateAdd(Month, DateDiff(Month, 0, GetDate()), 0) - 1) + 1 AND   DateAdd(Month, DateDiff(Month, 0, GetDate()), 0) - 1 THEN 1 ELSE 0 END AS ReceviedNo
+,CASE WHEN date_claim_concluded BETWEEN DATEADD(YEAR, -1, DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) - 1) + 1 AND   DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) - 1 THEN 1 ELSE 0 END AS ConcludedNo
+,CASE WHEN date_instructions_received BETWEEN DATEADD(YEAR, -1, DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) - 1) + 1 AND   DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) - 1 THEN 1 ELSE 0 END AS ReceviedNo
 ,dim_detail_core_details.present_position AS [Present Position]
 ,dim_detail_core_details.[date_initial_report_sent] 
 ,outcome_of_case AS Outcome
@@ -60,6 +64,7 @@ WHEN master_client_code='A1001' THEN 'AXA XL'
 WHEN master_client_code='T3003' THEN 'Tesco'
 WHEN master_client_code='A3003'  AND dim_detail_claim.[name_of_instructing_insurer]='Tesco Underwriting (TU)' THEN 'Tesco'
 WHEN master_client_code='A3003' THEN 'Ageas' END)=@Client
+AND hierarchylevel3hist='Motor'
 
 END 
 GO

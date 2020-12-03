@@ -12,6 +12,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -98,6 +100,8 @@ THEN 'Incorrect fee scale' END,
                       'Rejected Budget'
              END--,
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND dim_detail_client.aig_litigation_number LIKE 'LIT-%'
+AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
 AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
@@ -109,6 +113,8 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND dim_detail_client.aig_litigation_number LIKE 'LIT-%'
+AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
 AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')='Fixed Fee/Fee Quote/Capped Fee'
 AND 
@@ -120,6 +126,8 @@ ISNULL(total_amount_billed,0)  + ISNULL(fact_detail_cost_budgeting.[aig_fixed_fe
 THEN 'Insufficient budget' END
 -------------- Fixed Fee (Above) ------------------
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='Yes' 
+AND dim_detail_client.aig_litigation_number LIKE 'LIT-%'
+AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
 AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
@@ -132,6 +140,8 @@ ISNULL(fact_detail_cost_budgeting.[aig_costs_practice_area_only_budget],0)
 THEN 'Insufficient budget' END 
 
 ,CASE WHEN  ISNULL(is_insured_vat_registered,'Yes')='No' 
+AND dim_detail_client.aig_litigation_number LIKE 'LIT-%'
+AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
 AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND ISNULL(dim_matter_header_current.fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND 
@@ -239,6 +249,7 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='A2002'
 --AND master_matter_number='15820'
+AND ISNULL(dim_detail_client.aig_litigation_number,'')<>'Recovery'
 AND date_opened_case_management>='2019-02-01'
 AND date_closed_practice_management IS NULL
 AND 
