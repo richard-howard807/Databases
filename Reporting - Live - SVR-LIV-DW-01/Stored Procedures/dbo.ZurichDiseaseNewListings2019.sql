@@ -10,6 +10,7 @@ GO
 
 -- RH | 09/10/2019 - Amended to show latest child record only and remove deleted Zurich references from result set.
 -- JB 2020-10-20 - added date proceedings issued 
+-- JB 2020-12-03 - Ticket #80905 added policy cover dates and ms_only flag
 -- =============================================
 
 CREATE PROCEDURE [dbo].[ZurichDiseaseNewListings2019]
@@ -125,14 +126,17 @@ select distinct
 	   when isnull(date_reopened_2,'') <> '' then date_reopened_2
 	   when isnull(date_reopened_1,'') <> '' then date_reopened_1
 	   else null	end [date_reopened_text],
-dim_detail_critical_mi.[date_reopened]  [date_reopened_date],
-dim_detail_claim.[reason_for_reopening_request] [reason_for_reopening_request],
-case when dim_detail_claim.[reason_for_reopening_request] = 'Closed in error by panel' then 'Yes' else 'No' end [Re_opening_avoidable],
-coalesce(dim_detail_core_details.[was_litigation_avoidable],dim_detail_core_details.[zurich_grp_rmg_was_litigation_avoidable]) [Litigation avoidable],
-dim_detail_litigation.are_weightmans_on_the_court_record, 
-[Defence Cost Reserve], 
-[Claimants Cost Reserve] [Claimants Cost Reserve ]
-, CAST(dim_detail_court.date_proceedings_issued AS DATE)	AS [Date Proceedings Issued]
+	dim_detail_critical_mi.[date_reopened]  [date_reopened_date],
+	dim_detail_claim.[reason_for_reopening_request] [reason_for_reopening_request],
+	case when dim_detail_claim.[reason_for_reopening_request] = 'Closed in error by panel' then 'Yes' else 'No' end [Re_opening_avoidable],
+	coalesce(dim_detail_core_details.[was_litigation_avoidable],dim_detail_core_details.[zurich_grp_rmg_was_litigation_avoidable]) [Litigation avoidable],
+	dim_detail_litigation.are_weightmans_on_the_court_record, 
+	[Defence Cost Reserve], 
+	[Claimants Cost Reserve] [Claimants Cost Reserve ]
+	, CAST(dim_detail_court.date_proceedings_issued AS DATE)	AS [Date Proceedings Issued]
+	, ClaimDetails.date_policy_start		AS [Policy Cover Start Date]
+	, ClaimDetails.date_policy_end			AS [Policy Cover End Date]
+	, dim_matter_header_current.ms_only		AS [MS Flag]
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
         on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -231,7 +235,9 @@ from red_dw.dbo.fact_dimension_main
                WPS386,
                WPS387,
 			   [Defence Cost Reserve],
-			   [Claimants Cost Reserve]
+			   [Claimants Cost Reserve],
+			   dim_child.date_policy_start,
+			   dim_child.date_policy_end
 			   -- select *
 
         from
@@ -258,6 +264,8 @@ from red_dw.dbo.fact_dimension_main
                        wp_type as WPS332,
                        date_settlement_form_sent_to_zurich as WPS386,
                        claim_status as WPS387
+					   , dim_child_detail.date_policy_start
+					   , dim_child_detail.date_policy_end
                 from red_dw.dbo.dim_child_detail
             ) as dim_child
               on Parent.dim_parent_key = dim_child.dim_parent_key
