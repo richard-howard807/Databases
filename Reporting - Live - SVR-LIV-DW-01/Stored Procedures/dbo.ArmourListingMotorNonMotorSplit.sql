@@ -9,7 +9,7 @@ CREATE PROCEDURE [dbo].[ArmourListingMotorNonMotorSplit]
 
 AS 
 
--- Ticket #81827 split out SP into Motor/Non-Motor as needed to capture Motor worktypes as well as department 
+-- Ticket #81827 split out SP into Motor/Non-Motor as needed to capture Motor worktypes as well as department. Removed closed/to be closed matters
 
 --Testing
 --DECLARE @report_type AS VARCHAR(10) = 'Motor'
@@ -89,6 +89,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE 
 	master_client_code IN ('752920','W15608')
+	AND dim_matter_header_current.date_closed_practice_management IS NULL
+	AND RTRIM(ISNULL(dim_detail_core_details.present_position, '')) NOT IN ('To be closed/minor balances to be clear') 
 	AND reporting_exclusions=0
 	AND (dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor' OR dim_matter_worktype.work_type_name LIKE '%Motor%')
 
@@ -169,6 +171,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE 
 	master_client_code IN ('752920','W15608')
+	AND dim_matter_header_current.date_closed_practice_management IS NULL
+	AND RTRIM(ISNULL(dim_detail_core_details.present_position, '')) NOT IN ('To be closed/minor balances to be clear') 
 	AND reporting_exclusions=0
 	AND dim_fed_hierarchy_history.hierarchylevel3hist <> 'Motor' 
 	AND dim_matter_worktype.work_type_name NOT LIKE '%Motor%'
