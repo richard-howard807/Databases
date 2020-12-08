@@ -28,17 +28,17 @@ SELECT
 ,[Date Complaint Response sent to Trust] =   	dim_detail_health.remedy_date_complaint_response_sent_to_trust
 ,[Ward] =                                       dim_detail_health.remedy_ward
 ,[Speciality] =                                 dim_detail_health.[remedy_speciality]
-,[Type of Complaint] =                          dim_detail_health.[remedy_type_of_complaint]
+,[Type of Complaint] =                          COALESCE(dim_detail_health.[remedy_type_of_complaint], cboTypeOfComp) COLLATE Latin1_General_BIN
 ,[NHS Staff comments required?] =               dim_detail_health.remedy_nhs_staff_comments_required
 ,[NHS Staff interview required?] =              dim_detail_health.remedy_nhs_staff_interview_required
-,[Complaint Type] =                             dim_detail_health.[remedy_type_of_complaint]
-,[Complaint Summary] =                          dim_detail_health.[remedy_complaint_category]
-,[Complaint Category] =                         ''
+,[Complaint Type] =                             COALESCE(dim_detail_health.remedy_complaint_type, cboCompType) COLLATE Latin1_General_BIN
+,[Complaint Summary] =                          dim_detail_health.remedy_complaint_summary
+,[Complaint Category] =                         dim_detail_health.[remedy_complaint_category]
 ,[Safety & Learning recommendations made?] =    dim_detail_health.[remedy_safety_and_learning_recommendations_made]
 ,[Medical records received?] =                  dim_detail_health.[remedy_medical_records_received]
 ,[CQC involvement?] =                           dim_detail_health.[remedy_cqc_involvement]
 ,[PHSO involvement?] =                          dim_detail_health.[remedy_phso_involvement]
-,[Associated Inquest/Litigation?] =             dim_detail_health.[remedy_associated_inquest_litigation]
+,[Associated Inquest/Litigation?] =             COALESCE(dim_detail_health.[remedy_associated_inquest_litigation], cboAssInqLit) COLLATE Latin1_General_BIN
 ,[Revenue Billed] =                             fact_finance_summary.total_amount_billed 
 ,[Disbursements Billed] =                       fact_finance_summary.total_billed_disbursements_vat
 ,[WIP] =                                        fact_finance_summary.[wip]
@@ -60,9 +60,15 @@ LEFT JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_workt
 LEFT JOIN red_dw.dbo.dim_claimant_thirdparty_involvement ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 LEFT JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 
+/*Temp fix to correct DW issue*/
+
+LEFT JOIN ms_prod.dbo.udRemedy ON CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20))   = CAST(udRemedy.fileID AS NVARCHAR(20)) COLLATE Latin1_General_BIN 
+
 WHERE   1 = 1
 		AND dim_matter_header_current.client_code = 'W15636'
 		AND work_type_name = 'Healthcare - Remedy'
+
+
 
 END
 GO

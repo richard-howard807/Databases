@@ -6,6 +6,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningDrillDown] --EXEC dbo.ClaimsMilestoneFileOpening '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -48,7 +51,7 @@ ELSE RoleType END AS [Role Completed By]
 ,CASE WHEN tskFilter='tsk_01_010_ADMCommenceMIprocess' THEN 'MI Process'
 WHEN tskFilter='tsk_031_01_010_ClientCare' THEN 'Client care process'
 WHEN tskFilter='tsk_042_01_010_CCFA' THEN 'Commence CCFA process'
-WHEN tskFilter='tsk_065_01_010_FileOpen1' THEN 'File opening process'
+WHEN tskFilter IN ('tsk_065_01_010_FileOpen','tsk_024_01_010_FileOp2','tsk_01_020_ADMFileOpening','tsk_01_300_adm_file_open_proc_emp','tsk_065_01_010_FileOpen1','tsk_003_01_010_FileOpenCost') THEN 'File opening process'
 WHEN tskFilter='tsk_065_01_020_ConflictSearch' THEN 'Conflict check'
 WHEN tskFilter='tsk_065_01_080_OpeningRiskAssessment' THEN 'Opening risk assessment'
 WHEN tskFilter='tsk_065_01_100_ReviewMatter' THEN 'Review matter'
@@ -79,6 +82,9 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 AND date_opened_case_management BETWEEN @StartDate AND @EndDate
+AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
+AND ISNULL(referral_reason,'')<>'Advice only'
+AND ISNULL(referral_reason,'')<> 'In House'
 AND tskMSStage=1
 AND hierarchylevel4hist=@Team
 AND tskFilter IN 
@@ -86,13 +92,14 @@ AND tskFilter IN
 'tsk_01_010_ADMCommenceMIprocess','tsk_031_01_010_ClientCare','tsk_042_01_010_CCFA',
 'tsk_065_01_010_FileOpen1','tsk_065_01_020_ConflictSearch','tsk_065_01_080_OpeningRiskAssessment',
 'tsk_065_01_100_ReviewMatter','tsk_065_01_960_AllocationNewMatter','tsk_065_01_961_NewMatterDataCollection',
-'tsk_072_01_010_ClientCare'
+'tsk_072_01_010_ClientCare','tsk_065_01_010_FileOpen'
+,'tsk_065_01_010_FileOpen','tsk_024_01_010_FileOp2','tsk_01_020_ADMFileOpening','tsk_01_300_adm_file_open_proc_emp','tsk_065_01_010_FileOpen1','tsk_003_01_010_FileOpenCost'
 
 )
 AND (CASE WHEN tskFilter='tsk_01_010_ADMCommenceMIprocess' THEN 'MI Process'
 WHEN tskFilter='tsk_031_01_010_ClientCare' THEN 'Client care process'
 WHEN tskFilter='tsk_042_01_010_CCFA' THEN 'Commence CCFA process'
-WHEN tskFilter='tsk_065_01_010_FileOpen1' THEN 'File opening process'
+WHEN tskFilter IN ('tsk_065_01_010_FileOpen','tsk_024_01_010_FileOp2','tsk_01_020_ADMFileOpening','tsk_01_300_adm_file_open_proc_emp','tsk_065_01_010_FileOpen1','tsk_003_01_010_FileOpenCost') THEN 'File opening process'
 WHEN tskFilter='tsk_065_01_020_ConflictSearch' THEN 'Conflict check'
 WHEN tskFilter='tsk_065_01_080_OpeningRiskAssessment' THEN 'Opening risk assessment'
 WHEN tskFilter='tsk_065_01_100_ReviewMatter' THEN 'Review matter'

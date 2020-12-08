@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -15,12 +17,12 @@ AS
 
 BEGIN
 
-SELECT txtCliRef AS [Account Number]
+SELECT COALESCE(txtCliRef,ClientRef.ClientRef) AS [Account Number]
 ,clNo +'-' + fileNo  AS [Weightmans Reference]
 ,dbFile.Created AS [Date Instructred]
 ,Defendant.Defendant AS [Customer's Name]
 ,InstType.cdDesc AS [Instruction Type]
-,NULL AS [Status of instruction]
+,txtCurenStatNot AS [Status of instruction]
 ,cboVehRecovered AS [Vehicle recovered]
 ,curPayArrAmoun AS [Payment arrangement agreed]
 ,curOriginalBal AS [Balance for recovery on instruction]
@@ -51,6 +53,10 @@ FROM [MS_PROD].dbo.udCRLedgerSL
 WHERE   cboCatDesc='5'
 GROUP BY fileID) AS TotalPayments
  ON TotalPayments.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,assocRef AS ClientRef FROM ms_prod.config.dbAssociates
+WHERE assocType='CLIENT'
+AND assocRef IS NOT NULL) AS ClientRef
+ ON ClientRef.fileID = dbFile.fileID
 WHERE (CASE WHEN clNo IN ('FW30085','FW22135') THEN 'BMW' 
 WHEN clNo='341077' THEN 'Land Rover'
 WHEN clNo='FW22352' THEN 'Rover'

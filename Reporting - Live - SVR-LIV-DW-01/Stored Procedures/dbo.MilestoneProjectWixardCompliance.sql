@@ -58,7 +58,10 @@ AND date_closed_case_management IS NULL
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'
+AND leaver =0
 --AND fed_code='5900'
 
 END
+
+
 GO
