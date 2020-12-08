@@ -54,9 +54,9 @@ SELECT
 	,dim_detail_core_details.[date_subsequent_sla_report_sent] AS [Subsequent report date ]
 	,fact_finance_summary.[total_paid] AS [Amount paid to date]
 	,dim_detail_core_details.[is_there_an_issue_on_liability] AS [Liabiilty admitted/denied]
-	,NULL AS [Upcoming JSM?]
-	,NULL AS [Anticipated settlement date?]
-	,NULL AS [Previous Clegg Gifford file?]
+	, dim_detail_core_details.upcoming_jsm_date AS [Upcoming JSM?]
+	, dim_detail_core_details.anticipated_settlement_date AS [Anticipated settlement date?]
+	, dim_detail_core_details.previous_clegg_gifford_file AS [Previous Clegg Gifford file?]
 	,dim_detail_outcome.outcome_of_case AS [Outcome of Claim]
 	,dim_detail_outcome.[date_claim_concluded] AS [Date Claim concluded ]
 	,fact_finance_summary.[damages_paid_to_date] AS [Damages Paid]
@@ -136,9 +136,9 @@ SELECT
 	,dim_detail_core_details.[date_subsequent_sla_report_sent] AS [Subsequent report date ]
 	,fact_finance_summary.[total_paid] AS [Amount paid to date]
 	,dim_detail_core_details.[is_there_an_issue_on_liability] AS [Liabiilty admitted/denied]
-	,NULL AS [Upcoming JSM?]
-	,NULL AS [Anticipated settlement date?]
-	,NULL AS [Previous Clegg Gifford file?]
+	, dim_detail_core_details.upcoming_jsm_date AS [Upcoming JSM?]
+	, dim_detail_core_details.anticipated_settlement_date AS [Anticipated settlement date?]
+	, dim_detail_core_details.previous_clegg_gifford_file AS [Previous Clegg Gifford file?]
 	,dim_detail_outcome.outcome_of_case AS [Outcome of Claim]
 	,dim_detail_outcome.[date_claim_concluded] AS [Date Claim concluded ]
 	,fact_finance_summary.[damages_paid_to_date] AS [Damages Paid]
@@ -178,5 +178,7 @@ WHERE
 	AND dim_matter_worktype.work_type_name NOT LIKE '%Motor%'
 
 END
+
+
 
 GO
