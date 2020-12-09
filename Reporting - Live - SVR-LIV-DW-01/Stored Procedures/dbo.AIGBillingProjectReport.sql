@@ -14,6 +14,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -234,17 +235,19 @@ WHERE WfHistory.CompletedDate IS NULL
               AND prof.InvMaster IS NULL
 ) AS Proforma
  ON Proforma.ms_fileid = dim_matter_header_current.ms_fileid
-LEFT OUTER JOIN (SELECT client_code,matter_number,MAX(bill_date) AS LastBillDate
+LEFT OUTER JOIN (SELECT fact_bill.client_code,fact_bill.matter_number,MAX(bill_date) AS LastBillDate
 FROM red_dw.dbo.dim_bill
 INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_bill_key = dim_bill.dim_bill_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-WHERE client_code='A2002'
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
+WHERE master_client_code='A2002'
 AND fees_total <>0
 AND dim_bill.bill_number <>'PURGE'
 AND bill_reversed=0
-GROUP BY client_code,matter_number) AS LastBillNonDisbBill
+GROUP BY fact_bill.client_code,fact_bill.matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='A2002'

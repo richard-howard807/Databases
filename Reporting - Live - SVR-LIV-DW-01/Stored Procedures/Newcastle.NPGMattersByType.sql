@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [Newcastle].[NPGMattersByType]
 
 AS 
@@ -31,13 +32,6 @@ INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbClient
  ON dbClient.clID = dbFile.clID
 LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
-LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
-,SUM(CASE WHEN InvDate BETWEEN '2019-11-01' AND '2019-11-30' THEN OrgFee ELSE NULL END) AS MonthFees
-FROM [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.InvMaster WITH(NOLOCK)
-INNER JOIN [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.Matter WITH(NOLOCK)
- ON LeadMatter=MattIndex
- GROUP BY MattIndex) AS Financials
-  ON fileExtLinkID=MattIndex
 LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMIInitialReserves
  ON udMIInitialReserves.fileID = udExtFile.fileID
 LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMICoreGeneral

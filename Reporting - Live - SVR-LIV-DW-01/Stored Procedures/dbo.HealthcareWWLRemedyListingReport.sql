@@ -28,7 +28,7 @@ SELECT
 ,[Date Complaint Response sent to Trust] =   	dim_detail_health.remedy_date_complaint_response_sent_to_trust
 ,[Ward] =                                       dim_detail_health.remedy_ward
 ,[Speciality] =                                 dim_detail_health.[remedy_speciality]
-,[Type of Complaint] =                          COALESCE(dim_detail_health.[remedy_type_of_complaint], cboTypeOfComp) COLLATE Latin1_General_BIN
+,[Type of Complaint] =                          CASE WHEN cboTypeOfComp = 'TC1' THEN 'Individual' ELSE cboTypeOfComp  END COLLATE Latin1_General_BIN
 ,[NHS Staff comments required?] =               dim_detail_health.remedy_nhs_staff_comments_required
 ,[NHS Staff interview required?] =              dim_detail_health.remedy_nhs_staff_interview_required
 ,[Complaint Type] =                             COALESCE(dim_detail_health.remedy_complaint_type, cboCompType) COLLATE Latin1_General_BIN
@@ -38,7 +38,7 @@ SELECT
 ,[Medical records received?] =                  dim_detail_health.[remedy_medical_records_received]
 ,[CQC involvement?] =                           dim_detail_health.[remedy_cqc_involvement]
 ,[PHSO involvement?] =                          dim_detail_health.[remedy_phso_involvement]
-,[Associated Inquest/Litigation?] =             COALESCE(dim_detail_health.[remedy_associated_inquest_litigation], cboAssInqLit) COLLATE Latin1_General_BIN
+,[Associated Inquest/Litigation?] =             CASE WHEN cboAssInqLit = 'AIG1' THEN 'No' ELSE cboAssInqLit END COLLATE Latin1_General_BIN --COALESCE(dim_detail_health.[remedy_associated_inquest_litigation], 
 ,[Revenue Billed] =                             fact_finance_summary.total_amount_billed 
 ,[Disbursements Billed] =                       fact_finance_summary.total_billed_disbursements_vat
 ,[WIP] =                                        fact_finance_summary.[wip]
@@ -47,6 +47,7 @@ SELECT
 	                                            THEN 'Open' ELSE 'Closed' END
 												
 ,[Matter Description]   =                         REPLACE(matter_description, 'REMEDY: Complaint - ', '')
+
 
 FROM red_dw.dbo.fact_dimension_main 
 

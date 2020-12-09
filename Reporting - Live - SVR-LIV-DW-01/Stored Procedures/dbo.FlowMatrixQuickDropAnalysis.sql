@@ -61,9 +61,9 @@ INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
 FROM red_dw.dbo.dim_fed_hierarchy_history
 WHERE activeud = 0 AND dss_current_flag = 'Y'
 AND windowsusername IS NOT NULL 
-AND windowsusername NOT IN (SELECT DISTINCT ISNULL(windowsusername,'')
+AND windowsusername NOT IN (SELECT DISTINCT windowsusername
 FROM red_dw.dbo.dim_fed_hierarchy_history
-WHERE activeud = 1 AND dss_current_flag = 'Y')))
+WHERE activeud = 1 AND dss_current_flag = 'Y' AND windowsusername IS NOT null)))
 INNER JOIN   red_dw.dbo.dim_employee
  ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 WHERE completed = 0
@@ -131,9 +131,9 @@ INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
 FROM red_dw.dbo.dim_fed_hierarchy_history
 WHERE activeud = 0 AND dss_current_flag = 'Y'
 AND windowsusername IS NOT NULL 
-AND windowsusername NOT IN (SELECT DISTINCT ISNULL(windowsusername,'')
+AND windowsusername NOT IN (SELECT DISTINCT windowsusername
 FROM red_dw.dbo.dim_fed_hierarchy_history
-WHERE activeud = 1 AND dss_current_flag = 'Y')))
+WHERE activeud = 1 AND dss_current_flag = 'Y' AND windowsusername IS NOT null)))
 
 INNER JOIN   red_dw.dbo.dim_employee
  ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
