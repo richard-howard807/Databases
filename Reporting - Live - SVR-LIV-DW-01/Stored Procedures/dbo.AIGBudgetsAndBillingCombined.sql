@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 (
 
@@ -29,8 +31,9 @@ dim_detail_client.[aig_rates_assigned_in_ascent],
 dim_detail_client.[aig_litigation_number], 
 fed_code AS [matter_owner_fed_code],
 name AS [matter_owner_name],
+hierarchylevel3hist AS [Department],
 hierarchylevel4hist AS [matter_owner_team],
-TRY_CAST(dim_matter_header_current.client_code AS INT) AS[client_code_trimmed],
+CASE WHEN TRY_CAST(dim_matter_header_current.client_code AS INT) IS NULL THEN dim_matter_header_current.client_code ELSE CAST(TRY_CAST(dim_matter_header_current.client_code AS INT)  AS NVARCHAR(50)) END  AS[client_code_trimmed],
 TRY_CAST(dim_matter_header_current.matter_number AS INT)[matter_number_trimmed],
 dim_client_involvement.[insurerclient_reference],
 dim_client_involvement.[insuredclient_name],
@@ -274,6 +277,7 @@ AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)>=90 THEN 'Yes' ELSE 'No' END AS ReadyToBill
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT  AND dss_current_flag='Y'
@@ -368,12 +372,12 @@ LEFT OUTER JOIN
 SELECT dim_detail_client.[aig_litigation_number]
 ,MAX(date_budget_uploaded) AS [LIT_date_budget_uploaded]
 ,SUM(CASE WHEN has_budget_been_approved='Yes' THEN 1 ELSE 0 END)  AS Approved
-,max(fact_detail_cost_budgeting.[total_budget_uploaded]) AS [Lit_total_budget_uploaded]
-,sum(fact_finance_summary.[disbursement_balance]) AS [Lit_disbursement_balance]
-,sum(fact_finance_summary.[unpaid_bill_balance]) AS [Lit_unpaid_bill_balance]
-,sum(fact_finance_summary.[wip]) AS Lit_Wip
-,sum(fact_finance_summary.[defence_costs_billed]) AS [Lit_defence_cost_billed]
-,sum(fact_finance_summary.[total_amount_billed]) AS [Lit_total_amount_billed]
+,MAX(fact_detail_cost_budgeting.[total_budget_uploaded]) AS [Lit_total_budget_uploaded]
+,SUM(fact_finance_summary.[disbursement_balance]) AS [Lit_disbursement_balance]
+,SUM(fact_finance_summary.[unpaid_bill_balance]) AS [Lit_unpaid_bill_balance]
+,SUM(fact_finance_summary.[wip]) AS Lit_Wip
+,SUM(fact_finance_summary.[defence_costs_billed]) AS [Lit_defence_cost_billed]
+,SUM(fact_finance_summary.[total_amount_billed]) AS [Lit_total_amount_billed]
 ,COUNT(1) AS [count]
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details

@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [dbo].[CumbriaBilling]
 AS
 BEGIN
@@ -18,6 +20,7 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Ref]
 ,ISNULL(paid_disbursements,0) + ISNULL(unpaid_disbursements,0) AS [Disbursements]
 ,admin_charges_total AS [Admin Charges]
 ,vat_amount AS [VAT]
+,contAddressee
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -29,10 +32,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_bill_date
 LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
  ON dim_client_involvement.client_code = dim_matter_header_current.client_code
  AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
-
-WHERE master_client_code='243439'
+LEFT OUTER JOIN MS_Prod.config.dbAssociates
+ ON fileID=ms_fileid AND assocType='CLIENT' AND assocOrder='0'
+LEFT OUTER JOIN ms_prod.config.dbContact
+ ON dbContact.contID = dbAssociates.contID
+WHERE (master_client_code='243439'
+OR (master_client_code='733225' AND master_matter_number='979'))
 AND fact_bill.bill_number <>'PURGE'
 AND bill_reversed=0
-AND bill_date>='2018-08-01'
+AND bill_date>='2020-08-01'
 END
 GO

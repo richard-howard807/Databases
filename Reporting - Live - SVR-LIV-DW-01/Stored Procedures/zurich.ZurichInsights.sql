@@ -54,7 +54,9 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
-		, dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] AS [Nomination]
+		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
+			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
+			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
@@ -62,6 +64,22 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN fact_finance_summary.damages_paid BETWEEN 250000 AND 500000 THEN '250,000-500,000'
 			WHEN fact_finance_summary.damages_paid >500000 THEN '500,000+'
 			END AS [Damages Banding]
+		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
+			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
+			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - H''ways%' THEN 'PL - H''ways'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Education%' THEN 'PL - Education'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - OL%' THEN 'PL - OL'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Housing%' THEN 'PL - Housing'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - %' THEN 'PL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PPO Administration%' THEN 'PL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
+			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
+			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
+			ELSE NULL END AS [Claim Type]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -99,7 +117,7 @@ AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018
 AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 AND dim_matter_header_current.client_group_name <> 'MIB'
-AND client_group_name<>'Zurich'
+--AND client_group_name<>'Zurich'
 
 
 UNION
@@ -142,7 +160,9 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
-		, dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] AS [Nomination]
+		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
+			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
+			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
@@ -150,6 +170,22 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN fact_finance_summary.damages_paid BETWEEN 250000 AND 500000 THEN '250,000-500,000'
 			WHEN fact_finance_summary.damages_paid >500000 THEN '500,000+'
 			END AS [Damages Banding]
+		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
+			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
+			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - H''ways%' THEN 'PL - H''ways'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Education%' THEN 'PL - Education'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - OL%' THEN 'PL - OL'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Housing%' THEN 'PL - Housing'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - %' THEN 'PL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PPO Administration%' THEN 'PL - Other'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
+			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
+			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
+			ELSE NULL END AS [Claim Type]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
