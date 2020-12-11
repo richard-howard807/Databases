@@ -56,5 +56,7 @@ ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO
 ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO
+ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
+GO
 DISABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO
