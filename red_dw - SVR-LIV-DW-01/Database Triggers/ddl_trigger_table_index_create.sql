@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE TRIGGER [ddl_trigger_table_index_create]
 ON DATABASE
 FOR CREATE_INDEX, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, CREATE_TABLE
@@ -38,18 +39,20 @@ FROM #temp;
 
 IF @body NOT LIKE '%SBC\dwh01redservice%'
 BEGIN
-	IF @body NOT LIKE '%SBC\sgrego%'
+	IF @body NOT LIKE '%SBC\6237%'
 	BEGIN
 		IF @body NOT LIKE '%SBC\5752%'
 		BEGIN
 			EXEC [msdb].[dbo].[sp_send_dbmail] 
 				@profile_name = 'DBMail',
-				@recipients = 'Kevin.Hansen@weightmans.com;Richard.Howard@weightmans.com;Lucy.Dickinson@weightmans.com;Emily.Smith@weightmans.com;DBAAlerts@weightmans.com',
+				@recipients = 'Kevin.Hansen@weightmans.com;Richard.Howard@weightmans.com;Emily.Smith@weightmans.com;DBAAlerts@weightmans.com',
 				@body = @body,
 				@subject = @subject;
 		END;
 	END;
 END;
+GO
+ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO
 DISABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO
