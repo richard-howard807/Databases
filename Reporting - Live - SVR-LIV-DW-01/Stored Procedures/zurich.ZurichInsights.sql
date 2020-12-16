@@ -24,7 +24,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
 			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
 			ELSE hierarchylevel3hist END AS [Department]
-		, dim_matter_worktype.work_type_group AS [Matter Type]
+		, dim_matter_worktype.work_type_group AS [Matter Type Group]
 		, 'All' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
@@ -60,14 +60,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 100000 AND 250000 THEN '100,000-250,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 250000 AND 500000 THEN '250,000-500,000'
-			WHEN fact_finance_summary.damages_paid >500000 THEN '500,000+'
+			WHEN fact_finance_summary.damages_paid > 100000 THEN '100,000+'
 			END AS [Damages Banding]
+		, dim_matter_worktype.work_type_name AS [Matter Type]
 		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - H''ways%' THEN 'PL - H''ways'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Hways%' THEN 'PL - Hways'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
@@ -79,7 +78,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
 			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
 			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
-			ELSE NULL END AS [Claim Type]
+			ELSE 'Other' END AS [Claim Type]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -130,7 +129,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
 			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
 			ELSE hierarchylevel3hist END AS [Department]
-		, dim_matter_worktype.work_type_group AS [Matter Type]
+		, dim_matter_worktype.work_type_group AS [Matter Type Group]
 		, 'Zurich' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
@@ -166,14 +165,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 100000 AND 250000 THEN '100,000-250,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 250000 AND 500000 THEN '250,000-500,000'
-			WHEN fact_finance_summary.damages_paid >500000 THEN '500,000+'
+			WHEN fact_finance_summary.damages_paid > 100000 THEN '100,000+'
 			END AS [Damages Banding]
+		, dim_matter_worktype.work_type_name AS [Matter Type]
 		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - H''ways%' THEN 'PL - H''ways'
+			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Hways%' THEN 'PL - Hways'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
@@ -185,7 +183,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
 			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
 			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
-			ELSE NULL END AS [Claim Type]
+			ELSE 'Other' END AS [Claim Type]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current

@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[CRPDebt]
 (
 @Partner  AS NVARCHAR(MAX)
@@ -34,7 +35,7 @@ SELECT
 dim_client.client_name AS [Client Name]
 ,master_client_code + '-' + master_matter_number AS [Matter ID]
 ,hierarchylevel4hist AS [Matter Owner Team]
-,NULL AS [Credit Specialist]
+,dim_client.credit_specialist AS [Credit Specialist]
 ,worksforname AS [Team Manager]
 ,name AS [Mtr Owner name]
 ,matter_description AS[Matter Description]
@@ -71,6 +72,7 @@ WHERE dss_current_flag='Y'
 ) AS Email
  ON Email.fed_code = client_partner_code
 WHERE bill_reversed=0
+AND dim_matter_header_current.client_code <>'00030645'
 ) AS AllData
 INNER JOIN #Partner AS [Partner] ON [Partner].ListValue 
 COLLATE DATABASE_DEFAULT = AllData.client_partner_code COLLATE DATABASE_DEFAULT

@@ -347,6 +347,7 @@ FROM (
 		, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 		, fact_finance_summary.portal_bill_total										AS [Portal Bill Total]
 		, dim_matter_header_current.billing_portal_status								AS [Portal Status]
+		, client_billing_sla.client_name												AS [Client Name]
 		, #sla_billing.interim_final													AS [Interim or Final]
 		, #sla_billing.bill_type														AS [Bill Type]
 		, client_billing_sla.bill_rule_num												

@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[InternalWeightmansInstructions]
 
 AS 
@@ -32,7 +33,7 @@ SELECT DISTINCT
 	    total_amount_billed [Total Amount Billed -new],
 		vat_billed [Vat Billed ],
        -- fact_bill_detail_summary.disbursements_billed_exc_vat ,
-       fact_matter_summary_current.unbilled_time [Unbilled Time],
+       fact_finance_summary.wip [Unbilled Time],
        disbursements_billed [Disbursements Billed ],
        total_unbilled_disbursements_vat [Unbilled Disbursements ],
        fee_estimate [Fee Estimate],
