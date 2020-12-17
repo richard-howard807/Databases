@@ -17,7 +17,7 @@ SELECT master_client_code + '-'+master_matter_number AS [MS Client/Matter Number
 ,fact_detail_property.[tenants_solicitors_costs]
 ,bill_total AS [Total Billed]
 ,fees_total AS [Revenue]
-,ISNULL(paid_disbursements,0) + ISNULL(unpaid_disbursements,0) AS [Disbursements]
+,ISNULL(fact_bill.paid_disbursements,0) + ISNULL(fact_bill.unpaid_disbursements,0) AS [Disbursements]
 ,ISNULL([Disbursements - Counsel's Fees],0) AS [Disbursements - Counsel's Fees]
 ,ISNULL(Disbursements.[Disbursements - Court Fees],0) AS [Disbursements - Court Fees]
 ,ISNULL(Disbursements.[Disbursements - Land Registry Fees],0) AS [Disbursements - Land Registry Fees]
@@ -34,6 +34,9 @@ ISNULL([Disbursements - Counsel's Fees],0)
 ,vat_amount AS [VAT]
 ,bill_date AS [Bill Date]
 ,red_dw.dbo.fact_bill.bill_number AS [Bill Number]
+,fact_finance_summary.fixed_fee_amount AS [Fixed Fee Amount]
+,dim_detail_core_details.proceedings_issued AS [Proceedings Issued]
+,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
 
 
  FROM red_dw.dbo.dim_matter_header_current
@@ -43,8 +46,12 @@ INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key =dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_bill
  ON dim_bill.dim_bill_key = fact_bill.dim_bill_key
+ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.client_code = dim_matter_header_current.client_code
+ AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN 
 (
 SELECT fact_bill_detail.dim_bill_key
@@ -75,6 +82,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_property
 WHERE master_client_code='W15603'
 AND bill_reversed=0
 AND fact_bill.bill_number<>'PURGE'
+
+--AND fact_bill.bill_number='01978892'
 
 END 
 GO
