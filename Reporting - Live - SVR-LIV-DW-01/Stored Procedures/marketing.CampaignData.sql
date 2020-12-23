@@ -92,6 +92,15 @@ is_this_part_of_a_campaign
                 ,'T2002-00000442'
                 ,'T2002-00000445'
 				,'00350490-00000041'
+				,'00350490-00000030'
+                ,'T2002-00000379'
+                ,'119698R-00000029'
+                ,'119698R-00000030'
+                ,'G00016-11111143'
+                ,'G00016-11111134'
+                ,'T2002-00000427'
+                ,'00733225-00000713'
+                ,'Z1001-00081930'
 				)
 				THEN 'Grey' ELSE 'Transparent' END AS [Background Colour]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)															AS [Revenue Billed Excl VAT]
@@ -232,6 +241,15 @@ is_this_part_of_a_campaign
                 ,'T2002-00000442'
                 ,'T2002-00000445'
 				,'00350490-00000041'
+				,'00350490-00000030'
+                ,'T2002-00000379'
+                ,'119698R-00000029'
+                ,'119698R-00000030'
+                ,'G00016-11111143'
+                ,'G00016-11111134'
+                ,'T2002-00000427'
+                ,'00733225-00000713'
+                ,'Z1001-00081930'
 				)
 				THEN 'Grey' ELSE 'Transparent' END AS [Background Colour]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)															AS [Revenue Billed Excl VAT]
