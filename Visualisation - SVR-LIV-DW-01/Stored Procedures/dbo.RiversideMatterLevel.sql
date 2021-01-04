@@ -34,6 +34,9 @@ ISNULL([Disbursements - Counsel's Fees],0)
 ) AS [Disbursements - Other]
 ,vat_billed AS [VAT]
 ,last_bill_date AS [Last Bill Date]
+,fact_finance_summary.fixed_fee_amount AS [Fixed Fee Amount]
+,dim_detail_core_details.proceedings_issued AS [Proceedings Issued]
+,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
 
 
  FROM red_dw.dbo.dim_matter_header_current
@@ -45,6 +48,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_detail_property
  ON fact_detail_property.client_code = dim_matter_header_current.client_code
  AND fact_detail_property.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key =dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key

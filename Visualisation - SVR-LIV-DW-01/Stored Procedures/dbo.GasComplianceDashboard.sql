@@ -32,6 +32,8 @@ dim_matter_header_current.master_client_code AS [Client Code]
 ,defence_costs_billed AS Revenue
 ,disbursements_billed AS Disbursements
 ,vat_billed AS VAT
+,red_dw.dbo.fact_finance_summary.fixed_fee_amount
+,proceedings_issued
 , CASE
                WHEN (fact_matter_summary_current.last_bill_date) = '1753-01-01' THEN
                    NULL
@@ -44,7 +46,9 @@ red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key 
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+
             ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history

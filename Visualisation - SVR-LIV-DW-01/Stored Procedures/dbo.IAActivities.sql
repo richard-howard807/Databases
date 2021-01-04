@@ -8,14 +8,33 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[IAActivities]
 AS 
 
 DROP TABLE IF EXISTS dbo.IA_Activities_Data;
 
 BEGIN
-
-SELECT dim_ia_activities.dim_client_key AS dim_client_key
+SELECT AllData.dim_client_key,
+       AllData.Activity,
+       AllData.[Activity Type],
+       AllData.[Date of Activity],
+       AllData.CreatedBy,
+       AllData.[Client Name],
+       AllData.[Company Name],
+       AllData.[Client Category],
+       AllData.Segment,
+       AllData.Sector,
+       AllData.[Days Since Last Contacted],
+       AllData.[Next Engagement Date],
+       AllData.CRP,
+       AllData.ClientKey,
+       AllData.leftdate
+ INTO dbo.IA_Activities_Data
+ --SELECT COUNT(1)  FROM dbo.IA_Activities_Data
+ FROM 
+(SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,activity_calendar_date AS [Activity]
 	,activity_type_desc AS [Activity Type]
 	,activity_calendar_date AS [Date of Activity]
@@ -44,8 +63,6 @@ SELECT dim_ia_activities.dim_client_key AS dim_client_key
 	,leftdate
 
 	
- INTO dbo.IA_Activities_Data
---SELECT * 
  FROM red_dw.dbo.dim_ia_activities
 INNER JOIN red_dw.dbo.dim_activity_date
  ON activity_date_key=dim_activity_date_key
@@ -96,6 +113,73 @@ INNER JOIN red_dw.dbo.dim_ia_activity_type
 
  WHERE dim_ia_activities.dim_client_key<>0
  AND leftdate IS NULL
+ 
+UNION
+
+SELECT dim_ia_activities.dim_client_key AS dim_client_key
+       ,activity_calendar_date AS [Activity]
+       ,activity_type_desc AS [Activity Type]
+       ,activity_calendar_date AS [Date of Activity]
+       ,red_dw.dbo.dim_employee.forename + ' ' + surname AS CreatedBy
+       ,dim_client.client_name AS [Client Name]
+       ,company_name AS [Company Name]
+       ,ISNULL(Lists.list_name,'Non client') AS [Client Category]
+       ,dim_client.segment AS Segment
+       ,dim_client.sector AS Sector
+       ,DATEDIFF(DAY,CASE WHEN LastEngement.LastEngement='1753-01-01 00:00:00.000' THEN NULL ELSE LastEngement.LastEngement END, GETDATE())  AS [Days Since Last Contacted]
+       ,NextEngement.NextEngement AS [Next Engagement Date]
+       ,client_partner_name AS CRP
+       ,dim_ia_activities.dim_client_key AS ClientKey
+       ,leftdate
+FROM red_dw.dbo.dim_ia_activities
+INNER JOIN red_dw.dbo.dim_activity_date
+ON activity_date_key=dim_activity_date_key
+INNER JOIN red_dw.dbo.dim_ia_activity_type
+ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key
+LEFT OUTER JOIN red_dw.dbo.dim_employee
+ON dim_created_employee_key=dim_employee_key
+LEFT OUTER JOIN red_dw.dbo.dim_client
+ON dim_client.dim_client_key = dim_ia_activities.dim_client_key
+LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
+       , dim_ia_lists.list_name
+       , dim_ia_contact_lists.ia_client_id
+         FROM red_dw.dbo.dim_ia_lists
+         INNER JOIN red_dw.dbo.dim_ia_contact_lists ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
+         WHERE dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
+         AND dim_ia_contact_lists.dim_client_key<>0
+         AND list_type_desc='Status'
+         ) AS [Lists]
+         ON Lists.ia_client_id=dim_ia_activities.ia_client_key
+LEFT OUTER JOIN (SELECT companyid
+,MAX(activity_calendar_date) AS NextEngement
+FROM red_dw.dbo.dim_ia_activities
+INNER JOIN red_dw.dbo.dim_activity_date
+ON activity_date_key=dim_activity_date_key
+INNER JOIN red_dw.dbo.dim_ia_activity_type
+ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
+ --Maybe have filter activity type
+GROUP BY companyid
+HAVING MAX(activity_calendar_date)>=GETDATE()) AS NextEngement
+  ON  NextEngement.companyid = dim_ia_activities.companyid
+LEFT OUTER JOIN 
+(
+SELECT companyid
+,MAX(activity_calendar_date) AS LastEngement
+FROM red_dw.dbo.dim_ia_activities
+INNER JOIN red_dw.dbo.dim_activity_date
+ON activity_date_key=dim_activity_date_key
+INNER JOIN red_dw.dbo.dim_ia_activity_type
+ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
+ --Maybe have filter activity type
+GROUP BY companyid
+HAVING MAX(activity_calendar_date)<GETDATE()
+) AS LastEngement
+ON  LastEngement.companyid = dim_ia_activities.companyid
+
+WHERE dim_ia_activities.dim_client_key=0
+AND leftdate IS NULL
+) AS AllData
+
 
  END
 

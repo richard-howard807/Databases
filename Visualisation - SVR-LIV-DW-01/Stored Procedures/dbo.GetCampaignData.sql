@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[GetCampaignData]
 
 AS 
@@ -12,7 +13,7 @@ BEGIN
 DECLARE @DateFrom AS DATE
 DECLARE @DateTo AS DATE
 
-SET @DateFrom='2019-05-01'
+SET @DateFrom='2020-05-01'
 SET @DateTo=CONVERT(DATE,GETDATE(),103)
 
 SELECT 

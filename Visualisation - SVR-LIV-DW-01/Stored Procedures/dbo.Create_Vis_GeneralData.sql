@@ -15,8 +15,10 @@ Current Version:	Initial Create
 -- ES 03-02-2020 added revenue and hours per financial year, 45432
 -- ES 05-10-2020 #74471
 -- ES 06-01-2020 #73408 added stw details
+-- JL 17-01-2020 Added in involvement table v 1.1
+-- JL 08-12-2020 Its been advised that the face_dimention_main key for history needs to be fixed by Richard. Have removed the join and replaced untill its fixed. v 1.2
 ====================================================
---JL - 2020-01-17 Added in involvement table v 1.1
+
 */
 CREATE PROCEDURE [dbo].[Create_Vis_GeneralData]
 AS
@@ -627,7 +629,14 @@ FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key=fact_dimension_main.dim_fed_hierarchy_history_key --AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND getdate() BETWEEN dss_start_date AND dss_end_date 
+--JL 08-12-2020  - This has been moved temporarily untill fact_dimention_main has been fixed. Added join not useing the key
+--LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key=fact_dimension_main.dim_fed_hierarchy_history_key --AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND getdate() BETWEEN dss_start_date AND dss_end_date 
+--v 1.2 added...
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.fed_code = red_dw.dbo.dim_matter_header_current.fee_earner_code
+              AND red_dw.dbo.dim_fed_hierarchy_history.dss_current_flag = 'Y'
+              AND GETDATE()
+              BETWEEN dss_start_date AND dss_end_date
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
