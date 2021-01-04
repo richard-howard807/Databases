@@ -8,6 +8,7 @@ GO
 -- Author:		<Jamie Bonner>
 -- Create date: <2020-01-24>
 -- Description:	<ticket #43507 new logic for InterEurope listing report>
+-- Update as per Ticket 83725 -- removal of 351402.52
 -- =============================================
 
 CREATE PROCEDURE [dbo].[InterEuropeListingReportNew]
@@ -17,9 +18,9 @@ BEGIN
     SET NOCOUNT ON;
     SELECT 
 		h_current.master_client_code + '.' + h_current.master_matter_number	AS [Weightmans Reference]
-	--	, LTRIM(RTRIM(client_involv.client_reference))																		AS [Insurer Client Reference]
-		, MSbillingAddress.[Insurer Reference] [Insurer Client Reference]
-		--, LTRIM(RTRIM(client_involv.insuredclient_name))																	AS [Insurer Client]
+	--	, LTRIM(RTRIM(client_involv.client_reference))	AS [Insurer Client Reference]
+		, COALESCE(MSbillingAddress.[Insurer Reference], client_involv.client_reference COLLATE DATABASE_DEFAULT, client_involv.[insurerclient_reference] COLLATE DATABASE_DEFAULT)  [Insurer Client Reference]
+		--, LTRIM(RTRIM(client_involv.insuredclient_name))	AS [Insurer Client]
 		,foreigninsurer.name																								AS [Insurer Client]
 		, CAST(core_details.date_instructions_received AS DATE)																AS [Date Instructions Received]
 		, CASE
@@ -240,7 +241,9 @@ LEFT JOIN
 		AND h_current.matter_number <> 'ML'
 		AND h_current.reporting_exclusions = 0
 		AND CAST(core_details.date_instructions_received AS DATE)>='2019-11-01'
-		AND h_current.matter_owner_full_name <> 'Jake Whewell'	
+		AND h_current.matter_owner_full_name <> 'Jake Whewell'
+		/*Hardcoded as per Ticket 83725*/
+		AND h_current.master_client_code + '.' + h_current.master_matter_number	 <> '351402.52'
 
 END;
 GO

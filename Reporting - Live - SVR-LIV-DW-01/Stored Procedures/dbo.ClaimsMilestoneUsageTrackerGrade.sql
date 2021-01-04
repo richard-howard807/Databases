@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneUsageTrackerGrade]
 
 AS 
@@ -28,6 +29,10 @@ SELECT hierarchylevel2hist AS Division
 ,ISNULL(MilestoneTasks.Milestones,0) AS [Milestones Used]
 ,ISNULL([Precedents Used],0) AS [Precedents Used]
 ,Filtered.levelidud AS Grade
+,CASE WHEN levelidud IN 
+(
+'Equity Partner','Fixed Share Partner','Paralegal','Associate','Principal Associate','Solicitor','Trainee'
+) THEN 1 ELSE 0 END  AS ExtraFilter
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 ,hierarchylevel2hist 
@@ -36,6 +41,10 @@ INNER JOIN (SELECT dim_matter_header_curr_key
 ,name
 ,fed_code
 ,levelidud
+,CASE WHEN levelidud IN 
+(
+'Equity Partner','Fixed Share Partner','Paralegal','Associate','Principal Associate','Solicitor','Trainee'
+) THEN 1 ELSE 0 END  AS ExtraFilter
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT

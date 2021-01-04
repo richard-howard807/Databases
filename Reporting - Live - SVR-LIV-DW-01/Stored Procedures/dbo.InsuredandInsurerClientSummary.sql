@@ -7,6 +7,7 @@ GO
 -- Author:		sgrego
 -- Create date: 2018-08-29
 -- Description:	created to keep track of the report
+--JL 16-12-2020 #79345 fixed issue with calc for field 'May_2015_now_bills', was incorrect. Added isnull
 -- =============================================
 CREATE PROCEDURE [dbo].[InsuredandInsurerClientSummary] 
 AS
@@ -136,12 +137,12 @@ SELECT
 	, SUM(#groups_count.matters_FY2020) AS matters_FY2020
 	, SUM(#groups_count.matters_FY2021) AS matters_FY2021
 
-	, SUM(#results.[2016]) +						 
-		SUM(#results.[2017]) +
-		SUM(#results.[2018]) +
-		SUM(#results.[2019]) +
-		SUM(#results.[2020]) +
-		SUM(#results.[2021]) 			AS May_2015_now_bills
+	, ISNULL(SUM(#results.[2016]),0) +						 
+		ISNULL(SUM(#results.[2017]),0) +
+		ISNULL(SUM(#results.[2018]),0) +
+		ISNULL(SUM(#results.[2019]),0) +
+		ISNULL(SUM(#results.[2020]),0) +
+		ISNULL(SUM(#results.[2021]),0) 			AS May_2015_now_bills
 	, SUM(#results.[2016]) AS May_2015_April_2016_bills
 	, SUM(#results.[2017]) AS May_2016_April_2017_bills
 	, SUM(#results.[2018]) AS May_2017_now_bills

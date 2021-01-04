@@ -6,6 +6,7 @@ GO
 
 --=========================================================================================================
 -- ES - 20190815 - amended days banding to use getdate rather than the end of the current month
+-- ES - 20201216 - #82500, added logic to exclude non billable disbursements
 --=========================================================================================================
 
 
@@ -53,13 +54,17 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON dim_matter_header_current.fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 LEFT OUTER JOIN red_dw.dbo.dim_payee
  ON dim_payee.dim_payee_key = a.dim_payee_key
+ LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_costcard
+ ON ds_sh_3e_costcard.costindex = a.costindex
+
  WHERE dim_bill_key=0
 AND total_unbilled_disbursements <> 0
 --AND reporting_exclusions=0
-AND b.transaction_fin_month=@finMonth
+AND b.transaction_fin_month=202108
 AND a.invnumber  IS NULL 
-
-
+AND ds_sh_3e_costcard.isnb=0
+--AND a.client_code='EMP5104'
+--AND a.matter_number='00000002'
 
 END
 GO
