@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE VIEW [onetoone].[users]
 
 AS
@@ -30,10 +31,10 @@ SELECT emp.windowsusername employee_username,
 	hsd.name hsd_name,
 	dbo.dim_employee.employeestartdate
 -- select *
-FROM dbo.dim_fed_hierarchy_current emp
-INNER JOIN dbo.dim_employee ON dim_employee.employeeid = emp.employeeid
-LEFT OUTER JOIN dim_fed_hierarchy_current mgr ON mgr.employeeid = emp.worksforemployeeid AND mgr.activeud = 1
-LEFT OUTER JOIN dim_fed_hierarchy_current hsd ON mgr.worksforemployeeid = hsd.employeeid AND hsd.activeud = 1
+FROM dbo.dim_fed_hierarchy_current emp (NOLOCK)
+INNER JOIN dbo.dim_employee   (NOLOCK) ON dim_employee.employeeid = emp.employeeid
+LEFT OUTER JOIN dim_fed_hierarchy_current mgr (NOLOCK)  ON mgr.employeeid = emp.worksforemployeeid AND mgr.activeud = 1
+LEFT OUTER JOIN dim_fed_hierarchy_current hsd  (NOLOCK) ON mgr.worksforemployeeid = hsd.employeeid AND hsd.activeud = 1
 WHERE emp.activeud = 1
 AND emp.windowsusername IS NOT NULL
 AND ISNULL(dim_employee.deleted_from_cascade,0) <> 1
