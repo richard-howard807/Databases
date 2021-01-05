@@ -29,6 +29,9 @@ BEGIN
 IF OBJECT_ID('tempdb..#department') IS NOT NULL DROP TABLE #department
 IF OBJECT_ID('tempdb..#team') IS NOT NULL DROP TABLE #team
 IF OBJECT_ID('tempdb..#matter_owner') IS NOT NULL DROP TABLE #matter_owner
+IF OBJECT_ID('tempdb..#investigation_time') IS NOT NULL DROP TABLE #investigation_time
+IF OBJECT_ID('tempdb..#total_hours') IS NOT NULL DROP TABLE #total_hours
+
 
 SELECT udt_TallySplit.ListValue  INTO #department FROM 	dbo.udt_TallySplit('|', @Department)
 SELECT udt_TallySplit.ListValue  INTO #team FROM 	dbo.udt_TallySplit('|', @Team)
@@ -37,15 +40,20 @@ SELECT udt_TallySplit.ListValue  INTO #matter_owner FROM 	dbo.udt_TallySplit('|'
 --==================================================================================================================================================================================================
 -- Table to gather all investigation/investigation travel time 
 --==================================================================================================================================================================================================
-DROP TABLE IF EXISTS #investigation_time
-
 SELECT 
-	dim_matter_header_current.master_client_code
-	, dim_matter_header_current.master_matter_number
+	dim_matter_header_current.dim_matter_header_curr_key
+	, CASE 
+		WHEN fact_all_time_activity.time_activity_code = '0024' OR fact_all_time_activity.time_activity_code = '0030' THEN
+			'investigation'
+		ELSE
+			'other'
+	  END				AS [time_type]
 	, dim_all_time_activity.unbilled_record
 	, dim_all_time_activity.billed_record
-	, SUM(fact_all_time_activity.wipamt)		AS [time_charge_value]
+	, SUM(fact_all_time_activity.wipamt)	AS [investigation_amount]
+	, SUM(fact_all_time_activity.wiphrs)		AS [investigation_hours]
 INTO #investigation_time
+--SELECT dim_all_time_activity.*
 FROM red_dw.dbo.fact_all_time_activity
 	INNER JOIN red_dw.dbo.dim_all_time_activity
 		ON dim_all_time_activity.dim_all_time_activity_key = fact_all_time_activity.dim_all_time_activity_key
@@ -56,15 +64,33 @@ FROM red_dw.dbo.fact_all_time_activity
 		ON dim_detail_client.client_code = dim_matter_header_current.client_code
 			AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
-	AND fact_all_time_activity.time_activity_code IN ('0024', '0030')
 	AND dim_matter_header_current.master_client_code = 'Z1001'
+	--AND dim_matter_header_current.master_matter_number = '52361'
+	AND dim_all_time_activity.transaction_type NOT IN ('Non Billable', 'Non Chargeable Time', 'Written Off', 'Written Off Transaction')
 	AND (dim_detail_client.zurich_data_admin_closure_date IS NULL OR dim_detail_client.zurich_data_admin_closure_date >= '2020-01-01')
 	AND RTRIM(dim_matter_header_current.client_code) NOT IN ('Z00002', 'Z00004', 'Z00012', 'Z00014', 'Z00018', 'Z00021', '00012506', '00040657', '00169487', '00169490')
 GROUP BY
-	dim_matter_header_current.master_client_code
-	, dim_matter_header_current.master_matter_number
-	, dim_all_time_activity.unbilled_record
-	, dim_all_time_activity.billed_record
+	GROUPING SETS
+	(
+	(
+		dim_matter_header_current.dim_matter_header_curr_key
+		, CASE 
+			WHEN fact_all_time_activity.time_activity_code = '0024' OR fact_all_time_activity.time_activity_code = '0030' THEN
+				'investigation'
+			ELSE
+				'other'
+		  END
+		, dim_all_time_activity.unbilled_record
+		, dim_all_time_activity.billed_record
+	)
+	, 
+	(
+		dim_matter_header_current.dim_matter_header_curr_key
+		, dim_all_time_activity.unbilled_record
+		, dim_all_time_activity.billed_record
+	)
+	)
+
 
 
 --==================================================================================================================================================================================================
@@ -100,19 +126,28 @@ SELECT
 		ELSE
 			NULL
 	 END						AS [KPI Type]
-	, dim_detail_finance.output_wip_fee_arrangement							AS [Fee Arrangement]
-	, fact_finance_summary.fixed_fee_amount									AS [Fixed Fee Amount]
-	, fact_detail_reserve_detail.damages_reserve							AS [Current Damages Reserve]
-	, dim_detail_core_details.track											AS [Weightmans Track]
-	, IIF(dim_detail_core_details.zurich_track = 'Fast track', 'FAS', 'MUL')									AS [Zurich Track]
-	, dim_detail_core_details.zurich_referral_reason						AS [Referral Reason]
-	, dim_detail_core_details.present_position								AS [Present Position]
-	, ISNULL(investigation_wip.time_charge_value, 0)				AS [WIP Recorded under 24 & 30 Investigation Codes]
-	, ISNULL(fact_finance_summary.wip, 0)									AS [Total WIP]
-	, ISNULL(investigation_revenue.time_charge_value, 0)				AS [Revenue Billed under 24 & 30 Investigation Codes]
-	, ISNULL(fact_finance_summary.defence_costs_billed, 0)					AS [Total Revenue Billed]
-	, ISNULL(investigation_wip.time_charge_value, 0) + ISNULL(investigation_revenue.time_charge_value, 0)				AS [Total WIP & Revenue Billed as Investigation]
-	, ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.defence_costs_billed, 0)	AS [Total WIP & Revenue For All Time]
+	, dim_detail_finance.output_wip_fee_arrangement																		AS [Fee Arrangement]
+	, fact_finance_summary.fixed_fee_amount																				AS [Fixed Fee Amount]
+	, fact_detail_reserve_detail.damages_reserve																		AS [Current Damages Reserve]
+	, dim_detail_core_details.track																						AS [Weightmans Track]
+	, IIF(dim_detail_core_details.zurich_track = 'Fast track', 'FAS', 'MUL')											AS [Zurich Track]
+	, dim_detail_core_details.zurich_referral_reason																	AS [Referral Reason]
+	, dim_detail_core_details.present_position																			AS [Present Position]
+
+	, ISNULL(investigation_wip.investigation_hours, 0)																	AS [WIP Hours Recorded Under 24 and 30 Investigation Codes]
+	, ISNULL(investigation_wip.investigation_amount, 0)																	AS [WIP Value Recorded Under 24 and 30 Investigation Codes]
+	, ISNULL(total_wip_hours.investigation_hours, 0)																			AS [Total WIP Hours]
+	, ISNULL(fact_finance_summary.wip, 0)																				AS [Total WIP]
+
+	, ISNULL(investigation_revenue.investigation_hours, 0)																AS [Hours Billed Under 24 and 30 Investigation Codes]
+	, ISNULL(investigation_revenue.investigation_amount, 0)																AS [Revenue Billed Under 24 and 30 Investigation Codes]
+	, ISNULL(total_billed_hours.investigation_hours, 0)																			AS [Total Revenue Hours]
+	, ISNULL(fact_finance_summary.defence_costs_billed, 0)																AS [Total Revenue Billed]
+
+	, ISNULL(investigation_wip.investigation_hours, 0) + ISNULL(investigation_revenue.investigation_hours, 0)			AS [Total Investigation Hours]
+	, ISNULL(investigation_wip.investigation_amount, 0) + ISNULL(investigation_revenue.investigation_amount, 0)			AS [Total WIP and Revenue Billed as Investigation]
+	, ISNULL(total_wip_hours.investigation_hours, 0) + ISNULL(total_billed_hours.investigation_hours, 0)								AS [Total WIP and Revenue hours]
+	, ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.defence_costs_billed, 0)						AS [Total WIP and Revenue For All Time]
 	, CASE
 		WHEN dim_detail_core_details.injury_type_code LIKE 'D%' AND dim_detail_core_details.zurich_track = 'Fast track' THEN
 			4615
@@ -151,19 +186,28 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 		ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 	LEFT OUTER JOIN #investigation_time AS investigation_wip
-		ON investigation_wip.master_client_code = dim_matter_header_current.master_client_code
-			AND investigation_wip.master_matter_number = dim_matter_header_current.master_matter_number
-				AND investigation_wip.unbilled_record = 1
+		ON investigation_wip.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			AND investigation_wip.unbilled_record = 1
+				AND investigation_wip.time_type = 'investigation'
 	LEFT OUTER JOIN #investigation_time AS investigation_revenue
-		ON investigation_revenue.master_client_code = dim_matter_header_current.master_client_code
-			AND investigation_revenue.master_matter_number = dim_matter_header_current.master_matter_number
-				AND investigation_revenue.billed_record = 1
+		ON investigation_revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			AND investigation_revenue.billed_record = 1
+				AND investigation_revenue.time_type = 'investigation'
+	LEFT OUTER JOIN #investigation_time AS total_wip_hours
+		ON total_wip_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			AND total_wip_hours.unbilled_record = 1
+				AND total_wip_hours.time_type IS  NULL
+	LEFT OUTER JOIN #investigation_time AS total_billed_hours
+		ON total_billed_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			AND total_billed_hours.billed_record = 1
+				AND total_billed_hours.time_type IS NULL
 	INNER JOIN #department
 		ON #department.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel3hist
 	INNER JOIN #team
 		ON #team.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel4hist
 	INNER JOIN #matter_owner
 		ON #matter_owner.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.name
+
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'Z1001'
 	AND RTRIM(dim_matter_header_current.client_code) NOT IN ('Z00002', 'Z00004', 'Z00012', 'Z00014', 'Z00018', 'Z00021', '00012506', '00040657', '00169487', '00169490') 
@@ -178,7 +222,8 @@ WHERE 1 = 1
 	AND dim_detail_core_details.zurich_line_of_business IN ('EMP', 'PUB')
 	AND dim_detail_core_details.zurich_track IN ('Fast track', 'Multi track')
 	AND RTRIM(dim_detail_core_details.zurich_referral_reason) IN ('LIA', 'LIQ', 'LIM', 'QUA')
-	AND (ISNULL(investigation_wip.time_charge_value, 0) > 0  OR ISNULL(investigation_revenue.time_charge_value, 0) > 0)
+	AND (ISNULL(investigation_wip.investigation_amount, 0) > 0  OR ISNULL(investigation_revenue.investigation_amount, 0) > 0)
+
 ORDER BY
 	dim_matter_header_current.date_opened_practice_management
 
