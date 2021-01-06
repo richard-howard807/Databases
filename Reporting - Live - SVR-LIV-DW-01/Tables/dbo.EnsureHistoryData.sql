@@ -29,6 +29,15 @@ CREATE TABLE [dbo].[EnsureHistoryData]
 [NewLitigated] [int] NOT NULL,
 [bill_cal_month_no] [int] NULL,
 [bill_cal_year] [int] NULL,
-[bill_cal_month_name] [nvarchar] (7) COLLATE Latin1_General_CI_AS NULL
+[bill_cal_month_name] [nvarchar] (7) COLLATE Latin1_General_CI_AS NULL,
+[Name of Claimant] [varchar] (2000) COLLATE Latin1_General_CI_AS NULL,
+[Date Instructions Received] [datetime] NULL,
+[Instruction Type] [varchar] (40) COLLATE Latin1_General_CI_AS NULL,
+[Date Proceedings Served] [datetime] NULL,
+[Present Position] [varchar] (60) COLLATE Latin1_General_CI_AS NULL,
+[Date Claimants Costs Settled] [datetime] NULL,
+[Claimants Costs Claimed] [numeric] (13, 2) NULL,
+[Claimants Costs Paid] [numeric] (13, 2) NULL,
+[Claimants Costs Savings] [numeric] (14, 2) NULL
 ) ON [PRIMARY]
 GO

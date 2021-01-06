@@ -68,7 +68,16 @@ INSERT INTO dbo.EnsureHistoryData
     NewLitigated,
     bill_cal_month_no,
     bill_cal_year,
-    bill_cal_month_name
+    bill_cal_month_name,
+	[Name of Claimant],
+	[Date Instructions Received],
+	[Instruction Type],
+	[Date Proceedings Served],
+	[Present Position],
+	[Date Claimants Costs Settled],
+	[Claimants Costs Claimed],
+	[Claimants Costs Paid],
+	[Claimants Costs Savings]
 )
 SELECT master_client_code 
 ,master_matter_number
@@ -92,14 +101,23 @@ SELECT master_client_code
 ,CASE WHEN date_opened_case_management BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewInstruction
 ,CASE WHEN date_claim_concluded BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS ClosedInstruction
 ,proceedings_issued AS [ProceedingsIssued]
-,date_proceedings_issued AS [Date ProceedingsIssued]
+,dim_detail_core_details.date_proceedings_issued AS [Date ProceedingsIssued]
 ,date_claim_concluded AS [Date Claim Concluded]
 ,YEAR(@StartDate) AS[Year Period]
 ,'P' +CAST(MONTH(@StartDate) AS VARCHAR(10)) AS [Period]
-,CASE WHEN date_proceedings_issued BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewLitigated
+,CASE WHEN dim_detail_core_details.date_proceedings_issued BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewLitigated
 ,@bill_cal_month_no AS bill_cal_month_no
 ,@bill_cal_year AS bill_cal_year
 ,@bill_cal_month_name AS bill_cal_month_name
+, dim_claimant_thirdparty_involvement.claimant_name					AS [Name of Claimant]
+, dim_detail_core_details.date_instructions_received				AS [Date Instructions Received]
+, dim_matter_worktype.work_type_group								AS [Instruction Type]
+, NULL																AS [Date Proceedings Served]
+, dim_detail_core_details.present_position							AS [Present Position]
+, dim_detail_outcome.date_costs_settled								AS [Date Claimants Costs Settled]
+, fact_finance_summary.tp_total_costs_claimed						AS [Claimants Costs Claimed]
+, fact_finance_summary.total_tp_costs_paid							AS [Claimants Costs Paid]
+, ISNULL(fact_finance_summary.tp_total_costs_claimed, 0) - ISNULL(fact_finance_summary.total_tp_costs_paid, 0)		AS [Claimants Costs Savings]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
@@ -113,8 +131,18 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+	ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
+		AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+	ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_court
+	ON dim_detail_court.client_code = dim_matter_header_current.client_code
+		AND dim_detail_court.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='433281'
 AND date_opened_case_management>='2020-12-01'
 
 END 
+
+
 GO
