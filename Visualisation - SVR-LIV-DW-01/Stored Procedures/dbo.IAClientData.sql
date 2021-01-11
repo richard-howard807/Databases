@@ -77,28 +77,58 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
  LEFT OUTER JOIN red_dw.dbo.dim_employee AS [Lead]
  ON [Lead].dim_employee_key=dim_lead_emp_key
 
-LEFT OUTER JOIN ( SELECT DISTINCT companyid
-,MIN(activity_date) AS [NextEngement]
-FROM red_dw.dbo.dim_ia_activities
-INNER JOIN red_dw.dbo.dim_ia_activity_type
- ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
- WHERE dim_ia_activities.activity_date>GETDATE()+1
- GROUP BY companyid) AS NextEngement
-  ON NextEngement.companyid = dim_be_opportunities.ia_client_id
+--LEFT OUTER JOIN ( SELECT DISTINCT companyid
+--,MIN(activity_date) AS [NextEngement]
+--FROM red_dw.dbo.dim_ia_activities
+--INNER JOIN red_dw.dbo.dim_ia_activity_type
+-- ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
+-- WHERE dim_ia_activities.activity_date>GETDATE()+1
+-- GROUP BY companyid) AS NextEngement
+--  ON NextEngement.companyid = dim_be_opportunities.ia_client_id
 
-LEFT OUTER JOIN 
+LEFT OUTER JOIN (SELECT DISTINCT ia_contact_id
+,MIN(activity_date) AS [NextEngement]
+FROM red_dw.dbo.dim_ia_activity
+INNER JOIN red_dw.dbo.dim_ia_activity_involvement
+ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
+AND contact_type='Client'
+INNER JOIN red_dw.dbo.dim_ia_activity_type
+ ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activity.dim_activity_type_key 
+ WHERE dim_ia_activity.activity_date>GETDATE()+1
+ GROUP BY ia_contact_id
+ ) AS NextEngement
+ON NextEngement.ia_contact_id = dim_be_opportunities.ia_client_id
+
+--LEFT OUTER JOIN 
+--(
+-- SELECT companyid
+--,MAX(activity_calendar_date) AS LastEngement
+-- FROM red_dw.dbo.dim_ia_activities
+--INNER JOIN red_dw.dbo.dim_activity_date
+-- ON activity_date_key=dim_activity_date_key
+--INNER JOIN red_dw.dbo.dim_ia_activity_type
+-- ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
+--WHERE dim_ia_activities.activity_date<=GETDATE()
+-- GROUP BY companyid
+--) AS LastEngement
+-- ON LastEngement.companyid = dim_be_opportunities.ia_client_id
+
+ LEFT OUTER JOIN 
 (
- SELECT companyid
+ SELECT ia_contact_id
 ,MAX(activity_calendar_date) AS LastEngement
- FROM red_dw.dbo.dim_ia_activities
+ FROM red_dw.dbo.dim_ia_activity
+ INNER JOIN red_dw.dbo.dim_ia_activity_involvement
+ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
+AND contact_type='Client'
 INNER JOIN red_dw.dbo.dim_activity_date
  ON activity_date_key=dim_activity_date_key
 INNER JOIN red_dw.dbo.dim_ia_activity_type
- ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activities.dim_activity_type_key 
-WHERE dim_ia_activities.activity_date<=GETDATE()
- GROUP BY companyid
+ ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activity.dim_activity_type_key 
+WHERE dim_ia_activity.activity_date<=GETDATE()
+ GROUP BY ia_contact_id
 ) AS LastEngement
- ON LastEngement.companyid = dim_be_opportunities.ia_client_id
+ ON LastEngement.ia_contact_id = dim_be_opportunities.ia_client_id
 
 LEFT OUTER JOIN (SELECT segment,sector,SUM(bill_amount) AS Revenue
 FROM red_dw.dbo.fact_bill_activity
@@ -145,4 +175,5 @@ END
 
 --SELECT * FROM red_dw.dbo.dim_be_opportunities
 --WHERE dim_be_opportunities.target_company='4th Dimension Innovation Ltd'
+
 GO
