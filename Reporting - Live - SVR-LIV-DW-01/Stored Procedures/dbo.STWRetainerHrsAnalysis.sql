@@ -16,6 +16,7 @@ AS
 BEGIN
 SELECT  master_client_code AS Client
 ,master_matter_number AS Matter
+,date_opened_case_management AS [Date Opened]
 ,bill_number AS [Bill Number]
 ,jobtitle [Lawyer Grade]
 ,name AS FeeeEarner
@@ -35,6 +36,8 @@ ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
         LEFT OUTER JOIN TE_3E_Prod.dbo.TimeBill
             ON TimeCard = fact_bill_billed_time_activity.transaction_sequence_number
                AND TimeBill.timebillindex = fact_bill_billed_time_activity.timebillindex
+
+
 WHERE bill_date BETWEEN  @StartDate AND @EndDate
 
 AND bill_number COLLATE DATABASE_DEFAULT  IN 
@@ -54,7 +57,7 @@ Narrative IN (
 )
 )
 AND IsReversed=0
-GROUP BY master_client_code,master_matter_number,bill_number,name
+GROUP BY master_client_code,master_matter_number,date_opened_case_management,bill_number,name
 ,jobtitle
 
 END

@@ -30,9 +30,15 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
+		, zurich_referral_reason AS [Zurich Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
-		, ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantrep_name) AS [Claimant's Solicitor]
+		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Thompsons%' THEN 'Thompsons LLP'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater and Gordon%' THEN 'Slater Gordon Solutions Legal'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater & Gordon%' THEN 'Slater Gordon Solutions Legal'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater Gordon%' THEN 'Slater Gordon Solutions Legal'
+			ELSE ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) end AS [Claimant's Solicitor]
 		, dim_detail_claim.dst_insured_client_name AS [Insured Client Name]
 		, dim_agents_involvement.localauthority_name AS [Local Authority]
 		, outcome_of_case AS [Outcome of Case]
@@ -46,9 +52,6 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
 		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
 		, DATEDIFF(DAY, dim_detail_core_details.incident_date, dim_detail_core_details.date_instructions_received) AS [Elapsed Days to Instructions]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
-                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
-	     END AS [NHS Scheme]
 		, 1 AS [Number of Records]
 		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
@@ -109,7 +112,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
-AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
+--AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
+AND work_type_group IN ('PL All','EL')
 AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END=1
@@ -135,9 +139,15 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
+		, zurich_referral_reason AS [Zurich Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
-		, ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantrep_name) AS [Claimant's Solicitor]
+		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Thompsons%' THEN 'Thompsons LLP'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater and Gordon%' THEN 'Slater Gordon Solutions Legal'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater & Gordon%' THEN 'Slater Gordon Solutions Legal'
+			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Slater Gordon%' THEN 'Slater Gordon Solutions Legal'
+			ELSE ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) end AS [Claimant's Solicitor]
 		, dim_detail_claim.dst_insured_client_name AS [Insured Client Name]
 		, dim_agents_involvement.localauthority_name AS [Local Authority]
 		, outcome_of_case AS [Outcome of Case]
@@ -151,9 +161,6 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
 		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
 		, DATEDIFF(DAY, dim_detail_core_details.incident_date, dim_detail_core_details.date_instructions_received) AS [Elapsed Days to Instructions]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
-                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
-	     END AS [NHS Scheme]
 		, 1 AS [Number of Records]
 		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
@@ -214,7 +221,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
-AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
+--AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
+AND work_type_group IN ('PL All','EL')
 AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END=1

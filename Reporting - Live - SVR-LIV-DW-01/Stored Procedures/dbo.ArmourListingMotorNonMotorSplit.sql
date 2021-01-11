@@ -25,7 +25,7 @@ SELECT
 	,dim_matter_header_current.matter_number AS [Matter Number]
 	,RTRIM(dim_matter_header_current.client_code) + '.' +RTRIM(dim_matter_header_current.matter_number) AS Ref
 	,master_client_code + '.' + master_matter_number AS [Weightmans Ref]
-	,client_reference AS [Amour Reference]
+	,COALESCE(client_reference, dim_client_involvement.[insurerclient_reference]) AS [Amour Reference]
 	,CASE 
 		WHEN UPPER(matter_description) LIKE 'ELITE%' 
 			THEN 'Elite'
@@ -59,9 +59,10 @@ SELECT
 	, dim_detail_core_details.previous_clegg_gifford_file AS [Previous Clegg Gifford file?]
 	,dim_detail_outcome.outcome_of_case AS [Outcome of Claim]
 	,dim_detail_outcome.[date_claim_concluded] AS [Date Claim concluded ]
-	,fact_finance_summary.[damages_paid_to_date] AS [Damages Paid]
+	,ISNULL(fact_finance_summary.[damages_paid_to_date],0) + ISNULL(fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction], 0) AS [Damages Paid]
 	, fact_finance_summary.[total_tp_costs_paid]  AS [TP Costs Paid]
 	, dim_matter_worktype.work_type_name		AS [Matter Type]
+	
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -87,6 +88,8 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+    LEFT JOIN red_dw.dbo.fact_detail_paid_detail  
+	    ON fact_detail_paid_detail.master_fact_key = fact_detail_reserve_detail.master_fact_key
 WHERE 
 	master_client_code IN ('752920','W15608')
 	AND dim_matter_header_current.date_closed_practice_management IS NULL
@@ -107,7 +110,7 @@ SELECT
 	,dim_matter_header_current.matter_number AS [Matter Number]
 	,RTRIM(dim_matter_header_current.client_code) + '.' +RTRIM(dim_matter_header_current.matter_number) AS Ref
 	,master_client_code + '.' + master_matter_number AS [Weightmans Ref]
-	,client_reference AS [Amour Reference]
+	,COALESCE(client_reference, dim_client_involvement.[insurerclient_reference]) AS [Amour Reference]
 	,CASE 
 		WHEN UPPER(matter_description) LIKE 'ELITE%' 
 			THEN 'Elite'
@@ -141,9 +144,10 @@ SELECT
 	, dim_detail_core_details.previous_clegg_gifford_file AS [Previous Clegg Gifford file?]
 	,dim_detail_outcome.outcome_of_case AS [Outcome of Claim]
 	,dim_detail_outcome.[date_claim_concluded] AS [Date Claim concluded ]
-	,fact_finance_summary.[damages_paid_to_date] AS [Damages Paid]
+	,ISNULL(fact_finance_summary.[damages_paid_to_date],0) + ISNULL(fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction], 0) AS [Damages Paid]
 	, fact_finance_summary.[total_tp_costs_paid]  AS [TP Costs Paid]
 	, dim_matter_worktype.work_type_name		AS [Matter Type]
+	,fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction]
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -169,6 +173,8 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	LEFT JOIN red_dw.dbo.fact_detail_paid_detail  
+		ON fact_detail_paid_detail.master_fact_key = fact_detail_reserve_detail.master_fact_key
 WHERE 
 	master_client_code IN ('752920','W15608')
 	AND dim_matter_header_current.date_closed_practice_management IS NULL

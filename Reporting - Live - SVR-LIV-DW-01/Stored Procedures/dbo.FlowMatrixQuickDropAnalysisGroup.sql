@@ -10,7 +10,7 @@ CREATE PROCEDURE [dbo].[FlowMatrixQuickDropAnalysisGroup]
 )  
 AS   
   
-
+--Test -- DECLARE @Email AS NVARCHAR(20) = 'All'
 DROP TABLE IF EXISTS #TeamLeaders
 
 SELECT DISTINCT 
@@ -38,7 +38,7 @@ IF @Email='All'
 BEGIN   
   
 SELECT 
-ROW_NUMBER() OVER (ORDER BY x.NoItemsCompleted DESC) AS [Leaderboard Place], 
+ROW_NUMBER() OVER (ORDER BY x.NumberPending DESC) AS [Leaderboard Place], 
 x.[Full Name],                                                                                                 
 x.[Business Line],
 x.[Practice Area],
@@ -51,7 +51,11 @@ x.NoItemsCompleted,
 x.OldestItem,
 x.NewestItem,
 x.NoOver5Days,
-x.NumberCompleted
+x.NumberCompleted,
+x.NumberPending,
+CASE WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 ELSE 0 END AS SortOrder
+
+
  
  FROM 
  (
@@ -69,7 +73,8 @@ GroupedData.[Practice Area],
     MIN(DateScanned) AS OldestItem,  
     MAX(DateScanned) AS NewestItem,  
     SUM(Over5Days) AS NoOver5Days  ,
-	SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted
+	SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted,
+	SUM(CASE WHEN GroupedData.completed = 0 THEN 1 END) AS NumberPending
 FROM   
 (  
 SELECT j.[job_id] AS job_id,  
@@ -80,8 +85,8 @@ SELECT j.[job_id] AS job_id,
        j.queue_id,  
        created AS DateScanned  
     ,COALESCE(Team,'Unknown') AS [Full Name]  
-    ,[Business Line]  AS [Business Line]  
-    ,[Practice Area]  AS [Practice Area]  
+    ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
+    ,COALESCE(Team,'Unknown') AS [Practice Area] -- [Practice Area] 
     ,Team  AS Team  
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
@@ -100,7 +105,7 @@ LEFT JOIN  #TeamLeaders
 
 
 WHERE 1 = 1
-  AND completed = 1  
+  AND completed = 0
   AND (j.owner_type='group')
   
      
@@ -133,7 +138,8 @@ GroupedData.[Practice Area],
 	   MIN(DateScanned) AS OldestItem,
 	   MAX(DateScanned) AS NewestItem,
 	   SUM(Over5Days) AS NoOver5Days,
-	   SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted
+	   SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted,
+	   SUM(CASE WHEN GroupedData.completed = 0 THEN 1 END) AS NumberPending
 FROM 
 (
 SELECT j.[job_id] AS job_id,
@@ -175,7 +181,7 @@ INNER JOIN   red_dw.dbo.dim_employee
 
 WHERE 1 = 1
 
-  AND completed = 1
+  AND completed = 0
   AND j.owner_type='user'
   --AND forename + ' ' + surname = worksforname
 	  
@@ -205,7 +211,7 @@ BEGIN
   
   
 SELECT 
-ROW_NUMBER() OVER (ORDER BY x.NoItemsCompleted DESC) AS [Leaderboard Place], 
+ROW_NUMBER() OVER (ORDER BY x.NumberPending DESC) AS [Leaderboard Place], 
 x.[Full Name],                                                                                                 
 x.[Business Line],
 x.[Practice Area],
@@ -218,8 +224,9 @@ x.NoItemsCompleted,
 x.OldestItem,
 x.NewestItem,
 x.NoOver5Days,
-x.NumberCompleted
- 
+x.NumberCompleted, 
+x.NumberPending,
+CASE WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 ELSE 0 END AS SortOrder
  FROM 
  (
 --SELECT ROW_NUMBER() OVER (PARTITION BY 1  ORDER BY SUM(GroupedData.ItemsWaiting) DESC) AS [Leaderboard Place],  
@@ -236,7 +243,8 @@ GroupedData.[Practice Area],
     MIN(DateScanned) AS OldestItem,  
     MAX(DateScanned) AS NewestItem,  
     SUM(Over5Days) AS NoOver5Days  ,
-	SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted
+	SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted, 
+	 SUM(CASE WHEN GroupedData.completed = 0 THEN 1 END) AS NumberPending
 FROM   
 (  
 SELECT j.[job_id] AS job_id,  
@@ -247,8 +255,8 @@ SELECT j.[job_id] AS job_id,
        j.queue_id,  
        created AS DateScanned  
     ,COALESCE(Team,'Unknown') AS [Full Name]  
-    ,[Business Line]  AS [Business Line]  
-    ,[Practice Area]  AS [Practice Area]  
+    ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
+    ,COALESCE(Team,'Unknown') AS [Practice Area] -- [Practice Area] 
     ,Team  AS Team  
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
@@ -267,7 +275,7 @@ LEFT JOIN  #TeamLeaders
 
 
 WHERE 1 = 1
-  AND completed = 1  
+  AND completed = 0 
   AND (j.owner_type='group')
   
      
@@ -300,7 +308,8 @@ GroupedData.[Practice Area],
 	   MIN(DateScanned) AS OldestItem,
 	   MAX(DateScanned) AS NewestItem,
 	   SUM(Over5Days) AS NoOver5Days,
-	   SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted
+	   SUM(CASE WHEN GroupedData.completed = 1 THEN 1 END) AS NumberCompleted, 
+	   SUM(CASE WHEN GroupedData.completed = 0 THEN 1 END) AS NumberPending
 FROM 
 (
 SELECT j.[job_id] AS job_id,
@@ -342,7 +351,7 @@ INNER JOIN   red_dw.dbo.dim_employee
 
 WHERE 1 = 1
 
-  AND completed = 1
+  AND completed = 0
   AND j.owner_type='user'
   --AND forename + ' ' + surname = worksforname
 	  
