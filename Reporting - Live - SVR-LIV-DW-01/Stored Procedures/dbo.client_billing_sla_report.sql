@@ -34,8 +34,10 @@ DROP TABLE IF EXISTS #FeeEarner
 SELECT udt_TallySplit.ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
 SELECT udt_TallySplit.ListValue  INTO #FeeEarner FROM 	dbo.udt_TallySplit('|', @FeeEarner)
 
+
+
 --========================================================================================================================================================================
--- Table locating matters with internal counsel WIP 
+-- Table locating matters with internal counsel WIP - removed table to replace with DAX query in report in attempt to speed up
 --========================================================================================================================================================================
 SELECT
 	fact_dimension_main.client_code
@@ -43,16 +45,18 @@ SELECT
 	, SUM(fact_all_time_activity.time_charge_value) AS [internal_counsel_time_value]
 --SELECT [dim_all_time_activity].*, [fact_all_time_activity].*
 INTO #internal_counsel
-FROM red_dw.[dbo].[dim_all_time_activity]
-	INNER JOIN red_dw.[dbo].[fact_all_time_activity]
-		ON fact_all_time_activity.dim_all_time_activity_key = dim_all_time_activity.dim_all_time_activity_key
-	INNER JOIN red_dw.dbo.fact_dimension_main
-		ON fact_dimension_main.client_code = dim_all_time_activity.client_code
-			AND fact_dimension_main.matter_number = dim_all_time_activity.matter_number
+FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-WHERE
-	dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
+			AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
+	INNER  JOIN red_dw.[dbo].[dim_all_time_activity]
+		ON dim_all_time_activity.client_code = fact_dimension_main.client_code
+			AND dim_all_time_activity.matter_number = fact_dimension_main.matter_number
+	INNER JOIN red_dw.[dbo].[fact_all_time_activity]
+		ON fact_all_time_activity.dim_all_time_activity_key = dim_all_time_activity.dim_all_time_activity_key
+
+WHERE 1 = 1
+	--AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
 	--AND fact_dimension_main.client_code = 'W16098'
 	--AND fact_dimension_main.matter_number = '00000002'
 	AND dim_all_time_activity.unbilled_record = 1
@@ -102,7 +106,7 @@ SELECT
 				WHEN client_billing_sla.bill_rule_num = 'Rule 5' AND bill_detail.interim_final = 'interim' AND dim_detail_outcome.date_claim_concluded IS NULL
 				AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) > 150 AND ISNULL(fact_finance_summary.defence_costs_billed, 0) < 1
 				AND GETDATE() > DATEADD(MONTH, 3, dim_matter_header_current.date_opened_practice_management)-DAY(dim_matter_header_current.date_opened_practice_management) THEN 
-					'40 % fixed fee'
+					'40% fixed fee'
 				-- MIB final bill fixed fees
 				WHEN client_billing_sla.bill_rule_num = 'Rule 5' AND bill_detail.interim_final = 'final' 
 				AND ISNULL(fact_finance_summary.defence_costs_billed, 0) < ISNULL(fact_finance_summary.fixed_fee_amount, 0) THEN	
@@ -327,9 +331,10 @@ FROM (
 		, RTRIM(dim_detail_outcome.outcome_of_case)										AS [Outcome of Case]
 		, CAST(dim_detail_outcome.date_costs_settled AS DATE)							AS [Date Costs Settled]
 		, dim_matter_header_current.billing_arrangement_description						AS [Billing Arrangement Description]
-		, dim_detail_finance.output_wip_fee_arrangement									AS [Fee Arrangement]
+		, RTRIM(dim_detail_finance.output_wip_fee_arrangement)							AS [Fee Arrangement]
 		, dim_client_involvement.insurerclient_reference								AS [Insurer Client Reference]
 		, dim_client_involvement.insuredclient_reference								AS [Insured Client Reference]
+		, dim_detail_core_details.clients_claims_handler_surname_forename				AS [Client Claims Handler]
 		, fact_finance_summary.fixed_fee_amount											AS [Fixed Fee Amount]
 		, dim_detail_core_details.delegated												AS [Delegated]
 		, fact_finance_summary.wip														AS [WIP]
@@ -342,7 +347,7 @@ FROM (
 		, dim_detail_core_details.is_this_a_linked_file									AS [Is This a Linked File]
 		, dim_detail_core_details.is_this_the_lead_file_c								AS [is This a Lead File]
 		, dim_detail_core_details.coop_guid_reference_number							AS [Co-op GUID Reference Number]
-		, ISNULL(internal_counsel.costs_involved, 'No')									AS [Costs Involved]
+		, ISNULL(costs_involved_detail.costs_involved, 'No')							AS [Costs Involved]
 		, fact_finance_summary.defence_costs_billed										AS [Profit Costs]
 		, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 		, fact_finance_summary.portal_bill_total										AS [Portal Bill Total]
@@ -457,15 +462,16 @@ FROM (
 									ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
 										AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
 											AND dim_fed_hierarchy_history.cost_handler = 1
-						) AS internal_counsel
-			ON internal_counsel.client_code = dim_matter_header_current.client_code
-				AND internal_counsel.matter_number = dim_matter_header_current.matter_number
+						) AS costs_involved_detail
+			ON costs_involved_detail.client_code = dim_matter_header_current.client_code
+				AND costs_involved_detail.matter_number = dim_matter_header_current.matter_number
 		LEFT OUTER JOIN dbo.client_billing_sla
 			ON client_billing_sla.master_client_code COLLATE DATABASE_DEFAULT = dim_matter_header_current.master_client_code
 		LEFT OUTER JOIN #sla_billing
 			ON #sla_billing.master_client_code = dim_matter_header_current.master_client_code
 				AND #sla_billing.master_matter_number = dim_matter_header_current.master_matter_number
-	WHERE 1 = 1
+	WHERE 1 = 1 
+		AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
 	) AS all_data
 
 END	
