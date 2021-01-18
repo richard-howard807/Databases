@@ -17,11 +17,11 @@ SELECT ListValue  INTO #Campaign FROM Reporting.dbo.[udt_TallySplit]('|', @Campa
 
 SELECT 
 CASE
-WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber'
+WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Construction'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -37,8 +37,6 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
-
-
 ELSE is_this_part_of_a_campaign
 END Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
@@ -130,9 +128,10 @@ GROUP BY master_fact_key) fact_bill_activity ON fact_bill_activity.master_fact_k
 INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = CASE
 WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber'
+WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Construction'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -168,9 +167,10 @@ SELECT
 CASE
 WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber'
+WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Construction'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -279,9 +279,10 @@ GROUP BY master_fact_key) fact_bill_activity ON fact_bill_activity.master_fact_k
 INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = CASE
 WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber'
+WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Construction'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'

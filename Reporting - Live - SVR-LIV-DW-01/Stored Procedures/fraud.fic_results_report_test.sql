@@ -17,6 +17,7 @@ GO
 -- ES 2020-09-15 amended logic to look at the history of the date the score was inserted if there is no task information as the task has been deleted on the frontend, requested by Mandy Hudson
 -- ES 2020-09-15 added client group name parameter requested by Bob H
 -- ES 2020-09-18 amended fic logic to look at quetsions as the tasks show as completed if the process was cancelled
+-- ES 2021-01-12 removed leavers, #84433
 --==============================================
 CREATE  PROCEDURE [fraud].[fic_results_report_test]
 
@@ -271,6 +272,7 @@ FROM (
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code =dim_matter_header_current.fee_earner_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y'        
 	AND GETDATE() BETWEEN dss_start_date AND dss_end_date 
 	AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+	AND leaver=0
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON fact_dimension_main.dim_detail_outcome_key = dim_detail_outcome.dim_detail_outcome_key
 	LEFT OUTER JOIN red_dw..dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
 	LEFT OUTER JOIN red_dw..dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
