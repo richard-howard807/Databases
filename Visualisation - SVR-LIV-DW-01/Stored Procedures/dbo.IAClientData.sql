@@ -91,7 +91,7 @@ LEFT OUTER JOIN (SELECT DISTINCT ia_contact_id
 FROM red_dw.dbo.dim_ia_activity
 INNER JOIN red_dw.dbo.dim_ia_activity_involvement
 ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
-AND contact_type='Client'
+--AND contact_type='Client'
 INNER JOIN red_dw.dbo.dim_ia_activity_type
  ON dim_ia_activity_type.dim_activity_type_key = dim_ia_activity.dim_activity_type_key 
  WHERE dim_ia_activity.activity_date>GETDATE()+1
@@ -120,7 +120,7 @@ ON NextEngement.ia_contact_id = dim_be_opportunities.ia_client_id
  FROM red_dw.dbo.dim_ia_activity
  INNER JOIN red_dw.dbo.dim_ia_activity_involvement
 ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
-AND contact_type='Client'
+--AND contact_type='Client'
 INNER JOIN red_dw.dbo.dim_activity_date
  ON activity_date_key=dim_activity_date_key
 INNER JOIN red_dw.dbo.dim_ia_activity_type

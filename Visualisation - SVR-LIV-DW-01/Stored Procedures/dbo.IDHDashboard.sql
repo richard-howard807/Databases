@@ -41,6 +41,8 @@ SELECT
 	, fact_finance_summary.disbursements_billed				AS [Disburesments]
 	, fact_finance_summary.vat_billed						AS [VAT]
 	, fact_finance_summary.wip								AS [WIP]
+	, Doogal.Latitude
+	, Doogal.Longitude
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_property
 		ON dim_detail_property.client_code = dim_matter_header_current.client_code
@@ -56,6 +58,8 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
 			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.Doogal
+		ON Doogal.Postcode = dim_detail_property.postcode
 WHERE 1 =1 
 	AND dim_matter_header_current.master_client_code = 'W19702'
 	AND dim_matter_header_current.matter_category = 'Real Estate'
