@@ -6,13 +6,6 @@ GO
 
 
 
-
-
-
-
-
-
-
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -123,12 +116,12 @@ LEFT JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_deta
 LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.fact_detail_client ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
-LEFT JOIN red_dw.dbo.fact_detail_recovery_detail ON fact_detail_recovery_detail.master_fact_key = fact_detail_paid_detail.master_fact_key
+LEFT JOIN red_dw.dbo.fact_detail_recovery_detail ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 LEFT JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-LEFT JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_detail_client.master_fact_key
+LEFT JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
@@ -136,7 +129,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 
         LEFT JOIN
         (
-            SELECT fileID,
+            SELECT fileID, 
                    assocType,
                    contName AS [Insurer Name],
                    dbAssociates.assocRef AS [Insurer Reference],
@@ -144,7 +137,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
                     ON dbAssociates.contID = dbContact.contID
+					LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+					ON dim_matter_header_current.ms_fileid=dbAssociates.fileID
             WHERE assocType = 'DEFENDANT'
+			AND client_code='00752920'
         )
 
 		        AS Defendant
@@ -161,7 +157,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
                     ON dbAssociates.contID = dbContact.contID
+					LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+					ON dim_matter_header_current.ms_fileid=dbAssociates.fileID
             WHERE assocType = 'THIRDPARTY'
+			AND client_code='00752920'
         )
 
 		        AS THIRDPARTY
@@ -180,7 +179,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
                     ON dbAssociates.contID = dbContact.contID
+					LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+					ON dim_matter_header_current.ms_fileid=dbAssociates.fileID
             WHERE assocType = 'CLIENT'
+			AND client_code='00752920'
         )
 
 		        AS Client
@@ -197,7 +199,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
                     ON dbAssociates.contID = dbContact.contID
+					LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+					ON dim_matter_header_current.ms_fileid=dbAssociates.fileID
             WHERE assocType = 'DRIVER'
+			AND client_code='00752920'
         )
 
 		        AS DriverName
@@ -208,8 +213,8 @@ LEFT OUTER JOIN (SELECT client_code,matter_number,SUM(wiphrs) AS HrsWorked
 FROM red_dw.dbo.fact_all_time_activity
 WHERE client_code='00752920'
 GROUP BY client_code,matter_number) AS HrsWorked
- ON red_dw.dbo.fact_dimension_main.client_code=HrsWorked.client_code
- AND red_dw.dbo.fact_dimension_main.matter_number=HrsWorked.matter_number
+ ON fact_dimension_main.client_code=HrsWorked.client_code
+ AND fact_dimension_main.matter_number=HrsWorked.matter_number
 
 WHERE 
 fact_dimension_main.client_code = '00752920'

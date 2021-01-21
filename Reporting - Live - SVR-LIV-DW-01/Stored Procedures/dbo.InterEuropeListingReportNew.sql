@@ -253,7 +253,7 @@ BEGIN
           AND h_current.matter_owner_full_name <> 'Jake Whewell'
           /*Hardcoded as per Ticket 83725*/
           AND h_current.master_client_code + '.' + h_current.master_matter_number <> '351402.52'
-          AND core_details.matter_number IN ( '00000061', '00000092' );
+          --AND core_details.matter_number IN ( '00000061', '00000092' );
 
 
 END;

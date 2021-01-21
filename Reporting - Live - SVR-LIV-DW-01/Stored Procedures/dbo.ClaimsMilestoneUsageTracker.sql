@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneUsageTracker]
 
 AS 
@@ -72,6 +73,11 @@ AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Fi
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'
 --AND Filtered.fed_code='4493'
+AND NOT ms_fileid NOT IN 
+(5090820,5090832,5090835,5090842,5090848,5090853,5091073,5091288,5091677
+,5096365,5097171,5097193,5097355,5097677,5097684,5097751,5098182,5098201
+,5098209,5098213,5098214,5098218,5098222,5098226,5098228,5098515,5098518
+,5098521,5098530,5098898,5099062,5099250) --Old Remedy Cases to exclude per request from Bob H
 END
 
 

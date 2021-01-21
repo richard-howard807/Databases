@@ -63,6 +63,8 @@ FROM red_dw.dbo.fact_payor_debt_detail fact_debt
         ON [Partner].ListValue COLLATE DATABASE_DEFAULT = ISNULL(client_partner_code, 'Unknown') COLLATE DATABASE_DEFAULT
 WHERE bill_reversed = 0
       AND dim_matter_header_current.client_code <> '00030645'
+	  AND dim_matter_header_current.master_client_code NOT IN ('Z1001','A2002','W15373')
 	  AND fact_debt.total_balance <> 0
+
 END; 
 GO

@@ -18,6 +18,7 @@ GO
 -- ES 2020-09-15 added client group name parameter requested by Bob H
 -- ES 2020-09-18 amended fic logic to look at quetsions as the tasks show as completed if the process was cancelled
 -- ES 2021-01-12 removed leavers, #84433
+-- ES 2021-01-20 removed work type  1603, PL - Pol - CHIS, requested by BH
 --==============================================
 CREATE  PROCEDURE [fraud].[fic_results_report_test]
 
@@ -413,6 +414,8 @@ FROM (
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
 		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
+
+		AND ISNULL(dim_matter_worktype.work_type_code,'')<>'1603'
 
  AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
               (
