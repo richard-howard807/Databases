@@ -24,7 +24,11 @@ SELECT AllData.dim_client_key,
        AllData.[Next Engagement Date],
        AllData.CRP,
        AllData.ClientKey,
-       AllData.leftdate
+       AllData.leftdate,
+	   AllData.[Activity Key],
+	   AllData.[No. Act],
+	   AllData.Attendee
+
  INTO dbo.IA_Activities_Data
  --SELECT COUNT(1)  FROM dbo.IA_Activities_Data
  FROM 
@@ -55,12 +59,14 @@ SELECT AllData.dim_client_key,
 	,client_involvement.dim_client_key AS ClientKey
 	--,ActualClosedDate
 	,leftdate
-
+	, dim_ia_activity_involvement.dim_ia_activity_key [Activity Key]
+	, 1 AS [No. Act]
+	, dim_ia_activity_involvement.first_name+' '+dim_ia_activity_involvement.last_name AS [Attendee]
 	
  FROM red_dw.dbo.dim_ia_activity
  INNER JOIN red_dw.dbo.dim_ia_activity_involvement
 ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
-AND contact_type<>'Client'
+AND contact_type='Employee'
  INNER JOIN red_dw.dbo.dim_ia_activity_involvement AS client_involvement
 ON dim_ia_activity.dim_ia_activity_key=client_involvement.dim_ia_activity_key
 AND client_involvement.contact_type='Client'
@@ -140,10 +146,13 @@ SELECT client_involvement.dim_client_key AS dim_client_key
        ,client_partner_name AS CRP
        ,client_involvement.dim_client_key AS ClientKey
        ,leftdate
+	   , dim_ia_activity_involvement.dim_ia_activity_key [Activity Key]
+	, 1 AS [No. Act]
+	, dim_ia_activity_involvement.first_name+' '+dim_ia_activity_involvement.last_name AS [Attendee]
 FROM red_dw.dbo.dim_ia_activity
   INNER JOIN red_dw.dbo.dim_ia_activity_involvement
 ON dim_ia_activity.dim_ia_activity_key=dim_ia_activity_involvement.dim_ia_activity_key
-AND contact_type<>'Client'
+AND contact_type='Employee'
   INNER JOIN red_dw.dbo.dim_ia_activity_involvement AS client_involvement
 ON dim_ia_activity.dim_ia_activity_key=client_involvement.dim_ia_activity_key
 AND client_involvement.contact_type='Client'

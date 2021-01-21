@@ -14,6 +14,9 @@ CREATE TABLE [dbo].[IA_Activities_Data]
 [Next Engagement Date] [datetime] NULL,
 [CRP] [varchar] (100) COLLATE Latin1_General_BIN NULL,
 [ClientKey] [int] NULL,
-[leftdate] [datetime] NULL
+[leftdate] [datetime] NULL,
+[Activity Key] [int] NULL,
+[No. Act] [int] NOT NULL,
+[Attendee] [nvarchar] (121) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

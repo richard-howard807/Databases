@@ -120,8 +120,10 @@ INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.bill_date = fact_bill_activity.bill_date
 INNER JOIN red_dw.dbo.dim_client
  ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
-WHERE bill_fin_year= @FinYear
-AND bill_fin_month_no<=@FinMonth
+WHERE dim_bill_date.bill_date BETWEEN DATEADD(Month,-11,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)) AND 
+CAST(EOMONTH(GETDATE()) AS DATETIME)
+--bill_fin_year= @FinYear
+--AND bill_fin_month_no<=@FinMonth
 GROUP BY  dim_client.dim_client_key
 ) AS ClientRevenueYTD
  ON ClientRevenueYTD.dim_client_key = IA_Client_Data.dim_client_key
@@ -134,8 +136,10 @@ INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.bill_date = fact_bill_activity.bill_date
 INNER JOIN red_dw.dbo.dim_client
  ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
-WHERE bill_fin_year= @PreFinYear
-AND bill_fin_month_no<=@FinMonth
+WHERE dim_bill_date.bill_date BETWEEN DATEADD(YEAR, -1, DATEADD(Month,-11,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AND 
+DATEADD(YEAR, -1,CAST(EOMONTH(GETDATE()) AS DATETIME))
+--bill_fin_year= @PreFinYear
+--AND bill_fin_month_no<=@FinMonth
 GROUP BY  dim_client.dim_client_key
 ) AS ClientPrevRevenueYTD
  ON ClientPrevRevenueYTD.dim_client_key = IA_Client_Data.dim_client_key

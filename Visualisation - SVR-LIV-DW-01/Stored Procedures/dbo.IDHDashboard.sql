@@ -30,7 +30,7 @@ SELECT
 	, dim_detail_property.property_type_2						AS [Property Type 2]
 	, dim_detail_property.property_type_3						AS [Property Type 3]
 	, CAST(dim_detail_property.date_landlord_solicitor_documents_received AS DATE)		AS [Lease received/sent out]
-	, ''			AS [Lease Returned] -- New MS field coming for this
+	, CAST(dim_detail_property.date_lease_returned_to_landlords_solicitor AS DATE)			AS [Lease Returned] 
 	, CAST(dim_detail_property.date_lease_agreed AS DATE)	 							AS [Date Lease Agreed]
 	, CAST(dim_detail_property.completion_date AS DATE)						AS [Completion Date]
 	, fact_finance_summary.fixed_fee_amount					AS [Fees Estimate - FF Amount]
@@ -41,6 +41,20 @@ SELECT
 	, fact_finance_summary.disbursements_billed				AS [Disburesments]
 	, fact_finance_summary.vat_billed						AS [VAT]
 	, fact_finance_summary.wip								AS [WIP]
+	, CASE
+		WHEN dim_detail_property.completion_date IS NOT NULL THEN 
+			'Completed'
+		WHEN dim_detail_property.date_lease_agreed IS NOT NULL THEN
+			'Lease Agreed'
+		WHEN dim_detail_property.date_lease_returned_to_landlords_solicitor IS NOT NULL THEN
+			'Lease Returned'
+		WHEN dim_detail_property.date_landlord_solicitor_documents_received IS NOT NULL THEN
+			'Lease Received/Sent'
+		ELSE
+			'Awaiting Lease'
+	  END														AS [Present Position]
+	, ''			AS [Site Number]
+	, ''			AS [Site Name]			
 	, Doogal.Latitude
 	, Doogal.Longitude
 FROM red_dw.dbo.dim_matter_header_current
