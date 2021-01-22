@@ -6,6 +6,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -35,10 +36,10 @@ SELECT hierarchylevel2hist AS Division
 ,matter_description AS [MatterDescription]
 ,name AS [MatterOwner]
 ,dim_matter_header_current.present_position
-,DATEDIFF(Day,'2020-09-28',CONVERT(DATE,GETDATE()-1,103)) AS LiveDays
-,DATEDIFF(Day,'2020-09-28','2021-01-31') AS Day1
-,DATEDIFF(Day,'2020-09-28','2021-04-30') AS Day2
-,DATEDIFF(Day,'2020-09-28','2021-07-31') AS Day3
+,DATEDIFF(DAY,'2020-09-28',CONVERT(DATE,GETDATE()-1,103)) AS LiveDays
+,DATEDIFF(DAY,'2020-09-28','2021-01-31') AS Day1
+,DATEDIFF(DAY,'2020-09-28','2021-04-30') AS Day2
+,DATEDIFF(DAY,'2020-09-28','2021-07-31') AS Day3
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -114,7 +115,12 @@ AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current
 'W15526/00000275'
 ) 
 --AND fed_code='5900'
-
+AND  ms_fileid NOT IN 
+(5090820,5090832,5090835,5090842,5090848,5090853,5091073,5091288,5091677
+,5096365,5097171,5097193,5097355,5097677,5097684,5097751,5098182,5098201
+,5098209,5098213,5098214,5098218,5098222,5098226,5098228,5098515,5098518
+,5098521,5098530,5098898,5099062,5099250,
+5097691,5097677,5098182,5098222,5098228) --Old Remedy Cases to exclude per request from Bob H
 END
 
 

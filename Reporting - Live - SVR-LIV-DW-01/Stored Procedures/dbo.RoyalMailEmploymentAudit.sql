@@ -8,10 +8,12 @@ GO
 -- Author:		<ORlagh Kelly>
 -- Create date: <2021-01-15>
 -- Description:	<#84997 Royal Mail Employment Audit Report & stored procedure>
--- Update as per Ticket 83725 -- removal of 351402.52
+-- Matters to include - client code R1001 where Matter Group is “Employment” 
+-- and limited to where the MI field cboProspAcc (the first of the audit questions) has been completed.
 -- =============================================
 
 CREATE PROCEDURE [dbo].[RoyalMailEmploymentAudit]
+
 AS
 BEGIN
 
@@ -25,7 +27,7 @@ BEGIN
 	dim_matter_header_current.date_opened_case_management [Date Opened],
 
 
-	dim_detail_practice_area.[primary_case_classification][Primary Case Classification],
+dim_detail_practice_area.[primary_case_classification][Primary Case Classification],
 dim_detail_practice_area.[secondary_case_classification][Secondary Case Classification],
 dim_detail_outcome.[date_claim_concluded][Date of Outcome],
 dim_detail_practice_area.[emp_prospects_of_success][Prospects of Success],
@@ -61,10 +63,6 @@ dim_detail_audit.[rmg_other_auditors_comments][Other auditor's comments]
 
 
 
-
-
-
-
 				   FROM red_dw.dbo.fact_dimension_main 
 				   LEFT JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 				   LEFT JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
@@ -78,19 +76,15 @@ dim_detail_audit.[rmg_other_auditors_comments][Other auditor's comments]
 
 
 
-
-
-
-
-
-
-
     WHERE fact_dimension_main.master_client_code = 'R1001'
-	AND dim_matter_worktype.work_type_name IN
+	AND dim_matter_worktype.work_type_code IN
 (
-'Employment Advice Line                  ',
-'Employment DO NOT USE                   '
+'0012    ',
+'1078    ',
+'1114    ',
+'1325    '
 )
+
 AND dim_matter_header_current.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions = 0 
 AND dim_detail_audit.rmg_was_the_assessment_of_prospects_accurate IS NOT NULL 
