@@ -414,7 +414,7 @@ FROM (
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
 		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
-
+		AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case,''))<>'exclude from reports'
 		AND ISNULL(dim_matter_worktype.work_type_code,'')<>'1603'
 
  AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN

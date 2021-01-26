@@ -87,7 +87,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-03-01' AND GETDATE() 
 			THEN 1 ELSE NULL END AS [Matters opened 1 March 2020 to date]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-03-01' AND '2020-02-28' 
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
+			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) <='2020-02-28' THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-03-01' AND GETDATE() 
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
@@ -205,7 +205,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-03-01' AND GETDATE() 
 			THEN 1 ELSE NULL END AS [Matters opened 1 March 2020 to date]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-03-01' AND '2020-02-28' 
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
+			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) <='2020-02-28' THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-03-01' AND GETDATE() 
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]

@@ -25,8 +25,6 @@ BEGIN
 	dim_fed_hierarchy_history.[name] [Case Manager],
     dim_employee.postid AS [Grade],
 	dim_matter_header_current.date_opened_case_management [Date Opened],
-
-
 dim_detail_practice_area.[primary_case_classification][Primary Case Classification],
 dim_detail_practice_area.[secondary_case_classification][Secondary Case Classification],
 dim_detail_outcome.[date_claim_concluded][Date of Outcome],
@@ -45,13 +43,13 @@ dim_detail_audit.[rmg_was_the_claim_allocated_at_the_correct_level][Was the clai
 dim_detail_audit.[rmg_comments_re_allocation][Comments re: allocation],
 dim_detail_audit.[rmg_was_the_advice_clear_and_concise][Was the advice clear and concise?],
 dim_detail_audit.[rmg_comments_re_quality_of_advice][Comments re: quality of advice],
---dim_detail_audit.[rmg_were_issues_impeding_case_preparation_escalated_without_delay] [Were issues impeding case preparation escalated without delay? ],
+dim_detail_audit.rmg_were_issues_impeding_case_preparation_escalated_without_dela [Were issues impeding case preparation escalated without delay? ],
 dim_detail_audit.[rmg_comments_re_issues_impeding_case_preparation][Comments re: issues impeding case preparation],
 dim_detail_audit.[rmg_was_the_advice_aligned_to_rmgs_strategic_goals][Was the advice aligned to RMG’s strategic goals?],
 dim_detail_audit.[rmg_comments_re_strategic_alignment_of_advic][Comments re: strategic alignment of advice],
 dim_detail_audit.[rmg_were_key_stakeholders_notified_of_key_dates][Were key stakeholders notified of key dates?],
 dim_detail_audit.[rmg_comments_re_key_date_notifications][Comments re: key date notifications],
---dim_detail_audit.[were_witnesses_provided_with_documents_at_least_seven_days_before_the_hearing] [Were witnesses provided with documents at least 7 days before the hearing?],
+dim_detail_audit.rmg_were_witnesses_provided_with_documents_at_least_seven_days_b [Were witnesses provided with documents at least 7 days before the hearing?],
 dim_detail_audit.[rmg_comments_provision_of_documents_to_witnesses][Comments re: provision of documents to witnesses],
 dim_detail_audit.[rmg_was_the_case_assessment_provided_on_time][Was the case assessment provided on time?],
 dim_detail_audit.[rmg_comments_re_provision_of_case_assessment][Comments re: provision of case assessment],
@@ -73,17 +71,11 @@ dim_detail_audit.[rmg_other_auditors_comments][Other auditor's comments]
 				   LEFT JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
 				   LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_detail_paid_detail.master_fact_key
 				   LEFT JOIN red_dw.dbo.dim_detail_audit ON dim_detail_audit.dim_detail_audit_key = fact_dimension_main.dim_detail_audit_key
-
-
+				   LEFT JOIN red_dw.dbo.dim_department ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
+				   
 
     WHERE fact_dimension_main.master_client_code = 'R1001'
-	AND dim_matter_worktype.work_type_code IN
-(
-'0012    ',
-'1078    ',
-'1114    ',
-'1325    '
-)
+	AND dim_department.department_code = '0012'
 
 AND dim_matter_header_current.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions = 0 
@@ -91,4 +83,5 @@ AND dim_detail_audit.rmg_was_the_assessment_of_prospects_accurate IS NOT NULL
 
 
 END;
+
 GO
