@@ -7,17 +7,19 @@ GO
 --=========================================================================================================
 -- ES - 20190815 - amended days banding to use getdate rather than the end of the current month
 -- ES - 20201216 - #82500, added logic to exclude non billable disbursements
+-- JB - ticket 43211 - added Team and Division (shows split between Claims and LTA) columns 
+-- JL - #85998 - Corrected Parameter, it was set to a date and needs to be current reporting month only. This table (fact_disbursements_detail_monthly) stores history so can only look at current month.
 --=========================================================================================================
 
 
-CREATE PROCEDURE [dbo].[UnbilledDisbBreakdown]
+CREATE PROCEDURE [dbo].[UnbilledDisbBreakdown] --202109
 (
  @finMonth AS VARCHAR(10)
 )
 AS
 BEGIN
 
-/* JB - ticket 43211 - added Team and Division (shows split between Claims and LTA) columns */
+
 SELECT 
 a.client_code AS [Client]
    , REPLACE(LTRIM(REPLACE(RTRIM(a.client_code), '0', ' ')), ' ', '0') + '-'
@@ -60,7 +62,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_payee
  WHERE dim_bill_key=0
 AND total_unbilled_disbursements <> 0
 --AND reporting_exclusions=0
-AND b.transaction_fin_month=202108
+AND b.transaction_fin_month=@finMonth  /*JL*/
 AND a.invnumber  IS NULL 
 AND ds_sh_3e_costcard.isnb=0
 --AND a.client_code='EMP5104'

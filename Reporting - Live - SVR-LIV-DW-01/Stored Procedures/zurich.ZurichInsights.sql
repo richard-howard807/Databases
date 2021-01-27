@@ -31,6 +31,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
 		, zurich_referral_reason AS [Zurich Referral Reason]
+		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
 		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
@@ -60,10 +61,11 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
 			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
 			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
-		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_paid > 100000 THEN '100,000+'
+		, fact_finance_summary.damages_reserve AS [Damages Reserve]
+		, CASE WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
+			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
 			END AS [Damages Banding]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
 		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
@@ -129,7 +131,8 @@ AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018
 AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 AND dim_matter_header_current.client_group_name <> 'MIB'
---AND client_group_name<>'Zurich'
+AND client_group_name<>'Zurich'
+AND NOT dim_matter_worktype.work_type_name LIKE 'PL - Pol%'
 
 
 UNION
@@ -149,6 +152,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
 		, zurich_referral_reason AS [Zurich Referral Reason]
+		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
 		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
@@ -178,10 +182,11 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
 			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
 			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
-		, CASE WHEN fact_finance_summary.damages_paid BETWEEN 0 AND 25000 THEN '0-25,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 25000 AND 50000 THEN '25,000-50,000'
-			WHEN fact_finance_summary.damages_paid BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_paid > 100000 THEN '100,000+'
+		, fact_finance_summary.damages_reserve AS [Damages Reserve]
+		, CASE WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
+			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
 			END AS [Damages Banding]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
 		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
@@ -247,6 +252,7 @@ AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018
 AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 AND client_group_name='Zurich'
+AND NOT dim_matter_worktype.work_type_name LIKE 'PL - Pol%'
 
 END
 GO

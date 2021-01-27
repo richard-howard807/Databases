@@ -112,7 +112,8 @@ AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current
 'W16179/00000001',
 'W16179/00000002',
 'W16179/00000014',
-'W15526/00000275'
+'W15526/00000275', 
+'POW025/00000423'
 ) 
 --AND fed_code='5900'
 AND  ms_fileid NOT IN 

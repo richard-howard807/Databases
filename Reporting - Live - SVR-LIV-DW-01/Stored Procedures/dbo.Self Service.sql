@@ -26,6 +26,7 @@ GO
 -- JB 20200611 Added is_this_part_of_a_campaign #61388
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
 -- JB 20200825 Added date claim concluded date last changed #68418
+-- MT 20210127 Updated logic for Credit Hire Organisation
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -268,7 +269,9 @@ SELECT DISTINCT
                 dim_detail_fraud.[fraud_type_disease_pre_lit]
             ) AS [Fraud Type],
     dim_detail_core_details.credit_hire AS [Credit Hire],
-    dim_agents_involvement.cho_name AS [Credit Hire Organisation],
+
+    COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho]), dim_detail_hire_details.[other]
+,dim_agents_involvement.cho_name) AS [Credit Hire Organisation], --dim_agents_involvement.cho_name AS [Credit Hire Organisation] 27/01/2021 - MT as per 86052,
 	
 CASE WHEN credit_hire_organisation_cho = 'Other                                                       ' THEN 
 other WHEN other IS NULL 
