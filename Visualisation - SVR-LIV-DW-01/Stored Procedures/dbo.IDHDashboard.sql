@@ -54,7 +54,8 @@ SELECT
 			'Awaiting Lease'
 	  END														AS [Present Position]
 	, ''			AS [Site Number]
-	, ''			AS [Site Name]			
+	, ''			AS [Site Name]	
+	--, file_notes.fileExternalNotes	
 	, Doogal.Latitude
 	, Doogal.Longitude
 FROM red_dw.dbo.dim_matter_header_current
@@ -74,6 +75,18 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.Doogal
 		ON Doogal.Postcode = dim_detail_property.postcode
+	--LEFT OUTER JOIN (SELECT 
+	--					dbClient.clNo+'-'+dbFile.fileNo		AS ms_ref
+	--					, dbFile.fileID
+	--					, dbFile.fileExternalNotes
+	--				FROM MS_Prod.config.dbFile
+	--					INNER JOIN MS_Prod.config.dbClient
+	--						ON dbClient.clID = dbFile.clID
+	--				WHERE 
+	--					dbClient.clNo = 'W19702'
+	--					AND dbFile.fileExternalNotes IS NOT NULL	
+	--				) AS file_notes
+	--	ON file_notes.fileID = dim_matter_header_current.ms_fileid
 WHERE 1 =1 
 	AND dim_matter_header_current.master_client_code = 'W19702'
 	AND dim_matter_header_current.matter_category = 'Real Estate'
