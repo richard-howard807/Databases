@@ -18,6 +18,7 @@ History
  07/05/2020	 ES		1.3 - amended panel averages and changed age of matter to years rater than days as pert ticket 57804
  16/07/2020	 ES		1.4 - #64794 added ms ref 
  29/07/2020	 JL		1.5 - 66147 - Matter age (years) amended logic 
+ 27/01/2021 JB		1.6 - #85960 changed nominated partner details to look at field in Matter Details in MS. Also updated the TMEmail to match the subsciption with correct teams to look at
 ====================================================
 
 */
@@ -30,7 +31,6 @@ CREATE PROCEDURE [dbo].[NHSRDefenceCostsManagement] -- 'All','All', 'All'
 )
 AS
 BEGIN
-
 
 IF @FeeEarner='All' AND @TM='All'  AND @Partner='All'
 
@@ -179,10 +179,11 @@ END AS [Tranche]
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
 ,matter_partner_full_name AS [Matters Partner Name]
-,CASE WHEN hierarchylevel4hist='Risk Pool' THEN 'james.hough@weightmans.com'
-WHEN hierarchylevel4hist='Clinical London' THEN 'luke.gleeson@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Birmingham' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Liverpool and Manchester' THEN 'ian.critchley@weightmans.com ' END AS TMEMail
+,CASE WHEN hierarchylevel4hist='North West Healthcare 2' THEN 'james.hough@weightmans.com'
+WHEN dim_fed_hierarchy_history.hierarchylevel4hist='North West Healthcare 1' THEN 'Sam.Harland@Weightmans.com'
+WHEN hierarchylevel4hist='London Healthcare' THEN 'luke.gleeson@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 1' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 2' THEN 'sarah.hopwood@weightmans.com' END AS TMEMail
 ,hierarchylevel4hist
 ,dim_detail_health.[nhs_instruction_type] AS InstructionType
 ,defence_costs_billed + wip + fact_finance_summary.disbursement_balance + disbursements_billed AS TotalBilledExcVAT
@@ -216,15 +217,41 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current WITH (NOLOCK)
  AND dim_matter_header_current.matter_number=fact_matter_summary_current.matter_number
  LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH (NOLOCK)
  ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
-,name AS NominatedPartnerName
-,workemail AS [NominatedPartnerEmail]
-FROM axxia01.dbo.casper
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
- ON fed_code=personnel_code AND dss_current_flag='Y'
-LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
-WHERE capacity_code='NOMPART') AS NominatedPartner
- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+--LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
+--,name AS NominatedPartnerName
+--,workemail AS [NominatedPartnerEmail]
+--FROM axxia01.dbo.casper
+--INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
+-- ON fed_code=personnel_code AND dss_current_flag='Y'
+--LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
+--WHERE capacity_code='NOMPART') AS NominatedPartner
+ --ON dim_matter_header_current.case_id=NominatedPartner.case_id
+ LEFT OUTER JOIN (
+	SELECT 
+		dbClient.clNo+'-'+dbFile.fileNo	AS ms_ref
+		, dbFile.fileID
+		, dbFeeEarner.feeSignOff
+		, nom_partner_email.nominated_partner	AS NominatedPartnerName
+		, nom_partner_email.NominatedPartnerEmail
+	FROM MS_Prod.config.dbFile
+		INNER JOIN MS_Prod.config.dbClient
+			ON dbClient.clID = dbFile.clID
+		INNER JOIN MS_Prod.dbo.udExtFile
+			ON udExtFile.fileID = dbFile.fileID
+		LEFT OUTER JOIN MS_Prod.[dbo].[dbFeeEarner]
+			ON dbFeeEarner.feeusrID = udExtFile.cboNomPartner
+		INNER JOIN 
+		(
+			SELECT 
+				RTRIM(dim_employee.knownas) + ' ' + RTRIM(dim_employee.surname) AS nominated_partner
+				, dim_employee.workemail		AS [NominatedPartnerEmail]
+			FROM red_dw.dbo.dim_employee 
+		) AS nom_partner_email
+			ON nom_partner_email.nominated_partner COLLATE DATABASE_DEFAULT = dbFeeEarner.feeSignOff
+	WHERE 
+		dbClient.clNo = 'N1001'
+	) AS NominatedPartner
+	ON NominatedPartner.fileID = dim_matter_header_current.ms_fileid
 WHERE dim_matter_header_current.client_group_name='NHS Resolution'
 AND dim_matter_header_current.date_closed_practice_management IS NULL
 AND reporting_exclusions=0
@@ -386,10 +413,11 @@ END AS [Tranche]
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
 ,matter_partner_full_name AS [Matters Partner Name]
-,CASE WHEN hierarchylevel4hist='Risk Pool' THEN 'james.hough@weightmans.com'
-WHEN hierarchylevel4hist='Clinical London' THEN 'luke.gleeson@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Birmingham' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Liverpool and Manchester' THEN 'ian.critchley@weightmans.com ' END AS TMEMail
+,CASE WHEN hierarchylevel4hist='North West Healthcare 2' THEN 'james.hough@weightmans.com'
+WHEN dim_fed_hierarchy_history.hierarchylevel4hist='North West Healthcare 1' THEN 'Sam.Harland@Weightmans.com'
+WHEN hierarchylevel4hist='London Healthcare' THEN 'luke.gleeson@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 1' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 2' THEN 'sarah.hopwood@weightmans.com' END AS TMEMail
 ,hierarchylevel4hist
 ,dim_detail_health.[nhs_instruction_type] AS InstructionType
 ,defence_costs_billed + wip + fact_finance_summary.disbursement_balance  + disbursements_billed  AS TotalBilledExcVAT
@@ -424,15 +452,41 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current WITH (NOLOCK)
  AND dim_matter_header_current.matter_number=fact_matter_summary_current.matter_number
  LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH (NOLOCK)
  ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
-,name AS NominatedPartnerName
-,workemail AS [NominatedPartnerEmail]
-FROM axxia01.dbo.casper
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
- ON fed_code=personnel_code AND dss_current_flag='Y'
-LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
-WHERE capacity_code='NOMPART') AS NominatedPartner
- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+--LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
+--,name AS NominatedPartnerName
+--,workemail AS [NominatedPartnerEmail]
+--FROM axxia01.dbo.casper
+--INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
+-- ON fed_code=personnel_code AND dss_current_flag='Y'
+--LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
+--WHERE capacity_code='NOMPART') AS NominatedPartner
+-- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+LEFT OUTER JOIN (
+	SELECT 
+		dbClient.clNo+'-'+dbFile.fileNo AS ms_ref
+		, dbFile.fileID
+		, dbFeeEarner.feeSignOff
+		, nom_partner_email.nominated_partner	AS NominatedPartnerName
+		, nom_partner_email.NominatedPartnerEmail
+	FROM MS_Prod.config.dbFile
+		INNER JOIN MS_Prod.config.dbClient
+			ON dbClient.clID = dbFile.clID
+		INNER JOIN MS_Prod.dbo.udExtFile
+			ON udExtFile.fileID = dbFile.fileID
+		LEFT OUTER JOIN MS_Prod.[dbo].[dbFeeEarner]
+			ON dbFeeEarner.feeusrID = udExtFile.cboNomPartner
+		INNER JOIN 
+		(
+			SELECT 
+				RTRIM(dim_employee.knownas) + ' ' + RTRIM(dim_employee.surname) AS nominated_partner
+				, dim_employee.workemail		AS [NominatedPartnerEmail]
+			FROM red_dw.dbo.dim_employee 
+		) AS nom_partner_email
+			ON nom_partner_email.nominated_partner COLLATE DATABASE_DEFAULT = dbFeeEarner.feeSignOff
+	WHERE 
+		dbClient.clNo = 'N1001'
+	) AS NominatedPartner
+	ON NominatedPartner.fileID = dim_matter_header_current.ms_fileid
 WHERE dim_matter_header_current.client_group_name='NHS Resolution'
 AND dim_matter_header_current.date_closed_practice_management IS NULL
 AND reporting_exclusions=0
@@ -594,10 +648,11 @@ END AS [Tranche]
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
 ,matter_partner_full_name AS [Matters Partner Name]
-,CASE WHEN hierarchylevel4hist='Risk Pool' THEN 'james.hough@weightmans.com'
-WHEN hierarchylevel4hist='Clinical London' THEN 'luke.gleeson@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Birmingham' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Liverpool and Manchester' THEN 'ian.critchley@weightmans.com ' END AS TMEMail
+,CASE WHEN hierarchylevel4hist='North West Healthcare 2' THEN 'james.hough@weightmans.com'
+WHEN dim_fed_hierarchy_history.hierarchylevel4hist='North West Healthcare 1' THEN 'Sam.Harland@Weightmans.com'
+WHEN hierarchylevel4hist='London Healthcare' THEN 'luke.gleeson@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 1' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 2' THEN 'sarah.hopwood@weightmans.com' END AS TMEMail
 ,hierarchylevel4hist
 ,dim_detail_health.[nhs_instruction_type] AS InstructionType
 ,defence_costs_billed + wip + fact_finance_summary.disbursement_balance  + disbursements_billed  AS TotalBilledExcVAT
@@ -632,15 +687,41 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current WITH (NOLOCK)
  AND dim_matter_header_current.matter_number=fact_matter_summary_current.matter_number
  LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH (NOLOCK)
  ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
-,name AS NominatedPartnerName
-,workemail AS [NominatedPartnerEmail]
-FROM axxia01.dbo.casper
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
- ON fed_code=personnel_code AND dss_current_flag='Y'
-LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
-WHERE capacity_code='NOMPART') AS NominatedPartner
- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+--LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
+--,name AS NominatedPartnerName
+--,workemail AS [NominatedPartnerEmail]
+--FROM axxia01.dbo.casper
+--INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
+-- ON fed_code=personnel_code AND dss_current_flag='Y'
+--LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
+--WHERE capacity_code='NOMPART') AS NominatedPartner
+-- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+LEFT OUTER JOIN (
+	SELECT 
+		dbClient.clNo+'-'+dbFile.fileNo	AS ms_ref
+		, dbFile.fileID
+		, dbFeeEarner.feeSignOff
+		, nom_partner_email.nominated_partner	AS NominatedPartnerName
+		, nom_partner_email.NominatedPartnerEmail
+	FROM MS_Prod.config.dbFile
+		INNER JOIN MS_Prod.config.dbClient
+			ON dbClient.clID = dbFile.clID
+		INNER JOIN MS_Prod.dbo.udExtFile
+			ON udExtFile.fileID = dbFile.fileID
+		LEFT OUTER JOIN MS_Prod.[dbo].[dbFeeEarner]
+			ON dbFeeEarner.feeusrID = udExtFile.cboNomPartner
+		INNER JOIN 
+		(
+			SELECT 
+				RTRIM(dim_employee.knownas) + ' ' + RTRIM(dim_employee.surname) AS nominated_partner
+				, dim_employee.workemail		AS [NominatedPartnerEmail]
+			FROM red_dw.dbo.dim_employee 
+		) AS nom_partner_email
+			ON nom_partner_email.nominated_partner COLLATE DATABASE_DEFAULT = dbFeeEarner.feeSignOff
+	WHERE 
+		dbClient.clNo = 'N1001'
+	) AS NominatedPartner
+	ON NominatedPartner.fileID = dim_matter_header_current.ms_fileid
 WHERE dim_matter_header_current.client_group_name='NHS Resolution'
 AND dim_matter_header_current.date_closed_practice_management IS NULL
 AND reporting_exclusions=0
@@ -802,10 +883,11 @@ END AS [Tranche]
 ,[NominatedPartnerEmail]
 ,worksforname AS [Team Manager]
 ,matter_partner_full_name AS [Matters Partner Name]
-,CASE WHEN hierarchylevel4hist='Risk Pool' THEN 'james.hough@weightmans.com'
-WHEN hierarchylevel4hist='Clinical London' THEN 'luke.gleeson@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Birmingham' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
-WHEN hierarchylevel4hist='Clinical Liverpool and Manchester' THEN 'ian.critchley@weightmans.com ' END AS TMEMail
+,CASE WHEN hierarchylevel4hist='North West Healthcare 2' THEN 'james.hough@weightmans.com'
+WHEN dim_fed_hierarchy_history.hierarchylevel4hist='North West Healthcare 1' THEN 'Sam.Harland@Weightmans.com'
+WHEN hierarchylevel4hist='London Healthcare' THEN 'luke.gleeson@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 1' OR hierarchylevel4hist='Healthcare Management' THEN 'jasmine.armstrong@weightmans.com'
+WHEN hierarchylevel4hist='Birmingham Healthcare 2' THEN 'sarah.hopwood@weightmans.com' END AS TMEMail
 ,hierarchylevel4hist
 ,dim_detail_health.[nhs_instruction_type] AS InstructionType
 ,defence_costs_billed + wip + fact_finance_summary.disbursement_balance  + disbursements_billed  AS TotalBilledExcVAT
@@ -840,15 +922,41 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current WITH (NOLOCK)
  AND dim_matter_header_current.matter_number=fact_matter_summary_current.matter_number
  LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH (NOLOCK)
  ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
-,name AS NominatedPartnerName
-,workemail AS [NominatedPartnerEmail]
-FROM axxia01.dbo.casper
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
- ON fed_code=personnel_code AND dss_current_flag='Y'
-LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
-WHERE capacity_code='NOMPART') AS NominatedPartner
- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+--LEFT OUTER JOIN (SELECT case_id,personnel_code AS NominatedPartnerCode
+--,name AS NominatedPartnerName
+--,workemail AS [NominatedPartnerEmail]
+--FROM axxia01.dbo.casper
+--INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
+-- ON fed_code=personnel_code AND dss_current_flag='Y'
+--LEFT OUTER JOIN red_dw.dbo.dim_employee on dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
+--WHERE capacity_code='NOMPART') AS NominatedPartner
+-- ON dim_matter_header_current.case_id=NominatedPartner.case_id
+LEFT OUTER JOIN (
+	SELECT 
+		dbClient.clNo+'-'+dbFile.fileNo		AS ms_ref
+		, dbFile.fileID
+		, dbFeeEarner.feeSignOff
+		, nom_partner_email.nominated_partner	AS NominatedPartnerName
+		, nom_partner_email.NominatedPartnerEmail
+	FROM MS_Prod.config.dbFile
+		INNER JOIN MS_Prod.config.dbClient
+			ON dbClient.clID = dbFile.clID
+		INNER JOIN MS_Prod.dbo.udExtFile
+			ON udExtFile.fileID = dbFile.fileID
+		LEFT OUTER JOIN MS_Prod.[dbo].[dbFeeEarner]
+			ON dbFeeEarner.feeusrID = udExtFile.cboNomPartner
+		INNER JOIN 
+		(
+			SELECT 
+				RTRIM(dim_employee.knownas) + ' ' + RTRIM(dim_employee.surname) AS nominated_partner
+				, dim_employee.workemail		AS [NominatedPartnerEmail]
+			FROM red_dw.dbo.dim_employee 
+		) AS nom_partner_email
+			ON nom_partner_email.nominated_partner COLLATE DATABASE_DEFAULT = dbFeeEarner.feeSignOff
+	WHERE 
+		dbClient.clNo = 'N1001'
+	) AS NominatedPartner
+	ON NominatedPartner.fileID = dim_matter_header_current.ms_fileid
 WHERE dim_matter_header_current.client_group_name='NHS Resolution'
 AND dim_matter_header_current.date_closed_practice_management IS NULL
 AND reporting_exclusions=0
