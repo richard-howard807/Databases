@@ -77,7 +77,7 @@ WHEN DATEDIFF(d, [post_date], GETDATE()) BETWEEN 14  AND 27 THEN '14To27'
 ,fee.usrFullName + ' (' + fee.usrInits  + ')' AS FeeEarner
 ,CASE WHEN @Test=1 THEN @TestEmail ELSE fee.usrEmail END  AS[UserEmailAddress]
 ,MattIndex
-,BCM.usrFullName + ' (' + BCM.usrInits  + ')' AS BCMName
+,BCM.usrFullName	 AS BCMName
 ,CASE WHEN @Test=1 THEN @TestEmail ELSE BCM.usrEmail END  AS [BCMEmailAddress]
 INTO #ClientBalances
 FROM 
@@ -129,7 +129,23 @@ INNER JOIN MS_Prod.config.dbClient
 INNER JOIN MS_PROD.dbo.udExtFile
  ON dbFile.fileID=udExtFile.fileID
 INNER JOIN MS_PROD.dbo.dbUser fee on fee.usrID = dbFile.filePrincipleID
-INNER JOIN MS_PROD.dbo.dbUser BCM on BCM.usrID = dbFile.fileresponsibleID
+--INNER JOIN MS_PROD.dbo.dbUser BCM on BCM.usrID = dbFile.fileresponsibleID
+INNER JOIN 
+(
+	SELECT 
+		fed_code
+		, hierarchylevel2
+		, hierarchylevel3 AS [Practice Area]
+		, hierarchylevel4 AS [Team]
+		, worksforname AS usrFullName
+		, worksforemail AS [usrEmail]
+	FROM red_dw.dbo.dim_fed_hierarchy_history
+		INNER JOIN red_dw.dbo.dim_employee
+			ON  dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+	WHERE 
+		dss_current_flag='Y' 
+		AND activeud=1 
+) AS BCM on BCM.fed_code COLLATE DATABASE_DEFAULT = fee.usrAlias
 WHERE (ClientBalance <> 0 OR (ClientBalance=0 AND CONVERT(DATE,[post_date],103)=CONVERT(DATE,GETDATE(),103)))
 AND (DATEDIFF(DAY,[post_date],GETDATE())) IN (1,21)
 --AND (DATEDIFF(DAY,[post_date],GETDATE())) =21
