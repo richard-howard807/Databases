@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -459,6 +460,9 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
 		   DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.[date_claim_concluded])  AS  [Elapsed Days to Damages Concluded],
 
            red_dw.dbo.fact_finance_summary.commercial_costs_estimate [Current Costs Estimate],
+		   	fact_finance_summary.revenue_and_disb_estimate_net_of_vat,
+			fact_finance_summary.revenue_estimate_net_of_vat,
+			fact_finance_summary.disbursements_estimate_net_of_vat,
            red_dw.dbo.fact_finance_summary.recovery_claimants_damages_via_third_party_contribution [Recovery Claimants Damages Via Third Party Contribution],
            red_dw.dbo.fact_finance_summary.recovery_defence_costs_from_claimant [Recovery Defence Costs From Claimant ],
            red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_costs_via_third_party_contribution [Recovery Claimants via Third Party Contribution ],
@@ -654,14 +658,14 @@ GETDATE() AS update_time,
 --------------#77789 added in two history tables below JL-----------------------------------------------------
 LEFT OUTER JOIN (
 	SELECT 
-	max(curdamrescur) as [Highest peak firm damages reserve],
-	max(curdefcostrecur) as [Highest peak defence costs reserve],
-	max(curclacostrecur) as [Highest peak claimant costs reserve],
+	MAX(curdamrescur) AS [Highest peak firm damages reserve],
+	MAX(curdefcostrecur) AS [Highest peak defence costs reserve],
+	MAX(curclacostrecur) AS [Highest peak claimant costs reserve],
 	fileid
 	FROM
 	red_dw.dbo.dim_matter_header_current
-inner join  red_dw.dbo.ds_sh_ms_udmicurrentreserves_history on dim_matter_header_current.ms_fileid = ds_sh_ms_udmicurrentreserves_history.fileid
- where dim_matter_header_current.client_group_name = 'NHS Resolution'
+INNER JOIN  red_dw.dbo.ds_sh_ms_udmicurrentreserves_history ON dim_matter_header_current.ms_fileid = ds_sh_ms_udmicurrentreserves_history.fileid
+ WHERE dim_matter_header_current.client_group_name = 'NHS Resolution'
 	GROUP BY
 	fileid)AS HistoryReserves
 ON dim_matter_header_current.ms_fileid = HistoryReserves.fileid
@@ -669,12 +673,12 @@ ON dim_matter_header_current.ms_fileid = HistoryReserves.fileid
 LEFT OUTER JOIN (   
 
 		SELECT 
-		max(curgdreserve) as [Highest peak GD reserve],
-		max(cursdreserve) as [Highest peak SD reserve],
-		max(curgdreserve) + max(cursdreserve) as [Highest peak GD+SD damages reserve],
+		MAX(curgdreserve) AS [Highest peak GD reserve],
+		MAX(cursdreserve) AS [Highest peak SD reserve],
+		MAX(curgdreserve) + MAX(cursdreserve) AS [Highest peak GD+SD damages reserve],
 		fileid 
 		FROM red_dw.dbo.dim_matter_header_current
-		inner join red_dw.dbo.ds_sh_ms_udmipahealthcare_history on dim_matter_header_current.ms_fileid = ds_sh_ms_udmipahealthcare_history.fileid
+		INNER JOIN red_dw.dbo.ds_sh_ms_udmipahealthcare_history ON dim_matter_header_current.ms_fileid = ds_sh_ms_udmipahealthcare_history.fileid
 		WHERE dim_matter_header_current.client_group_name = 'NHS Resolution'
 		GROUP BY 
 		fileid

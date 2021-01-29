@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Orlagh Kelly
 -- Create date: 2019-03-27
@@ -43,15 +44,15 @@ dim_fed_hierarchy_history_key
 FROM red_Dw.dbo.dim_fed_hierarchy_history 
 WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
 
-INSERT into #FedCodeList 
-exec sp_executesql @sql
-	end
+INSERT INTO #FedCodeList 
+EXEC sp_executesql @sql
+	END
 	
 	
 	IF  @level  = 'Individual'
     BEGIN
 	PRINT ('Individual')
-    INSERT into #FedCodeList 
+    INSERT INTO #FedCodeList 
 	SELECT ListValue
    -- INTO #FedCodeList
     FROM dbo.udt_TallySplit(',', @FedCode)
@@ -96,8 +97,8 @@ exec sp_executesql @sql
                             AND dim_detail_finance.[output_wip_fee_arrangement] = 'Hourly rate'
                             AND
                             (
-                                fact_finance_summary.[commercial_costs_estimate] IS NULL
-                                OR fact_finance_summary.[commercial_costs_estimate] < 1
+                                ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) IS NULL
+                                OR ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) < 1
                                    --AND
                                    --(
                                    --    work_type_name NOT LIKE ('PL%')
@@ -142,8 +143,8 @@ exec sp_executesql @sql
                         AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
                         AND
                         (
-                            fact_finance_summary.[commercial_costs_estimate] IS NULL
-                            OR fact_finance_summary.[commercial_costs_estimate] < 1
+                            ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) IS NULL
+                            OR ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) < 1
                         )
                         --AND
                         --(
@@ -200,7 +201,7 @@ exec sp_executesql @sql
            nofocases.Noexceptions [Number of Cases with Exceptions ],
            fact_finance_summary.[fixed_fee_amount] [Fixed Fee Amount ],
            dim_detail_finance.[output_wip_fee_arrangement] [Fee Arrangement ],
-           fact_finance_summary.[commercial_costs_estimate] [Current Costs Estimate],
+           ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) [Current Costs Estimate],
            CASE
                WHEN dim_detail_finance.[output_wip_fee_arrangement] IS NULL THEN
                    1
@@ -233,8 +234,8 @@ exec sp_executesql @sql
                     AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
                     AND
                     (
-                        fact_finance_summary.[commercial_costs_estimate] IS NULL
-                        OR fact_finance_summary.[commercial_costs_estimate] < 1
+                        ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)IS NULL
+                        OR ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) < 1
                     )
                         --           AND
                         --(
@@ -343,8 +344,8 @@ GROUP BY	ISNULL(nofocases.Exfeearrangement, 0) + ISNULL(nofocases.ExFixedfeeamou
             AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
             AND
             (
-            fact_finance_summary.[commercial_costs_estimate] IS NULL
-            OR fact_finance_summary.[commercial_costs_estimate] < 1
+            ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) IS NULL
+            OR ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) < 1
             )
             --           AND
             --(
@@ -368,7 +369,7 @@ GROUP BY	ISNULL(nofocases.Exfeearrangement, 0) + ISNULL(nofocases.ExFixedfeeamou
             fact_finance_summary.fixed_fee_amount,
             output_wip_fee_arrangement, 
 			nofocases.Noexceptions, 
-			red_dw.dbo.fact_finance_summary.commercial_costs_estimate
+			ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)
 
 			END;
 GO

@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 -- LD 2019/04/11 Moved the date columns so that they appear first  as per #16076
 
 CREATE PROCEDURE [dbo].[SelfServiceLTAonly]
@@ -214,6 +216,9 @@ NonPartnerHours AS [Total Non-Partner Hours Recorded],
 --           fact_detail_elapsed_days.[elapsed_days_live_files] AS [Elapsed Days Live Files],
 --           DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_costs_settled) AS [Elapsed Days to Costs Settlement],
         red_dw.dbo.fact_finance_summary.commercial_costs_estimate [Current Costs Estimate],
+	fact_finance_summary.revenue_and_disb_estimate_net_of_vat,
+	fact_finance_summary.revenue_estimate_net_of_vat,
+	fact_finance_summary.disbursements_estimate_net_of_vat,
 --           red_dw.dbo.fact_finance_summary.recovery_claimants_damages_via_third_party_contribution [Recovery Claimants Damages Via Third Party Contribution],
 --           red_dw.dbo.fact_finance_summary.recovery_defence_costs_from_claimant [Recovery Defence Costs From Claimant ],
 --           red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_costs_via_third_party_contribution [Recovery Claimants via Third Party Contribution ],

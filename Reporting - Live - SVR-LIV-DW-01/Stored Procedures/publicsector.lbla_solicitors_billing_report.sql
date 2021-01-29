@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 13/06/2018
@@ -26,7 +27,7 @@ AS
 			, RTRIM(bills.client_code)+ '-' + bills.matter_number [matter_no]
 			, header.matter_description
 			, header.fee_arrangement
-			, COALESCE(finance.commercial_costs_estimate,finance.fixed_fee_amount,finance.defence_costs_reserve) [fee_quoted]
+			, COALESCE(ISNULL(finance.revenue_and_disb_estimate_net_of_vat,finance.commercial_costs_estimate),finance.fixed_fee_amount,finance.defence_costs_reserve) [fee_quoted]
 			, bills.bill_number [invoice_number]
 			, bills.bill_date [date_of_invoice]
 			, header.matter_owner_full_name [weightmans_case_handler]
@@ -54,7 +55,7 @@ AS
 			, RTRIM(bills.client_code)+ '-' + bills.matter_number 
 			, header.matter_description
 			, header.fee_arrangement
-			, COALESCE(finance.commercial_costs_estimate,finance.fixed_fee_amount,finance.defence_costs_reserve) 
+			, COALESCE(ISNULL(finance.revenue_and_disb_estimate_net_of_vat,finance.commercial_costs_estimate),finance.fixed_fee_amount,finance.defence_costs_reserve) 
 			, bills.bill_number 
 			, bills.bill_date 
 			, header.matter_owner_full_name 

@@ -6,6 +6,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -475,6 +478,9 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 		   	DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.[date_claim_concluded])  AS  [Elapsed Days to Damages Concluded],
     fact_detail_cost_budgeting.[initial_costs_estimate] AS [Initial Costs Estimate],
 	red_dw.dbo.fact_finance_summary.commercial_costs_estimate [Current Costs Estimate],
+	fact_finance_summary.revenue_and_disb_estimate_net_of_vat,
+	fact_finance_summary.revenue_estimate_net_of_vat,
+	fact_finance_summary.disbursements_estimate_net_of_vat,
     red_dw.dbo.fact_finance_summary.recovery_claimants_damages_via_third_party_contribution [Recovery Claimants Damages Via Third Party Contribution],
     red_dw.dbo.fact_finance_summary.recovery_defence_costs_from_claimant [Recovery Defence Costs From Claimant ],
     red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_costs_via_third_party_contribution [Recovery Claimants via Third Party Contribution ],

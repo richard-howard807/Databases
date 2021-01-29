@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2020-02-03
@@ -11,7 +12,7 @@ CREATE PROCEDURE [dbo].[MSAlerts_Claims]
 
 (
 @FedCode AS VARCHAR(MAX)
-,@Level as VARCHAR(100)
+,@Level AS VARCHAR(100)
 )
 
 AS
@@ -42,15 +43,15 @@ SET @sql = '
 	WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
 
 
-INSERT into #FedCodeList 
-exec sp_executesql @sql
-	end
+INSERT INTO #FedCodeList 
+EXEC sp_executesql @sql
+	END
 	
 	
 	IF  @Level  = 'Individual'
     BEGIN
 	PRINT ('Individual')
-    INSERT into #FedCodeList 
+    INSERT INTO #FedCodeList 
 	SELECT ListValue
    -- INTO #FedCodeList
     FROM dbo.udt_TallySplit(',', @FedCode)
@@ -72,7 +73,7 @@ SELECT
 	, ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0)			AS total_billed_unbilled
 	, ISNULL(fact_finance_summary.defence_costs_reserve, 0) - 
 		(ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0))		AS os_def_reserve
-	, ISNULL(fact_finance_summary.commercial_costs_estimate, 0) -
+	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0) -
 		(ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0))		AS os_costs_est
 INTO #finacial_calcs
 FROM red_dw.dbo.dim_matter_header_current 
@@ -144,7 +145,7 @@ SELECT
 			'N/A'
 	  END																								AS [Fixed Fee RAG Status]
 	, fact_finance_summary.defence_costs_reserve														AS [Defence Costs Reserve]
-	, ISNULL(fact_finance_summary.commercial_costs_estimate, 0)											AS [Current Costs Estimate]
+	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0)											AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)													AS [Total of Total Billed + WIP + Unbilled Disbursements]
 	, CASE
 		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN

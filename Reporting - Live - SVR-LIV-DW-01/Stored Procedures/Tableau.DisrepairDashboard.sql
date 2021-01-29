@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 /*
 ===================================================
 ===================================================
@@ -81,10 +82,10 @@ AS
 		, fact_finance_summary.tp_total_costs_claimed												AS [Tenant's Solicitors Costs Claimed]
 		, fact_detail_property.tenants_solicitors_costs												AS [Tenant's Solicitors Costs]
 		, CASE
-			WHEN fact_finance_summary.commercial_costs_estimate IS NULL THEN
+			WHEN ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) IS NULL THEN
 				fact_finance_summary.fixed_fee_amount
 			ELSE
-				fact_finance_summary.commercial_costs_estimate
+				ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)
 		  END																						AS [Cost Estimate (Excl. VAT & Disbs]
 		, fact_finance_summary.total_amount_bill_non_comp											AS [Weightmans Costs Billed to Date]
 		, fact_finance_summary.vat_non_comp															AS [VAT Billed to Date]

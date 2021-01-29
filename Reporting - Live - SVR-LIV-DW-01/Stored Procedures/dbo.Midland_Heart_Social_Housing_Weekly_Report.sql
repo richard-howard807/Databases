@@ -4,11 +4,11 @@ SET ANSI_NULLS ON
 GO
 
 -- =============================================
--- Author:		Julie Loughlin
--- Create date: 23/07/2020
--- Description:	New report for Midland Heart see ticket 65197
+-- Author:		Max Taylor
+-- Create date: 29/01/2021
+-- Description:	New report for Midland Heart see ticket 86458
 -- =============================================
-CREATE PROCEDURE [dbo].[Midland_Heart_WIP_Billing]
+CREATE PROCEDURE [dbo].[Midland_Heart_Social_Housing_Weekly_Report]
 AS
 BEGIN
 
@@ -21,15 +21,18 @@ SELECT
 	, clientcontact_name AS [Instructing Officer]
 	, dim_fed_hierarchy_history.[name] AS [Case Manager]
 	, dim_fed_hierarchy_history.jobtitle
-	, CASE WHEN CAST(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS VARCHAR(100)) = ''
-	   OR  CAST(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS VARCHAR(100))  IS NULL 
-	   THEN CAST(fact_finance_summary.fixed_fee_amount AS VARCHAR(100)) 
-	   ELSE CAST(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS VARCHAR(100))
-	   END AS [Estimated total gross fee OR fixed fee - £]
-	, fact_finance_summary.total_amount_billed AS [Total gross bills since the file was opened (inc. disbs & VAT) - £]
-
-
-
+	, [Instruction Type - Buyback/ Re-sale] = '' --waiting on this to be added to DWH
+    , [Property Address] = dim_detail_property.[property_address]
+    , [Purchasers Name/ Leaseholders Name] = 	dim_detail_property.[pspurchaser_1_full_name]
+    , [Third Party Solicitor Name] 	= dim_detail_property.[midland_heart_third_party_solicitor_name]
+    , [Current Position/Sales Progression Notes] = 		dim_detail_property.[midland_heart_current_position]
+    , [Obstacles to Progress. What's holding this matter up?] =	dim_detail_property.[midland_heart_obstacles_to_progress]
+    , [Date Initial papers Issued to Solicior]	= 	dim_detail_property.[midland_heart_date_initial_papers_issued_to_solicitors]
+    , [Date Engrossments sent to MHL] = 	dim_detail_property.[midland_heart_date_engrossments_sent_to_mhl]
+    , [Exchange Date] 	= 	dim_detail_property.[exchange_date]
+    , [Completion Date] = 		dim_detail_property.[completion_date]
+    , [Sales Officer Comments] =  		dim_detail_property.[midland_heart_sale_officer_comments]
+    , [PO Number] 	=	dim_detail_property.[midland_heart_po_number]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
@@ -45,12 +48,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
                AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
                AND GETDATE()
                BETWEEN dss_start_date AND dss_end_date
+LEFT JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
 
 WHERE 
 
 dim_matter_header_current.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions=0
 AND fact_dimension_main.client_code = 'W23552'
+AND dim_matter_worktype.[work_type_name] = 'Social Housing - Property               '
 
 
 

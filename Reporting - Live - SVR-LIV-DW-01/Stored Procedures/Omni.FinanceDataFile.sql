@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 /*
 ===================================================
 ===================================================
@@ -71,7 +72,7 @@ SELECT
 		, fact_finance_summary.claimants_total_costs_paid_by_all_parties AS [Claimants Total Costs Paid by all Parties]
 		, fact_finance_summary.damages_paid AS [Damages Paid] 
 		, fact_finance_summary.claimants_costs_paid AS [Claimants Costs Paid]
-		, fact_finance_summary.tp_total_costs_claimed As [TP Total Costs Claimed]
+		, fact_finance_summary.tp_total_costs_claimed AS [TP Total Costs Claimed]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
 		, fact_finance_summary.[damages_reserve_initial] AS [Damages Reserve Initial]
 		, fact_detail_reserve_detail.[initial_damages_reserve] AS [Damages Reserve Initial (based on detail TRA077)]
@@ -152,17 +153,17 @@ SELECT
 				ELSE fact_finance_summary.commercial_costs_estimate_net
 		  END AS [Outstanding Costs Estimate]
 		, CASE WHEN fact_finance_summary.[damages_paid] + fact_finance_summary.[claimants_costs_paid] > 0 THEN 'Payment made' 
-				WHEN fact_finance_summary.[damages_paid] + fact_finance_summary.[claimants_costs_paid] = 0 THEN 'Repudiated' end as [Repudiated/Payment Made (lees)]
+				WHEN fact_finance_summary.[damages_paid] + fact_finance_summary.[claimants_costs_paid] = 0 THEN 'Repudiated' END AS [Repudiated/Payment Made (lees)]
 		, dim_detail_claim.[date_final_bill ] AS [Claim Status]
 		, fact_finance_summary.[total_amount_billed] AS [Total Amount Billed]
 		, ISNULL(fact_finance_summary.[total_amount_billed],0)-ISNULL(fact_finance_summary.vat_billed,0) [Total Amount Billed (exc VAT)]
-		, ISNULL(fact_finance_summary.commercial_costs_estimate,0)-(ISNULL(fact_finance_summary.[total_amount_billed],0)-ISNULL(fact_finance_summary.vat_billed,0)) [Total Outstanding Costs]
+		, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate),0)-(ISNULL(fact_finance_summary.[total_amount_billed],0)-ISNULL(fact_finance_summary.vat_billed,0)) [Total Outstanding Costs]
 		, ISNULL(fact_detail_future_care.[interlocutory_costs_claimed_by_claimant],0) + ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[detailed_assessment_costs_paid],0) + ISNULL(fact_finance_summary.[other_defendants_costs_paid],0) AS [Opponents Cost Spend]
 		, ISNULL(fact_finance_summary.[tp_costs_reserve_initial], 0) + ISNULL(fact_finance_summary.[other_defendants_costs_reserve_initial], 0) AS [Initial claimant's costs reserve / estimation] 
 		, fact_bill_detail_summary.bill_total AS [Total Bill Amount - Composite (IncVAT )]
 		, fact_bill_detail_summary.bill_total_excl_vat AS [Total Bill Amount - Composite (excVAT)] 
 		, fact_bill_detail_summary.disbursements_billed_exc_vat
-		, ISNULL(fact_finance_summary.commercial_costs_estimate,0)-(ISNULL(fact_bill_detail_summary.bill_total_excl_vat,0)) [Total Outstanding Costs - Composite]
+		, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate),0)-(ISNULL(fact_bill_detail_summary.bill_total_excl_vat,0)) [Total Outstanding Costs - Composite]
 		, CASE WHEN fact_finance_summary.[damages_paid] IS NULL  AND fact_detail_paid_detail.[general_damages_paid] IS NULL AND fact_detail_paid_detail.[special_damages_paid] IS NULL AND fact_detail_paid_detail.[cru_paid] IS NULL THEN NULL
 			ELSE  (CASE WHEN fact_finance_summary.[damages_paid] IS NULL THEN (ISNULL(fact_detail_paid_detail.[general_damages_paid],0)+ISNULL(fact_detail_paid_detail.[special_damages_paid],0)+ ISNULL(fact_detail_paid_detail.[cru_paid],0)) ELSE fact_finance_summary.[damages_paid] END) END AS [Damages Paid by Client - Disease]
 		, CASE WHEN fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] IS NULL  AND fact_detail_paid_detail.[total_nil_settlements] IS NULL THEN NULL

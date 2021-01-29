@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClarionBordereau]
 (
 @StartDate AS DATE
@@ -17,7 +18,7 @@ BEGIN
 SELECT master_client_code AS Client,
        master_matter_number AS Matter,
        matter_description AS [Description],
-       commercial_costs_estimate AS FeeEstimate,
+       ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS FeeEstimate,
 	   bill_date AS [Bill Date],
        fact_bill.bill_number AS [Bill Number],
        bill_total AS BillTotal,
@@ -67,7 +68,7 @@ GROUP BY master_client_code,
        vat_amount,
        matter_owner_full_name,
        name,
-       fee_arrangement,adjustment_type
+       fee_arrangement,adjustment_type,(ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate))
 
 UNION
 
@@ -75,7 +76,7 @@ UNION
 SELECT master_client_code AS Client,
        master_matter_number AS Matter,
        matter_description AS [Description],
-       commercial_costs_estimate AS FeeEstimate,
+       ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS FeeEstimate,
 	   bill_date AS [Bill Date],
        fact_bill.bill_number AS [Bill Number],
        fact_bill.bill_total AS BillTotal,

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[CHICLegalServicesMMIReport]
 (
 @StartDate AS DATE
@@ -88,7 +89,7 @@ END AS [Lot]
 ,matter_partner_full_name AS [Matter Partner]
 ,clientcontact_reference AS [Fee Code]
 ,CASE WHEN fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' THEN 'Fixed Fee' ELSE 'Hourly Rate' END  AS [Fee type]
-,ISNULL(commercial_costs_estimate,dim_matter_header_current.fixed_fee_amount) AS [Fee quoted (£)]
+,ISNULL((ISNULL(revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)),dim_matter_header_current.fixed_fee_amount) AS [Fee quoted (£)]
 ,bill_date AS [Invoice Date]
 ,dim_bill.bill_number AS [Invoice Reference Number]
 ,fees_total AS [Invoice Amount (ex VAT & disbursements)]
