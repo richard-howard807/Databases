@@ -12,6 +12,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [CommercialRecoveries].[MIBNewBatch] 
 --[CommercialRecoveries].[MIBNewBatch] '2016'
 (
@@ -51,7 +53,8 @@ OR CLO_ClosedDate BETWEEN @StartDate AND @EndDate
 UNION
 
 SELECT dbFile.Created AS DateOpened
-,ISNULL(txtShortName,ISNULL(Associates.contTitle,'') + ' '  + ISNULL(Associates.contChristianNames,'') + ' ' + ISNULL(Associates.contSurname,''))AS Short_name
+--,ISNULL(ISNULL(Associates.contTitle,'') + ' '  + ISNULL(Associates.contChristianNames,'') + ' ' + ISNULL(Associates.contSurname,''),txtShortName)AS Short_name
+,ISNULL(ISNULL(NewAssoc.contTitle,'') + ' '  + ISNULL(NewAssoc.contChristianNames,'') + ' ' + ISNULL(NewAssoc.contSurname,''),txtShortName)AS Short_name
 ,txtClaimRef AS MIB_ClaimNumber
 ,txtClaNum21 AS MIB_ClaimNumber2
 ,curOriginalBal AS OriginalBalance
@@ -83,7 +86,26 @@ LEFT OUTER JOIN [MS_PROD].dbo.udExtAssociate
  WHERE assocType='DEFENDANT'
  AND cboDefendantNo='1') AS Associates
   ON Associates.fileID = dbFile.fileID
-WHERE clNo='M1001'
+LEFT OUTER JOIN 
+(
+SELECT DISTINCT dbAssociates.fileID,contTitle,contChristianNames,contSurname FROM [MS_PROD].config.dbAssociates
+INNER JOIN [MS_PROD].config.dbContact
+ ON dbContact.contID = dbAssociates.contID
+INNER JOIN [MS_PROD].dbo.dbContactIndividual
+ ON dbContactIndividual.contID = dbContact.contID
+LEFT OUTER JOIN [MS_PROD].dbo.udExtAssociate
+ ON udExtAssociate.assocID = dbAssociates.assocID
+LEFT OUTER JOIN (SELECT fileID,COUNT(1) AS Number
+FROM ms_prod.config.dbAssociates
+ WHERE assocType='DEFENDANT'
+ GROUP BY fileID) AS NumberD
+  ON NumberD.fileID = dbAssociates.fileID
+ WHERE assocType='DEFENDANT'
+ AND (cboDefendantNo='1' OR ( cboDefendantNo IS NULL AND NumberD.Number=1))
+)  AS NewAssoc
+ ON NewAssoc.fileID = dbFile.fileID
+ WHERE clNo='M1001'
+ AND ISNULL(txtClaimRef,'')<>''
 AND fileType='2038'
 AND (
 CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dbFile.Created),103) BETWEEN @StartDate AND @EndDate

@@ -21,7 +21,7 @@ SELECT
 	, clientcontact_name AS [Instructing Officer]
 	, dim_fed_hierarchy_history.[name] AS [Case Manager]
 	, dim_fed_hierarchy_history.jobtitle
-	, [Instruction Type - Buyback/ Re-sale] = '' --waiting on this to be added to DWH
+	, [Instruction Type - Buyback/ Re-sale] = instruction_type
     , [Property Address] = dim_detail_property.[property_address]
     , [Purchasers Name/ Leaseholders Name] = 	dim_detail_property.[pspurchaser_1_full_name]
     , [Third Party Solicitor Name] 	= dim_detail_property.[midland_heart_third_party_solicitor_name]
@@ -33,7 +33,7 @@ SELECT
     , [Completion Date] = 		dim_detail_property.[completion_date]
     , [Sales Officer Comments] =  		dim_detail_property.[midland_heart_sale_officer_comments]
     , [PO Number] 	=	dim_detail_property.[midland_heart_po_number]
-
+	
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
@@ -49,7 +49,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
                AND GETDATE()
                BETWEEN dss_start_date AND dss_end_date
 LEFT JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
-
+LEFT JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 WHERE 
 
 dim_matter_header_current.matter_number <> 'ML'
