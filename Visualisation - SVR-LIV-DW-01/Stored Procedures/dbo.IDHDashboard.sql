@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[IDHDashboard]
 
 AS
@@ -34,7 +35,7 @@ SELECT
 	, CAST(dim_detail_property.date_lease_agreed AS DATE)	 							AS [Date Lease Agreed]
 	, CAST(dim_detail_property.completion_date AS DATE)						AS [Completion Date]
 	, fact_finance_summary.fixed_fee_amount					AS [Fees Estimate - FF Amount]
-	, fact_finance_summary.commercial_costs_estimate			AS [Fees Estimate - Commercial Costs Estimate]
+	, ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)	AS [Fees Estimate - Commercial Costs Estimate]
 	, fact_detail_cost_budgeting.fees_estimate				AS [Fees Estimate - Fees Estimate]
 	, fact_finance_summary.total_amount_billed				AS [Total Billed]
 	, fact_finance_summary.defence_costs_billed				AS [Revenue]
@@ -53,9 +54,9 @@ SELECT
 		ELSE
 			'Awaiting Lease'
 	  END														AS [Present Position]
-	, ''			AS [Site Number]
-	, ''			AS [Site Name]	
-	--, file_notes.fileExternalNotes	
+	, dim_detail_property.site_number			AS [Site Number]
+	, dim_detail_property.site_name			AS [Site Name]	
+	, dim_file_notes.external_file_notes	
 	, Doogal.Latitude
 	, Doogal.Longitude
 FROM red_dw.dbo.dim_matter_header_current
@@ -75,18 +76,9 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.Doogal
 		ON Doogal.Postcode = dim_detail_property.postcode
-	--LEFT OUTER JOIN (SELECT 
-	--					dbClient.clNo+'-'+dbFile.fileNo		AS ms_ref
-	--					, dbFile.fileID
-	--					, dbFile.fileExternalNotes
-	--				FROM MS_Prod.config.dbFile
-	--					INNER JOIN MS_Prod.config.dbClient
-	--						ON dbClient.clID = dbFile.clID
-	--				WHERE 
-	--					dbClient.clNo = 'W19702'
-	--					AND dbFile.fileExternalNotes IS NOT NULL	
-	--				) AS file_notes
-	--	ON file_notes.fileID = dim_matter_header_current.ms_fileid
+	LEFT OUTER JOIN red_dw.dbo.dim_file_notes
+		ON dim_file_notes.client_code = dim_matter_header_current.client_code
+			AND dim_file_notes.matter_number = dim_matter_header_current.matter_number
 WHERE 1 =1 
 	AND dim_matter_header_current.master_client_code = 'W19702'
 	AND dim_matter_header_current.matter_category = 'Real Estate'

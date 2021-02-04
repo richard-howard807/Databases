@@ -17,6 +17,7 @@ BEGIN
 --ITB pricing
 
 SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [MS Reference]
+	, dim_matter_header_current.master_client_code AS [Client Code]
 	, dim_matter_header_current.matter_description AS [Matter Description]
 	, dim_detail_core_details.[credit_hire] AS [Credit Hire]
 	, dim_detail_core_details.[suspicion_of_fraud] AS [Suspicion of Fraud]

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 ===================================================
 ===================================================
@@ -151,7 +152,9 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, fact_finance_summary.[disbursements_billed] AS [Disbursements Billed]
 		, fact_finance_summary.wip AS [WIP]
 		, fact_finance_summary.vat_billed AS [VAT]
-		, fact_finance_summary.commercial_costs_estimate AS [Commercial Costs Estimate]
+		--, fact_finance_summary.commercial_costs_estimate AS [Commercial Costs Estimate]
+		,ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS [Commercial Costs Estimate]
+		
 		, fact_matter_summary_current.[client_account_balance_of_matter] AS [Client Account Balance of Matter]
 		, fact_finance_summary.total_costs_claimed AS [Total Costs Claimed]
 		, fact_finance_summary.total_costs_paid AS [Total Costs Paid]

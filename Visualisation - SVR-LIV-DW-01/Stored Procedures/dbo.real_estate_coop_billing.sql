@@ -5,6 +5,7 @@ GO
 
 
 
+
 /*
 ===================================================
 ===================================================
@@ -91,7 +92,7 @@ AS
 				,dim_detail_property.[surveyor_dealing] AS [Surveyor Dealing]
 				,dim_detail_property.[transaction_1] AS [Transaction Type]
 				,dim_detail_property.[property_address] AS [Property Address]
-				,fact_finance_summary.commercial_costs_estimate AS [Current Costs Estimate]
+				,ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate) AS [Current Costs Estimate]
 
 	FROM red_dw.dbo.fact_dimension_main main
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = main.master_fact_key
