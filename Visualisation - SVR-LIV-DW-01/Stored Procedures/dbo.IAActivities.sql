@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[IAActivities]
 AS 
 
@@ -173,7 +174,7 @@ LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
          AND dim_ia_contact_lists.dim_client_key<>0
          AND list_type_desc='Status'
          ) AS [Lists]
-         ON Lists.ia_client_id=dim_ia_activity_involvement.ia_contact_id
+         ON Lists.dim_client_key=dim_ia_activity_involvement.dim_client_key --Amended
 
 LEFT OUTER JOIN (SELECT ia_contact_id
 ,MAX(activity_calendar_date) AS NextEngement

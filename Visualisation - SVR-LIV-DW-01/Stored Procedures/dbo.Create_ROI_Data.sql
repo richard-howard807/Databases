@@ -17,6 +17,7 @@ RH 20200803 - Amended exclusion logic so it excludes personal billings not all b
 RH 20200805 - Amened to include charges which are reported as revenue 'Fees'
 			- Report documentation \\sbc.root\usershares\Restricted\Business Services\Information Systems\Teams\Development\Business Intelligence\Documentation\Partners Billing Introductions and Referrals Documentation.docx
 
+RH 20200204 - Excluded two clients from hard cutoff date after request from Laura Harrison 
 exec [dbo].[Create_ROI_Data] '20190101'
 */
 
@@ -131,12 +132,14 @@ FROM (
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
 		AND armaster.invdate >= @processdate
-		AND c.opendate >= '20190501'
-		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095
+		AND ((c.opendate >= '20190501' 
+		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
+		OR c.number IN ('123447R','W21348')) -- Request to exclude two clients from hard date cut off by Laura Harrison
+
 	   --  AND timecard.timekeeper NOT IN (SELECT timekeeper FROM @timekeepers  ) -- Exclues any timecard transactions by client introducer
 	 --  AND timecard.timekeeper <> co.timekeeper
-
-
+	 
+	    
 	 UNION ALL
   -- Charges   
 
@@ -172,8 +175,10 @@ FROM (
 		 INNER JOIN red_dw.dbo.ds_sh_3e_armaster     AS armaster ON timebill.armaster = armaster.armindex
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
-		AND c.opendate >= '20190501'
-		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095
+		AND ((c.opendate >= '20190501' 
+		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
+		OR c.number IN ('123447R','W21348')) -- Request to exclude two clients from hard date cut off by Laura Harrison
+
 		AND armaster.invdate >= @processdate
 
 ) x
