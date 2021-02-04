@@ -11,7 +11,7 @@ Created Date:		2021-01-29
 Description:		Zurich Large Loss Tableau Dashboard
 Current Version:	Initial Create
 ====================================================
--- 2018/08/14 commented out duplicate columns
+
 ====================================================
 
 */
@@ -89,10 +89,10 @@ WHERE
 	reporting_exclusions = 0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	AND date_opened_case_management >= '2019-05-01'
+	--AND date_opened_case_management >= '2019-01-01'
 	--AND hierarchylevel2hist = 'Legal Ops - Claims'
-	AND (date_closed_case_management IS NULL 
-	OR date_closed_case_management >= '2019-05-01')
+	AND (date_claim_concluded IS NULL 
+	OR date_claim_concluded >= '2019-01-01')
 	--AND dim_client.client_code = 'Z1001' AND dim_matter_header_current.matter_number = '00079750'
 					
 --=========================================================================================================================================================================================================================================================================
@@ -112,7 +112,6 @@ SELECT
 	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
 	ELSE 'SLA Met'
 	END	AS [Initial Report SLA Status]
-	, CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Status]
 	, dim_detail_core_details.present_position AS [Present Position]
 	--, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
@@ -133,14 +132,39 @@ SELECT
 		ELSE 
 			0
 	  END	AS [Subsequent Report is Overdue]
+	  	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](#ClientReportDates.date_subsequent_report_due,date_subsequent_sla_report_sent) AS [Days to send Subsequent report (working days)]
 	  , DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
 	  , red_dw.dbo.dim_detail_core_details.referral_reason AS [Referral Reason]
 	  , red_dw.dbo.dim_date.calendar_date
 	  ,red_dw.dbo.dim_date.current_fin_year
+,dim_detail_outcome.date_claim_concluded
+,CASE WHEN CAST(date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
+AND CAST(date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+WHEN CAST(date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+CAST(date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilter] 
+,date_opened_case_management
+,CASE WHEN CAST(date_claim_concluded AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
+AND CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+WHEN CAST(date_claim_concluded AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterConcluded] 
+,  CASE WHEN dim_matter_header_current.reporting_exclusions=0
+		AND dim_matter_header_current.matter_number<>'ML'
+		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
+		AND LOWER(referral_reason) LIKE '%dispute%'
+		AND suspicion_of_fraud ='No'
+		--AND work_type_group IN ('EL','PL All','Motor','Disease') 
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
+		THEN 1 ELSE 0 END AS [Number of Matters]
+		, CASE WHEN totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
+,fact_finance_summary.total_reserve
+,red_dw.dbo.fact_finance_summary.damages_paid
+,red_dw.dbo.fact_finance_summary.total_damages_and_tp_costs_reserve
+,red_dw.dbo.fact_finance_summary.total_tp_costs_paid
+,red_dw.dbo.fact_finance_summary.total_recovery
+,red_dw.dbo.fact_finance_summary.defence_costs_billed
+,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
+, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 
-
-
---INTO Reporting.dbo.ClaimsSLAComplianceTable
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -154,13 +178,16 @@ LEFT OUTER JOIN #ClientReportDates ON #ClientReportDates.master_client_code = di
 LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 LEFT OUTER JOIN red_dw.dbo.dim_date	ON 	dim_open_case_management_date_key	 = dim_date.dim_date_key
+LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficmotor ON ds_sh_ms_udficmotor.fileid = dim_matter_header_current.ms_fileid
+LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficcommon ON 	 ds_sh_ms_udficmotor.fileid = ds_sh_ms_udficcommon.fileid
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 WHERE 
 	reporting_exclusions=0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	AND date_opened_case_management >= '2019-05-01'
-	AND (date_closed_case_management IS NULL 
-	OR date_closed_case_management>='2019-05-01')
+	--AND date_opened_case_management >= '2019-02-01'
+	AND (date_claim_concluded IS NULL 
+	OR date_claim_concluded>='2019-02-01')
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
 

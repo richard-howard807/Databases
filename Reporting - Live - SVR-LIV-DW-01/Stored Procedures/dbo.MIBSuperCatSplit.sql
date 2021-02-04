@@ -39,29 +39,30 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
  ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
  AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN 
-(
-SELECT fact_all_time_activity.dim_matter_header_curr_key
-,SUM(wiphrs) AS [Total Hours Recorded]
-,SUM(wipamt) AS [Total Amount Recorded]
-,SUM(CASE WHEN fee_earner_code=fed_code THEN wiphrs ELSE 0 END)  AS [Lead Hours Recorded]
-,SUM(CASE WHEN fee_earner_code=fed_code THEN wipamt ELSE 0 END)  AS [Lead Amount Recorded]
+	(
+	SELECT fact_all_time_activity.dim_matter_header_curr_key
+	,SUM(wiphrs) AS [Total Hours Recorded]
+	,SUM(wipamt) AS [Total Amount Recorded]
+	,SUM(CASE WHEN fee_earner_code=fed_code THEN wiphrs ELSE 0 END)  AS [Lead Hours Recorded]
+	,SUM(CASE WHEN fee_earner_code=fed_code THEN wipamt ELSE 0 END)  AS [Lead Amount Recorded]
 
-,SUM(CASE WHEN fee_earner_code<>fed_code THEN wiphrs ELSE 0 END)  AS [NonLead Hours Recorded]
-,SUM(CASE WHEN fee_earner_code<>fed_code THEN wipamt ELSE 0 END)  AS [NonLead Amount Recorded]
-FROM red_dw.dbo.fact_all_time_activity
-INNER JOIN red_dw.dbo.dim_matter_header_current
-  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
-INNER JOIN red_dw.dbo.dim_detail_client
- ON dim_detail_client.client_code = dim_matter_header_current.client_code
- AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
-  WHERE service_category='Super cat'
- AND client_group_code='00000002'
- AND dim_bill_key=0
- AND isactive=1
- GROUP BY fact_all_time_activity.dim_matter_header_curr_key
-) AS Recorded
+	,SUM(CASE WHEN fee_earner_code<>fed_code THEN wiphrs ELSE 0 END)  AS [NonLead Hours Recorded]
+	,SUM(CASE WHEN fee_earner_code<>fed_code THEN wipamt ELSE 0 END)  AS [NonLead Amount Recorded]
+	FROM red_dw.dbo.fact_all_time_activity
+	INNER JOIN red_dw.dbo.dim_matter_header_current
+	  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
+	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+	 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
+	INNER JOIN red_dw.dbo.dim_detail_client
+	 ON dim_detail_client.client_code = dim_matter_header_current.client_code
+	 AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
+	  WHERE service_category='Super cat'
+	 AND client_group_code='00000002'
+	 AND dim_bill_key=0
+	 AND isactive=1
+	 AND chargeable_nonc_nonb = 'C'
+	 GROUP BY fact_all_time_activity.dim_matter_header_curr_key
+	) AS Recorded
  ON Recorded.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN 
 (
@@ -83,6 +84,7 @@ INNER JOIN red_dw.dbo.dim_detail_client
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
   WHERE service_category='Super cat'
  AND client_group_code='00000002'
+ AND chargeable_nonc_nonb = 'C'
  GROUP BY fact_bill_billed_time_activity.dim_matter_header_curr_key
 ) AS Billed
  ON Billed.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -91,4 +93,5 @@ INNER JOIN red_dw.dbo.dim_detail_client
  AND ISNULL(outcome_of_case,'')<>'Returned to Client'
  AND ISNULL(matter_description,'') <>'Lizzie test'
 END
+ 
 GO

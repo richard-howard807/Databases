@@ -234,6 +234,7 @@ CREATE TABLE [dbo].[selfservice]
 [Trial date] [datetime] NULL,
 [date of trial not KD] [datetime] NULL,
 [Is This Part of a Campaign?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[tier_1_3_case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [LL Damages £350k+] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL

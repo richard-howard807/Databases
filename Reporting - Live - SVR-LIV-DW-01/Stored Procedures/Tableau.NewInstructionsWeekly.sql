@@ -82,6 +82,7 @@ BEGIN
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
+									, 1 AS [Number of Matters]
 			
 
  FROM red_dw.dbo.dim_matter_header_current

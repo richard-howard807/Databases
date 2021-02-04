@@ -565,6 +565,8 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, dim_detail_court.date_of_trial [date of trial not KD]
 
 	, dim_detail_core_details.is_this_part_of_a_campaign		AS [Is This Part of a Campaign?]
+
+	, dim_detail_claim.[tier_1_3_case] -- Added as per request via HF 20210203 - MT
 	
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
