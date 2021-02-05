@@ -12,6 +12,7 @@ Description:		Data for NHSR CAR Report, all live matters
 Ticket:				29094
 Current Version:	Initial Create
 ====================================================
+-- ES #87118 Changed last bill date to look at the same filed as the self service fact_bill_matter.last_bill_date 
 ====================================================
 
 */
@@ -53,7 +54,7 @@ SELECT --TOP 100*
 	   , ISNULL(fin.defence_costs_billed,0)+ISNULL(fin.disbursements_billed,0) AS [Total Revenue & Disbursements]
 	   , CONVERT(DECIMAL(16,4),shelf_life.elapsed_days_conclusion)/365 AS [Matter Age (years)]
 	   , fin.wip AS [WIP]
-	   , last_bill_date AS [Date of Last Bill]
+	   , fact_bill_matter.last_bill_date  AS [Date of Last Bill]
 	   , last_time_transaction_date AS [Last Time Recorded]
 	   , [Panel Damages Paid]
 	   , [Panel Defence Costs]
@@ -125,6 +126,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement tpi ON tpi.dim_cl
 LEFT OUTER JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = header.dim_instruction_type_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = main.dim_detail_finance_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_bill_matter ON fact_bill_matter.master_fact_key = main.master_fact_key
 
   LEFT OUTER JOIN
     (

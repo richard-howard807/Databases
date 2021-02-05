@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -15,6 +16,7 @@ BEGIN
 
 SELECT 'Centrica' AS Client,
 red_dw.dbo.dim_matter_worktype.work_type_name,
+red_dw.dbo.dim_matter_worktype.work_type_group ,
 client_balance,
 fact_dimension_main.client_code [Client Number],
 fact_dimension_main.matter_number [Matter number],
@@ -221,6 +223,7 @@ GROUP BY client_code,matter_number) AS HrsWorked
 WHERE 
 fact_dimension_main.client_code = 'W15381'
 AND reporting_exclusions = 0 
+AND dim_detail_core_details.referral_reason='Recovery'
 --AND ms_only= 1 
 
 END 

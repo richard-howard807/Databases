@@ -156,14 +156,20 @@ CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(M
 		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
 		THEN 1 ELSE 0 END AS [Number of Matters]
 		, CASE WHEN totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
-,fact_finance_summary.total_reserve
+
 ,red_dw.dbo.fact_finance_summary.damages_paid
 ,red_dw.dbo.fact_finance_summary.total_damages_and_tp_costs_reserve
 ,red_dw.dbo.fact_finance_summary.total_tp_costs_paid
-,red_dw.dbo.fact_finance_summary.total_recovery
+
 ,red_dw.dbo.fact_finance_summary.defence_costs_billed
-,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
+
+
 , CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
+,red_dw.dbo.dim_matter_header_current.final_bill_flag
+,fact_finance_summary.total_reserve
+,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
+,red_dw.dbo.fact_finance_summary.total_recovery
+,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -181,6 +187,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_date	ON 	dim_open_case_management_date_key	 = dim
 LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficmotor ON ds_sh_ms_udficmotor.fileid = dim_matter_header_current.ms_fileid
 LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficcommon ON 	 ds_sh_ms_udficmotor.fileid = ds_sh_ms_udficcommon.fileid
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+
 WHERE 
 	reporting_exclusions=0
 	AND  dim_client.client_group_name='Zurich'
@@ -190,6 +197,7 @@ WHERE
 	OR date_claim_concluded>='2019-02-01')
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
+	--AND dim_matter_header_current.master_client_code = 'Z1001' AND dim_matter_header_current.master_matter_number = '15025'
 
 
 

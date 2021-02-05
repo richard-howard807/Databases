@@ -49,6 +49,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, damages_paid AS [Damages Paid by Client]
 		, date_costs_settled AS [Date Costs Settled]
 		, total_tp_costs_paid AS [Total Third Party Costs Paid]
+		, fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Costs Claimed]
+		, ISNULL(fact_finance_summary.damages_paid,0) + ISNULL(fact_finance_summary.total_tp_costs_paid,0) + ISNULL(fact_finance_summary.total_amount_billed,0) AS [Total Claim Spend]
 		, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
 		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
@@ -62,7 +64,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
 			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
+		, CASE WHEN fact_finance_summary.damages_reserve=0 AND dim_detail_core_details.track='Fast Track' THEN '0-25,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
 			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
@@ -122,6 +125,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
+ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 --AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
@@ -171,6 +176,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, damages_paid AS [Damages Paid by Client]
 		, date_costs_settled AS [Date Costs Settled]
 		, total_tp_costs_paid AS [Total Third Party Costs Paid]
+		, fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Costs Claimed]
+		, ISNULL(fact_finance_summary.damages_paid,0) + ISNULL(fact_finance_summary.total_tp_costs_paid,0) + ISNULL(fact_finance_summary.total_amount_billed,0) AS [Total Claim Spend]
 		, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
 		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
@@ -184,7 +191,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
 			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
+		, CASE WHEN fact_finance_summary.damages_reserve=0 AND dim_detail_core_details.track='Fast Track' THEN '0-25,000'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
 			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
@@ -243,6 +251,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
+ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 --AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')

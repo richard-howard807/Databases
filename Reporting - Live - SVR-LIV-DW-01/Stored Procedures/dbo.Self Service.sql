@@ -30,7 +30,7 @@ GO
 -- ES 20200622 Amended disbursements billed query as code was incorrect #61966
 -- JB 20200825 Added date claim concluded date last changed #68418
 -- MT 20210127 Updated logic for Credit Hire Organisation
-
+-- OK 20210205 Added new costs estimates
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
 BEGIN
@@ -439,6 +439,8 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
     fact_finance_summary.wip AS [WIP],
     --    fact_finance_summary.[unpaid_disbursements] AS [Unpaid Disbursements],
     fact_finance_summary.disbursement_balance AS [Unbilled Disbursements],
+	fact_finance_summary.[revenue_estimate_net_of_vat] [Revenue Estimate net of VAT],
+	fact_finance_summary.[disbursements_estimate_net_of_vat] [Disbursements net of VAT],
 	red_dw.dbo.fact_detail_cost_budgeting.total_disbs_budget_agreedrecorded [Total Disbs Budget Agreed/Recorded], 
 	red_dw.dbo.fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded [Total profit costs agreed/recorded],
     fact_matter_summary_current.[client_account_balance_of_matter] AS [Client Account Balance of Matter],
