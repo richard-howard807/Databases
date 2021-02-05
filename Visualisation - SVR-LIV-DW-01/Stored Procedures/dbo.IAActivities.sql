@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[IAActivities]
 AS 
 
@@ -125,8 +126,8 @@ INNER JOIN red_dw.dbo.dim_ia_activity_type
 	  AND dim_ia_contact_lists.dim_client_key<>0
 	  AND list_type_desc='Status'
 	  ) AS [Lists]
-	  ON Lists.ia_client_id=dim_ia_activity_involvement.ia_contact_id
-
+	  --ON Lists.ia_client_id=dim_ia_activity_involvement.ia_contact_id
+	  ON  Lists.dim_client_key = client_involvement.dim_client_key --Amended
  WHERE client_involvement.dim_client_key<>0
  AND leftdate IS NULL
  
@@ -174,7 +175,7 @@ LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
          AND dim_ia_contact_lists.dim_client_key<>0
          AND list_type_desc='Status'
          ) AS [Lists]
-         ON Lists.dim_client_key=dim_ia_activity_involvement.dim_client_key --Amended
+         ON Lists.ia_client_id=dim_ia_activity_involvement.ia_contact_id 
 
 LEFT OUTER JOIN (SELECT ia_contact_id
 ,MAX(activity_calendar_date) AS NextEngement
