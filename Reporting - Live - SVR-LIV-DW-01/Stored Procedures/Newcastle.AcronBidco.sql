@@ -3,30 +3,36 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [Newcastle].[AcronBidco] 
+
+
+CREATE PROCEDURE [Newcastle].[AcronBidco]
+(
+@StartDate AS DATE
+,@EndDate AS DATE
+)
 
 AS 
 BEGIN
 
-SELECT  ISNULL(CRSystemSourceID,clNo+ '-'+fileNo) AS [File Number]
+SELECT  ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo) AS [File Number]
 ,fileDesc AS [Matter Description]
-,curCurrCostsEst AS [Agreed Fee]
+,curRevEstimate AS [Agreed Fee]
 ,Financials.FeesBilledToDate AS [Fees Billed to Date]
 ,Financials.MonthFees AS [Monthly Fees]
-,ISNULL(curCurrCostsEst,0) - Financials.FeesBilledToDate AS [Fees to be Billed]
-FROM [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbFile
-INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbClient
+,ISNULL(curRevEstimate,0) - Financials.FeesBilledToDate AS [Fees to be Billed]
+FROM MS_PROD.config.dbFile
+INNER JOIN MS_PROD.config.dbClient
  ON dbClient.clID = dbFile.clID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udExtFile
+LEFT OUTER JOIN MS_PROD.dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
-,SUM(CASE WHEN InvDate BETWEEN '2020-10-01' AND '2020-10-31' THEN OrgFee ELSE NULL END) AS MonthFees
-FROM [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.InvMaster WITH(NOLOCK)
-INNER JOIN [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.Matter WITH(NOLOCK)
+,SUM(CASE WHEN InvDate BETWEEN @StartDate AND @EndDate THEN OrgFee ELSE NULL END) AS MonthFees
+FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)
+INNER JOIN TE_3E_Prod.dbo.Matter WITH(NOLOCK)
  ON LeadMatter=MattIndex
  GROUP BY MattIndex) AS Financials
   ON fileExtLinkID=MattIndex
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMICoreGeneral
+LEFT OUTER JOIN MS_PROD.dbo.udMICoreGeneral
  ON udMICoreGeneral.fileID = udExtFile.fileID
 WHERE clNo='WB172526'
 AND fileNo<>'1'

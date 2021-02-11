@@ -13,6 +13,7 @@ Description:		New stored procedure for disrepair dashboard
 Ticket:				55732
 Current Version:	Initial Create
 ====================================================
+-- ES 2021-02-09 #88025 added fields, fact_detail_property.[disrepair_cost_of_works], dim_detail_property.[disrepair_date_works_commenced], dim_detail_property.[disrepair_date_works_completed]
 ====================================================
 */
 
@@ -99,6 +100,10 @@ AS
 			ELSE dim_detail_property.disrepair_outcome
 		  END																						AS [Outcome]
 		, CAST(dim_detail_property.disrepair_date_application_submitted AS DATE)					AS [Date Application Submitted]
+		
+		, dim_detail_property.[disrepair_date_works_commenced] AS [Date works commenced]
+		, dim_detail_property.[disrepair_date_works_completed] AS [Date works completed]
+		, fact_detail_property.[disrepair_cost_of_works] AS [Cost of works]
 	FROM red_dw.dbo.fact_dimension_main
 		INNER JOIN red_dw.dbo.dim_matter_header_current
 			ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

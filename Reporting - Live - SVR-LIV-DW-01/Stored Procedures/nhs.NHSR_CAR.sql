@@ -12,12 +12,13 @@ Description:		Data for NHSR CAR Dashboard, rolling 12 months
 Ticket:				29094
 Current Version:	Initial Create
 ====================================================
+--the average figures are based on the cumulative figures over the 12 month period
 ====================================================
 1.1 6/04/2020 - added team and matter owner prams as per ticket 48837
 1.2 27/05/2020 - join removed and replaced with below due to team changes and fact_dimension_main records not updateing 
 1.3 24/06/2020 - added individual targets imported data from spreadsheet provided by JS
 */
-CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Risk Pool, Clinical London, Clinical Birmingham', 'Juliette Addis'
+CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Birmingham Healthcare 1', 'Amina Askari'
 
   @Team AS varchar(MAX), --1.1
   @MatterOwner AS varchar(MAX) --1.1

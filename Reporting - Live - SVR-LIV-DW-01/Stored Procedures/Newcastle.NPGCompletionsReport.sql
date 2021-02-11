@@ -4,6 +4,10 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
+
+
 CREATE PROCEDURE [Newcastle].[NPGCompletionsReport]
 (
 @StartDate AS DATE
@@ -15,7 +19,7 @@ AS
 BEGIN
 
 SELECT 
-ISNULL(CRSystemSourceID,clNo+ '-'+fileNo)  AS [Matter Number]
+ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo)  AS [Matter Number]
 ,fileDesc AS [Matter Description]
 ,dbFile.Created AS [Date Opened]
 ,dteEngrDispatch AS [Engrossment sent to NPG]
@@ -23,35 +27,34 @@ ISNULL(CRSystemSourceID,clNo+ '-'+fileNo)  AS [Matter Number]
 ,DATEDIFF(DAY,dbFile.Created,dteEngrDispatch) AS [Days opened to Engrossment]
 ,DATEDIFF(DAY,dbFile.Created,dteCompletionD) AS [Days opened to completion]
 ,Financials.FeesBilledToDate AS [Fees (net of VAT & disbursements)]
-,txtNPGNote AS [Commentary]
+,ISNULL(fileExternalNotes,txtNPGNote) AS [Commentary]
 ,CASE WHEN cboNPGFileType='COMLIT' THEN 'NPG ComLit Files' 
 WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
 WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave' END AS cboNPGFileType
 
-FROM [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbFile
-INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.dbUser
+FROM MS_Prod.config.dbFile
+INNER JOIN MS_Prod.dbo.dbUser
  ON filePrincipleID=usrID
-INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbClient
+INNER JOIN MS_Prod.config.dbClient
  ON dbClient.clID = dbFile.clID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udExtFile
+LEFT OUTER JOIN MS_Prod.dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
-FROM [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.InvMaster WITH(NOLOCK)
-INNER JOIN [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.Matter WITH(NOLOCK)
+FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)
+INNER JOIN TE_3E_Prod.dbo.Matter WITH(NOLOCK)
  ON LeadMatter=MattIndex
  GROUP BY MattIndex) AS Financials
   ON fileExtLinkID=MattIndex
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMIInitialReserves
+LEFT OUTER JOIN MS_Prod.dbo.udMIInitialReserves
  ON udMIInitialReserves.fileID = udExtFile.fileID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMICoreGeneral
+LEFT OUTER JOIN MS_Prod.dbo.udMICoreGeneral
  ON udMICoreGeneral.fileID = udExtFile.fileID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udMIClientNPG
+LEFT OUTER JOIN MS_Prod.dbo.udMIClientNPG
  ON udMIClientNPG.fileID = udExtFile.fileID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udPlotSalesExchange
+LEFT OUTER JOIN MS_Prod.dbo.udPlotSalesExchange
  ON udPlotSalesExchange.fileID = dbFile.fileID
 WHERE clName LIKE '%Northern Powergrid%'
 AND fileNo <>'0'
-AND dteCompletionD>='2021-02-01'
 AND dteCompletionD BETWEEN @StartDate AND @EndDate
 ORDER BY clno,fileno
 END

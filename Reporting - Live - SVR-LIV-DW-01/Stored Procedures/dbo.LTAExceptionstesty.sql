@@ -84,13 +84,41 @@ EXEC sp_executesql @sql
                         OR
                       
 						      (
-                       ( fact_finance_summary.[revenue_estimate_net_of_vat] <1 
-						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL AND  date_opened_case_management < dateAdd(Day,-14,getdate()))))
+                       (( fact_finance_summary.[revenue_estimate_net_of_vat] <1 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+))
+
+						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+AND  date_opened_case_management < dateAdd(Day,-14,getdate()))))
 
 						OR
 (
 				(		
-				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  and fact_finance_summary.disbursements_estimate_net_of_vat is null
+				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14
+					
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+AND fact_finance_summary.disbursements_estimate_net_of_vat is null
 				  and date_opened_case_management < dateAdd(Day,-14,getdate()) and date_opened_case_management > '2021-01-28')
 				)
                     
@@ -135,8 +163,26 @@ EXEC sp_executesql @sql
       --                  AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
 						--and 
       --                (
-                       ( fact_finance_summary.[revenue_estimate_net_of_vat] <1 
-						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
+                       ( (fact_finance_summary.[revenue_estimate_net_of_vat] <1 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ )
+						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
                     
 						THEN
                        1
@@ -149,7 +195,18 @@ EXEC sp_executesql @sql
                    WHEN
 				   --  > 14 days after file opening if file is opened after 28 January 2021
 
-				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  and fact_finance_summary.disbursements_estimate_net_of_vat is null
+				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  
+					
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+AND 
+fact_finance_summary.disbursements_estimate_net_of_vat is null
 				  and date_opened_case_management < dateAdd(Day,-14,getdate()) and date_opened_case_management > '2021-01-28'
 				
                     
@@ -277,8 +334,26 @@ fact_finance_summary.[disbursements_estimate_net_of_vat],
       --                  AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
 						--and 
       --                (
-                       ( fact_finance_summary.[revenue_estimate_net_of_vat] <1 
-						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
+                       ( (fact_finance_summary.[revenue_estimate_net_of_vat] <1 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ )
+						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
                     
 						THEN
                        1
@@ -291,7 +366,17 @@ fact_finance_summary.[disbursements_estimate_net_of_vat],
                    WHEN
 				   --  > 14 days after file opening if file is opened after 28 January 2021
 
-				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  and fact_finance_summary.disbursements_estimate_net_of_vat is null
+				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  
+				
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ AND 	fact_finance_summary.disbursements_estimate_net_of_vat is null
 				  and date_opened_case_management < dateAdd(Day,-14,getdate()) and date_opened_case_management > '2021-01-28'
 				
                     
@@ -432,8 +517,26 @@ GROUP BY	ISNULL(nofocases.Exfeearrangement, 0) + ISNULL(nofocases.ExFixedfeeamou
       --                  AND DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 28
 						--and 
       --                (
-                       ( fact_finance_summary.[revenue_estimate_net_of_vat] <1 
-						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
+                       ( (fact_finance_summary.[revenue_estimate_net_of_vat] <1 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+)
+						OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL 
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+ AND  date_opened_case_management < dateAdd(Day,-14,getdate())))
                     
 						THEN
                        1
@@ -446,7 +549,17 @@ GROUP BY	ISNULL(nofocases.Exfeearrangement, 0) + ISNULL(nofocases.ExFixedfeeamou
                    WHEN
 				   --  > 14 days after file opening if file is opened after 28 January 2021
 
-				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  and fact_finance_summary.disbursements_estimate_net_of_vat is null
+				    DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14  
+				
+AND [output_wip_fee_arrangement]
+
+IN
+(
+'Hourly Rate                                                 ',
+'Hourly rate                                                 ',
+'HOURLY'
+)
+	AND fact_finance_summary.disbursements_estimate_net_of_vat is null
 				  and date_opened_case_management < dateAdd(Day,-14,getdate()) and date_opened_case_management > '2021-01-28'
 				
                     

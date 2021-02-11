@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [marketing].[CampaignData]
 (
 @DateFrom AS DATE
@@ -20,8 +21,8 @@ CASE
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -111,7 +112,7 @@ is_this_part_of_a_campaign
 	, 'Date Opened' AS [Date Range]		
 			
 			FROM red_Dw.dbo.fact_dimension_main
-LEFT join red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 LEFT JOIN red_Dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -130,8 +131,8 @@ WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -169,8 +170,8 @@ WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -262,7 +263,7 @@ is_this_part_of_a_campaign
 	, 'Bill Date' AS [Date Range]				
 			
 			FROM red_Dw.dbo.fact_dimension_main
-LEFT join red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 LEFT JOIN red_Dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -281,8 +282,8 @@ WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
-WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building a Safer Future'
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building a Safer Future'
+WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'

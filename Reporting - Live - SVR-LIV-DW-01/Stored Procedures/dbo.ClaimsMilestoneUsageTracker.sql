@@ -9,6 +9,11 @@ GO
 
 
 
+
+
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneUsageTracker]
 
 AS 
@@ -29,6 +34,7 @@ SELECT hierarchylevel2hist AS Division
 ,ISNULL(MilestoneTasks.[Processes Used],0) AS [Processes Used] 
 ,ISNULL(MilestoneTasks.Milestones,0) AS [Milestones Used]
 ,ISNULL([Precedents Used],0) AS [Precedents Used]
+,CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_this_the_lead_file='No' THEN 1 ELSE 0 END  AS Exclusions
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 ,hierarchylevel2hist 
@@ -36,11 +42,14 @@ INNER JOIN (SELECT dim_matter_header_curr_key
 ,hierarchylevel4hist
 ,name
 ,fed_code
+,work_type_name
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
  AND dss_current_flag='Y' AND hierarchylevel2hist='Legal Ops - Claims'
  AND activeud=1
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
  WHERE date_closed_case_management IS NULL) AS Filtered
   ON Filtered.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
@@ -81,6 +90,10 @@ AND  ms_fileid NOT IN
 ,5098209,5098213,5098214,5098218,5098222,5098226,5098228,5098515,5098518
 ,5098521,5098530,5098898,5099062,5099250,
 5097691,5097677,5098182,5098222,5098228) --Old Remedy Cases to exclude per request from Bob H
+AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_this_the_lead_file='No' THEN 1 ELSE 0 END=0 -- Filter per #87593
+AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
+('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
+AND ISNULL(fee_arrangement,'') NOT IN ('Internal / No charge','Secondment') --Request 88266
 END
 
 

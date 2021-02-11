@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[InternalWeightmansInstructions]
 
 AS 
@@ -45,6 +46,8 @@ SELECT DISTINCT
            ELSE
                'Open'
        END AS [Status]
+	   ,revenue_estimate_net_of_vat
+	   ,disbursements_estimate_net_of_vat
 FROM red_dw.dbo.fact_dimension_main
     LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
         ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

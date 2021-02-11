@@ -99,7 +99,14 @@ select distinct
       cast(WPS283 as varchar(250)) + '%' as [WPS283  Our proportion % of damages],
        cast(WPS284 as varchar(250)) + '%' as [WPS284   Our proportion % of costs],
        rtrim(WPS276) [WPS276  LeadFollow ],
-       upper(rtrim(dim_detail_litigation.[litigated])) as [Litigated],
+       CASE
+			WHEN UPPER(rtrim(ISNULL(dim_detail_litigation.[litigated], ''))) = 'YES' THEN
+				UPPER(rtrim(dim_detail_litigation.[litigated]))
+			WHEN RTRIM(ISNULL(dim_detail_core_details.proceedings_issued, '')) = 'Yes' THEN
+				UPPER(RTRIM(dim_detail_core_details.proceedings_issued)) 
+			ELSE
+				'NO'
+		END								AS [Litigated],
        upper(rtrim(dim_detail_litigation.[reason_for_litigation])) as [Litigated Reason],
        date_settlement_form_sent_to_zurich [Date settlement form sent to Zurich ],
       isnull(WPS386,date_settlement_form_sent_to_zurich) [WPS386   Date settlement form sent to Zurich ],

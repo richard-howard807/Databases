@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2020-06-22
@@ -28,6 +29,7 @@ SELECT forename+' '+surname AS [Name]
 	, DATEDIFF(DAY, GETDATE(), leaverlastworkdate) AS [Days until leaving]
 	, Workstation AS [Asset]
 	, AssetModel AS [Asset Model]
+	,locationidud
 	--, * 
 FROM red_dw.dbo.dim_employee
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -196,4 +198,6 @@ AND DATEDIFF(DAY, GETDATE(), leaverlastworkdate)<=14
 ORDER BY leaverlastworkdate
 
 END
+
+
 GO

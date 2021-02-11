@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
   
-CREATE PROCEDURE [dbo].[FlowMatrixQuickDropAnalysisGroup]  
+CREATE PROCEDURE [dbo].[FlowMatrixQuickDropAnalysisGroupTEST]  
  
 (  
 @Email AS NVARCHAR(MAX)  
@@ -84,10 +84,10 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,  
        j.queue_id,  
        created AS DateScanned  
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  --Added owner 20210209 - MT
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  
     ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] --Added owner 20210209 - MT
-    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  --Added owner 20210209 - MT
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] 
+    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
     ,1 AS ItemsCompleted
@@ -254,10 +254,10 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,  
        j.queue_id,  
        created AS DateScanned  
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  --Added owner 20210209 - MT
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  
     ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] --Added owner 20210209 - MT
-    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  --Added owner 20210209 - MT
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] 
+    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
     ,1 AS ItemsCompleted

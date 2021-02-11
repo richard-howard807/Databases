@@ -6,7 +6,9 @@ GO
 -- Author:		Lucy Dickinson
 -- Create date: 09/09/2019
 -- Description:	New Clients by period report (was originally in DAX but needed the client referrer stuff which wasn't available at the time of creating this)
---				
+--			
+
+--OK ##RE-87526##  2021-02-09 added open files 
 -- =============================================
 CREATE PROCEDURE [marketing].[new_clients_by_period]
 	-- Add the parameters for the stored procedure here
@@ -51,7 +53,8 @@ SELECT
 	 udReferral.description [Referral Type Description],
 	 dbUser.usrFullName [Employee Name],
 	 dbContact.contName [Contact Name],
-	 matter_count.NoFiles
+	 matter_count.NoFiles,
+	 open_count.OpenCount
 			
 FROM MS_Prod.config.dbClient dbClient
 INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
@@ -63,6 +66,8 @@ LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udR
 
 OUTER APPLY (SELECT COUNT(dim_matter_header_curr_key) NoFiles FROM red_dw.dbo.dim_matter_header_current a WHERE a.client_code = dim_client.client_code
 AND a.reporting_exclusions <> 1) matter_count
+OUTER APPLY (SELECT COUNT(dim_matter_header_curr_key) OpenCount FROM red_dw.dbo.dim_matter_header_current a WHERE a.client_code = dim_client.client_code
+AND a.date_closed_case_management IS NULL AND reporting_exclusions <> 1) open_count
 
 WHERE 1=1
 --AND b.cboReferralType IS null

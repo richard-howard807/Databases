@@ -139,6 +139,8 @@ CREATE TABLE [dbo].[selfservice]
 [VAT Billed] [numeric] (13, 2) NULL,
 [WIP] [numeric] (13, 2) NULL,
 [Unbilled Disbursements] [numeric] (13, 2) NULL,
+[Revenue Estimate net of VAT] [numeric] (13, 2) NULL,
+[Disbursements net of VAT] [numeric] (13, 2) NULL,
 [Total Disbs Budget Agreed/Recorded] [numeric] (13, 2) NULL,
 [Total profit costs agreed/recorded] [numeric] (13, 2) NULL,
 [Client Account Balance of Matter] [numeric] (13, 2) NULL,

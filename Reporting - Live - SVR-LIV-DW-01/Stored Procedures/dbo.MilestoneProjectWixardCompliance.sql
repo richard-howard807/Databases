@@ -7,6 +7,9 @@ GO
 
 
 
+
+
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -42,6 +45,8 @@ SELECT hierarchylevel2hist AS Division
 ,DATEDIFF(DAY,'2020-09-28','2021-07-31') AS Day3
 
 FROM red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.dim_matter_worktype
+ ON  dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
@@ -122,6 +127,11 @@ AND  ms_fileid NOT IN
 ,5098209,5098213,5098214,5098218,5098222,5098226,5098228,5098515,5098518
 ,5098521,5098530,5098898,5099062,5099250,
 5097691,5097677,5098182,5098222,5098228) --Old Remedy Cases to exclude per request from Bob H
+AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_this_the_lead_file='No' THEN 1 ELSE 0 END=0 -- Filter per #87593
+AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
+('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
+AND ISNULL(fee_arrangement,'') NOT IN ('Internal / No charge','Secondment') --Request 88266
+
 END
 
 

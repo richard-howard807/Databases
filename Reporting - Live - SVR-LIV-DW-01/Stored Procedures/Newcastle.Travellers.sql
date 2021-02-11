@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [Newcastle].[Travellers] 
 
 AS 
@@ -16,12 +17,12 @@ SELECT Fees.bill_fin_year,
 	   FROM
 (
 SELECT bill_fin_year,bill_fin_period AS FinancialYear
-,bill_fin_month_no,SUM(OrgFee) AS Fees FROM [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.InvMaster
-INNER JOIN [SVR-LIV-SQLU-01].TE_3E_EnvisionConv.dbo.Matter
+,bill_fin_month_no,SUM(OrgFee) AS Fees FROM TE_3E_Prod.dbo.InvMaster
+INNER JOIN TE_3E_Prod.dbo.Matter
  ON LeadMatter=MattIndex
-INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbFile
+INNER JOIN MS_Prod.config.dbFile
  ON fileExtLinkID=mattindex
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udextfile
+LEFT OUTER JOIN MS_Prod.dbo.udextfile
  ON dbfile.fileid=udextfile.fileid
 LEFT OUTER JOIN red_dw.dbo.dim_bill_date
  ON InvDate=bill_date
@@ -32,10 +33,10 @@ GROUP BY  bill_fin_year,bill_fin_period,bill_fin_month_no
 
 ) AS Fees
 LEFT OUTER JOIN (SELECT bill_fin_period,COUNT(1) AS NoMatters
-FROM [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbFile
-INNER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.config.dbClient
+FROM MS_Prod.config.dbFile
+INNER JOIN MS_Prod.config.dbClient
  ON dbClient.clID = dbFile.clID
-LEFT OUTER JOIN [SVR-LIV-MSP-01].MS_EnvisonConv.dbo.udExtFile
+LEFT OUTER JOIN MS_Prod.dbo.udExtFile
  ON udExtFile.fileID = dbFile.fileID
 LEFT OUTER JOIN red_dw.dbo.dim_bill_date
  ON dbfile.Created=bill_date
