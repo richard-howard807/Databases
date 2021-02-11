@@ -18,6 +18,7 @@ Current Version:	Initial Create
 -- ES 06-01-2020 #73408 added stw details
 -- JL 17-01-2020 Added in involvement table v 1.1
 -- JL 08-12-2020 Its been advised that the face_dimention_main key for history needs to be fixed by Richard. Have removed the join and replaced untill its fixed. v 1.2
+-- ES 11/02/2021 #88316, added dim_detail_core_details.[do_clients_require_an_initial_report]
 ====================================================
 
 */
@@ -53,6 +54,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, dim_fed_hierarchy_history.[reportingbcmname] AS [BCM]
 		, dim_department.department_name AS [Matter Category]
 		, dim_department.department_code AS [Matter Category Code]
+		, dim_detail_core_details.[do_clients_require_an_initial_report] AS [Do Clients Require an Initial Report?]
 		, dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
 		, dim_detail_core_details.status_on_instruction AS [Status On Instruction]
 		, dim_detail_core_details.[is_there_an_issue_on_liability] AS [Issue On Liability]

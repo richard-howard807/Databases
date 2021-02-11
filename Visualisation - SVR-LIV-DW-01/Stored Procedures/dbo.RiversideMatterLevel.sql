@@ -38,6 +38,9 @@ ISNULL([Disbursements - Counsel's Fees],0)
 ,dim_detail_core_details.proceedings_issued AS [Proceedings Issued]
 ,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
 
+,dim_detail_property.[disrepair_date_works_commenced] AS [Date works commenced]
+,dim_detail_property.[disrepair_date_works_completed] AS [Date works completed]
+,fact_detail_property.[disrepair_cost_of_works] AS [Cost of works]
 
  FROM red_dw.dbo.dim_matter_header_current
  INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -48,7 +51,11 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_detail_property
  ON fact_detail_property.client_code = dim_matter_header_current.client_code
  AND fact_detail_property.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key =dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details 
+ON dim_detail_core_details.dim_detail_core_detail_key =dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_property
+ ON dim_detail_property.client_code = dim_matter_header_current.client_code
+ AND dim_detail_property.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key

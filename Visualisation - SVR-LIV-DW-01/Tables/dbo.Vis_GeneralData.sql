@@ -22,6 +22,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [BCM] [varchar] (100) COLLATE Latin1_General_BIN NULL,
 [Matter Category] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Matter Category Code] [char] (8) COLLATE Latin1_General_BIN NULL,
+[Do Clients Require an Initial Report?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Date Initial Report Sent] [datetime] NULL,
 [Status On Instruction] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Issue On Liability] [varchar] (255) COLLATE Latin1_General_BIN NULL,
