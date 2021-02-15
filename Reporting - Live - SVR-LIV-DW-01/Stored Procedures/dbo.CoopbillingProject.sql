@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -22,7 +24,9 @@ SELECT RTRIM(dim_matter_header_current.client_code) AS [Client]
 ,CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END  AS ElapsedDays
-,wip AS [WIP]
+,CostsSplit.TotalWIP AS [WIP]
+,CostsSplit.CostsTime
+,ISNULL(CostsSplit.TotalWIP,0) - ISNULL(CostsSplit.CostsTime,0) AS NonCosts
 ,RTRIM(red_dw.dbo.dim_matter_header_current.present_position) AS [Present Position]
 ,dim_matter_header_current.fixed_fee AS [Fixed Fee]
 ,RTRIM(fee_arrangement) AS fee_arrangement
@@ -77,8 +81,31 @@ AND bill_reversed=0
 GROUP BY fact_bill.client_code,fact_bill.matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN 
+(
+SELECT fact_all_time_activity.client_code,fact_all_time_activity.matter_number
+,SUM(time_charge_value) AS TotalWIP
+,SUM(CASE WHEN cost_handler=1 THEN time_charge_value ELSE 0 END) AS CostsTime
+FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
+WHERE master_client_code IN ('C1001','W24438')
+AND dim_bill_key=0
+AND isactive=1
+
+GROUP BY fact_all_time_activity.client_code,fact_all_time_activity.matter_number
+) AS CostsSplit
+ ON CostsSplit.client_code = dim_matter_header_current.client_code
+ AND CostsSplit.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code IN ('C1001','W24438')
 AND wip>=100
+AND  (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
+END)>=30
+AND ISNULL(fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
+AND ISNULL(fixed_fee,'')<>'Fixed Fee'
 
 END
 GO
