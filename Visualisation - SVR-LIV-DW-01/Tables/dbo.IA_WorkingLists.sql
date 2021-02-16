@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[IA_WorkingLists]
 [Activity Description] [nvarchar] (60) COLLATE Latin1_General_BIN NULL,
 [activity_date] [datetime] NULL,
 [summary] [nvarchar] (254) COLLATE Latin1_General_BIN NULL,
-[PossibleCompanies] [int] NULL
+[PossibleCompanies] [int] NULL,
+[Segment] [nvarchar] (150) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

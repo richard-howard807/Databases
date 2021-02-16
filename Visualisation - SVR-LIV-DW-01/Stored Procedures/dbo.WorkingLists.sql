@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[WorkingLists]
 
 AS
@@ -18,7 +19,8 @@ SELECT WorkingLists.[Company Name],
        WorkingLists.[Activity Description],
        WorkingLists.activity_date,
        WorkingLists.summary,
-       WorkingLists.PossibleCompanies 
+       WorkingLists.PossibleCompanies,
+	   left([Working List Title], charindex('-', [Working List Title]) - 2) AS Segment
 INTO IA_WorkingLists
 FROM 
 (
