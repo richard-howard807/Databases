@@ -9,6 +9,7 @@ GO
 
 
 
+
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
@@ -67,6 +68,8 @@ END AS [Insolvency proceedings]
 ,CASE WHEN (ISNULL(Ledger.Payments,0)
 +ISNULL(CostcutterStatus.CostsRecovered,0))
 -ISNULL(defence_costs_billed,0)<=0 THEN 0 ELSE defence_costs_billed END AS DCB
+,fileNotes
+,fileExternalNotes
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID

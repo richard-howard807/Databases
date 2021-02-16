@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -106,6 +107,7 @@ DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)>=30
 AND ISNULL(fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND ISNULL(fixed_fee,'')<>'Fixed Fee'
+AND ISNULL(RTRIM(red_dw.dbo.dim_matter_header_current.present_position),'')<>'To be closed/minor balances to be clear'
 
 END
 GO
