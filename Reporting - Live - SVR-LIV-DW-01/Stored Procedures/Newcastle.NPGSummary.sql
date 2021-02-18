@@ -8,6 +8,11 @@ GO
 
 
 
+
+
+
+
+
 --DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-10-01'
@@ -61,10 +66,10 @@ DATEDIFF(MONTH,dbFile.Created,@EndDate) >60 THEN 1 ELSE 0 END  AS SlowMoving
 ,Finances.DisbsYear  AS [DisbursementsYTD]
 ,Finances.DisbsMonth  AS [DisbursementsMonth]
 ,WIPMonth AS [WIPMonth]
-,NULL AS [WIPYTD] --SELECT * FROM red_dw.dbo.fact_wip_monthly
+,WIPYTD AS [WIPYTD] --SELECT * FROM red_dw.dbo.fact_wip_monthly
 ,CASE WHEN CRSystemSourceID LIKE '164103%' OR CRSystemSourceID LIKE '165100%' THEN 'North East'
 WHEN CRSystemSourceID LIKE '164107%' OR CRSystemSourceID LIKE '165102%' THEN 'Yorkshire'
-WHEN clno='W22559' THEN 'Yorkshire'
+WHEN clno IN ('W22559','WB164106','WB165103','WB170376') THEN 'Yorkshire'
 WHEN clno IN ('WB164103','WB165100','W24159') THEN 'North East'END  AS [Area]
 ,@StartDate AS ReportDate
 FROM MS_Prod.dbo.udExtFile
@@ -100,7 +105,7 @@ INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
 INNER JOIN red_dw.dbo.dim_bill
  ON dim_bill.dim_bill_key = fact_bill.dim_bill_key
-WHERE client_code  IN ('W22559','WB164103','WB165100','W24159')
+WHERE client_code  IN ('W22559','WB164106','WB165103','WB170376','WB164103','WB165100','W24159')
 AND bill_reversed=0
 GROUP BY client_code,matter_number
 
@@ -108,12 +113,24 @@ GROUP BY client_code,matter_number
  ON  Finances.client_code = dim_matter_header_current.client_code
  AND Finances.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN (SELECT client,matter,SUM(wip_value) AS WIPMonth FROM red_dw.dbo.fact_wip_monthly
-WHERE client IN ('W22559','WB164103','WB165100','W24159')
+WHERE client IN ('W22559','WB164106','WB165103','WB170376','WB164103','WB165100','W24159')
 AND wip_month=(SELECT fin_month FROM red_dw.dbo.dim_date WHERE CONVERT(DATE,calendar_date,103)=@StartDate)
 GROUP BY client,matter) AS WIP
  ON dim_matter_header_current.client_code=WIP.client
  AND dim_matter_header_current.matter_number=WIP.matter
-WHERE clNo IN ('W22559','WB164103','WB165100','W24159')
+LEFT OUTER JOIN 
+(
+SELECT client_code,matter_number,SUM(time_charge_value) AS WIPYTD FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_transaction_date
+ ON dim_transaction_date.dim_transaction_date_key = fact_all_time_activity.dim_transaction_date_key
+WHERE client_code  IN ('W22559','WB164106','WB165103','WB170376','WB164103','WB165100','W24159')
+AND dim_bill_key=0
+AND isactive=1
+GROUP BY client_code,matter_number
+) AS WIPYTD
+ ON WIPYTD.client_code = dim_matter_header_current.client_code
+ AND  WIPYTD.matter_number = dim_matter_header_current.matter_number
+WHERE clNo IN ('W22559','WB164106','WB165103','WB170376','WB164103','WB165100','W24159')
 AND fileNo<>'0'
 
 END

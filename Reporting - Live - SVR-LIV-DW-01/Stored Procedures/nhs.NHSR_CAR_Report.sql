@@ -13,9 +13,13 @@ Ticket:				29094
 Current Version:	Initial Create
 ====================================================
 -- ES #87118 Changed last bill date to look at the same filed as the self service fact_bill_matter.last_bill_date 
+-- ES #87118 Removed join from the aggregated panel averages table to Joe's panel stats table and aggregated figures up
 ====================================================
 
 */
+
+--EXEC [nhs].[NHSR_CAR_Report] 'Birmingham Healthcare 1', 'Melanie Isherwood'
+
 CREATE PROCEDURE [nhs].[NHSR_CAR_Report]
 
 (
@@ -58,7 +62,7 @@ SELECT --TOP 100*
 	   , last_time_transaction_date AS [Last Time Recorded]
 	   , [Panel Damages Paid]
 	   , [Panel Defence Costs]
-	   , [Panel Shelf life (yrs)]
+	   , CONVERT(DECIMAL(16,2),[Panel Shelf life (yrs)]) [Panel Shelf life (yrs)]
 	   , CASE WHEN CONVERT(DECIMAL(16,4),shelf_life.elapsed_days_conclusion)/365 >[Panel Shelf life (yrs)]  THEN 'Red'
 				WHEN CAST(CONVERT(DECIMAL(16,4),shelf_life.elapsed_days_conclusion)/365 AS DECIMAL(10,2))/CAST([Panel Shelf life (yrs)] AS DECIMAL(10,2)) BETWEEN 0.75 AND 1 THEN 'Orange'
 				ELSE 'Green' END AS [RAG Lifecycle]
@@ -74,20 +78,20 @@ SELECT --TOP 100*
                 WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
 	     END AS [Scheme]
        , health.[nhs_claim_status] AS [NHS Claim Status]
-       , CASE WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid = 0 THEN '£0'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 1 AND 5000 THEN '£1-5,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 5001 AND 10000 THEN '£5,001-10,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 10001 AND 25000 THEN '£10,001-25,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 25001 AND 50000 THEN '£25,001-50,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid >= 50001  THEN '£50,001+'
+       , CASE WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) = 0 THEN '£0'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 1 AND 5000 THEN '£1-£5,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) >= 50001  THEN '£50,000+'
 
               WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid = 0 THEN '£0'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 1 AND 50000 THEN '£1-50,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 50001 AND 250000 THEN '£50,001-250,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 250001 AND 500000 THEN '£250,001-500,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,001-1,000,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid >= 1000001 THEN '£1m+'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) = 0 THEN '£0'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) >= 1000001 THEN '£1,000,000+'
 
         END AS [Banding]
 
@@ -146,9 +150,58 @@ LEFT OUTER JOIN red_dw.dbo.fact_bill_matter ON fact_bill_matter.master_fact_key 
         ON EC.client_code = header.client_code
            AND EC.matter_number = header.matter_number
 
-LEFT OUTER JOIN [Reporting].[nhs].[PanelAverages] ON Scheme=CASE WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
-                WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
-	     END AND Banding='Overall'
+--LEFT OUTER JOIN [Reporting].[nhs].[PanelAverages] ON Scheme=CASE WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+--                WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
+--	     END AND Banding='Overall'
+
+LEFT OUTER JOIN (SELECT [scheme] AS [Scheme]
+					, [scheme group] AS [Scheme Group]
+					, [tranche] AS [Tranche]
+					, [damages] AS [Panel Damages Paid]
+					, [defence costs] AS [Panel Defence Costs]
+					, [settlement time] AS [Panel Shelf life (yrs)]
+					, [claimant costs] AS [Panel Claimant Costs]
+					FROM (
+					SELECT DISTINCT
+						[scheme]
+						, CASE WHEN p45_NHSR_data.scheme = 'CNST' THEN 'Clinical'
+							WHEN p45_NHSR_data.scheme='LTPS' THEN 'Risk' END AS [scheme group]
+						  ,[type]
+						  ,CONVERT(NVARCHAR, REPLACE(RTRIM(LTRIM([tranche])), 'Â', ''), 120) AS [tranche]
+						  ,SUM(convert(float, [average]) * convert(int, [no_cases]))/SUM(convert(int, [no_cases])) AS [average]
+
+					  FROM [DataScience].[dbo].[p45_NHSR_data]
+					  WHERE p45_NHSR_data.date=(SELECT MAX(p45_NHSR_data.date) FROM [DataScience].[dbo].[p45_NHSR_data])
+					  AND p45_NHSR_data.scheme IN ('CNST','LTPS')
+					  GROUP BY
+						   CONVERT(NVARCHAR, REPLACE(RTRIM(LTRIM([tranche])), 'Â', ''), 120)
+						  ,scheme
+						  ,[type]
+
+					  HAVING SUM(convert(int, [no_cases])) > 0 
+  
+					  ) AS tb
+					  PIVOT (
+					  AVG([average])
+					  FOR [type] IN ([damages],[defence costs],[settlement time],[claimant costs] )
+					  ) AS piv
+					  ) AS [PanelAverages] 
+ON PanelAverages.[Scheme Group] = CASE WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+                WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'END
+ AND PanelAverages.Tranche=CASE WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) = 0 THEN '£0'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 1 AND 5000 THEN '£1-£5,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND ISNULL(fin.damages_paid,fin.damages_reserve) >= 50001  THEN '£50,000+'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) = 0 THEN '£0'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND ISNULL(fin.damages_paid,fin.damages_reserve) >= 1000001 THEN '£1,000,000+'
+        END
 
 INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = emp_hierarchy.hierarchylevel4hist
 INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = header.matter_owner_full_name

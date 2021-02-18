@@ -12,7 +12,10 @@ GO
 
 
 
-CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] 
+
+
+
+CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
 )
@@ -24,11 +27,12 @@ IF @Filter='All'
 
 BEGIN
 
-SELECT ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo) AS Matter_Code
-,dbFile.Created AS [date Opened]
-,YEAR(dbFile.Created) AS [Year_Opened]
+--SELECT ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo) AS Matter_Code
+SELECT clNo+ '.'+fileNo  AS Matter_Code -- David T asked to remove the old reference
+,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [date Opened]
+,YEAR([red_dw].[dbo].[datetimelocal](dbFile.Created)) AS [Year_Opened]
 ,CASE WHEN MatStat.cdDesc IS NOT NULL THEN MatStat.cdDesc
-WHEN fileClosed IS NULL THEN 'O' ELSE 'C' END  AS matter_status
+WHEN [red_dw].[dbo].[datetimelocal](fileClosed) IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,Insttype.cdDesc AS Case_Type
 ,txtJobNumber AS [Job Number]
 ,usrFullName AS [fe_code]
@@ -48,9 +52,11 @@ WHEN fileClosed IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,clNo
 ,fileNo
 ,clName
-,CASE WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
-WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave'
-WHEN cboNPGFileType='COMLIT' THEN 'NPG Com-Lit' END AS Team
+,CASE WHEN cboNPGFileType='PROPERTY' THEN 'Property'
+WHEN cboNPGFileType='WAYLEAVE' THEN 'Wayleave'
+WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
+,contChristianNames
+,contSurname
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -68,6 +74,8 @@ LEFT OUTER JOIN MS_PROD.config.dbAssociates
  ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA'
 LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
+LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual
+ ON dbContactIndividual.contID = dbAssociates.contID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
 ,MAX(InvDate) AS LastBillDate
 FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)
@@ -92,14 +100,14 @@ INNER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  ON fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
  AND fact_matter_summary_current.client_code = dim_matter_header_current.client_code
-WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376')
+WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS Warehouse
  ON dbFile.fileID=Warehouse.ms_fileid
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 
 (
-'WB164102','W24159','WB164104','WB164106','W22559','WB170376'
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
 
 ORDER BY CRSystemSourceID
@@ -111,11 +119,11 @@ ELSE
 
 BEGIN
 
-SELECT ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo) AS Matter_Code
-,dbFile.Created AS [date Opened]
-,YEAR(dbFile.Created) AS [Year_Opened]
+SELECT clNo+ '.'+fileNo  AS Matter_Code -- David T asked to remove the old reference
+,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [date Opened]
+,YEAR([red_dw].[dbo].[datetimelocal](dbFile.Created)) AS [Year_Opened]
 ,CASE WHEN MatStat.cdDesc IS NOT NULL THEN MatStat.cdDesc
-WHEN fileClosed IS NULL THEN 'O' ELSE 'C' END  AS matter_status
+WHEN [red_dw].[dbo].[datetimelocal](fileClosed) IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,Insttype.cdDesc AS Case_Type
 ,txtJobNumber AS [Job Number]
 ,usrFullName AS [fe_code]
@@ -135,9 +143,11 @@ WHEN fileClosed IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,clNo
 ,fileNo
 ,clName
-,CASE WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
-WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave'
-WHEN cboNPGFileType='COMLIT' THEN 'NPG Com-Lit' END AS Team
+,CASE WHEN cboNPGFileType='PROPERTY' THEN 'Property'
+WHEN cboNPGFileType='WAYLEAVE' THEN 'Wayleave'
+WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
+,contChristianNames
+,contSurname
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -155,6 +165,8 @@ LEFT OUTER JOIN MS_PROD.config.dbAssociates
  ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA'
 LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
+LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual
+ ON dbContactIndividual.contID = dbAssociates.contID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
 ,MAX(InvDate) AS LastBillDate
 FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)
@@ -179,14 +191,14 @@ INNER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  ON fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
  AND fact_matter_summary_current.client_code = dim_matter_header_current.client_code
-WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376')
+WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS Warehouse
  ON dbFile.fileID=Warehouse.ms_fileid
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 
 (
-'WB164102','W24159','WB164104','WB164106','W22559','WB170376'
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
 AND (CASE WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
 WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave'

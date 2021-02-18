@@ -17,6 +17,7 @@ Current Version:	Initial Create
 1.1 6/04/2020 - added team and matter owner prams as per ticket 48837
 1.2 27/05/2020 - join removed and replaced with below due to team changes and fact_dimension_main records not updateing 
 1.3 24/06/2020 - added individual targets imported data from spreadsheet provided by JS
+1.4 17/02/2021 - removed join from the aggregated panel averages table to Joe's panel stats table and aggregated figures up, requested by JS
 */
 CREATE PROCEDURE [nhs].[NHSR_CAR] --EXEC [nhs].[NHSR_CAR] 'Birmingham Healthcare 1', 'Amina Askari'
 
@@ -56,19 +57,19 @@ SELECT --TOP 100*
 	     END AS [Scheme]
        , health.[nhs_claim_status] AS [NHS Claim Status]
        , CASE WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid = 0 THEN '£0'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 1 AND 5000 THEN '£1-5,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 5001 AND 10000 THEN '£5,001-10,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 10001 AND 25000 THEN '£10,001-25,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 25001 AND 50000 THEN '£25,001-50,000'
-              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid >= 50001  THEN '£50,001+'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 1 AND 5000 THEN '£1-£5,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
+              WHEN health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fin.damages_paid >= 50001  THEN '£50,000+'
 
               WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
               WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid = 0 THEN '£0'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 1 AND 50000 THEN '£1-50,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 50001 AND 250000 THEN '£50,001-250,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 250001 AND 500000 THEN '£250,001-500,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,001-1,000,000'
-              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid >= 1000001 THEN '£1m+'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 1 AND 50000 THEN '£1-£50,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
+              WHEN health.nhs_scheme IN ('CNST','ELS','DH CL') AND fin.damages_paid >= 1000001 THEN '£1,000,000+'
 
         END AS [Banding]
 
@@ -200,9 +201,44 @@ inner join Repoting_Groups b on a.date_instructions_received_cal_month_no = b.ca
 
 ) AS NHSRData
 
-LEFT OUTER JOIN Reporting.nhs.PanelAverages ON PanelAverages.Scheme=NHSRData.Scheme
-AND PanelAverages.Banding=NHSRData.Banding
+--removedas now joining to joe's master panel stats table below
+--LEFT OUTER JOIN Reporting.nhs.PanelAverages ON PanelAverages.Scheme=NHSRData.Scheme
+--AND PanelAverages.Banding=NHSRData.Banding
 
+LEFT OUTER JOIN (SELECT [scheme] AS [Scheme]
+					, [scheme group] AS [Scheme Group]
+					, [tranche] AS [Tranche]
+					, [damages] AS [Panel Damages Paid]
+					, [defence costs] AS [Panel Defence Costs]
+					, [settlement time] AS [Panel Shelf life (yrs)]
+					, [claimant costs] AS [Panel Claimant Costs]
+					FROM (
+					SELECT DISTINCT
+						[scheme]
+						, CASE WHEN p45_NHSR_data.scheme = 'CNST' THEN 'Clinical'
+							WHEN p45_NHSR_data.scheme='LTPS' THEN 'Risk' END AS [scheme group]
+						  ,[type]
+						  ,CONVERT(NVARCHAR, REPLACE(RTRIM(LTRIM([tranche])), 'Â', ''), 120) AS [tranche]
+						  ,SUM(convert(float, [average]) * convert(int, [no_cases]))/SUM(convert(int, [no_cases])) AS [average]
+
+					  FROM [DataScience].[dbo].[p45_NHSR_data]
+					  WHERE p45_NHSR_data.date=(SELECT MAX(p45_NHSR_data.date) FROM [DataScience].[dbo].[p45_NHSR_data])
+					  AND p45_NHSR_data.scheme IN ('CNST','LTPS')
+					  GROUP BY
+						   CONVERT(NVARCHAR, REPLACE(RTRIM(LTRIM([tranche])), 'Â', ''), 120)
+						  ,scheme
+						  ,[type]
+
+					  HAVING SUM(convert(int, [no_cases])) > 0 
+  
+					  ) AS tb
+					  PIVOT (
+					  AVG([average])
+					  FOR [type] IN ([damages],[defence costs],[settlement time],[claimant costs] )
+					  ) AS piv
+					  ) AS [PanelAverages] 
+ON PanelAverages.[Scheme Group] = NHSRData.Scheme
+		 AND PanelAverages.Tranche=NHSRData.Banding
 
 SELECT a.*
 	,b.[Shelf Life Target] AS [ShelfLifeTarget]

@@ -11,9 +11,7 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
-		@start_date AS DATE
-		, @end_date AS DATE
-		, @def_trust AS VARCHAR(MAX)
+		@def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)
 		, @instruction_type AS VARCHAR(MAX)
 		, @referral_reason AS VARCHAR(MAX)	
@@ -24,9 +22,7 @@ BEGIN
 
 -- For testing
 --==============================================================================================================================================
---DECLARE @start_date AS DATE = '2020-01-01'
---		, @end_date AS DATE = '2020-08-31'
---		, @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust' 
+--DECLARE @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust' 
 --		, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
 --		, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1'
 --		, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
@@ -435,9 +431,6 @@ FROM red_dw.dbo.fact_dimension_main
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND dim_matter_header_current.date_opened_practice_management <= @end_date
-	AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client > @start_date)
-	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 	AND dim_matter_header_current.ms_only = 1
 	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
 ORDER BY	

@@ -8,6 +8,7 @@ GO
 -- Description:	Time write off report
 
 -- 2020/05/26 RH -  Amended to take into account new fact_write_off design
+-- 2021/02/17 RH -  Amended to include write ups and downs
 -- =============================================
 
 CREATE PROCEDURE [dbo].[TimeWriteOff]
@@ -68,11 +69,6 @@ exec sp_executesql @sql
 
 
 
-
-
-
-
-
 --SELECT * FROM #FedCodeList
 
 SELECT [dim_transaction_date_key]
@@ -108,10 +104,10 @@ SELECT [dim_transaction_date_key]
 			WHEN  fact_write_off.write_off_type = 'BA' THEN 2
 			WHEN  fact_write_off.write_off_type = 'WA' THEN 1
 			WHEN fact_write_off.write_off_type = 'P' THEN 4 END AS write_off_type_order
-      --,[work_amt] [ytd_work_amt]
-      --,[work_hrs]/60 [ytd_work_hrs]
-	  --,CASE WHEN current_fin_month='Current' THEN work_amt ELSE 0 END [mtd_work_amt]
-	  --,CASE WHEN current_fin_month='Current' THEN work_hrs/60 ELSE 0 END [mtd_work_hrs]
+
+	-- ****************************************
+	-- Section below can be removed when new report goes live 
+	-- ****************************************
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_work_amt]
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_hrs_wdn ELSE 0 END [mtd_work_hrs]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type IN ('NC','P') THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_work_amt]
@@ -121,22 +117,25 @@ SELECT [dim_transaction_date_key]
 	  ,CASE WHEN fin_period=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [mtd_bill_hrs_wdn]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_amt_wdn]  ELSE 0 END [ytd_bill_amt_wdn]
 	  ,CASE WHEN fin_period<=@Month AND fact_write_off.write_off_type NOT IN ('NC','P') THEN [bill_hrs_wdn] ELSE 0 END [ytd_bill_hrs_wdn]
-
+	
 
 	  ,CASE WHEN fin_period=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END [mtd_value]
 	  ,CASE WHEN fin_period=@Month THEN ISNULL(fact_write_off.bill_hrs_wdn,0) ELSE 0  END [mtd_hrs]
 	  ,CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END [ytd_value]
 	  ,CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_hrs_wdn,0) ELSE 0 END [ytd_hrs]
-	  
+	-- ****************************************
+	-- ****************************************
 
-      --,[bill_amt_wdn] 
-      --,[bill_amt_wup] 
-      --,[bill_amt_woff] 
-      --,[bill_hrs_wdn] 
-      --,[bill_hrs_wup] 
-      --,[bill_hrs_woff] 
-      --,[write_off_amt] 
-      --,[write_off_hrs]/60 [write_off_hrs]
+	  ,CASE WHEN fin_period=@Month THEN fact_write_off.bill_amt_wdn ELSE 0 END [mtd_amt_wdn]
+	  ,CASE WHEN fin_period=@Month THEN fact_write_off.bill_hrs_wdn ELSE 0 END [mtd_hrs_wdn]
+	  ,CASE WHEN fin_period<=@Month THEN fact_write_off.bill_amt_wdn ELSE 0 END [ytd_amt_wdn]
+	  ,CASE WHEN fin_period<=@Month THEN fact_write_off.bill_hrs_wdn ELSE 0 END [ytd_hrs_wdn]
+
+	  ,CASE WHEN fin_period=@Month THEN fact_write_off.bill_amt_wup ELSE 0 END [mtd_amt_wup]
+	  ,CASE WHEN fin_period=@Month THEN fact_write_off.bill_hrs_wup ELSE 0 END [mtd_hrs_wup]
+	  ,CASE WHEN fin_period<=@Month THEN fact_write_off.bill_amt_wup ELSE 0 END [ytd_amt_wup]
+	  ,CASE WHEN fin_period<=@Month THEN fact_write_off.bill_hrs_wup ELSE 0 END [ytd_hrs_wup]
+
       ,[write_off_month] 
 	  ,write_off_date
 	  ,fin_year

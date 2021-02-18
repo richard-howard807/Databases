@@ -8,6 +8,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [Newcastle].[NPGCompletionsReport]
 (
 @StartDate AS DATE
@@ -19,19 +21,20 @@ AS
 BEGIN
 
 SELECT 
-ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo)  AS [Matter Number]
+--ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo)  AS [Matter Number]
+clNo+ '.'+fileNo  AS [Matter Number] -- David T asked to remove the old reference
 ,fileDesc AS [Matter Description]
-,dbFile.Created AS [Date Opened]
-,dteEngrDispatch AS [Engrossment sent to NPG]
-,dteCompletionD AS [Completion Date]
-,DATEDIFF(DAY,dbFile.Created,dteEngrDispatch) AS [Days opened to Engrossment]
-,DATEDIFF(DAY,dbFile.Created,dteCompletionD) AS [Days opened to completion]
+,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [Date Opened]
+,[red_dw].[dbo].[datetimelocal](dteEngrDispatch) AS [Engrossment sent to NPG]
+,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
+,DATEDIFF(DAY,[red_dw].[dbo].[datetimelocal](dbFile.Created),[red_dw].[dbo].[datetimelocal](dteEngrDispatch)) AS [Days opened to Engrossment]
+,DATEDIFF(DAY,[red_dw].[dbo].[datetimelocal](dbFile.Created),[red_dw].[dbo].[datetimelocal](dteCompletionD)) AS [Days opened to completion]
 ,Financials.FeesBilledToDate AS [Fees (net of VAT & disbursements)]
 ,ISNULL(fileExternalNotes,txtNPGNote) AS [Commentary]
 ,CASE WHEN cboNPGFileType='COMLIT' THEN 'NPG ComLit Files' 
 WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
 WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave' END AS cboNPGFileType
-
+,usrFullName AS [Case Handler]
 FROM MS_Prod.config.dbFile
 INNER JOIN MS_Prod.dbo.dbUser
  ON filePrincipleID=usrID
@@ -55,7 +58,7 @@ LEFT OUTER JOIN MS_Prod.dbo.udPlotSalesExchange
  ON udPlotSalesExchange.fileID = dbFile.fileID
 WHERE clName LIKE '%Northern Powergrid%'
 AND fileNo <>'0'
-AND dteCompletionD BETWEEN @StartDate AND @EndDate
+AND [red_dw].[dbo].[datetimelocal](dteCompletionD) BETWEEN @StartDate AND @EndDate
 ORDER BY clno,fileno
 END
 GO
