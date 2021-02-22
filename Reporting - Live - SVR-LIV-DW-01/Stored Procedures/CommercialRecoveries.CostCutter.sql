@@ -10,6 +10,7 @@ GO
 
 
 
+
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
@@ -31,9 +32,9 @@ SELECT clNo +'-'+ fileNo AS [CaseCode]
 ,txtCurenStatNot AS [Reporting Notes]
 ,usrFullName AS [WeightmansHandler]
 ,CASE WHEN CostcutterStatus.dteSettled IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
-,dbFile.Created AS [DateOpened]
-,fileClosed AS [DateClosed]
-,DATEDIFF(DAY,dbFile.Created,fileClosed) AS [DaysOpened]
+,red_dw.dbo.datetimelocal(dbFile.Created) AS [DateOpened]
+,red_dw.dbo.datetimelocal(fileClosed) AS [DateClosed]
+,DATEDIFF(DAY,red_dw.dbo.datetimelocal(dbFile.Created),red_dw.dbo.datetimelocal(fileClosed)) AS [DaysOpened]
 ,dbFile.fileID
 ,Defendant.Defendant
 ,Defendant.Postcode
@@ -53,7 +54,7 @@ WHEN CostcutterStatus='Insolvency Proceedings' AND CostcutterStatus.InsolvancyTy
 END AS [Insolvency proceedings]
 ,CASE WHEN CostcutterStatus LIKE 'Pre Proceedings%'  THEN 'N/A' WHEN CostcutterStatus='Court Proceedings' THEN CostcutterStatus.CourtStatus ELSE NULL END AS [Court proceedings]
 ,ActionReq AS ActionRequired
-,HearingDate
+,red_dw.dbo.datetimelocal(HearingDate) AS HearingDate
 ,ISNULL(defence_costs_billed,0) AS [Revenue]
 ,CostcutterStatus.CostsRecovered AS [Costs Recovered from o/s]
 ,
@@ -150,7 +151,7 @@ SELECT fileID
 ,ActionReq.cdDesc AS ActionReq
 ,curTermination AS [Termination]
 ,curCostRecOS AS [CostsRecovered]
-,dteSettled
+,red_dw.dbo.datetimelocal(dteSettled) AS dteSettled
 ,curSetSumAgreed
 FROM ms_prod.dbo.udCRCostcutterDetails
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus

@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 29-03-2018
@@ -225,7 +226,7 @@ LEFT OUTER JOIN red_dw.dbo.Doogal ON ClaimantsAddress.[claimant1_postcode]=Dooga
 
 LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care ON fact_detail_future_care.master_fact_key=fact_dimension_main.master_fact_key
 
-WHERE dim_client.client_group_code = '00000004'   --name='Co-operative Group'
+WHERE (dim_client.client_group_code = '00000004'  OR dim_matter_header_current.client_code='W24438')  --name='Co-operative Group'
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >='2017-01-01')
 AND reporting_exclusions=0
 AND LOWER(ISNULL(outcome_of_case,''))NOT IN ('exclude from reports','returned to client')

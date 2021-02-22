@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[AXAPASAudit]
 (
 @StartDate AS DATE
@@ -70,7 +71,7 @@ SELECT dim_matter_header_current.client_code AS Client
 ,dim_matter_header_current.master_client_code +'-' + dim_matter_header_current.master_matter_number AS [Weightmans Ref]
 ,dim_matter_header_current.matter_description AS [Matter Description]
 
-,ms_prod..udAXAAudit.dteAXAAudit AS [axa_date_of_audit]
+,red_dw.dbo.datetimelocal(ms_prod..udAXAAudit.dteAXAAudit) AS [axa_date_of_audit]
 ,CASE WHEN cboExtReq='YES' THEN 'Yes' WHEN cboExtReq='NO' THEN 'No' WHEN cboExtReq='NA' THEN 'N/A' ELSE cboExtReq END  AS [axa_was_an_extension_requested]
 ,CASE WHEN cboTrialDate='YES' THEN 'Yes' WHEN cboTrialDate='NO' THEN 'No' WHEN cboTrialDate='NA' THEN 'N/A' ELSE cboTrialDate END  AS [axa_trial_date_entered_on_ms]
 ,CASE WHEN cboRes3='YES' THEN 'Yes' WHEN cboRes3='NO' THEN 'No' WHEN cboRes3='NA' THEN 'N/A' ELSE cboRes3 END  AS [axa_reserve_reviewed_every_3_months]
@@ -131,7 +132,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_matter_header_current.date_opened_case_management >= '20200701'
 		  AND [axa_instruction_type]='PAS'
-		  AND ms_prod..udAXAAudit.dteAXAAudit BETWEEN @StartDate AND @EndDate
+		  AND red_dw.dbo.datetimelocal(ms_prod..udAXAAudit.dteAXAAudit) BETWEEN @StartDate AND @EndDate
  ) AS AllData
  END  
 GO

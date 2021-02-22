@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[PlotSalesMatters]
 
 AS
@@ -20,18 +21,18 @@ clName
 ,BStatus.cdDesc AS [Status]
 ,txtBellwayNotes AS [Notes]
 ,ISNULL(MatterType.cdDesc,'') AS Mattype
-,dbFile.Created AS [Date Opened]
+,red_dw.dbo.datetimelocal(dbFile.Created) AS [Date Opened]
 ,dteExpResPrd AS [Reserve Deadline]
 ,CAST(dteExpResPrd - GETDATE() AS INT)
 ,CASE
-	WHEN BStatus.cdDesc = 'Contracts not yet exchanged' AND dteExpResPrd > '2000-01-01 00:00:00.000' AND dteExpResPrd - GETDATE() < 0 THEN 'Expired'
-WHEN BStatus.cdDesc = '' AND dteExpResPrd > '2000-01-01 00:00:00.000' AND dteExpResPrd - GETDATE() < 0 THEN 'Expired'
-WHEN BStatus.cdDesc IS NULL AND dteExpResPrd > '2000-01-01 00:00:00.000' AND dteExpResPrd - GETDATE() < 0 THEN 'Expired'
-WHEN BStatus.cdDesc = 'Contracts not yet exchanged' AND dteExpResPrd > '2000-01-01 00:00:00.000' THEN CAST(CAST(dteExpResPrd - GETDATE() AS INT) AS CHAR(5))
-WHEN BStatus.cdDesc = '' AND dteExpResPrd > '2000-01-01 00:00:00.000' THEN CAST(CAST(dteExpResPrd - GETDATE() AS INT) AS CHAR(5))
-WHEN BStatus.cdDesc IS NULL AND dteExpResPrd > '2000-01-01 00:00:00.000' THEN CAST(CAST(dteExpResPrd - GETDATE() AS INT) AS CHAR(5))
+	WHEN BStatus.cdDesc = 'Contracts not yet exchanged' AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' AND red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() < 0 THEN 'Expired'
+WHEN BStatus.cdDesc = '' AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' AND red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() < 0 THEN 'Expired'
+WHEN BStatus.cdDesc IS NULL AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' AND red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() < 0 THEN 'Expired'
+WHEN BStatus.cdDesc = 'Contracts not yet exchanged' AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' THEN CAST(CAST(red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() AS INT) AS CHAR(5))
+WHEN BStatus.cdDesc = '' AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' THEN CAST(CAST(red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() AS INT) AS CHAR(5))
+WHEN BStatus.cdDesc IS NULL AND red_dw.dbo.datetimelocal(dteExpResPrd) > '2000-01-01 00:00:00.000' THEN CAST(CAST(red_dw.dbo.datetimelocal(dteExpResPrd) - GETDATE() AS INT) AS CHAR(5))
 ELSE ''	END AS [Expired Exchange]
-,dteEstCompDate AS [Anticipated Completion Date]
+,red_dw.dbo.datetimelocal(dteEstCompDate) AS [Anticipated Completion Date]
 ,NULL AS [action exchage]
 ,NULL AS [action completion]
 ,'N' AS [Issue]

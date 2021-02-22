@@ -5,6 +5,7 @@ GO
 
 
 
+
 /*
 ===================================================
 ===================================================
@@ -250,7 +251,7 @@ AS
 				LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 					ON dim_matter_header_current.dim_matter_header_curr_key = red_dw.dbo.fact_wip.dim_matter_header_current_key
 			WHERE 
-				master_client_code = 'C1001'
+				master_client_code IN ('C1001','W24438')
 				AND red_dw.dbo.dim_matter_header_current.date_closed_practice_management IS NULL
 				AND red_dw.dbo.dim_matter_header_current .reporting_exclusions <> 1
 			GROUP BY 
@@ -308,6 +309,7 @@ AS
 
 
 		, ISNULL(total_costs_wip, 0)																AS [Total Costs WIP]
+		,instruction_type
 	FROM 
 		red_dw.dbo.dim_matter_header_current 
 		INNER JOIN red_dw.dbo.fact_dimension_main
@@ -318,8 +320,10 @@ AS
 			ON fact_matter_summary_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 		LEFT OUTER JOIN #costhandlers
 			ON #costhandlers.master_fact_key = fact_dimension_main.master_fact_key
+		LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+		 ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 	WHERE 
-		red_dw.dbo.dim_matter_header_current.master_client_code = 'C1001'
+		red_dw.dbo.dim_matter_header_current.master_client_code IN ('C1001','W24438')
 		AND red_dw.dbo.dim_matter_header_current.date_closed_practice_management IS NULL
 		AND red_dw.dbo.dim_matter_header_current .reporting_exclusions <> 1
 		AND (red_dw.dbo.dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(red_dw.dbo.dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')

@@ -15,6 +15,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -71,7 +72,7 @@ LEFT OUTER JOIN MS_PROD.dbo.udMICoreGeneral
 LEFT OUTER JOIN MS_PROD.dbo.udMIClientNPG
  ON udMIClientNPG.fileID = udExtFile.fileID
 LEFT OUTER JOIN MS_PROD.config.dbAssociates
- ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA'
+ ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA' AND dbassociates.assocActive=1
 LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
 LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual
@@ -162,7 +163,7 @@ LEFT OUTER JOIN MS_PROD.dbo.udMICoreGeneral
 LEFT OUTER JOIN MS_PROD.dbo.udMIClientNPG
  ON udMIClientNPG.fileID = udExtFile.fileID
 LEFT OUTER JOIN MS_PROD.config.dbAssociates
- ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA'
+ ON dbAssociates.fileID = dbFile.fileID AND assocType='WAYLEA' AND dbassociates.assocActive=1
 LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
 LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual

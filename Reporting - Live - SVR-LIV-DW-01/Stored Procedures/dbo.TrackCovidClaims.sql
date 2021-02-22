@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[TrackCovidClaims]
 	(
 		@Department AS VARCHAR(MAX),
@@ -57,6 +58,7 @@ SELECT
 	, dim_matter_header_current.present_position												AS [Present Position]
 	, dim_detail_core_details.covid_reason_desc													AS [Covid 19 Reason]
 	, dim_detail_core_details.covid_reason														AS [Covid 19 Reason - Other Only]
+	,dim_detail_core_details.covid_reason_code_date_last_changed AS [Covid 19 Date Last Changed]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -73,7 +75,7 @@ INNER JOIN #Department ON #Department.ListValue = dim_fed_hierarchy_history.hier
 WHERE 
 	dim_matter_header_current.reporting_exclusions <> 1
 	AND dim_matter_header_current.master_client_code <> '30645'
-	AND dim_detail_core_details.covid_reason_desc IS NOT null
+	AND dim_detail_core_details.covid_reason_desc IS NOT NULL
 
 
 END

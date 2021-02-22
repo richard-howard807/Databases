@@ -13,6 +13,7 @@ GO
 
 
 
+
 --DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-10-01'
@@ -44,23 +45,23 @@ DECLARE @YearStart AS DATE
 SET @YearStart=CONVERT(DATE,CAST(CAST(YEAR(@StartDate) AS NVARCHAR(4))+'-01-01' AS DATE),103)
 
 SELECT CRSystemSourceID,clNo,fileNo,fileDesc
-,dteCompletionD
-,dbFile.Created AS DateOpened
-,fileClosed AS [DateClosed]
+,red_dw.dbo.datetimelocal(dteCompletionD) AS dteCompletionD
+,red_dw.dbo.datetimelocal(dbFile.Created) AS DateOpened
+,red_dw.dbo.datetimelocal(fileClosed) AS [DateClosed]
 ,Finances.RevenueAll AS [TotalRevenue]
 ,Finances.Disbs AS [TotalDisbs]
 ,MatStat.cdDesc AS MatterStatus
-,DATEDIFF(DAY,dbFile.Created,dteCompletionD) AS ElapsedDaysToCompletion
-,CASE WHEN dteCompletionD IS  NULL AND fileClosed IS  NULL THEN 1 ELSE 0 END AS LiveFiles
-,CASE WHEN dbFile.Created BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewInstructionsMonth
-,CASE WHEN dbFile.Created BETWEEN @YearStart AND @EndDate THEN 1 ELSE 0 END AS YTDNewInstructions
+,DATEDIFF(DAY,red_dw.dbo.datetimelocal(dbFile.Created),red_dw.dbo.datetimelocal(dteCompletionD)) AS ElapsedDaysToCompletion
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) IS  NULL AND red_dw.dbo.datetimelocal(fileClosed) IS  NULL THEN 1 ELSE 0 END AS LiveFiles
+,CASE WHEN red_dw.dbo.datetimelocal(dbFile.Created) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewInstructionsMonth
+,CASE WHEN red_dw.dbo.datetimelocal(dbFile.Created) BETWEEN @YearStart AND @EndDate THEN 1 ELSE 0 END AS YTDNewInstructions
 ,CASE WHEN MatStat.cdDesc='On Hold' THEN 1 ELSE 0 END AS [Abeyance]
-,CASE WHEN dteCompletionD BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS CompletedMonth
-,CASE WHEN dteCompletionD BETWEEN @YearStart AND @EndDate  THEN 1 ELSE 0 END AS YTDCompletions
-,CASE WHEN dteCompletionD IS  NULL AND fileClosed IS  NULL AND 
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS CompletedMonth
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @YearStart AND @EndDate  THEN 1 ELSE 0 END AS YTDCompletions
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) IS  NULL AND red_dw.dbo.datetimelocal(fileClosed) IS  NULL AND 
 DATEDIFF(MONTH,dbFile.Created,@EndDate) >60 THEN 1 ELSE 0 END  AS SlowMoving
-,CASE WHEN dteCompletionD BETWEEN @StartDate AND @EndDate  THEN Finances.RevenueAll ELSE NULL END AS [CostOfCase]
-,CASE WHEN dteCompletionD BETWEEN @StartDate AND @EndDate THEN DATEDIFF(DAY,dbFile.Created,dteCompletionD) ELSE NULL END AS AvergeCompletedMonth
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate  THEN Finances.RevenueAll ELSE NULL END AS [CostOfCase]
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate THEN DATEDIFF(DAY,red_dw.dbo.datetimelocal(dbFile.Created),red_dw.dbo.datetimelocal(dteCompletionD)) ELSE NULL END AS AvergeCompletedMonth
 ,Finances.RevenueYear  AS [ExpenditureYTD]
 ,Finances.RevenueMonth  AS [ExpenditureMonth]
 ,Finances.DisbsYear  AS [DisbursementsYTD]

@@ -21,7 +21,7 @@ GO
 -- JL 22/09/2020 - #72988 added in axa instruction type as per Helen Fox
 ---JL 13/10/2020 - #73089 added in fileds as per ticket 
 ------------ =============================================
-CREATE PROCEDURE [axa].[axa_matter_listing_report]
+CREATE PROCEDURE [axa].[axa_matter_listing_report_Test]
 AS
 BEGIN
 
@@ -90,7 +90,7 @@ BEGIN
            COALESCE(dim_detail_claim.dst_insured_client_name, client_ref.insuredclient_name) [Insured Name],
 		    ISNULL(dim_detail_client.[mib_claimants_surname], tp_ref.claimant_name) [Claimant Name],
           -- tp_ref.claimant_name [Claimant Name],
-           ISNULL(client_ref.[insuredclient_reference],insdref.reference) AS [Insured Client NEW Reference],
+          CASE WHEN ISNULL(client_ref.[insuredclient_reference],insdref.reference) LIKE '%,%' THEN  LEFT(ISNULL(client_ref.[insuredclient_reference],insdref.reference), CHARINDEX(',', ISNULL(client_ref.[insuredclient_reference],insdref.reference)) - 1) ELSE ISNULL(client_ref.[insuredclient_reference],insdref.reference) END AS [Insured Client NEW Reference],
            -- damages claimed
            fact_finance_summary.total_reserve [Total Reserve (Current)],
            fact_finance_summary.damages_reserve_initial [Initial Reserve],
@@ -144,6 +144,7 @@ BEGIN
 		   ,dim_detail_core_details.axa_reason_outside_of_pas AS [Reason Outside of PAS]
 		   ,dim_detail_claim.axa_claim_strategy AS [Claim Strategy]
 		   ,dim_detail_core_details.axa_liability_position AS [Liability position]
+		   ,payor_name 
 
     FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
@@ -197,8 +198,20 @@ BEGIN
             ON fact_detail_elapsed_days.client_code = dim_matter_header_current.client_code
 			AND  fact_detail_elapsed_days.matter_number = dim_matter_header_current.matter_number
 		
-
-
+		/*Payor details*/
+		LEFT JOIN (
+		SELECT 
+		DISTINCT
+		dim_matter_header_curr_key
+		,MAX(payor_name) AS payor_name
+		FROM red_dw.dbo.fact_payor_debt_detail 
+		JOIN red_dw.dbo.dim_payor 
+		ON dim_payor.dim_payor_key = fact_payor_debt_detail.dim_payor_key AND  payor_name LIKE '%Axa%'
+		GROUP BY dim_matter_header_curr_key
+		) Payorname ON Payorname.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+		  
+		
+		
 
     WHERE ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
           AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'

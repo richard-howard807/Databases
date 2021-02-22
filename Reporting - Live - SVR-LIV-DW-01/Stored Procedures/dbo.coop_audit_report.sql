@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 2019/07/11
@@ -55,11 +56,12 @@ AS
 		,CASE WHEN cboSetReTSD = 'YES' THEN 'Yes' WHEN	cboSetReTSD = 'NO' THEN 'No' WHEN cboSetReTSD = 'NA' THEN 'N/A' END 	[settled_within_revised_tsd]
 		,udCoopAudit.dteAuditCoop AS [Date of Strategic Review/Quality Audit]
 		,udCoopAudit.dteCPAudit AS [Date of Client Process Manager Audit]
-
+		,instruction_type
 	FROM MS_PROD.dbo.udCoopAudit udCoopAudit
 	INNER JOIN red_dw.dbo.dim_matter_header_current header ON header.ms_fileid = udCoopAudit.fileID
 	INNER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.client_code = header.client_code AND dim_detail_outcome.matter_number = header.matter_number
-
+	LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+	 ON dim_instruction_type.dim_instruction_type_key = header.dim_instruction_type_key
 	WHERE ((dteAuditCoop >= @StartDate OR @StartDate IS NULL) 
 	AND  dteAuditCoop<=  @EndDate  OR @EndDate IS NULL) 
 	AND dteAuditCoop IS NOT NULL

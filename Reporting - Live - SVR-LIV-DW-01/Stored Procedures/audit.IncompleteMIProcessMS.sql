@@ -75,6 +75,8 @@ AND display_name NOT LIKE '%Budget%'
 --AND hierarchylevel4hist=@Team
 AND AlreadyCompleted.fileID IS NULL
 
+--SELECT  tskDesc,* FROM MS_Prod.dbo.dbTasks	 WHERE tskFilter = 'tsk_01_2040_FileOpening'
+
 
 END 
 
