@@ -16,6 +16,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -58,6 +61,8 @@ WHEN cboNPGFileType='WAYLEAVE' THEN 'Wayleave'
 WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contChristianNames
 ,contSurname
+,contChristianNames as firstname
+ ,contSurname as lastname
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -149,6 +154,8 @@ WHEN cboNPGFileType='WAYLEAVE' THEN 'Wayleave'
 WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contChristianNames
 ,contSurname
+,contChristianNames as firstname
+ ,contSurname as lastname
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
