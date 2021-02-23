@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2020-11-24
@@ -31,6 +32,8 @@ BEGIN
 		, dim_detail_claim.[rmg_high_profile_next_steps] AS [Next Steps]
 		, dim_detail_claim.[rmg_high_profile_next_key_date] AS [Key Dates]
 		, dim_detail_claim.[rmg_is_this_a_high_profile_matter] AS [Is this a High Profile Matter?]
+		,date_closed_case_management AS [Date Closed]
+		,CASE WHEN dim_detail_claim.[rmg_is_this_a_high_profile_matter]='No' OR date_closed_case_management IS NOT NULL THEN 'Tab2' ELSE 'Tab1' END AS [ID]
 
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
