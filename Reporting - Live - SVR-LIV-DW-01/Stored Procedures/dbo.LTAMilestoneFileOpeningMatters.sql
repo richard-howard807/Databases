@@ -8,13 +8,7 @@ GO
 
 
 
-
-
-
-
-
-
-CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningMatters] --EXEC dbo.ClaimsMilestoneFileOpeningMatters '2020-05-01','2020-11-25'
+CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningMatters] --EXEC dbo.LTAMilestoneFileOpeningMatters '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
 ,@EndDate  AS DATE
@@ -26,8 +20,6 @@ BEGIN
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-05-01'
 --SET @EndDate='2020-11-25'
-
-
 
 
 SELECT ms_fileid
@@ -53,20 +45,18 @@ SELECT ms_fileid
 ,CASE WHEN date_instructions_received IS NULL THEN 1
 WHEN DATEDIFF(DAY,date_instructions_received,date_opened_case_management)>1 THEN 1 ELSE 0 END AS NotWithin1Day
 
-,CASE WHEN ClientCare.ClientCareCompleted IS NULL THEN 0
-WHEN date_instructions_received IS NOT NULL  AND DATEDIFF(DAY,date_instructions_received,ClientCare.ClientCareCompleted)<=1 THEN 1 ELSE 0 END  AS ClientCareWithin1Day
-,CASE WHEN ClientCare.ClientCareCompleted IS NULL THEN 1
+,CASE WHEN FeeEarner.FeeEarnerCompleted IS NULL THEN 0
+WHEN date_instructions_received IS NOT NULL  AND DATEDIFF(DAY,date_instructions_received,FeeEarner.FeeEarnerCompleted)<=1 THEN 1 ELSE 0 END  AS FeeEarnerWithin1Day
+,CASE WHEN FeeEarner.FeeEarnerCompleted IS NULL THEN 1
 WHEN date_instructions_received IS NULL THEN 1
-WHEN DATEDIFF(DAY,date_instructions_received,ClientCare.ClientCareCompleted)>1 THEN 1 ELSE 0 END AS ClientCareNotWithin1Day
+WHEN DATEDIFF(DAY,date_instructions_received,FeeEarner.FeeEarnerCompleted)>1 THEN 1 ELSE 0 END AS FeeEarnerNotWithin1Day
 
-,CASE WHEN ConflictSearch.ConflictSearchCompleted IS NULL THEN 0
-WHEN date_instructions_received IS NOT NULL  AND DATEDIFF(DAY,date_instructions_received,ConflictSearch.ConflictSearchCompleted)<=1 THEN 1 ELSE 0 END  AS ConflictSearchWithin1Day
-,CASE WHEN ConflictSearch.ConflictSearchCompleted IS NULL THEN 1
+
+,CASE WHEN TM.TMCompleted IS NULL THEN 0
+WHEN date_instructions_received IS NOT NULL  AND DATEDIFF(DAY,date_instructions_received,TM.TMCompleted)<=1 THEN 1 ELSE 0 END  AS TMWithin1Day
+,CASE WHEN TM.TMCompleted IS NULL THEN 1
 WHEN date_instructions_received IS NULL THEN 1
-WHEN DATEDIFF(DAY,date_instructions_received,ConflictSearch.ConflictSearchCompleted)>1 THEN 1 ELSE 0 END AS ConflictSearchNotWithin1Day
-
-,ClientCare.ClientCareCompleted
-,ConflictSearch.ConflictSearchCompleted
+WHEN DATEDIFF(DAY,date_instructions_received,TM.TMCompleted)>1 THEN 1 ELSE 0 END AS TMNotWithin1Day
 
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -80,29 +70,28 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN 
 (
-SELECT fileID,MIN(red_dw.dbo.datetimelocal(tskCompleted)) AS ClientCareCompleted
+SELECT fileID,MIN(red_dw.dbo.datetimelocal(tskCompleted)) AS FeeEarnerCompleted
 FROM ms_prod.dbo.dbTasks
-WHERE tskFilter='tsk_031_01_010_ClientCare'
+WHERE tskFilter IN ('tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter')
 AND tskComplete=1
 AND tskActive=1
 GROUP BY fileID
-) AS ClientCare
-ON ms_fileid=ClientCare.fileID
+) AS FeeEarner
+ON ms_fileid=FeeEarner.fileID
 LEFT OUTER JOIN 
 (
-SELECT fileID,MIN(red_dw.dbo.datetimelocal(tskCompleted)) AS ConflictSearchCompleted
+SELECT fileID,MIN(red_dw.dbo.datetimelocal(tskCompleted)) AS TMCompleted
 FROM ms_prod.dbo.dbTasks
-WHERE tskFilter='tsk_065_01_020_ConflictSearch'
+WHERE tskFilter IN ('tsk_01_280_admcostsestimatereview','tsk_01_560_REMTMAuditRF')
 AND tskComplete=1
 AND tskActive=1
 GROUP BY fileID
-) AS ConflictSearch
-ON ms_fileid=ConflictSearch.fileID
-WHERE hierarchylevel2hist='Legal Ops - Claims'
+) AS TM
+ON ms_fileid=TM.fileID
+
+WHERE hierarchylevel2hist='Legal Ops - LTA'
 AND date_opened_case_management BETWEEN @StartDate AND @EndDate
-AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
-AND ISNULL(referral_reason,'')<>'Advice only'
-AND ISNULL(referral_reason,'')<> 'In House'
+
 
 END 
 GO

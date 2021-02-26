@@ -35,8 +35,159 @@ AS
 
 
 
-SELECT DISTINCT
-                red_dw.dbo.fact_dimension_main.[client_code] [client_code] ,
+	;WITH test AS ( 
+
+
+
+	SELECT  
+	red_dw.dbo.dim_matter_header_current.client_code [Clientcte], dim_matter_header_current.matter_number [Mattercte],
+
+CASE WHEN 
+( (dim_detail_core_details.present_position not IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+)
+
+AND (dim_detail_outcome.outcome_of_case IS NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NULL ) OR 
+			
+			
+			( (dim_detail_core_details.present_position IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+) AND 
+
+(dim_detail_outcome.outcome_of_case IS NOT  NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NOT NULL ))))) THEN 1 ELSE 0 END AS final, 
+
+      
+			
+
+				CASE WHEN fact_finance_summary.unpaid_bill_balance >1 THEN 1 ELSE 0 END AS [unpaidbillbalance],
+				
+CASE WHEN dim_detail_core_details.present_position IN
+(
+
+'Final bill due - claim and costs concluded',
+'Final bill sent - unpaid',
+'To be closed/minor balances to be clear'
+)
+
+ AND fact_finance_summary.wip > 1  THEN 1 
+ WHEN 
+ dim_detail_core_details.present_position IN
+(
+'Final bill due - claim and costs concluded',
+'Final bill sent - unpaid',
+'To be closed/minor balances to be clear'
+)
+
+AND fact_finance_summary.disbursement_balance > 1
+
+THEN 1 ELSE 0 END [unpaidbills], 
+
+CASE WHEN ((dim_matter_header_current.fee_arrangement NOT   IN
+(
+'Fixed Fee/Fee Quote/Capped Fee                              '
+)
+AND dim_matter_header_current.fixed_fee_amount > 0 ) OR 
+
+
+(
+dim_matter_header_current.fee_arrangement   IN
+(
+'Fixed Fee/Fee Quote/Capped Fee                              '
+)
+AND dim_matter_header_current.fixed_fee_amount = 0
+
+
+)) THEN 1 ELSE 0 END AS 
+[Fixed Fee Amount is inconistent with fee arrangement], 
+
+
+
+CASE WHEN 
+
+
+dim_detail_core_details.present_position NOT IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+) AND (dim_detail_outcome.outcome_of_case IS NULL OR dim_detail_outcome.date_claim_concluded IS NULL ) THEN 1 
+
+WHEN 
+dim_detail_core_details.present_position  IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+) AND (dim_detail_outcome.outcome_of_case IS NOT NULL OR dim_detail_outcome.date_claim_concluded IS not NULL ) THEN 1 ELSE 0 END AS [PP is inconsistent with DCC/ Outcome] , 
+
+CASE WHEN 
+
+ dim_detail_core_details.present_position IN
+(
+'Final bill due - claim and costs concluded',
+'Final bill sent - unpaid',
+'To be closed/minor balances to be clear'
+) AND dim_detail_outcome.date_costs_settled IS NULL THEN 1 
+
+WHEN 
+ dim_detail_core_details.present_position NOT  IN
+(
+'Final bill due - claim and costs concluded',
+'Final bill sent - unpaid',
+'To be closed/minor balances to be clear'
+) AND dim_detail_outcome.date_costs_settled IS NOT NULL THEN 1 ELSE 0 END AS [PP is consistent with Costs Settled], 
+
+CASE WHEN 
+
+	DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) > 60 THEN 1 ELSE 0 END AS [Not worked on for 60+ days],
+	CASE WHEN dim_fed_hierarchy_history.leaver= 1 THEN 1 ELSE 0 END AS [Leaver]
+
+
+FROM 
+red_Dw.dbo.fact_dimension_main 
+
+
+LEFT JOIN red_dw.dbo. dim_matter_header_current  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+LEFT JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN red_dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+
+WHERE
+dim_matter_header_current.date_closed_case_management IS NULL 
+AND fact_dimension_main.client_code NOT IN ('00030645','00453737')
+AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
+
+AND dim_matter_header_current.date_closed_case_management IS NULL 
+
+
+) 
+
+
+
+SELECT CASE WHEN test.unpaidbills = 1 THEN 'Unpaid Bills' ELSE '' END AS [Unpaid Bills1], 
+CASE WHEN [Fixed Fee Amount is inconistent with fee arrangement] = 1 THEN 'Fixed Fee Amount is inconistent with fee arrangement' ELSE '' END AS [Fixed Fee Amount is inconistent with fee arrangement2],
+CASE WHEN [PP is inconsistent with DCC/ Outcome] = 1 THEN 'PP is inconsistent with DCC/ Outcome' ELSE '' END AS [PP is inconsistent with DCC/ Outcome3],
+CASE WHEN [PP is consistent with Costs Settled] = 1 THEN 'PP is consistent with Costs Settled' ELSE '' END as [PP is consistent with Costs Settled4], 
+CASE WHEN [Not worked on for 60+ days] = 1 THEN 'Not worked on for 60+ days' ELSE '' END AS [Not worked on for 60+ days5], 
+CASE WHEN [Leaver] = 1 THEN 'Leaver' ELSE '' END AS [Leaver6], 
+
+
+
+
+
+                fact_dimension_main.[client_code] [client_code] ,
                 dim_matter_header_current.[matter_number] [matter_number],
 				    REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'+
      REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference],
@@ -46,6 +197,7 @@ SELECT DISTINCT
                 dim_fed_hierarchy_history.hierarchylevel4hist[matter_owner_team],
                 dim_detail_core_details.[track],
                 dim_detail_core_details.[present_position],
+				test.unpaidbills,
 								CASE WHEN dim_detail_core_details.present_position IN
 (
 'Claim and costs concluded but recovery outstanding'
@@ -63,6 +215,7 @@ dim_fed_hierarchy_history.name <> 'Chris Ball' THEN 'Refer to Chris Ball' ELSE d
                 fact_finance_summary.[wip],
                 fact_finance_summary.[disbursement_balance],
 				fact_matter_summary_current.last_bill_date, 
+				DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) lastworkedon, 
 				
 
 
@@ -83,22 +236,35 @@ AND dim_matter_header_current.fixed_fee_amount = 0
 
 )) THEN 1 ELSE 0 END AS colourfixedfee,
 
-				--disb.Disbursements, 
+--dim_fed_hierarchy_history.leaver , 
 
-	--			  CASE
- --       WHEN (fact_matter_summary_current.last_bill_date) = '1753-01-01' THEN
- --           NULL
- --       ELSE
- --           fact_matter_summary_current.last_bill_date
- --   END AS [Last Bill Date], 
-	--CASE
- --       WHEN (fact_matter_summary_current.last_bill_date) = '1753-01-01' THEN
- --           NULL
- --       ELSE
- --           fact_matter_summary_current.last_bill_date
- --   END AS [last_bill_calendar_date],
 
-               -- dim_date_last_bill.[last_bill_calendar_date],
+
+
+
+
+CASE WHEN 
+( (dim_detail_core_details.present_position not IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+)
+
+AND (dim_detail_outcome.outcome_of_case IS NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NULL ) OR 
+			
+			
+			( (dim_detail_core_details.present_position IN
+(
+'Claim and costs concluded but recovery outstanding',
+'Claim and costs outstanding',
+'Claim concluded but costs outstanding'
+) AND 
+
+(dim_detail_outcome.outcome_of_case IS NOT  NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NOT NULL ))))) THEN 1 ELSE 0 END AS final, 
+
                 dim_detail_core_details.[is_this_a_linked_file],
                 dim_detail_core_details.[is_this_the_lead_file],
                 dim_client_involvement.[insuredclient_reference],
@@ -108,19 +274,107 @@ AND dim_matter_header_current.fixed_fee_amount = 0
                 fact_finance_summary.[unpaid_bill_balance],
                 fact_detail_reserve_detail.[total_reserve], 
 				exceptions.no_excptions [Action]
-				--COUNT(DISTINCT(dbo.fact_exceptions_update.)) NoExceptions
-				--exceptions.no_excptions
+
+--				CASE WHEN fact_finance_summary.unpaid_bill_balance >1 THEN 1 ELSE 0 END AS [unpaidbillbalance],
 				
+--CASE WHEN dim_detail_core_details.present_position IN
+--(
 
-FROM 
-red_Dw.dbo.fact_dimension_main 
+--'Final bill due - claim and costs concluded',
+--'Final bill sent - unpaid',
+--'To be closed/minor balances to be clear'
+--)
+
+-- AND fact_finance_summary.wip > 1  THEN 1 
+-- WHEN 
+-- dim_detail_core_details.present_position IN
+--(
+--'Final bill due - claim and costs concluded',
+--'Final bill sent - unpaid',
+--'To be closed/minor balances to be clear'
+--)
+
+--AND fact_finance_summary.disbursement_balance > 1
+
+--THEN 1 ELSE 0 END [unpaidbills], 
+
+--CASE WHEN ((dim_matter_header_current.fee_arrangement NOT   IN
+--(
+--'Fixed Fee/Fee Quote/Capped Fee                              '
+--)
+--AND dim_matter_header_current.fixed_fee_amount > 0 ) OR 
 
 
-LEFT JOIN red_dw.dbo. dim_matter_header_current  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+--(
+--dim_matter_header_current.fee_arrangement   IN
+--(
+--'Fixed Fee/Fee Quote/Capped Fee                              '
+--)
+--AND dim_matter_header_current.fixed_fee_amount = 0
+
+
+--)) THEN 1 ELSE 0 END AS 
+--[Fixed Fee Amount is inconistent with fee arrangement], 
+
+
+
+--CASE WHEN 
+
+
+--dim_detail_core_details.present_position NOT IN
+--(
+--'Claim and costs concluded but recovery outstanding',
+--'Claim and costs outstanding',
+--'Claim concluded but costs outstanding'
+--) AND (dim_detail_outcome.outcome_of_case IS NULL OR dim_detail_outcome.date_claim_concluded IS NULL ) THEN 1 
+
+--WHEN 
+--dim_detail_core_details.present_position  IN
+--(
+--'Claim and costs concluded but recovery outstanding',
+--'Claim and costs outstanding',
+--'Claim concluded but costs outstanding'
+--) AND (dim_detail_outcome.outcome_of_case IS NOT NULL OR dim_detail_outcome.date_claim_concluded IS not NULL ) THEN 1 ELSE 0 END AS [PP is inconsistent with DCC/ Outcome] , 
+
+--CASE WHEN 
+
+-- dim_detail_core_details.present_position IN
+--(
+--'Final bill due - claim and costs concluded',
+--'Final bill sent - unpaid',
+--'To be closed/minor balances to be clear'
+--) AND dim_detail_outcome.date_costs_settled IS NULL THEN 1 
+
+--WHEN 
+-- dim_detail_core_details.present_position NOT  IN
+--(
+--'Final bill due - claim and costs concluded',
+--'Final bill sent - unpaid',
+--'To be closed/minor balances to be clear'
+--) AND dim_detail_outcome.date_costs_settled IS NOT NULL THEN 1 ELSE 0 END AS [PP is consistent with Costs Settled], 
+
+--CASE WHEN 
+
+--	DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) > 60 THEN 1 ELSE 0 END AS [Not worked on for 60+ days], 
+
+
+
+
+
+
+
+
+
+FROM test 
+LEFT JOIN 
+red_Dw.dbo.fact_dimension_main ON fact_dimension_main.client_code = test.Clientcte AND test.Mattercte = fact_dimension_main.matter_number
+
+
+LEFT JOIN red_dw.dbo.dim_matter_header_current  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel4hist COLLATE DATABASE_DEFAULT
-INNER JOIN #FeeEarnerList AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT
+--INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.hierarchylevel4hist COLLATE DATABASE_DEFAULT
+--INNER JOIN #FeeEarnerList AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT
 LEFT JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
@@ -209,8 +463,31 @@ GROUP BY	REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), 
             exceptions.no_excptions, dim_detail_core_details.present_position,
 			red_dw.dbo.dim_detail_core_details.fixed_fee,
 			red_dw.dbo.fact_finance_summary.fixed_fee_amount, 
-			fact_detail_reserve_detail.total_reserve
+			fact_detail_reserve_detail.total_reserve, 
+			dim_fed_hierarchy_history.leaver, 
+			last_time_transaction_date, 
+			test.unpaidbills, 
+			[Fixed Fee Amount is inconistent with fee arrangement], 
+			[PP is inconsistent with DCC/ Outcome], 
+			[PP is consistent with Costs Settled], 
+			[Not worked on for 60+ days], 
+			[Leaver]
 
 
-			END 
+
+
+
+
+
+
+
+
+
+			END
+
+
+				--COUNT(DISTINCT(dbo.fact_exceptions_update.)) NoExceptions
+				--exceptions.no_excptions
+				
+
 GO

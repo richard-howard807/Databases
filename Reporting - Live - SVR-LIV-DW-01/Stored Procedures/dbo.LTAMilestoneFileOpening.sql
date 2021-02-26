@@ -11,7 +11,9 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpening] --EXEC dbo.ClaimsMilestoneFileOpening '2020-05-01','2020-11-25'
+
+
+CREATE PROCEDURE [dbo].[LTAMilestoneFileOpening] --EXEC dbo.LTAMilestoneFileOpening '2021-02-01','2021-02-25'
 (
 @StartDate  AS DATE
 ,@EndDate  AS DATE
@@ -32,19 +34,21 @@ SELECT
        Summary.[Practice Area],
        Summary.Team,
        Summary.[Role Completed By],
-	   CASE WHEN NewTaskDesc='MI Process - Team Manager' THEN 1 
-	   WHEN NewTaskDesc='Commence CCFA process - Team Manager' THEN 2
-	   WHEN NewTaskDesc='EML Allocation of New Matter - Team Manager' THEN 3
-	   WHEN NewTaskDesc='File opening process - Support Staff' THEN 4
-	   WHEN NewTaskDesc='Client care process - Support Staff' THEN 5
-	   WHEN NewTaskDesc='New Matter data collection - Case Handler' THEN 6
-	   WHEN NewTaskDesc='Conflict check - Case Handler' THEN 7  END AS TaskOrder,
+	   CASE WHEN NewTaskDesc='REM Complete Conflict Check - Support' THEN 1 
+	   WHEN NewTaskDesc='REM File Opening Process - Support' THEN 2
+	   WHEN NewTaskDesc='REM Add associates to matter - Support' THEN 3
+	   WHEN NewTaskDesc='REM Complete Opening Risk Assessment - Support' THEN 4
+	   WHEN NewTaskDesc='ADM: Complete CDD form procedure - Case Handler' THEN 5
+	   WHEN NewTaskDesc='REM: Fee earner check - Support' THEN 6
+	   WHEN NewTaskDesc='REM: Team Manager File Audit Review - Team Manager' THEN 7  
+	   WHEN NewTaskDesc='ADM: Monthly review - Case Handler' THEN 8  
+	   WHEN NewTaskDesc='ADM: Cost Estimate Review - Team Manager' THEN 9  
+	   END AS TaskOrder,
        SUM(Summary.[Number Live Matters]) AS [Number Live Matters],
 	   SUM(Summary.[Days Diff Between File Open and Data Completed]) AS DateDiff,
 	   SUM(ElapsedInstructiontoOpen) AS InstructiontoOpen
 FROM 
 (
-
 SELECT ms_fileid
 ,master_client_code AS [Client]
 ,client_name AS [Client Name]
@@ -66,22 +70,25 @@ SELECT ms_fileid
 ,red_dw.dbo.datetimelocal(dbtasks.Created) AS [Date Created]
 ,date_opened_case_management AS [File Open Date]
 ,DATENAME(MONTH,date_opened_case_management) + CAST(YEAR(date_opened_case_management) AS NVARCHAR(4)) AS [Month/Year Open]
+,red_dw.dbo.datetimelocal(tskDue) AS [Task Due Date]
 ,CASE WHEN tskComplete=1 THEN 'Yes' ELSE 'No' END  AS [Task Completed]
 ,red_dw.dbo.datetimelocal(tskCompleted) AS [Date Completed]
-,DATEDIFF(DAY,date_opened_case_management,red_dw.dbo.datetimelocal(tskCompleted)) AS [Days Diff Between File Open and Data Completed]
+,DATEDIFF(DAY,date_opened_case_management,tskCompleted) AS [Days Diff Between File Open and Data Completed]
 ,usrFullName AS [Completed By]
 ,CASE WHEN tskActive=0 THEN 'Yes' ELSE 'No' END  AS [Deleted]
 ,CASE WHEN tskComplete=0 THEN 'Incomplete'
 ELSE RoleType END AS [Role Completed By]
 ,1 AS [Number Live Matters]
-,CASE WHEN tskFilter='tsk_01_010_ADMCommenceMIprocess' THEN 'MI Process - Team Manager'
-WHEN tskFilter='tsk_031_01_010_ClientCare' THEN 'Client care process - Support Staff'
-WHEN tskFilter='tsk_042_01_010_CCFA' THEN 'Commence CCFA process - Team Manager'
-WHEN tskFilter IN ('tsk_065_01_010_FileOpen','tsk_024_01_010_FileOp2','tsk_01_020_ADMFileOpening','tsk_01_300_adm_file_open_proc_emp','tsk_065_01_010_FileOpen1','tsk_003_01_010_FileOpenCost') THEN 'File opening process - Support Staff'
-WHEN tskFilter='tsk_065_01_020_ConflictSearch' THEN 'Conflict check - Case Handler'
-WHEN tskFilter='tsk_065_01_960_AllocationNewMatter' THEN 'EML Allocation of New Matter - Team Manager'
-WHEN tskFilter='tsk_065_01_961_NewMatterDataCollection' THEN 'New Matter data collection - Case Handler' 
-WHEN tskFilter='tsk_072_01_010_ClientCare' THEN 'Client Care process - Support Staff' END AS NewTaskDesc
+,CASE WHEN tskFilter='Tsk001' THEN 'REM Complete Conflict Check - Support'
+WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'REM File Opening Process - Support'
+WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - Support'
+WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
+WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
+WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
+WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review - Team Manager'
+WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check - Support'
+WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Manager'
+END AS NewTaskDesc
 ,DATEDIFF(DAY,date_instructions_received,date_opened_case_management) AS ElapsedInstructiontoOpen
  FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
@@ -103,20 +110,14 @@ ON Roles.usralias = dbUser.usrAlias COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-WHERE hierarchylevel2hist='Legal Ops - Claims'
-AND date_opened_case_management BETWEEN @StartDate AND @EndDate
-AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
-AND ISNULL(referral_reason,'')<>'Advice only'
-AND ISNULL(referral_reason,'')<> 'In House'
+WHERE hierarchylevel2hist='Legal Ops - LTA'
+AND 
+CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND tskMSStage=1
 AND tskFilter IN 
 (
-'tsk_01_010_ADMCommenceMIprocess','tsk_031_01_010_ClientCare','tsk_042_01_010_CCFA',
-'tsk_065_01_010_FileOpen1','tsk_065_01_020_ConflictSearch',
-'tsk_065_01_960_AllocationNewMatter','tsk_065_01_961_NewMatterDataCollection',
-'tsk_072_01_010_ClientCare','tsk_065_01_010_FileOpen'
-,'tsk_065_01_010_FileOpen','tsk_024_01_010_FileOp2','tsk_01_020_ADMFileOpening','tsk_01_300_adm_file_open_proc_emp','tsk_065_01_010_FileOpen1','tsk_003_01_010_FileOpenCost'
-
+'Tsk001','tsk_01_2040_FileOpening','tsk_01_2020_AddAssociates','tsk_01_2090_OpeningRisk'
+,'tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_280_admcostsestimatereview','tsk_01_2110_FeeEarnerCheck','tsk_01_560_REMTMAuditRF'
 )
 ) AS Summary
 

@@ -19,6 +19,7 @@ GO
 -- JL 03/08/2018 - Added in costs settled for Tableau Dash
 -- sg 03/01/2019 - changed fee arragment to look at dim_matter_header and not dim_detail_client
 -- ld 15/01/2019 - added future loss of earnings
+-- ES 24/02/2021 - #89228 added client code W24438 
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopListingReport]
@@ -230,7 +231,7 @@ WHERE (dim_client.client_group_code = '00000004'  OR dim_matter_header_current.c
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >='2017-01-01')
 AND reporting_exclusions=0
 AND LOWER(ISNULL(outcome_of_case,''))NOT IN ('exclude from reports','returned to client')
-AND dim_matter_header_current.client_code IN ('00046018', 'C1001','C15332','00215267') --this excludes commercial cases
+AND dim_matter_header_current.client_code IN ('00046018', 'C1001','C15332','00215267','W24438') --this excludes commercial cases
 AND LOWER(ISNULL(instruction_type,''))<>'costs only'
 
 AND NOT((dim_matter_worktype.[work_type_name] LIKE 'Claims Hand%' OR dim_matter_worktype.[work_type_name] LIKE 'Third Party Capture%') 

@@ -21,8 +21,8 @@ SELECT ListValue  INTO #FeeEarner FROM Reporting.dbo.udt_TallySplitPipe('|', @Fe
 
 
 
-SELECT client_code AS [Client]
-,matter_number AS [Matter]
+SELECT master_client_code AS [Client]
+,master_matter_number AS [Matter]
 ,matter_description AS [Matter Description]
 ,date_opened_case_management AS [Date Opened]
 ,date_closed_practice_management AS [Date Closed]

@@ -14,6 +14,9 @@ GO
 
 
 
+
+
+
 --DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-10-01'
@@ -21,9 +24,10 @@ GO
 
 
 
-CREATE PROCEDURE [Newcastle].[NPGSummary]
+CREATE PROCEDURE [Newcastle].[NPGSummary] -- EXEC [Newcastle].[NPGSummary] '2021-10 (Feb-2021)'
 (
 @Period AS VARCHAR(20)
+
 )
 AS
 
@@ -52,14 +56,15 @@ SELECT CRSystemSourceID,clNo,fileNo,fileDesc
 ,Finances.Disbs AS [TotalDisbs]
 ,MatStat.cdDesc AS MatterStatus
 ,DATEDIFF(DAY,red_dw.dbo.datetimelocal(dbFile.Created),red_dw.dbo.datetimelocal(dteCompletionD)) AS ElapsedDaysToCompletion
-,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) IS  NULL AND red_dw.dbo.datetimelocal(fileClosed) IS  NULL THEN 1 ELSE 0 END AS LiveFiles
+,DATEDIFF(DAY,[red_dw].[dbo].[datetimelocal](dbFile.Created),[red_dw].[dbo].[datetimelocal](dteEngrDispatch)) AS [Days opened to Engrossment]
+,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) IS  NULL AND red_dw.dbo.datetimelocal(fileClosed) IS  NULL AND ISNULL(MatStat.cdDesc,'Live')='Live' THEN 1 ELSE 0 END AS LiveFiles
 ,CASE WHEN red_dw.dbo.datetimelocal(dbFile.Created) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS NewInstructionsMonth
 ,CASE WHEN red_dw.dbo.datetimelocal(dbFile.Created) BETWEEN @YearStart AND @EndDate THEN 1 ELSE 0 END AS YTDNewInstructions
-,CASE WHEN MatStat.cdDesc='On Hold' THEN 1 ELSE 0 END AS [Abeyance]
+,CASE WHEN MatStat.cdDesc='On Hold'  AND dteCompletionD IS NULL THEN 1 ELSE 0 END AS [Abeyance]
 ,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS CompletedMonth
 ,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @YearStart AND @EndDate  THEN 1 ELSE 0 END AS YTDCompletions
 ,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) IS  NULL AND red_dw.dbo.datetimelocal(fileClosed) IS  NULL AND 
-DATEDIFF(MONTH,dbFile.Created,@EndDate) >60 THEN 1 ELSE 0 END  AS SlowMoving
+DATEDIFF(MONTH,dbFile.Created,@EndDate) >60  AND dteCompletionD IS NULL AND ISNULL(MatStat.cdDesc,'Live')='Live' AND ISNULL(MatStat.cdDesc,'')<>'On Hold' THEN 1 ELSE 0 END  AS SlowMoving
 ,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate  THEN Finances.RevenueAll ELSE NULL END AS [CostOfCase]
 ,CASE WHEN red_dw.dbo.datetimelocal(dteCompletionD) BETWEEN @StartDate AND @EndDate THEN DATEDIFF(DAY,red_dw.dbo.datetimelocal(dbFile.Created),red_dw.dbo.datetimelocal(dteCompletionD)) ELSE NULL END AS AvergeCompletedMonth
 ,Finances.RevenueYear  AS [ExpenditureYTD]
@@ -73,6 +78,10 @@ WHEN CRSystemSourceID LIKE '164107%' OR CRSystemSourceID LIKE '165102%' THEN 'Yo
 WHEN clno IN ('W22559','WB164106','WB165103','WB170376') THEN 'Yorkshire'
 WHEN clno IN ('WB164103','WB165100','W24159') THEN 'North East'END  AS [Area]
 ,@StartDate AS ReportDate
+,work_type_name
+,cboNPGFileType
+,dteEngrDispatch
+,cboInsTypeNPG
 FROM MS_Prod.dbo.udExtFile
 INNER JOIN MS_Prod.config.dbFile
  ON dbFile.fileID = udExtFile.fileID
@@ -86,6 +95,8 @@ LEFT OUTER JOIN MS_Prod.dbo.udMIClientNPG
  ON udMIClientNPG.fileID = dbFile.fileID
 LEFT OUTER JOIN MS_Prod.dbo.udPlotSalesExchange
  ON udPlotSalesExchange.fileID = dbFile.fileID
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS Insttype
 ON cboInsTypeNPG=Insttype.cdCode AND Insttype.cdType='INSTYPENPG'
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS MatStat
@@ -133,6 +144,10 @@ GROUP BY client_code,matter_number
  AND  WIPYTD.matter_number = dim_matter_header_current.matter_number
 WHERE clNo IN ('W22559','WB164106','WB165103','WB170376','WB164103','WB165100','W24159')
 AND fileNo<>'0'
+AND ISNULL(cboInsTypeNPG,'') NOT IN 
+(
+'INSTYPE001','INSTYPE002','INSTYPE003','INSTYPE004','INSTYPE005','INSTYPE006' 
+)
 
 END
 GO

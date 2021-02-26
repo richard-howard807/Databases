@@ -19,6 +19,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -63,6 +64,7 @@ WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contSurname
 ,contChristianNames as firstname
  ,contSurname as lastname
+ ,ISNULL(WayLeeCount.NumberWayleave,0) AS NumberWayleave
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -82,6 +84,13 @@ LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
 LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual
  ON dbContactIndividual.contID = dbAssociates.contID
+LEFT OUTER JOIN 
+(
+SELECT fileID,COUNT(1) AS NumberWayleave FROM MS_PROD.config.dbAssociates
+WHERE assocType='WAYLEA' AND dbassociates.assocActive=1
+GROUP BY fileID
+) AS WayLeeCount
+ ON WayLeeCount.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
 ,MAX(InvDate) AS LastBillDate
 FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)
@@ -154,8 +163,9 @@ WHEN cboNPGFileType='WAYLEAVE' THEN 'Wayleave'
 WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contChristianNames
 ,contSurname
-,contChristianNames as firstname
- ,contSurname as lastname
+,contChristianNames AS firstname
+ ,contSurname AS lastname
+ ,ISNULL(WayLeeCount.NumberWayleave,0) AS NumberWayleave
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -175,6 +185,13 @@ LEFT OUTER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
 LEFT OUTER JOIN ms_prod.dbo.dbContactIndividual
  ON dbContactIndividual.contID = dbAssociates.contID
+LEFT OUTER JOIN 
+(
+SELECT fileID,COUNT(1) AS NumberWayleave FROM MS_PROD.config.dbAssociates
+WHERE assocType='WAYLEA' AND dbassociates.assocActive=1
+GROUP BY fileID
+) AS WayLeeCount
+ ON WayLeeCount.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT MattIndex,SUM(OrgFee) AS FeesBilledToDate
 ,MAX(InvDate) AS LastBillDate
 FROM TE_3E_Prod.dbo.InvMaster WITH(NOLOCK)

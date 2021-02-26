@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[EsureMonthlyDataBuild]
 
 AS
@@ -141,6 +142,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_court
 		AND dim_detail_court.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='433281'
 AND date_opened_case_management>='2020-12-01'
+AND dim_matter_header_current.matter_number <>'00000011'
 
 END 
 

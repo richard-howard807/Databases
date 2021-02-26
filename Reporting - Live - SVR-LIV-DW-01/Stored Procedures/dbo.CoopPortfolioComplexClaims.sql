@@ -21,6 +21,7 @@ GO
 -- ES 06/02/2019 - Created copy of [dbo].[CoopListingReport] for Complex Claims - different date parameters
 -- ES 22/02/2019 - Added claimant postcode
 -- ES 08/03/2019 - Restriced to Dave Wilds team, requested by Christa W
+-- ES 24/02/2021 - #89228 added client code W24438 with restricted instruction types
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopPortfolioComplexClaims]
@@ -274,11 +275,12 @@ LEFT OUTER JOIN red_dw.dbo.Doogal ON dim_claimant_address.postcode=Doogal.Postco
 LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care ON fact_detail_future_care.master_fact_key=fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 
-WHERE dim_client.client_group_code = '00000004'   --name='Co-operative Group'
+WHERE (dim_client.client_group_code = '00000004' 
+OR (dim_matter_header_current.master_client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op Back Book', 'Co-op Forward Book')))
 --AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >='2017-01-01')
 AND reporting_exclusions=0
 AND LOWER(ISNULL(outcome_of_case,''))NOT IN ('exclude from reports','returned to client')
-AND dim_matter_header_current.client_code IN ('00046018', 'C1001','C15332')--,'00215267') --this excludes commercial cases
+AND dim_matter_header_current.client_code IN ('00046018', 'C1001','C15332','W24438')--,'00215267') --this excludes commercial cases
 AND LOWER(ISNULL(instruction_type,''))<>'costs only'
 
 --AND NOT((dim_matter_worktype.[work_type_name] LIKE 'Claims Hand%' OR dim_matter_worktype.[work_type_name] LIKE 'Third Party Capture%') 

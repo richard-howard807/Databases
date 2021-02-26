@@ -98,6 +98,8 @@ SELECT
 	, fact_detail_reserve_detail.tp_costs_reserve			AS [Claimant Costs Reserve]
 	, fact_detail_reserve_detail.defence_costs_reserve		AS [Defence Costs Reserve]
 	, fact_detail_reserve_detail.total_reserve				AS [Total Reserve]
+	, fact_finance_summary.wip                              AS [WIP]
+
 
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current

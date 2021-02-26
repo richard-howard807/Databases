@@ -20,6 +20,7 @@ BEGIN
 	, dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Weightmans Ref]
 	, matter_owner_full_name AS [Partner / Fee Earner]
 	, matter_description AS [Matter Description]
+	, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 'Live' ELSE 'Closed' END AS [Status]
 	, work_type_name AS [Category of Work]
 	, CASE WHEN dim_matter_header_current.fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' THEN 'Yes' ELSE 'No' END AS [Fixed Fee]
 	, MatterRate.description AS [Rate]
@@ -29,6 +30,9 @@ BEGIN
 	, SUM(CASE WHEN fact_bill_detail.charge_type='disbursements' THEN bill_total_excl_vat END) AS [Disbursements (ex VAT)]
 	, bill_date.calendar_date AS [Date of Invoice]
 	, work_date.calendar_date AS [Date of Work]
+	, fact_bill_detail.bill_number AS [Bill Number]
+	, DENSE_RANK() OVER ( PARTITION BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number ORDER BY fact_bill_detail.bill_number asc) AS [Rank]
+	, dim_matter_header_current.matter_number
 	
 FROM red_dw.dbo.fact_bill_detail
 LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
@@ -63,10 +67,12 @@ AND MatterRate.master_matter_number = dim_matter_header_current.master_matter_nu
 
 WHERE fact_bill_detail.client_code='W22511'
 AND reporting_exclusions=0
+--AND fact_bill_detail.matter_number='00000010'
 
 GROUP BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number
 	, matter_owner_full_name
 	, matter_description 
+	, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 'Live' ELSE 'Closed' END 
 	, work_type_name
 	, dim_matter_header_current.fee_arrangement 
 	, MatterRate.description
@@ -74,9 +80,12 @@ GROUP BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_curr
 	, narrative
 	, bill_date.calendar_date 
 	, work_date.calendar_date
+	, fact_bill_detail.bill_number
+	, dim_matter_header_current.matter_number
 
-ORDER BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number
-,bill_date.calendar_date
+
+ORDER BY dim_matter_header_current.matter_number
+, fact_bill_detail.bill_number
 
     
 END

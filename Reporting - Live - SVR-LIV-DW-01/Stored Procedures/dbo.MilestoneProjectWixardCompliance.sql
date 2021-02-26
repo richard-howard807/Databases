@@ -10,6 +10,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -54,7 +55,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN (SELECT fileID,SUM(CASE WHEN tskComplete=1 THEN 1 ELSE 0 END) AS Completed
 ,SUM(CASE WHEN tskComplete=0 THEN 1 ELSE 0 END) AS Incompleted
-,MAX(tskCompleted) AS [DateLastCompleted]
+,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS [DateLastCompleted]
 FROM MS_Prod.dbo.dbTasks
 WHERE tskType='MILESTONE'
 AND tskDesc LIKE '%Milestone Wizard%' 

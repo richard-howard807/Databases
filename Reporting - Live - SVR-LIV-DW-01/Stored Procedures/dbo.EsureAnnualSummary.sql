@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[EsureAnnualSummary]
 (
 @Year AS INT
@@ -78,6 +79,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code=@ClientCode
 AND date_opened_case_management>='2020-12-01'
+AND dim_matter_header_current.matter_number <>'00000011'
 GROUP BY MONTH(date_opened_case_management) 
 ,YEAR(date_opened_case_management)
 ) AS NewInstructions
@@ -97,6 +99,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code=@ClientCode
+AND dim_matter_header_current.matter_number <>'00000011'
 AND date_proceedings_issued IS NOT NULL
 AND date_opened_case_management>='2020-12-01'
 GROUP BY MONTH(date_proceedings_issued) 
@@ -121,6 +124,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code=@ClientCode
+AND dim_matter_header_current.matter_number <>'00000011'
 AND date_claim_concluded IS NOT NULL
 AND date_opened_case_management>='2020-12-01'
 GROUP BY MONTH(date_claim_concluded) 
@@ -170,6 +174,7 @@ INNER JOIN red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_bill_detail.dim_fed_hierarchy_history_key
 WHERE master_client_code=@ClientCode
+AND dim_matter_header_current.matter_number <>'00000011'
 AND charge_type='time'
 AND bill_reversed=0
 AND date_opened_case_management>='2020-12-01'

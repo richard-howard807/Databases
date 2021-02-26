@@ -139,6 +139,7 @@ AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','re
 AND dim_matter_header_current.client_group_name <> 'MIB'
 AND client_group_name<>'Zurich'
 AND NOT dim_matter_worktype.work_type_name LIKE 'PL - Pol%'
+AND dim_detail_core_details.referral_reason LIKE 'Dispute%'
 
 
 UNION
@@ -264,6 +265,7 @@ AND reporting_exclusions=0
 AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','returned to client'))
 AND client_group_name='Zurich'
 AND NOT dim_matter_worktype.work_type_name LIKE 'PL - Pol%'
+AND dim_detail_core_details.referral_reason LIKE 'Dispute%'
 
 END
 GO
