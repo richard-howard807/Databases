@@ -10,6 +10,8 @@ GO
 
 
 
+
+
 CREATE TRIGGER [ddl_trigger_table_index_create]
 ON DATABASE
 FOR CREATE_INDEX, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, CREATE_TABLE
@@ -41,7 +43,7 @@ IF @body NOT LIKE '%SBC\dwh01redservice%'
 BEGIN
 	IF @body NOT LIKE '%SBC\6237%'
 	BEGIN
-		IF @body NOT LIKE '%SBC\5752%'
+		IF @body NOT LIKE '%SBC\esmith01%'
 		BEGIN
 			EXEC [msdb].[dbo].[sp_send_dbmail] 
 				@profile_name = 'DBMail',
