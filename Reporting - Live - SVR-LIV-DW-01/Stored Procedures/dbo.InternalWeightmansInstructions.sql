@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[InternalWeightmansInstructions]
 
 AS 
@@ -39,7 +41,7 @@ SELECT DISTINCT
        total_unbilled_disbursements_vat [Unbilled Disbursements ],
        fee_estimate [Fee Estimate],
        dim_detail_claim.comments [Comments],
-       -- [Comments] , 
+       txtFEComments AS [Comments New] , 
        CASE
            WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN
                'Closed'
@@ -70,7 +72,8 @@ FROM red_dw.dbo.fact_dimension_main
 
     LEFT OUTER JOIN red_dw.dbo.dim_detail_client
         ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_client_key
-
+LEFT OUTER JOIN ms_prod.dbo.udMICoreGeneral
+ ON ms_fileid=fileID
 WHERE --dim_matter_header_current.client_code = 'W00001'
     dim_matter_header_current.client_code IN ( '00047354')
 	--, '00251359', 'W00001', '00006930' )

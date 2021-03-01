@@ -25,6 +25,7 @@ BEGIN
 	, CASE WHEN dim_matter_header_current.fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' THEN 'Yes' ELSE 'No' END AS [Fixed Fee]
 	, MatterRate.description AS [Rate]
 	, narrative AS [Description of Work]
+	, timekeeper.name AS [Time Recorder]
 	, SUM(bill_hours) AS [Hours]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='time' THEN bill_total_excl_vat END)  AS [Fees (ex VAT)]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='disbursements' THEN bill_total_excl_vat END) AS [Disbursements (ex VAT)]
@@ -47,6 +48,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_date work_date
 ON work_date.dim_date_key=fact_bill_detail.dim_transaction_date_key
 LEFT OUTER JOIN red_dw.dbo.dim_bill_narrative
 ON dim_bill_narrative.dim_bill_narrative_key=fact_bill_detail.dim_bill_narrative_key
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS timekeeper
+ON timekeeper.fed_code=fact_bill_detail.timekeeper
+AND timekeeper.dss_current_flag='Y'
+AND timekeeper.activeud=1
 
 LEFT OUTER JOIN (  SELECT   master_client_code,master_matter_number ,client_code,matter_number,ds_sh_3e_mattdate.matterlkup,
     ds_sh_3e_arrangement.description,nxstartdate,nxenddate,effstart
@@ -67,7 +72,7 @@ AND MatterRate.master_matter_number = dim_matter_header_current.master_matter_nu
 
 WHERE fact_bill_detail.client_code='W22511'
 AND reporting_exclusions=0
---AND fact_bill_detail.matter_number='00000010'
+--AND fact_bill_detail.matter_number='00000069'
 
 GROUP BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number
 	, matter_owner_full_name
@@ -76,6 +81,7 @@ GROUP BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_curr
 	, work_type_name
 	, dim_matter_header_current.fee_arrangement 
 	, MatterRate.description
+	, timekeeper.name 
 	, bill_rate 
 	, narrative
 	, bill_date.calendar_date 

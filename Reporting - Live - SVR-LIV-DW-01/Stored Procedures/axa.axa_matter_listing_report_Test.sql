@@ -90,7 +90,14 @@ BEGIN
            COALESCE(dim_detail_claim.dst_insured_client_name, client_ref.insuredclient_name) [Insured Name],
 		    ISNULL(dim_detail_client.[mib_claimants_surname], tp_ref.claimant_name) [Claimant Name],
           -- tp_ref.claimant_name [Claimant Name],
-          CASE WHEN ISNULL(client_ref.[insuredclient_reference],insdref.reference) LIKE '%,%' THEN  LEFT(ISNULL(client_ref.[insuredclient_reference],insdref.reference), CHARINDEX(',', ISNULL(client_ref.[insuredclient_reference],insdref.reference)) - 1) ELSE ISNULL(client_ref.[insuredclient_reference],insdref.reference) END AS [Insured Client NEW Reference],
+          CASE 
+		  WHEN ISNULL(client_ref.[insuredclient_reference],insdref.reference) LIKE '%,%' AND LEFT(ISNULL(client_ref.[insuredclient_reference],insdref.reference), 
+		  CHARINDEX(',', ISNULL(client_ref.[insuredclient_reference],insdref.reference)) - 1) = RIGHT(ISNULL(client_ref.[insuredclient_reference],insdref.reference), 
+		  CHARINDEX(',', ISNULL(client_ref.[insuredclient_reference],insdref.reference))-1 ) 
+		  THEN  LEFT(ISNULL(client_ref.[insuredclient_reference],insdref.reference), 
+		  CHARINDEX(',', ISNULL(client_ref.[insuredclient_reference],insdref.reference)) - 1) 
+		  
+		  ELSE ISNULL(client_ref.[insuredclient_reference],insdref.reference) END AS [Insured Client NEW Reference],
            -- damages claimed
            fact_finance_summary.total_reserve [Total Reserve (Current)],
            fact_finance_summary.damages_reserve_initial [Initial Reserve],
@@ -145,7 +152,10 @@ BEGIN
 		   ,dim_detail_claim.axa_claim_strategy AS [Claim Strategy]
 		   ,dim_detail_core_details.axa_liability_position AS [Liability position]
 		   ,payor_name 
-
+		   ,dim_detail_core_details.[is_insured_vat_registered]
+		   ,red_dw.dbo.fact_finance_summary.vat_billed
+		   ,red_dw.dbo.dim_detail_previous_details.vat_registered
+		
     FROM red_dw.dbo.fact_dimension_main
         LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
             ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
@@ -197,18 +207,23 @@ BEGIN
 		 LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days
             ON fact_detail_elapsed_days.client_code = dim_matter_header_current.client_code
 			AND  fact_detail_elapsed_days.matter_number = dim_matter_header_current.matter_number
+
+			LEFT JOIN red_dw.dbo.dim_detail_previous_details 
+			ON dim_detail_previous_details.dim_detail_previous_details_key = fact_dimension_main.dim_detail_previous_details_key
 		
 		/*Payor details*/
 		LEFT JOIN (
-		SELECT 
-		DISTINCT
+		SELECT DISTINCT
+		
 		dim_matter_header_curr_key
-		,MAX(payor_name) AS payor_name
+		,payor_name
+		,ROW_NUMBER() OVER(PARTITION BY dim_matter_header_curr_key ORDER BY timestamp desc) AS rownum
 		FROM red_dw.dbo.fact_payor_debt_detail 
 		JOIN red_dw.dbo.dim_payor 
-		ON dim_payor.dim_payor_key = fact_payor_debt_detail.dim_payor_key AND  payor_name LIKE '%Axa%'
-		GROUP BY dim_matter_header_curr_key
-		) Payorname ON Payorname.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+		ON dim_payor.dim_payor_key = fact_payor_debt_detail.dim_payor_key 
+		WHERE payor_name IS NOT null
+		
+		) Payorname ON Payorname.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key AND rownum = 1 
 		  
 		
 		
@@ -220,10 +235,10 @@ BEGIN
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_matter_header_current.date_opened_case_management >= '20170101'
           --AND dim_detail_core_details.date_instructions_received IS NOT NULL
-		  --AND dim_matter_header_current.client_code='A1001' AND dim_matter_header_current.matter_number='00010136'
-
+		
+       --  AND dim_matter_header_current.master_client_code +'-'+ dim_matter_header_current.master_matter_number = 'A1001-10494'
 		  
-    
+    --M/ISSM1419/16/0181,M/ISSM1419/16/0181
     ORDER BY dim_matter_header_current.date_opened_case_management;
 
 
