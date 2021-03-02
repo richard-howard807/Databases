@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningDrillDown] --EXEC dbo.ClaimsMilestoneFileOpening '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -81,7 +82,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE hierarchylevel2hist='Legal Ops - Claims'
-AND date_opened_case_management BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'

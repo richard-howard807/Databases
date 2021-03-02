@@ -14,6 +14,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningMatters] --EXEC dbo.ClaimsMilestoneFileOpeningMatters '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -99,7 +100,7 @@ GROUP BY fileID
 ) AS ConflictSearch
 ON ms_fileid=ConflictSearch.fileID
 WHERE hierarchylevel2hist='Legal Ops - Claims'
-AND date_opened_case_management BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'
