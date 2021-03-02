@@ -15,6 +15,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -171,22 +172,22 @@ THEN 'Insufficient budget' END
 
 
 
-FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
-LEFT JOIN red_dw.dbo.fact_finance_summary
+LEFT JOIN red_dw.dbo.fact_finance_summary WITH(NOLOCK)
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
-LEFT JOIN red_dw.dbo.dim_detail_client
+LEFT JOIN red_dw.dbo.dim_detail_client WITH(NOLOCK)
  ON dim_detail_client.client_code = dim_matter_header_current.client_code
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
-LEFT JOIN red_dw.dbo.fact_detail_cost_budgeting
+LEFT JOIN red_dw.dbo.fact_detail_cost_budgeting WITH(NOLOCK)
  ON fact_detail_cost_budgeting.client_code = dim_matter_header_current.client_code
  AND fact_detail_cost_budgeting.matter_number = dim_matter_header_current.matter_number
-LEFT JOIN red_dw.dbo.dim_detail_core_details
+LEFT JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-LEFT JOIN red_dw.dbo.dim_detail_outcome
+LEFT JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
  ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
  AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 
@@ -195,10 +196,11 @@ LEFT OUTER JOIN  (
 					,MAX(dim_detail_client.date_budget_uploaded) date_budget_uploaded
 					,MAX(cost_budgeting.total_budget_uploaded) total_budget_uploaded
 					,MAX(dim_detail_client.has_budget_been_approved) budget_approved
-				FROM red_dw.dbo.fact_dimension_main main
-				INNER JOIN red_dw.dbo.dim_matter_header_current header ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
-				INNER JOIN red_dw.dbo.dim_detail_client dim_detail_client ON dim_detail_client.dim_detail_client_key = main.dim_detail_client_key
-				INNER JOIN red_dw.dbo.fact_detail_cost_budgeting cost_budgeting ON cost_budgeting.master_fact_key = main.master_fact_key
+				FROM red_dw.dbo.fact_dimension_main main WITH(NOLOCK)
+				INNER JOIN red_dw.dbo.dim_matter_header_current header WITH(NOLOCK) ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
+				INNER JOIN red_dw.dbo.dim_detail_client dim_detail_client WITH(NOLOCK) ON dim_detail_client.dim_detail_client_key = main.dim_detail_client_key
+				INNER JOIN red_dw.dbo.fact_detail_cost_budgeting cost_budgeting WITH(NOLOCK) 
+				ON cost_budgeting.master_fact_key = main.master_fact_key
 
 				WHERE 1=1
 					--AND dim_detail_client.aig_litigation_number = 'LIT-21253'
@@ -218,10 +220,10 @@ SELECT fileID AS ms_fileid
 ,profstatus.[description]  AS  [Proforma Status]
 ,DATEDIFF(DAY,prof.ProfDate,GETDATE()) AS [Proforma Elapsed Days]
 ,prof.ProfDate AS [Proforma Date]
-FROM   [TE_3E_Prod].[dbo].TRE_WfHistoryHdr AS WfHistoryHdr
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfHistory AS WfHistory ON WfHistoryHdr.WfID  =  WfHistory.TRE_WfHistoryHdr 
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfRuleSet AS WFRuleSet ON WfHistory.TRE_WfRuleSet = WFRuleSet.Code
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfAction AS WfAction   ON WFRuleSet.TRE_WfAction =  WfAction.Code
+FROM   [TE_3E_Prod].[dbo].TRE_WfHistoryHdr AS WfHistoryHdr WITH(NOLOCK)
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfHistory AS WfHistory WITH(NOLOCK) ON WfHistoryHdr.WfID  =  WfHistory.TRE_WfHistoryHdr 
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfRuleSet AS WFRuleSet WITH(NOLOCK) ON WfHistory.TRE_WfRuleSet = WFRuleSet.Code
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfAction AS WfAction   WITH(NOLOCK) ON WFRuleSet.TRE_WfAction =  WfAction.Code
        
 	   INNER JOIN [TE_3E_Prod].[dbo].[ProfMaster] prof ON WfHistory.joinid = prof.profmasterid  
           LEFT JOIN [TE_3E_Prod].[dbo].[ProfStatus] profstatus ON profstatus.code = prof.profstatus
@@ -236,12 +238,12 @@ WHERE WfHistory.CompletedDate IS NULL
 ) AS Proforma
  ON Proforma.ms_fileid = dim_matter_header_current.ms_fileid
 LEFT OUTER JOIN (SELECT fact_bill.client_code,fact_bill.matter_number,MAX(bill_date) AS LastBillDate
-FROM red_dw.dbo.dim_bill
-INNER JOIN red_dw.dbo.fact_bill
+FROM red_dw.dbo.dim_bill WITH(NOLOCK)
+INNER JOIN red_dw.dbo.fact_bill WITH(NOLOCK)
  ON fact_bill.dim_bill_key = dim_bill.dim_bill_key
-INNER JOIN red_dw.dbo.dim_bill_date
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-INNER JOIN red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
 WHERE master_client_code='A2002'
 AND fees_total <>0
