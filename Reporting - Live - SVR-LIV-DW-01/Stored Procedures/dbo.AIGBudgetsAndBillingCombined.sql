@@ -5,6 +5,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 (
 
@@ -12,7 +15,7 @@ CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 ,@FeeEarner AS NVARCHAR(MAX)
 )
 
-AS 
+AS
 
 BEGIN
 
@@ -21,6 +24,8 @@ SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
 
 IF OBJECT_ID('tempdb..#FeeEarner') IS NOT NULL   DROP TABLE #FeeEarner
 SELECT ListValue  INTO #FeeEarner FROM 	dbo.udt_TallySplit('|', @FeeEarner)
+
+IF OBJECT_ID('tempdb..#MainData') IS NOT NULL   DROP TABLE #MainData
 
 SELECT dim_matter_header_current.client_code AS [client_code],
 dim_matter_header_current.[ms_fileid],
@@ -33,6 +38,7 @@ fed_code AS [matter_owner_fed_code],
 name AS [matter_owner_name],
 hierarchylevel3hist AS [Department],
 hierarchylevel4hist AS [matter_owner_team],
+fed_code,
 CASE WHEN TRY_CAST(dim_matter_header_current.client_code AS INT) IS NULL THEN dim_matter_header_current.client_code ELSE CAST(TRY_CAST(dim_matter_header_current.client_code AS INT)  AS NVARCHAR(50)) END  AS[client_code_trimmed],
 TRY_CAST(dim_matter_header_current.matter_number AS INT)[matter_number_trimmed],
 dim_client_involvement.[insurerclient_reference],
@@ -277,35 +283,33 @@ AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)>=90 THEN 'Yes' ELSE 'No' END AS ReadyToBill
-
-FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+INTO #MainData
+FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT  AND dss_current_flag='Y'
-INNER JOIN #Team AS Team ON Team.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
-INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = fed_code COLLATE DATABASE_DEFAULT
-LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting
+LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting WITH(NOLOCK)
  ON fact_detail_cost_budgeting.client_code = dim_matter_header_current.client_code
  AND fact_detail_cost_budgeting.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client WITH(NOLOCK)
  ON dim_detail_client.client_code = dim_matter_header_current.client_code
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary WITH(NOLOCK)
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+LEFT OUTER JOIN red_dw.dbo.dim_instruction_type WITH(NOLOCK)
  ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud
+LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud WITH(NOLOCK)
  ON dim_detail_fraud.client_code = dim_matter_header_current.client_code
  AND dim_detail_fraud.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
  ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
  AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_matter_group
+LEFT OUTER JOIN red_dw.dbo.dim_matter_group WITH(NOLOCK)
  ON dim_matter_group.dim_matter_group_key = dim_matter_header_current.dim_matter_group_key
-LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK)
  ON dim_client_involvement.client_code = dim_matter_header_current.client_code
  AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN  (
@@ -313,10 +317,10 @@ LEFT OUTER JOIN  (
 					,MAX(dim_detail_client.date_budget_uploaded) date_budget_uploaded
 					,MAX(cost_budgeting.total_budget_uploaded) total_budget_uploaded
 					,MAX(dim_detail_client.has_budget_been_approved) budget_approved
-				FROM red_dw.dbo.fact_dimension_main main
-				INNER JOIN red_dw.dbo.dim_matter_header_current header ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
-				INNER JOIN red_dw.dbo.dim_detail_client dim_detail_client ON dim_detail_client.dim_detail_client_key = main.dim_detail_client_key
-				INNER JOIN red_dw.dbo.fact_detail_cost_budgeting cost_budgeting ON cost_budgeting.master_fact_key = main.master_fact_key
+				FROM red_dw.dbo.fact_dimension_main main WITH(NOLOCK)
+				INNER JOIN red_dw.dbo.dim_matter_header_current header WITH(NOLOCK) ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
+				INNER JOIN red_dw.dbo.dim_detail_client dim_detail_client WITH(NOLOCK) ON dim_detail_client.dim_detail_client_key = main.dim_detail_client_key
+				INNER JOIN red_dw.dbo.fact_detail_cost_budgeting cost_budgeting  WITH(NOLOCK) ON cost_budgeting.master_fact_key = main.master_fact_key
 
 				WHERE 1=1
 					--AND dim_detail_client.aig_litigation_number = 'LIT-21253'
@@ -334,16 +338,16 @@ SELECT fileID AS ms_fileid
 ,profstatus.[description]  AS  [Proforma Status]
 ,DATEDIFF(DAY,prof.ProfDate,GETDATE()) AS [Proforma Elapsed Days]
 ,prof.ProfDate AS [Proforma Date]
-FROM   [TE_3E_Prod].[dbo].TRE_WfHistoryHdr AS WfHistoryHdr
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfHistory AS WfHistory ON WfHistoryHdr.WfID  =  WfHistory.TRE_WfHistoryHdr 
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfRuleSet AS WFRuleSet ON WfHistory.TRE_WfRuleSet = WFRuleSet.Code
-       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfAction AS WfAction   ON WFRuleSet.TRE_WfAction =  WfAction.Code
+FROM   [TE_3E_Prod].[dbo].TRE_WfHistoryHdr AS WfHistoryHdr WITH(NOLOCK)
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfHistory AS WfHistory WITH(NOLOCK) ON WfHistoryHdr.WfID  =  WfHistory.TRE_WfHistoryHdr 
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfRuleSet AS WFRuleSet WITH(NOLOCK) ON WfHistory.TRE_WfRuleSet = WFRuleSet.Code
+       INNER JOIN [TE_3E_Prod].[dbo].TRE_WfAction AS WfAction  WITH(NOLOCK)  ON WFRuleSet.TRE_WfAction =  WfAction.Code
        
-	   INNER JOIN [TE_3E_Prod].[dbo].[ProfMaster] prof ON WfHistory.joinid = prof.profmasterid  
-          LEFT JOIN [TE_3E_Prod].[dbo].[ProfStatus] profstatus ON profstatus.code = prof.profstatus
-          LEFT JOIN [TE_3E_Prod].[dbo].[Matter] matter ON matter.mattindex = prof.leadmatter
-          LEFT JOIN [TE_3E_Prod].[dbo].[Client] client ON matter.client = client.clientindex
-		  LEFT JOIN MS_Prod.config.dbFile ON matter.MattIndex=fileExtLinkID
+	   INNER JOIN [TE_3E_Prod].[dbo].[ProfMaster] prof WITH(NOLOCK) ON WfHistory.joinid = prof.profmasterid  
+          LEFT JOIN [TE_3E_Prod].[dbo].[ProfStatus] profstatus WITH(NOLOCK) ON profstatus.code = prof.profstatus
+          LEFT JOIN [TE_3E_Prod].[dbo].[Matter] matter WITH(NOLOCK) ON matter.mattindex = prof.leadmatter
+          LEFT JOIN [TE_3E_Prod].[dbo].[Client] client WITH(NOLOCK) ON matter.client = client.clientindex
+		  LEFT JOIN MS_Prod.config.dbFile WITH(NOLOCK) ON matter.MattIndex=fileExtLinkID
 
 	
 WHERE WfHistory.CompletedDate IS NULL  
@@ -352,12 +356,12 @@ WHERE WfHistory.CompletedDate IS NULL
 ) AS Proforma
  ON Proforma.ms_fileid = dim_matter_header_current.ms_fileid
 LEFT OUTER JOIN (SELECT fact_bill.client_code,fact_bill.matter_number,MAX(bill_date) AS LastBillDate
-FROM red_dw.dbo.dim_bill
-INNER JOIN red_dw.dbo.fact_bill
+FROM red_dw.dbo.dim_bill WITH(NOLOCK)
+INNER JOIN red_dw.dbo.fact_bill WITH(NOLOCK)
  ON fact_bill.dim_bill_key = dim_bill.dim_bill_key
-INNER JOIN red_dw.dbo.dim_bill_date
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-INNER JOIN red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
 WHERE master_client_code='A2002'
 AND fees_total <>0
@@ -379,17 +383,17 @@ SELECT dim_detail_client.[aig_litigation_number]
 ,SUM(fact_finance_summary.[defence_costs_billed]) AS [Lit_defence_cost_billed]
 ,SUM(fact_finance_summary.[total_amount_billed]) AS [Lit_total_amount_billed]
 ,COUNT(1) AS [count]
-FROM red_dw.dbo.dim_matter_header_current
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client WITH(NOLOCK)
  ON dim_detail_client.client_code = dim_matter_header_current.client_code
  AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary WITH(NOLOCK)
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting
+LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting WITH(NOLOCK)
  ON fact_detail_cost_budgeting.client_code = dim_matter_header_current.client_code
  AND fact_detail_cost_budgeting.matter_number = dim_matter_header_current.matter_number
  
@@ -407,6 +411,13 @@ AND client_group_name='AIG'
 AND reporting_exclusions <>1
 AND ISNULL(dim_detail_client.[zurich_data_admin_exclude_from_reports],'No')<>'Yes'
 AND red_dw.dbo.dim_matter_header_current.ms_fileid <>4344242
+
+
+
+SELECT #MainData.* FROM #MainData
+INNER JOIN #Team AS Team ON Team.ListValue 
+COLLATE DATABASE_DEFAULT = matter_owner_team COLLATE DATABASE_DEFAULT
+INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = fed_code COLLATE DATABASE_DEFAULT
 
 END
 GO
