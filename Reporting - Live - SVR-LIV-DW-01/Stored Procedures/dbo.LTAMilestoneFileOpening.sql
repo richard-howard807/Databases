@@ -13,6 +13,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpening] --EXEC dbo.LTAMilestoneFileOpening '2021-02-01','2021-02-25'
 (
 @StartDate  AS DATE
@@ -39,14 +41,18 @@ SELECT
 	   WHEN NewTaskDesc='REM Add associates to matter - Support' THEN 3
 	   WHEN NewTaskDesc='REM Complete Opening Risk Assessment - Support' THEN 4
 	   WHEN NewTaskDesc='ADM: Complete CDD form procedure - Case Handler' THEN 5
-	   WHEN NewTaskDesc='REM: Fee earner check - Support' THEN 6
-	   WHEN NewTaskDesc='REM: Team Manager File Audit Review - Team Manager' THEN 7  
+	   WHEN NewTaskDesc='REM: Fee earner check – Case Handler' THEN 6
+	   WHEN NewTaskDesc='REM: Team Manager File Audit Review - Team Mananger' THEN 7  
 	   WHEN NewTaskDesc='ADM: Monthly review - Case Handler' THEN 8  
-	   WHEN NewTaskDesc='ADM: Cost Estimate Review - Team Manager' THEN 9  
+	   WHEN NewTaskDesc='ADM: Cost Estimate Review – Case Handler' THEN 9  
 	   END AS TaskOrder,
        SUM(Summary.[Number Live Matters]) AS [Number Live Matters],
 	   SUM(Summary.[Days Diff Between File Open and Data Completed]) AS DateDiff,
 	   SUM(ElapsedInstructiontoOpen) AS InstructiontoOpen
+	   ,SUM(CASE WHEN Summary.Deleted='Yes' THEN 1 ELSE 0 END) AS [Incomplete Deleted]
+	   ,SUM(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='Yes' THEN 1 ELSE 0 END) AS [Completed]
+	   ,SUM(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='No' AND Summary.Overdue=1 THEN 1 ELSE 0 END)AS [Incomplete Overdue]
+	   ,SUM(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='No' AND Summary.Overdue=0 THEN 1 ELSE 0 END) [Incomplete Not Yet Due]
 FROM 
 (
 SELECT ms_fileid
@@ -79,15 +85,16 @@ SELECT ms_fileid
 ,CASE WHEN tskComplete=0 THEN 'Incomplete'
 ELSE RoleType END AS [Role Completed By]
 ,1 AS [Number Live Matters]
+,CASE WHEN red_dw.dbo.datetimelocal(tskDue) <CONVERT(DATE,GETDATE(),103) THEN 1 ELSE 0 END Overdue
 ,CASE WHEN tskFilter='Tsk001' THEN 'REM Complete Conflict Check - Support'
 WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'REM File Opening Process - Support'
 WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - Support'
 WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
-WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review - Team Manager'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check - Support'
-WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Manager'
+WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
+WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END AS NewTaskDesc
 ,DATEDIFF(DAY,date_instructions_received,date_opened_case_management) AS ElapsedInstructiontoOpen
  FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)

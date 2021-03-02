@@ -12,6 +12,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningDrillDown] --EXEC dbo.ClaimsMilestoneFileOpening '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -57,9 +59,9 @@ WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - 
 WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
-WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review - Team Manager'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check - Support'
-WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Manager'
+WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
+WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END AS [Display_Name]
 ,date_instructions_received AS [Date Instructions Received]
 ,DATEDIFF(DAY,date_instructions_received,date_opened_case_management) AS ElapsedInstructiontoOpen
@@ -84,7 +86,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 WHERE hierarchylevel2hist='Legal Ops - LTA'
-AND date_opened_case_management BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND tskMSStage=1
 AND hierarchylevel4hist=@Team
 AND tskFilter IN 
@@ -98,9 +100,9 @@ WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - 
 WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
-WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review - Team Manager'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check - Support'
-WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Manager'
+WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
+WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END) =@DisplayName
 END
 

@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningTMFE] -- EXEC [dbo].[LTAMilestoneFileOpeningTMFE] '2021-02-15','2021-02-21'
 ( 
 @StartDate AS DATE
@@ -13,7 +15,38 @@ AS
 
 BEGIN 
 
-SELECT ms_fileid
+SELECT Summary.ms_fileid,
+       Summary.Client,
+       Summary.[Client Name],
+       Summary.Matter,
+       Summary.[File],
+       Summary.matter_description,
+       Summary.Display_Name,
+       Summary.[Fee Earner],
+       Summary.[Business Line],
+       Summary.[Practice Area],
+       Summary.Team,
+       Summary.[Matter Category],
+       Summary.[Work Type],
+       Summary.[Work Type Code],
+       Summary.[Task Completed],
+       Summary.[Task Due],
+       Summary.ElapsedDueToCompleted,
+       Summary.[Number Live Matters],
+       Summary.TaskType,
+       Summary.Within1Day,
+       Summary.NotWithin1Day,
+       Summary.NewTaskDesc,
+       Summary.Overdue
+	   ,1 AS NumberTasks
+	   ,(CASE WHEN Summary.Deleted='Yes' THEN 1 ELSE 0 END) AS [Incomplete Deleted]
+	   ,(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='Yes' THEN 1 ELSE 0 END) AS [Completed]
+	   ,(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='No' AND Summary.Overdue=1 THEN 1 ELSE 0 END)AS [Incomplete Overdue]
+	   ,(CASE WHEN Summary.Deleted='No' AND Summary.[Task Completed]='No' AND Summary.Overdue=0 THEN 1 ELSE 0 END) [Incomplete Not Yet Due]
+
+	   
+	   FROM 
+(SELECT ms_fileid
 ,master_client_code AS [Client]
 ,client_name AS [Client Name]
 ,master_matter_number AS [Matter]
@@ -28,7 +61,8 @@ SELECT ms_fileid
 ,matter_category AS [Matter Category]
 ,work_type_code AS [Work Type]
 ,work_type_name AS [Work Type Code]
-,red_dw.dbo.datetimelocal(tskCompleted) AS [Task Completed]
+,red_dw.dbo.datetimelocal(tskCompleted) AS [Task Completed Date]
+,CASE WHEN tskComplete=1 THEN 'Yes' ELSE 'No' END  AS [Task Completed]
 ,red_dw.dbo.datetimelocal(tskDue) AS [Task Due]
 ,DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted)) AS ElapsedDueToCompleted
 ,1 AS [Number Live Matters]
@@ -44,10 +78,12 @@ WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - 
 WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
-WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review - Team Manager'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check - Support'
-WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Manager'
+WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
+WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END AS NewTaskDesc
+,CASE WHEN red_dw.dbo.datetimelocal(tskDue) <CONVERT(DATE,GETDATE(),103) THEN 1 ELSE 0 END Overdue
+,CASE WHEN tskActive=0 THEN 'Yes' ELSE 'No' END  AS [Deleted]
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
@@ -73,11 +109,7 @@ AND
 CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND tskMSStage=1
 AND tskFilter IN ('tsk_01_280_admcostsestimatereview','tsk_01_560_REMTMAuditRF','tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_2040_FileOpening')
---AND tskFilter IN 
---(
---'Tsk001','tsk_01_2040_FileOpening','tsk_01_2020_AddAssociates','tsk_01_2090_OpeningRisk'
---,'tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_280_admcostsestimatereview','tsk_01_2110_FeeEarnerCheck','tsk_01_560_REMTMAuditRF'
---)
+) AS Summary
 
 END
 GO

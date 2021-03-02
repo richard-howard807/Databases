@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningMatters] --EXEC dbo.LTAMilestoneFileOpeningMatters '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -90,7 +91,7 @@ GROUP BY fileID
 ON ms_fileid=TM.fileID
 
 WHERE hierarchylevel2hist='Legal Ops - LTA'
-AND date_opened_case_management BETWEEN @StartDate AND @EndDate
+AND CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 
 
 END 
