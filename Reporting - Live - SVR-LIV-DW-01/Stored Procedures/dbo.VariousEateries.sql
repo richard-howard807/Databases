@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[VariousEateries]
 
 AS
@@ -78,7 +80,7 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_file_notes.client_code = dim_matter_header_current.client_code
 			AND dim_file_notes.matter_number = dim_matter_header_current.matter_number
 WHERE 1 =1 
-	AND dim_matter_header_current.master_client_code IN ('774963','W23644')
+	AND client_group_name='Various Eateries Group'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case, '')) <> 'exclude from reports'
 
