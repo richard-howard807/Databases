@@ -15,6 +15,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpening] --EXEC dbo.LTAMilestoneFileOpening '2021-02-01','2021-02-25'
 (
 @StartDate  AS DATE
@@ -87,13 +90,13 @@ ELSE RoleType END AS [Role Completed By]
 ,1 AS [Number Live Matters]
 ,CASE WHEN red_dw.dbo.datetimelocal(tskDue) <CONVERT(DATE,GETDATE(),103) THEN 1 ELSE 0 END Overdue
 ,CASE WHEN tskFilter='Tsk001' THEN 'REM Complete Conflict Check - Support'
-WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'REM File Opening Process - Support'
-WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - Support'
-WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
+WHEN tskFilter IN ('tsk006','tsk_01_2040_FileOpening') THEN 'REM File Opening Process - Support'
+WHEN tskFilter IN ('tsk004','tsk_01_2020_AddAssociates') THEN 'REM Add associates to matter - Support'
+WHEN tskFilter IN ('tsk011','tsk_01_2090_OpeningRisk') THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
 WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter IN ('tsk014','tsk_01_2110_FeeEarnerCheck') THEN 'REM: Fee earner check – Case Handler'
 WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END AS NewTaskDesc
 ,DATEDIFF(DAY,date_instructions_received,date_opened_case_management) AS ElapsedInstructiontoOpen
@@ -125,6 +128,8 @@ AND tskFilter IN
 (
 'Tsk001','tsk_01_2040_FileOpening','tsk_01_2020_AddAssociates','tsk_01_2090_OpeningRisk'
 ,'tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_280_admcostsestimatereview','tsk_01_2110_FeeEarnerCheck','tsk_01_560_REMTMAuditRF'
+,'tsk004','tsk014','tsk006'
+
 )
 ) AS Summary
 

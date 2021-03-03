@@ -8,6 +8,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningTMFE] -- EXEC [dbo].[LTAMilestoneFileOpeningTMFE] '2021-02-15','2021-02-21'
 ( 
 @StartDate AS DATE
@@ -68,20 +70,20 @@ SELECT Summary.ms_fileid,
 ,red_dw.dbo.datetimelocal(tskDue) AS [Task Due]
 ,DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted)) AS ElapsedDueToCompleted
 ,1 AS [Number Live Matters]
-,CASE WHEN tskFilter  IN ('tsk_01_2110_FeeEarnerCheck' ) THEN 'Fee Earner'
+,CASE WHEN tskFilter  IN ('tsk_01_2110_FeeEarnerCheck','tsk014' ) THEN 'Fee Earner'
 WHEN tskFilter IN ('tsk_01_560_REMTMAuditRF') THEN 'Team Manager'
-WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'File Opening' END AS TaskType
+WHEN tskFilter IN ('tsk006','tsk_01_2040_FileOpening') THEN 'File Opening' END AS TaskType
 ,CASE WHEN tskDue IS NOT NULL AND tskCompleted IS NOT NULL AND DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted))<=1 THEN 1 ELSE 0 END  AS Within1Day
 ,CASE WHEN tskDue IS NULL THEN 1
 WHEN DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted))>1 OR tskCompleted IS NULL THEN 1 ELSE 0 END AS NotWithin1Day
 ,CASE WHEN tskFilter='Tsk001' THEN 'REM Complete Conflict Check - Support'
-WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'REM File Opening Process - Support'
-WHEN tskFilter='tsk_01_2020_AddAssociates' THEN 'REM Add associates to matter - Support'
-WHEN tskFilter='tsk_01_2090_OpeningRisk' THEN 'REM Complete Opening Risk Assessment - Support'
+WHEN tskFilter IN ('tsk006','tsk_01_2040_FileOpening') THEN 'REM File Opening Process - Support'
+WHEN tskFilter IN ('tsk004','tsk_01_2020_AddAssociates') THEN 'REM Add associates to matter - Support'
+WHEN tskFilter IN ('tsk011','tsk_01_2090_OpeningRisk') THEN 'REM Complete Opening Risk Assessment - Support'
 WHEN tskFilter='tsk_01_090_ADMCompleteCDD' THEN 'ADM: Complete CDD form procedure - Case Handler'
 WHEN tskFilter='tsk_02_050_REMReviewMatter' THEN 'ADM: Monthly review - Case Handler'
 WHEN tskFilter='tsk_01_280_admcostsestimatereview' THEN 'ADM: Cost Estimate Review – Case Handler'
-WHEN tskFilter='tsk_01_2110_FeeEarnerCheck' THEN 'REM: Fee earner check – Case Handler'
+WHEN tskFilter IN ('tsk014','tsk_01_2110_FeeEarnerCheck') THEN 'REM: Fee earner check – Case Handler'
 WHEN tskFilter='tsk_01_560_REMTMAuditRF' THEN 'REM: Team Manager File Audit Review - Team Mananger'
 END AS NewTaskDesc
 ,CASE WHEN red_dw.dbo.datetimelocal(tskDue) <CONVERT(DATE,GETDATE(),103) THEN 1 ELSE 0 END Overdue
@@ -117,6 +119,9 @@ AND tskFilter IN (
 ,'tsk_02_050_REMReviewMatter'
 ,'tsk_01_2110_FeeEarnerCheck' 
 ,'tsk_01_2040_FileOpening'
+,'tsk014'
+,'tsk006'
+,'tsk004'
 )
 ) AS Summary
 
