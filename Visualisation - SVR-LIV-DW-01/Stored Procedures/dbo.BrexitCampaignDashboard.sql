@@ -2,7 +2,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 16/12/2018
@@ -11,7 +10,6 @@ GO
 CREATE PROCEDURE [dbo].[BrexitCampaignDashboard]
 AS
 BEGIN
-	
 
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 	SELECT RTRIM(header.client_code) +'-' +header.matter_number [Weightmans Ref]
@@ -35,8 +33,6 @@ BEGIN
 		,area_Postcode.Latitude 
 		,area_Postcode.Longitude
 
-	
-
 	FROM red_dw.dbo.fact_dimension_main main
 	INNER JOIN red_dw.dbo.dim_matter_header_current header ON header.dim_matter_header_curr_key = main.dim_matter_header_curr_key
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history fed ON fed.dim_fed_hierarchy_history_key = main.dim_fed_hierarchy_history_key
@@ -44,11 +40,18 @@ BEGIN
 	INNER JOIN red_dw.dbo.dim_client client ON client.dim_client_key = main.dim_client_key
 	INNER JOIN red_dw.dbo.fact_finance_summary fin_sum ON fin_sum.master_fact_key = main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.Doogal AS [area_Postcode] ON [area_Postcode].Postcode=client.postcode 
-
-
-	WHERE UPPER(matter_description) LIKE '%BREXIT%';
-
-
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+	 ON dim_detail_core_details.dim_detail_core_detail_key = main.dim_detail_core_detail_key
+	WHERE 
+	(
+	dim_detail_core_details.[is_this_part_of_a_campaign]='Brexit' OR
+	UPPER(matter_description) LIKE '%BREXIT%' OR
+	LOWER(matter_description) LIKE '%sponsor lic%'OR 
+	LOWER(matter_description) LIKE '%immigration%' OR
+	LOWER(matter_description) LIKE '%settled status%' OR
+	LOWER(matter_description) LIKE '%business immigration%' OR
+	LOWER(matter_description) LIKE '%right to work%'
+	);
 
 END
 
