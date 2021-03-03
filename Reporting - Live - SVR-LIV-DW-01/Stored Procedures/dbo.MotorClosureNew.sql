@@ -273,94 +273,8 @@ AND (dim_detail_outcome.outcome_of_case IS NULL OR
               --  fact_matter_summary_current.[last_time_transaction_date] [last_time_calendar_date],
                 fact_finance_summary.[unpaid_bill_balance],
                 fact_detail_reserve_detail.[total_reserve], 
-				exceptions.no_excptions [Action]
-
---				CASE WHEN fact_finance_summary.unpaid_bill_balance >1 THEN 1 ELSE 0 END AS [unpaidbillbalance],
-				
---CASE WHEN dim_detail_core_details.present_position IN
---(
-
---'Final bill due - claim and costs concluded',
---'Final bill sent - unpaid',
---'To be closed/minor balances to be clear'
---)
-
--- AND fact_finance_summary.wip > 1  THEN 1 
--- WHEN 
--- dim_detail_core_details.present_position IN
---(
---'Final bill due - claim and costs concluded',
---'Final bill sent - unpaid',
---'To be closed/minor balances to be clear'
---)
-
---AND fact_finance_summary.disbursement_balance > 1
-
---THEN 1 ELSE 0 END [unpaidbills], 
-
---CASE WHEN ((dim_matter_header_current.fee_arrangement NOT   IN
---(
---'Fixed Fee/Fee Quote/Capped Fee                              '
---)
---AND dim_matter_header_current.fixed_fee_amount > 0 ) OR 
-
-
---(
---dim_matter_header_current.fee_arrangement   IN
---(
---'Fixed Fee/Fee Quote/Capped Fee                              '
---)
---AND dim_matter_header_current.fixed_fee_amount = 0
-
-
---)) THEN 1 ELSE 0 END AS 
---[Fixed Fee Amount is inconistent with fee arrangement], 
-
-
-
---CASE WHEN 
-
-
---dim_detail_core_details.present_position NOT IN
---(
---'Claim and costs concluded but recovery outstanding',
---'Claim and costs outstanding',
---'Claim concluded but costs outstanding'
---) AND (dim_detail_outcome.outcome_of_case IS NULL OR dim_detail_outcome.date_claim_concluded IS NULL ) THEN 1 
-
---WHEN 
---dim_detail_core_details.present_position  IN
---(
---'Claim and costs concluded but recovery outstanding',
---'Claim and costs outstanding',
---'Claim concluded but costs outstanding'
---) AND (dim_detail_outcome.outcome_of_case IS NOT NULL OR dim_detail_outcome.date_claim_concluded IS not NULL ) THEN 1 ELSE 0 END AS [PP is inconsistent with DCC/ Outcome] , 
-
---CASE WHEN 
-
--- dim_detail_core_details.present_position IN
---(
---'Final bill due - claim and costs concluded',
---'Final bill sent - unpaid',
---'To be closed/minor balances to be clear'
---) AND dim_detail_outcome.date_costs_settled IS NULL THEN 1 
-
---WHEN 
--- dim_detail_core_details.present_position NOT  IN
---(
---'Final bill due - claim and costs concluded',
---'Final bill sent - unpaid',
---'To be closed/minor balances to be clear'
---) AND dim_detail_outcome.date_costs_settled IS NOT NULL THEN 1 ELSE 0 END AS [PP is consistent with Costs Settled], 
-
---CASE WHEN 
-
---	DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) > 60 THEN 1 ELSE 0 END AS [Not worked on for 60+ days], 
-
-
-
-
-
+				exceptions.no_excptions [Action], 
+				dim_detail_core_details.referral_reason [Referral Reason] 
 
 
 
@@ -471,7 +385,7 @@ GROUP BY	REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), 
 			[PP is inconsistent with DCC/ Outcome], 
 			[PP is consistent with Costs Settled], 
 			[Not worked on for 60+ days], 
-			[Leaver]
+			[Leaver], dim_detail_core_details.referral_reason
 
 
 

@@ -13,6 +13,7 @@ CREATE TABLE [zurich].[PanelAverages]
 [Own Costs KPI] [float] NULL,
 [Own Disbs] [float] NULL,
 [Own Counsel Fees] [float] NULL,
-[Win Rate] [float] NULL
+[Win Rate] [float] NULL,
+[Lifecycle] [float] NULL
 ) ON [PRIMARY]
 GO

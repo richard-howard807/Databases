@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[BAIBillingProjectReport]
 AS
 BEGIN
@@ -25,6 +26,7 @@ SELECT dim_matter_header_current.client_code AS [Client]
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END  AS ElapsedDays
 ,wip AS [WIP]
+,ISNULL(WIPNonCosts,0) AS WIPNonCosts
 ,disbursement_balance AS [Disbursement Balance]
 ,red_dw.dbo.dim_matter_header_current.present_position AS [Present Position]
 ,dim_matter_header_current.fixed_fee AS [Fixed Fee]
@@ -77,6 +79,16 @@ AND bill_reversed=0
 GROUP BY fact_bill.client_code,fact_bill.matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN (SELECT client_code AS WipClient,matter_number AS WipMatter,SUM(time_charge_value) AS WIPNonCosts
+FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
+WHERE client_code='W15349'
+AND fed_code NOT IN ('3662','1713','3401','4456','3113','4878','4941','4846','2033','1924','4493','4204')
+AND dim_bill_key=0
+GROUP BY client_code,matter_number) AS WIPNonCosts
+ ON dim_matter_header_current.client_code=WIPNonCosts.WipClient
+ AND dim_matter_header_current.matter_number=WIPNonCosts.WipMatter
 
 WHERE dim_matter_header_current.master_client_code='W15349'
 AND date_closed_practice_management IS NULL

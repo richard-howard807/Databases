@@ -151,7 +151,7 @@ BEGIN
 		   ,dim_detail_core_details.axa_reason_outside_of_pas AS [Reason Outside of PAS]
 		   ,dim_detail_claim.axa_claim_strategy AS [Claim Strategy]
 		   ,dim_detail_core_details.axa_liability_position AS [Liability position]
-		   ,payor_name 
+		 
 		   ,dim_detail_core_details.[is_insured_vat_registered]
 		   ,red_dw.dbo.fact_finance_summary.vat_billed
 		   ,red_dw.dbo.dim_detail_previous_details.vat_registered
@@ -188,7 +188,7 @@ BEGIN
             ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
         LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
             ON dim_defendant_involvement.dim_defendant_involvem_key = fact_dimension_main.dim_defendant_involvem_key
-	 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_initial 
+	    LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_initial 
 			ON fact_detail_reserve_initial.master_fact_key = fact_dimension_main.master_fact_key
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 			
@@ -211,20 +211,6 @@ BEGIN
 			LEFT JOIN red_dw.dbo.dim_detail_previous_details 
 			ON dim_detail_previous_details.dim_detail_previous_details_key = fact_dimension_main.dim_detail_previous_details_key
 		
-		/*Payor details*/
-		LEFT JOIN (
-		SELECT DISTINCT
-		
-		dim_matter_header_curr_key
-		,payor_name
-		,ROW_NUMBER() OVER(PARTITION BY dim_matter_header_curr_key ORDER BY timestamp desc) AS rownum
-		FROM red_dw.dbo.fact_payor_debt_detail 
-		JOIN red_dw.dbo.dim_payor 
-		ON dim_payor.dim_payor_key = fact_payor_debt_detail.dim_payor_key 
-		WHERE payor_name IS NOT null
-		
-		) Payorname ON Payorname.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key AND rownum = 1 
-		  
 		
 		
 

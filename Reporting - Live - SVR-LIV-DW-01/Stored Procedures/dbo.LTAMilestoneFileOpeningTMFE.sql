@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningTMFE] -- EXEC [dbo].[LTAMilestoneFileOpeningTMFE] '2021-02-15','2021-02-21'
 ( 
 @StartDate AS DATE
@@ -66,8 +68,8 @@ SELECT Summary.ms_fileid,
 ,red_dw.dbo.datetimelocal(tskDue) AS [Task Due]
 ,DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted)) AS ElapsedDueToCompleted
 ,1 AS [Number Live Matters]
-,CASE WHEN tskFilter  IN ('tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter') THEN 'Fee Earner'
-WHEN tskFilter IN ('tsk_01_280_admcostsestimatereview','tsk_01_560_REMTMAuditRF') THEN 'Team Manager'
+,CASE WHEN tskFilter  IN ('tsk_01_2110_FeeEarnerCheck' ) THEN 'Fee Earner'
+WHEN tskFilter IN ('tsk_01_560_REMTMAuditRF') THEN 'Team Manager'
 WHEN tskFilter='tsk_01_2040_FileOpening' THEN 'File Opening' END AS TaskType
 ,CASE WHEN tskDue IS NOT NULL AND tskCompleted IS NOT NULL AND DATEDIFF(DAY,red_dw.dbo.datetimelocal(tskDue),red_dw.dbo.datetimelocal(tskCompleted))<=1 THEN 1 ELSE 0 END  AS Within1Day
 ,CASE WHEN tskDue IS NULL THEN 1
@@ -108,7 +110,14 @@ WHERE hierarchylevel2hist='Legal Ops - LTA'
 AND 
 CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND tskMSStage=1
-AND tskFilter IN ('tsk_01_280_admcostsestimatereview','tsk_01_560_REMTMAuditRF','tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_2040_FileOpening')
+AND tskFilter IN (
+'tsk_01_280_admcostsestimatereview'
+,'tsk_01_560_REMTMAuditRF'
+,'tsk_01_090_ADMCompleteCDD'
+,'tsk_02_050_REMReviewMatter'
+,'tsk_01_2110_FeeEarnerCheck' 
+,'tsk_01_2040_FileOpening'
+)
 ) AS Summary
 
 END

@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CapitaBillingProjectReport]
 AS
 BEGIN
@@ -53,7 +54,7 @@ LEFT OUTER JOIN (SELECT client_code AS WipClient,matter_number AS WipMatter,SUM(
 FROM red_dw.dbo.fact_all_time_activity
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
-WHERE client_code='W15373'
+WHERE client_code IN ('W15373','00046253')
 AND fed_code NOT IN ('3662','1713','3401','4456','3113','4878','4941','4846','2033','1924','4493','4204')
 AND dim_bill_key=0
 GROUP BY client_code,matter_number) AS WIPNonCosts

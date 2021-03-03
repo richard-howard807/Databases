@@ -26,7 +26,10 @@ BEGIN
 	, MatterRate.description AS [Rate]
 	, narrative AS [Description of Work]
 	, timekeeper.name AS [Time Recorder]
-	, SUM(bill_hours) AS [Hours]
+	, SUM(fact_bill_detail.workhrs*60) AS [WIP Hours]
+	, SUM(fact_bill_detail.workamt) AS [WIP Amount]
+	, fact_bill_detail.bill_rate AS [WIP Rate]
+	, SUM(bill_hours*60) AS [Hours]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='time' THEN bill_total_excl_vat END)  AS [Fees (ex VAT)]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='disbursements' THEN bill_total_excl_vat END) AS [Disbursements (ex VAT)]
 	, bill_date.calendar_date AS [Date of Invoice]
@@ -34,6 +37,7 @@ BEGIN
 	, fact_bill_detail.bill_number AS [Bill Number]
 	, DENSE_RANK() OVER ( PARTITION BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number ORDER BY fact_bill_detail.bill_number asc) AS [Rank]
 	, dim_matter_header_current.matter_number
+	
 	
 FROM red_dw.dbo.fact_bill_detail
 LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
@@ -72,22 +76,34 @@ AND MatterRate.master_matter_number = dim_matter_header_current.master_matter_nu
 
 WHERE fact_bill_detail.client_code='W22511'
 AND reporting_exclusions=0
---AND fact_bill_detail.matter_number='00000069'
+--AND fact_bill_detail.matter_number='00000012'
+--AND work_date.calendar_date='2020-05-29 00:00:00.000'
 
-GROUP BY dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number
-	, matter_owner_full_name
-	, matter_description 
-	, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 'Live' ELSE 'Closed' END 
-	, work_type_name
-	, dim_matter_header_current.fee_arrangement 
-	, MatterRate.description
-	, timekeeper.name 
-	, bill_rate 
-	, narrative
-	, bill_date.calendar_date 
-	, work_date.calendar_date
-	, fact_bill_detail.bill_number
-	, dim_matter_header_current.matter_number
+GROUP BY dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number,
+         CASE
+         WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN
+         'Live'
+         ELSE
+         'Closed'
+         END,
+         CASE
+         WHEN dim_matter_header_current.fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee' THEN
+         'Yes'
+         ELSE
+         'No'
+         END,
+         
+         dim_matter_header_current.matter_owner_full_name,
+         dim_matter_header_current.matter_description,
+         dim_matter_worktype.work_type_name,
+         MatterRate.description,
+         dim_bill_narrative.narrative,
+         timekeeper.name,
+         bill_date.calendar_date,
+         work_date.calendar_date,
+         fact_bill_detail.bill_number,
+		 dim_matter_header_current.matter_number,
+         fact_bill_detail.bill_rate
 
 
 ORDER BY dim_matter_header_current.matter_number
@@ -95,4 +111,17 @@ ORDER BY dim_matter_header_current.matter_number
 
     
 END
+
+--SELECT * FROM TE_3E_Prod..timebill
+--LEFT OUTER JOIN TE_3E_Prod..Timecard
+--ON TimeBill.TimeCard=Timecard.TimeIndex
+--WHERE TimeBill.InvMaster='3175570'
+--AND Timecard.WorkDate='2020-05-29 00:00:00.000'
+
+
+--SELECT * FROM TE_3E_Prod..Timecard
+--WHERE Timecard.TimeIndex='3175570'
+
+--SELECT * FROM TE_3E_Prod..InvMaster
+--WHERE InvMaster.InvNumber='01989942'
 GO
