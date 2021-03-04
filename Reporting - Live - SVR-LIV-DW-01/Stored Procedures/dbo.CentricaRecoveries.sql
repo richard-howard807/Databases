@@ -111,6 +111,7 @@ AS SuccessChance
 
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS fileStatus
 ,NULL AS PostLitFee
+,PostLitFeeType
 FROM 
 red_dw.dbo.fact_dimension_main 
 LEFT JOIN  red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -220,7 +221,12 @@ WHERE client_code='W15381'
 GROUP BY client_code,matter_number) AS HrsWorked
  ON fact_dimension_main.client_code=HrsWorked.client_code
  AND fact_dimension_main.matter_number=HrsWorked.matter_number
-
+LEFT OUTER JOIN (SELECT fileID,cboPostLitApp,cdDesc AS PostLitFeeType,curFTNonFix
+FROM ms_prod.dbo.udMIRecoveries
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup
+ ON cboPostLitApp=cdCode AND cdType='POSTLITFEE'
+WHERE cboPostLitApp IS NOT NULL OR curFTNonFix IS NOT NULL) AS PostLitFee
+ ON ms_fileid=PostLitFee.fileID
 WHERE 
 fact_dimension_main.client_code = 'W15381'
 AND reporting_exclusions = 0 
