@@ -40,29 +40,29 @@ AS
 
 
 	SELECT  
-	red_dw.dbo.dim_matter_header_current.client_code [Clientcte], dim_matter_header_current.matter_number [Mattercte],
+	red_dw.dbo.dim_matter_header_current.client_code [Clientcte], dim_matter_header_current.matter_number [Mattercte], dim_detail_finance.[output_wip_fee_arrangement] ,
 
 CASE WHEN 
-( (dim_detail_core_details.present_position not IN
+(( (dim_detail_core_details.present_position not IN
 (
-'Claim and costs concluded but recovery outstanding',
+--'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 )
 
 AND (dim_detail_outcome.outcome_of_case IS NULL OR 
-            dim_detail_outcome.date_claim_concluded IS NULL ) OR 
+            dim_detail_outcome.date_claim_concluded IS NULL )) OR 
 			
 			
-			( (dim_detail_core_details.present_position IN
+			(( (dim_detail_core_details.present_position IN
 (
-'Claim and costs concluded but recovery outstanding',
+--'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 ) AND 
 
 (dim_detail_outcome.outcome_of_case IS NOT  NULL OR 
-            dim_detail_outcome.date_claim_concluded IS NOT NULL ))))) THEN 1 ELSE 0 END AS final, 
+            dim_detail_outcome.date_claim_concluded IS NOT NULL )))))) THEN 1 ELSE 0 END AS final, 
 
       
 			
@@ -163,6 +163,7 @@ LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome
 LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 
 WHERE
 dim_matter_header_current.date_closed_case_management IS NULL 
@@ -189,6 +190,7 @@ CASE WHEN [Leaver] = 1 THEN 'Leaver' ELSE '' END AS [Leaver6],
 
                 fact_dimension_main.[client_code] [client_code] ,
                 dim_matter_header_current.[matter_number] [matter_number],
+				dim_matter_header_current.master_client_code, dim_matter_header_current.master_matter_number, 
 				    REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'+
      REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference],
                 dim_matter_header_current.[matter_description] ,
@@ -246,7 +248,7 @@ AND dim_matter_header_current.fixed_fee_amount = 0
 CASE WHEN 
 ( (dim_detail_core_details.present_position not IN
 (
-'Claim and costs concluded but recovery outstanding',
+--'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 )
@@ -257,7 +259,7 @@ AND (dim_detail_outcome.outcome_of_case IS NULL OR
 			
 			( (dim_detail_core_details.present_position IN
 (
-'Claim and costs concluded but recovery outstanding',
+--'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 ) AND 
@@ -274,7 +276,7 @@ AND (dim_detail_outcome.outcome_of_case IS NULL OR
                 fact_finance_summary.[unpaid_bill_balance],
                 fact_detail_reserve_detail.[total_reserve], 
 				exceptions.no_excptions [Action], 
-				dim_detail_core_details.referral_reason [Referral Reason] 
+				dim_detail_core_details.referral_reason [Referral Reason] , dim_detail_finance.output_wip_fee_arrangement
 
 
 
@@ -294,6 +296,7 @@ LEFT JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome
 LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 
 LEFT JOIN ( SELECT fact_exceptions_update.fieldname,
 COUNT(*) no_excptions, 
@@ -323,7 +326,7 @@ AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
 AND dim_matter_header_current.date_closed_case_management IS NULL 
 
 GROUP BY	REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
-            + REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0'),
+            + REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0'),dim_detail_finance.output_wip_fee_arrangement,
             CASE
             WHEN dim_detail_core_details.present_position IN ( 'Claim and costs concluded but recovery outstanding' )
             AND dim_fed_hierarchy_history.name <> 'Chris Ball' THEN
@@ -385,7 +388,7 @@ GROUP BY	REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), 
 			[PP is inconsistent with DCC/ Outcome], 
 			[PP is consistent with Costs Settled], 
 			[Not worked on for 60+ days], 
-			[Leaver], dim_detail_core_details.referral_reason
+			[Leaver], dim_detail_core_details.referral_reason, dim_matter_header_current.master_client_code, dim_matter_header_current.master_matter_number
 
 
 

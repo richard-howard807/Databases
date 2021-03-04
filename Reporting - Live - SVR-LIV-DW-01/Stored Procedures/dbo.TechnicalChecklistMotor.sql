@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[TechnicalChecklistMotor]
 
 AS 
@@ -101,7 +102,7 @@ WHERE
 (work_type_group='Motor'
 AND date_opened_case_management>='2021-03-01'
 ) 
-OR (master_client_code='30645' AND master_matter_number='12077')
+AND reporting_exclusions=0
 
 END
 GO

@@ -9,15 +9,20 @@ GO
 
 
 CREATE PROCEDURE [dbo].[MilestoneProjectWixardCompliance_for_HSD_Summary]
-
+ ( @Month AS VARCHAR(max) ,
+  @Department VARCHAR (max) )
+ 
 AS 
 
 BEGIN
+  --DECLARE @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
+  --@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
 
 SELECT 
 hierarchylevel2hist AS Division
 ,hierarchylevel3hist AS [Department]
 ,hierarchylevel4hist AS [Team]
+,Milestones.fin_period
 ,name AS [Fee Earner]
 ,fed_code AS [FedCode]
 ,1 AS [Number Live Matters]
@@ -35,6 +40,8 @@ hierarchylevel2hist AS Division
 ,DATEDIFF(DAY,'2020-09-28','2021-01-31') AS Day1
 ,DATEDIFF(DAY,'2020-09-28','2021-04-30') AS Day2
 ,DATEDIFF(DAY,'2020-09-28','2021-07-31') AS Day3
+,'[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]' AS ParameterValue
+
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -49,12 +56,15 @@ LEFT OUTER JOIN
        , SUM(CASE WHEN task_status='C' THEN 1 ELSE 0 END) AS Completed
        , SUM(CASE WHEN task_status='N' THEN 1 ELSE 0 END) AS Incompleted
        ,MAX(red_dw.dbo.datetimelocal(completed)) AS [DateLastCompleted]
+	   ,dim_date.fin_period 
 FROM red_dw.dbo.dim_tasks
+LEFT JOIN red_dw.dbo.dim_date ON dim_date_key=dim_created_date_key
 WHERE dim_tasks.task_type_description ='Milestone Task'
 AND dim_tasks.task_desccription LIKE '%Milestone Wizard%' 
 AND tskactive=1
 GROUP BY dim_tasks.client_code,
-         dim_tasks.matter_number
+         dim_tasks.matter_number,
+		 dim_date.fin_period 
 ) AS Milestones
  ON dim_detail_core_details.client_code=Milestones.client_code AND dim_detail_core_details.matter_number=Milestones.matter_number
 
@@ -127,6 +137,9 @@ AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_t
 AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
 ('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
 AND ISNULL(fee_arrangement,'') NOT IN ('Internal / No charge','Secondment') --Request 88266
+AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' 
+ =@Month
+AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
 
 END
 

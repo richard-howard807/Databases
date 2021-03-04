@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -109,7 +110,7 @@ AS SuccessChance
 ,dim_detail_claim.[insured_vehicle_reg]
 
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS fileStatus
-
+,NULL AS PostLitFee
 FROM 
 red_dw.dbo.fact_dimension_main 
 LEFT JOIN  red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

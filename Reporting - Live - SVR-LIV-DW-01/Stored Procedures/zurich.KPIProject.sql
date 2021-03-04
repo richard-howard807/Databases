@@ -35,6 +35,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_matter_header_current.matter_description AS [Matter Description]
 	, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 	, dim_matter_header_current.matter_owner_full_name AS [Case Manager]
+	, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
 	, dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
 	, dim_matter_worktype.work_type_group AS [Matter Type Group]
 	, dim_matter_worktype.work_type_name AS [Matter Type]
@@ -49,6 +50,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, fact_detail_cost_budgeting.personal_injury_reserve_current AS [Personal Injury Reserve Current (aka General Damages)]
 	, ISNULL(fact_finance_summary.damages_reserve,0) - ISNULL(fact_detail_cost_budgeting.personal_injury_reserve_current,0) AS [Special Damages]
 	, dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded]
+	, NULL AS [Last Billed Date]
 	, CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(day, dim_matter_header_current.date_opened_case_management, GETDATE()) 
 	ELSE DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_claim_concluded) END AS [Days Since Instructions Received]
 	, fact_finance_summary.damages_paid AS [Damages Paid by Client]
@@ -59,6 +61,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
     , PanelAverages.[Special Damages] AS [Panel Average Special Damages]
     , PanelAverages.[Days to Settle] AS [Panel Average Days to Settle]
 	, PanelAverages.[Own Costs] AS [Panel Averages Own Costs]
+
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -99,6 +102,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_matter_header_current.matter_description AS [Matter Description]
 	, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 	, dim_matter_header_current.matter_owner_full_name AS [Case Manager]
+	, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
 	, dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
 	, dim_matter_worktype.work_type_group AS [Matter Type Group]
 	, dim_matter_worktype.work_type_name AS [Matter Type]
@@ -112,6 +116,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, fact_detail_cost_budgeting.personal_injury_reserve_current AS [Personal Injury Reserve Current (aka General Damages)]
 	, ISNULL(fact_finance_summary.damages_reserve,0) - ISNULL(fact_detail_cost_budgeting.personal_injury_reserve_current,0) AS [Special Damages]
 	, dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded]
+	, NULL AS [Last Billed Date]
 	, CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(day, dim_matter_header_current.date_opened_case_management, GETDATE()) 
 		ELSE DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_claim_concluded) END AS [Days Since Instructions Received]
 	, fact_finance_summary.damages_paid AS [Damages Paid by Client]
@@ -123,6 +128,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
     , PanelAverages.[Special Damages] AS [Panel Average Special Damages]
     , PanelAverages.[Days to Settle] AS [Panel Average Days to Settle]
 	, PanelAverages.[Own Costs] AS [Panel Averages Own Costs]
+	, PanelAverages.Lifecycle AS [Target Lifecycle]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current

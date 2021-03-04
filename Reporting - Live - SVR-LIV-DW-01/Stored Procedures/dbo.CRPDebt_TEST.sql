@@ -56,7 +56,7 @@ FROM red_dw.dbo.fact_payor_debt_detail fact_debt
                 ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
         WHERE dss_current_flag = 'Y'
     ) AS Email
-        ON Email.fed_code = client_partner_code
+        ON Email.fed_code = matter_partner_code
     LEFT OUTER JOIN red_dw..dim_payor
         ON dim_payor.dim_payor_key = fact_debt.dim_payor_key
     INNER JOIN #Partner AS [Partner]
@@ -67,4 +67,5 @@ WHERE bill_reversed = 0
 	  AND fact_debt.total_balance <> 0
 
 END; 
+
 GO

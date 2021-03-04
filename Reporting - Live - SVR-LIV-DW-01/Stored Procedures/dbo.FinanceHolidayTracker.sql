@@ -7,7 +7,9 @@ GO
 -- Create date: 2021-02-15
 -- Description:	#88687, new report holiday tracker report for finance 
 -- =============================================
-CREATE PROCEDURE [dbo].[FinanceHolidayTracker] --'8','2021'
+
+--Exec [dbo].[FinanceHolidayTracker] '8','2021'
+CREATE PROCEDURE [dbo].[FinanceHolidayTracker]
 	
 (
  @Month INT
@@ -20,7 +22,7 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
---DECLARE @Month INT =8
+--DECLARE @Month INT =7
 --,@Year INT =2021
 
 IF OBJECT_ID('tempdb..#MonthlyHolidays') IS NOT NULL DROP TABLE #MonthlyHolidays;
@@ -64,16 +66,23 @@ SELECT
 	, hierarchylevel4hist AS [Team]
 	, name AS [Name]
 	, remaining_fte_working_days_year AS [Annual Working Days]
-	, totalentitlementdays AS [Annual Holiday Allowance]
+	, CASE WHEN ROW_NUMBER() OVER (PARTITION BY name ORDER BY #MonthlyHolidays.fin_month_no)=1 THEN totalentitlementdays ELSE 0 END AS [Annual Holiday Allowance]
 	, #MonthlyHolidays.taken AS [Holidays Taken in Month]
-	, ISNULL(#HolidaysBooked.durationholidaydays,0) AS [Current Booked]
+	, CASE WHEN ROW_NUMBER() OVER (PARTITION BY name ORDER BY #MonthlyHolidays.fin_month_no)=1 THEN ISNULL(#HolidaysBooked.durationholidaydays,0) ELSE 0 END AS [Current Booked]
 	, #MonthlyHolidays.fin_quarter AS [Quarter]
 	, #MonthlyHolidays.fin_period AS [Month]
-	, fin_month_no AS [Month No]
-	, fin_year AS [Year]
+	, #MonthlyHolidays.fin_month_no AS [Month No]
+	, #MonthlyHolidays.fin_year AS [Year]
 	, dim_employee.employeeid
+	, ROW_NUMBER() OVER (PARTITION BY name ORDER BY #MonthlyHolidays.fin_month_no) AS [Row]
+	, dim_employee.leaverlastworkdate
+	, leavers_date.fin_month_no
+	, leavers_date.fin_year
 
 FROM red_dw.dbo.dim_employee
+
+LEFT OUTER JOIN red_dw.dbo.dim_date AS [leavers_date]
+ON dim_employee.leaverlastworkdate=[leavers_date].calendar_date 
 
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -94,7 +103,7 @@ AND sys_activejob=1
 
 LEFT OUTER JOIN red_dw.dbo.fact_employee_days_fte 
 ON fact_employee_days_fte.employeeid = dim_employee.employeeid
-AND fin_month=(SELECT MIN(fin_month)
+AND fact_employee_days_fte.fin_month=(SELECT MIN(fin_month)
 				FROM red_dw.dbo.dim_date
 				WHERE fin_year=@Year
 				)
@@ -103,12 +112,20 @@ AND fin_month=(SELECT MIN(fin_month)
 LEFT OUTER JOIN #MonthlyHolidays ON #MonthlyHolidays.employeeid = dim_employee.employeeid
 LEFT OUTER JOIN #HolidaysBooked ON #HolidaysBooked.employeeid = dim_employee.employeeid
 
-WHERE leaver=0
-AND red_dw.dbo.dim_employee.deleted_from_cascade <> 1 --added due to report bring back deleted emp
+WHERE 
+--leaver=0
+--includes leavers in the previous year if they left this year
+ --((dim_employee.leaverlastworkdate<= GETDATE() AND YEAR(dim_employee.leaverlastworkdate)<>@Year) OR dim_employee.leaverlastworkdate IS NULL OR dim_employee.leaverlastworkdate>GETDATE())
+--AND 
+red_dw.dbo.dim_employee.deleted_from_cascade <> 1 --added due to report bring back deleted emp
 AND red_dw.dbo.dim_employee.employeestartdate <= GETDATE() -- bring in new starters 
-AND fin_month_no IS NOT NULL 
---AND name ='Emily Smith'
+AND #MonthlyHolidays.fin_month_no IS NOT NULL 
 
+AND ((leavers_date.fin_month_no>=@Month
+AND leavers_date.fin_year>=@Year) OR dim_employee.leaverlastworkdate IS NULL)
+
+--AND name ='Sharon Grugel'
+AND name IS NOT NULL 
 
 END
 GO
