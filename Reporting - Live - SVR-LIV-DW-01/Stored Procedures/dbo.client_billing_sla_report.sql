@@ -3,17 +3,22 @@ GO
 SET ANSI_NULLS ON
 GO
 
--- =============================================
--- Author:		Jamie Bonner
--- Create date: 2020-11-19
--- Ticket:		#79133
--- Description:	New report to replace billing macro Motor currently use, shows when matters can be billed
--- =============================================
+/*
+=======================================================================
+Author:			Jamie Bonner
+Create date:	2020-11-19
+Ticket:			#79133
+Description:	New report to replace billing macro Motor currently use, shows when matters can be billed
+=======================================================================
+Ticket #79133 - Added fee_arrangement filter
+=======================================================================
+*/
 
 CREATE PROCEDURE [dbo].[client_billing_sla_report]
 (
 	@Team AS NVARCHAR(MAX)
 	, @FeeEarner AS NVARCHAR(MAX)
+	, @fee_arrangement AS NVARCHAR(MAX)
 )
 
 AS
@@ -25,15 +30,17 @@ SET NOCOUNT ON;
 -- For testing
 --DECLARE @Team AS NVARCHAR(MAX) = 'Motor Mainstream'
 --		, @FeeEarner AS NVARCHAR(MAX) = 'Charlie Maesschalck|Tracy Kielty'
+--		, @fee_arrangement AS NVARCHAR(MAX) = 'Fixed Fee/Fee Quote/Capped Fee'
 
 DROP TABLE IF EXISTS #internal_counsel
 DROP TABLE IF EXISTS #sla_billing
 DROP TABLE IF EXISTS #Team
 DROP TABLE IF EXISTS #FeeEarner
+DROP TABLE IF EXISTS #fee_arrangement
 
 SELECT udt_TallySplit.ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
 SELECT udt_TallySplit.ListValue  INTO #FeeEarner FROM 	dbo.udt_TallySplit('|', @FeeEarner)
-
+SELECT udt_TallySplit.ListValue  INTO #fee_arrangement FROM 	dbo.udt_TallySplit('|', @fee_arrangement)
 
 
 --========================================================================================================================================================================
@@ -181,6 +188,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 		ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+	INNER JOIN #fee_arrangement
+		ON #fee_arrangement.ListValue COLLATE DATABASE_DEFAULT = ISNULL(RTRIM(dim_detail_finance.output_wip_fee_arrangement), 'Missing Data')
 	LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 		ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
 			AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
@@ -446,6 +455,8 @@ FROM (
 			ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 			ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+		INNER JOIN #fee_arrangement
+			ON #fee_arrangement.ListValue COLLATE DATABASE_DEFAULT = ISNULL(RTRIM(dim_detail_finance.output_wip_fee_arrangement), 'Missing Data')
 		LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 			ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
 				AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
