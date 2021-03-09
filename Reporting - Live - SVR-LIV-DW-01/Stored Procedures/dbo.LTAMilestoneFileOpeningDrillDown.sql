@@ -19,6 +19,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningDrillDown] --EXEC dbo.ClaimsMilestoneFileOpening '2020-05-01','2020-11-25'
 (
 @StartDate  AS DATE
@@ -80,12 +82,22 @@ INNER JOIN MS_Prod.dbo.dbTasks  WITH(NOLOCK)
  ON ms_fileid=fileID
 LEFT OUTER JOIN MS_Prod.dbo.dbUser  WITH(NOLOCK)
  ON tskCompletedBy=dbUser.usrID
-LEFT OUTER JOIN (SELECT fed_code AS usralias,levelidud,postid,dim_employee.jobtitle,CASE WHEN management_role_one='Team Manager' THEN 'Team Manager' ELSE [classification] END AS RoleType
+LEFT OUTER JOIN (
+SELECT DISTINCT fed_code AS usralias,levelidud,postid,dim_employee.jobtitle,CASE WHEN management_role_one='Team Manager' THEN 'Team Manager' ELSE [classification] END AS RoleType
 FROM red_dw.dbo.dim_employee  WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
  ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
 WHERE dss_current_flag='Y'
-AND activeud=1) AS Roles
+AND activeud=1
+UNION
+SELECT DISTINCT payrollid AS usralias,levelidud,postid,dim_employee.jobtitle,CASE WHEN management_role_one='Team Manager' THEN 'Team Manager' ELSE [classification] END AS RoleType
+FROM red_dw.dbo.dim_employee
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+WHERE ISNUMERIC(fed_code)=0
+AND dss_current_flag='Y'
+AND dim_employee.jobtitle='Legal Secretary'
+) AS Roles
 ON Roles.usralias = dbUser.usrAlias COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
