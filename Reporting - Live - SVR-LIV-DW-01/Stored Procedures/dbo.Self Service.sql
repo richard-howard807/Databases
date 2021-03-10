@@ -4,11 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -31,6 +26,8 @@ GO
 -- JB 20200825 Added date claim concluded date last changed #68418
 -- MT 20210127 Updated logic for Credit Hire Organisation
 -- OK 20210205 Added new costs estimates
+-- MT 20210410 Added High Court Contact Name
+
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
 BEGIN
@@ -259,7 +256,7 @@ SELECT DISTINCT
     dim_detail_core_details.date_proceedings_issued AS [Date Proceedings Issued],
     dim_detail_litigation.reason_for_litigation AS [Reason For Litigation],
     dim_court_involvement.court_reference AS [Court Reference],
-    dim_court_involvement.court_name AS [Court Name],
+    COALESCE(dim_court_involvement.court_name, HighCourt.CourtName COLLATE DATABASE_DEFAULT) AS [Court Name],  /*High Court Name - 91373  - Added 20210310*/
     dim_detail_core_details.track AS [Track],
     dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
     COALESCE(
@@ -574,6 +571,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
 ,will_total_gross_reserve_on_the_claim_exceed_500000 AS [LL Damages £350k+]
 , ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
+
 INTO Reporting.dbo.selfservice
    
 ----------------------------------------------------
@@ -1230,6 +1228,16 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 					ON cost_handler_revenue.client_code = dim_matter_header_current.client_code
 					AND cost_handler_revenue.matter_number = dim_matter_header_current.matter_number
 
+ /*High Court Name - 91373  - Added 20210310*/
+	LEFT JOIN  (SELECT
+				 fileID
+				,MAX(contName) AS CourtName
+  FROM [MS_Prod].[config].[dbAssociates]
+  JOIN [MS_Prod].[config].[dbContact] ON [dbContact].[contID] = [dbAssociates].[contID]
+  WHERE assocType = 'HIGHCRT'
+  GROUP BY fileID
+   ) HighCourt ON CAST(HighCourt.fileID AS NVARCHAR(20))= CAST(ms_fileid AS NVARCHAR(20))COLLATE DATABASE_DEFAULT
+
 --- Final WHERE Clause -------------------------------------------------------------------------------------------------
 
 WHERE dim_matter_header_current.matter_number <> 'ML'
@@ -1245,7 +1253,7 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
 
 
 
-
 END;
+
 
 GO

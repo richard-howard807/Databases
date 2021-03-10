@@ -1,0 +1,255 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+
+/*
+	Created by: Max Taylor
+	Created Date: 09/03/2021
+	Report: Business Services/Business Change/Physical Item Request Report
+	Ticket: 90991
+
+*/
+
+
+
+
+CREATE PROCEDURE [dbo].[PhysicalItemRequestReport] 
+(
+   @Start AS DATETIME,
+    @End AS DATETIME
+)
+
+AS
+BEGIN
+ 
+ 
+ 
+ -- Test 
+ --DECLARE @Start AS DATE = GETDATE() - 100
+ --      , @End AS DATE = GETDATE()
+
+ 
+ SELECT 
+
+  x.job_id,
+  x.[Requesting User],
+  x.[Date Requested],
+  x.Comment,
+  x.[Processing User],
+  x.[Date Processed],
+  x.Result,
+  x.[Days Old],
+  x.document_link
+
+
+
+  FROM
+ ( 
+
+ SELECT DISTINCT 
+   T1.[job_id],
+   dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT  +' (' +T1.[username] +')'  AS 'Requesting User', --T1.[username] 
+   T1.[event_time] AS 'Date Requested',
+   T1.[comment]    AS 'Comment',
+   ProUser.name COLLATE DATABASE_DEFAULT  + ' (' + T2.[username] + ')'  AS 'Processing User', -- T2.[username] 
+   T2.[event_time] AS 'Date Processed', 
+   COALESCE(NULLIF(T2.[filter2],''), 'done') AS 'Result' ,
+   CASE WHEN COALESCE(NULLIF(T2.[filter2],''), 'DONE') <> 'done' THEN DATEDIFF( day , CAST(T1.[event_time] AS DATE)  , GETDATE() ) ELSE NULL  END AS 'Days Old',
+
+   '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
+
+	 FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T1 WITH(NOLOCK)
+
+LEFT JOIN [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]  T2 WITH(NOLOCK)
+		ON  T1.job_id = T2.job_id 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] AS j
+		ON j.job_id = T1.job_id
+
+LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history 
+	    ON windowsusername COLLATE DATABASE_DEFAULT = T1.[username] 
+		AND dss_current_flag = 'Y' AND activeud = 1
+
+LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ProUser
+	    ON ProUser.windowsusername COLLATE DATABASE_DEFAULT = T2.[username] 
+		AND ProUser.dss_current_flag = 'Y' AND ProUser.activeud = 1
+
+WHERE  T1.event = 'Physical Document' AND
+(T2.event = 'IndexingDelete' OR T2.event = 'QADelete') 
+AND T1.event_time > @Start 
+AND T1.event_time < @End 
+
+UNION 
+
+SELECT DISTINCT 
+   T3.[job_id],
+   dim_fed_hierarchy_history.name  AS 'Requesting User', --  T3.[username]
+   T3.[event_time] AS 'Date Requested',
+   T3.[comment],'' AS 'Processing User',
+   '' AS 'Date Processed',
+   'PENDING' AS 'Result' 
+   ,DATEDIFF( day , CAST(T3.[event_time] AS DATE)  , GETDATE() ) AS 'Days Old'
+
+, '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
+
+FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T3 WITH(NOLOCK)
+
+LEFT JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] AS j
+		ON j.job_id = T3.job_id
+
+LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history 
+	    ON windowsusername COLLATE DATABASE_DEFAULT = T3.[username]
+		AND dss_current_flag = 'Y' AND activeud = 1
+
+
+WHERE T3.event = 'Physical Document' 
+AND T3.job_id NOT IN (SELECT job_id FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]  WITH(NOLOCK)
+WHERE (event = 'IndexingDelete' OR event = 'QADelete') 
+AND event_time > @Start 
+AND event_time < @End) 
+AND T3.event_time > @Start 
+AND T3.event_time < @End
+
+) x 
+
+/* TESTING DATA - Day old  = 0 and Result - PENDING - Green*/
+
+UNION 
+
+SELECT 
+ 1,
+  'Test',
+  GETDATE(),
+  'Test',
+  'Test',
+  GETDATE(),
+  'PENDING' AS Result,
+   0 AS[Days Old],
+  'Test' AS document_link
+
+  FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]
+
+  UNION 
+
+  /* TESTING DATA - Day old  = 1 and Result - PENDING (Amber)*/
+SELECT 
+ 2,
+  'Test',
+  GETDATE(),
+  'Test',
+  'Test',
+  GETDATE(),
+  'PENDING' AS Result,
+   1 AS[Days Old],
+  'Test' AS document_link
+
+  FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]
+
+
+   UNION 
+
+  /* TESTING DATA - Day old  = 2 and Result - PENDING (Red)*/
+SELECT 
+ 3,
+  'Test',
+  GETDATE(),
+  'Test',
+  'Test',
+  GETDATE(),
+  'PENDING' AS Result,
+   2 AS[Days Old],
+  'Test' AS document_link
+
+  FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]
+
+
+
+
+  -- x.job_id,
+  --x.[Requesting User],
+  --x.[Date Requested],
+  --x.Comment,
+  --x.[Processing User],
+  --x.[Date Processed],
+  --x.Result,
+  --x.[Days Old],
+  --x.document_link
+
+ --DECLARE @Start AS DATE = GETDATE() - 100
+ --      , @End AS DATE = GETDATE()
+
+ UNION 
+
+SELECT 
+ -- cd.CATEGORYNAME	AS "Category", 
+  wo.WORKORDERID	AS "Request ID", 
+--  mdd.MODENAME		AS "Request Mode", 
+  aau.FIRST_NAME	AS "Requester", 
+ -- dpt.DEPTNAME		AS "Department", 
+ -- cd.CATEGORYNAME	AS "Category", 
+   CAST(Dateadd(second, Cast(wo.CREATEDTIME AS BIGINT) / 1000,  '1-1-1970 00:00:00')  AS DATETIME)  AS "Created Time",
+   wo.TITLE			AS "Subject"  
+  ,aau2.FIRST_NAME	AS AssignedTo
+ 
+  , CASE WHEN wo.RESOLVEDTIME =0 THEN NULL ELSE CAST(Dateadd(second, Cast(wo.RESOLVEDTIME  AS BIGINT) / 1000, '1-1-1970 00:00:00')  AS DATETIME) END AS DateResolved
+  , sta.STATUSDESCRIPTION
+
+ -- ,CASE WHEN sta.STATUSDESCRIPTION = 'Request Pending' THEN 'PENDING'
+	--	WHEN sta.STATUSDESCRIPTION = 'Request Completed' THEN 'COMPLETE'
+	--	ELSE 'OPEN' END AS [Status]
+  , DATEDIFF( day , CAST( DATEADD(s, convert(bigint, wo.CREATEDTIME) / 1000, convert(datetime, '1-1-1970 00:00:00'))AS DATE)  , GETDATE() ) AS DaysOld
+  --,
+  ,''
+  --'\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(wo.WORKORDERID, 2) 
+		--+ '\' + RIGHT(LEFT(wo.WORKORDERID, 4), 2) + '\' + RIGHT(LEFT(wo.WORKORDERID, 6), 2) 
+		--+ '\' + RIGHT(wo.WORKORDERID, LEN(wo.WORKORDERID)-6) + '\' + wo.WORKORDERID + '.TIF' 		AS [document_link]
+              
+	 FROM [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[WorkOrder] wo 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[ModeDefinition] mdd 
+	ON wo.MODEID=mdd.MODEID
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[SDUser] sdu 
+	ON wo.REQUESTERID =sdu.USERID 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[SDUser] sdu2 
+	ON wo.CREATEDBYID =sdu2.USERID
+	
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[AaaUser] aau 
+	ON sdu.USERID=aau.USER_ID 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[AaaUser] aau2 
+	ON sdu2.USERID=aau2.USER_ID 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[DepartmentDefinition] dpt
+	ON wo.DEPTID=dpt.DEPTID
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[WorkOrderStates] wos
+	ON wo.WORKORDERID=wos.WORKORDERID 
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[StatusDefinition] sta
+	ON sta.STATUSID = wos.STATUSID
+
+LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].CategoryDefinition cd
+	ON wos.CATEGORYID=cd.CATEGORYID
+	
+	WHERE 1= 1
+	--AND ( ( ( wo.CREATEDTIME >= 1615075200000 ) 
+	AND wo.CREATEDTIME != 0 
+	AND wo.CREATEDTIME IS NOT NULL 
+	--AND ( ( wo.CREATEDTIME <= 1615679999000 ) 
+	AND wo.CREATEDTIME != -1   
+	AND wo.ISPARENT='1'  
+	AND cd.[CATEGORYID]	= 100000602 --Document retrieval
+	AND DATEADD(s, convert(bigint, wo.CREATEDTIME) / 1000, convert(datetime, '1-1-1970 00:00:00')) > @Start 
+    AND DATEADD(s, convert(bigint, wo.CREATEDTIME) / 1000, convert(datetime, '1-1-1970 00:00:00'))  < @End 
+	
+END
+GO
