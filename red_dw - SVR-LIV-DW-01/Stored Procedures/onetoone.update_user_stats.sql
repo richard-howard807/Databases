@@ -8,9 +8,10 @@ CREATE PROC [onetoone].[update_user_stats]
 AS
 
 DECLARE @fin_year INT,
-		@fin_month int
+		@fin_month INT,
+		@fin_month_full int
 
-SELECT DISTINCT @fin_year = fin_year, @fin_month = fin_month_no
+SELECT DISTINCT @fin_year = fin_year, @fin_month = fin_month_no, @fin_month_full = dim_date.fin_month
 -- select *
 FROM dbo.dim_date 
 WHERE calendar_date = CAST(GETDATE()-1 AS DATE)
@@ -93,6 +94,17 @@ WIP AS (
 	GROUP BY fed_code
 	),
 
+	
+WIP_PY AS (
+	SELECT 'YTD' fin_month, fed_code, SUM(wip_value) wip_value_py
+	
+	-- select *
+	FROM dbo.fact_agg_kpi_monthly_rollup 
+	INNER JOIN dim_date ON fact_agg_kpi_monthly_rollup.dim_gl_date_key = dim_date.dim_date_key
+	INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_agg_kpi_monthly_rollup.dim_fed_hierarchy_history_key
+	WHERE dim_gl_date_key IN (SELECT min(dim_date.dim_date_key) FROM dim_date WHERE fin_year = @fin_year - 1 AND fin_month_no = @fin_month)
+	GROUP BY fed_code
+	),
 
 TotalBudget AS (
 	SELECT 'YTD' fin_month, fed_code, SUM(fed_level_minute_value) Total_Budget_Year
@@ -339,7 +351,11 @@ Debt AS (
 			) AS PivotTable
 	),
 
-
+DebtTarget AS (
+	SELECT  'YTD' fin_month, team, fact_team_debt_target.debt_target_ytd
+	FROM dbo.fact_team_debt_target
+	WHERE fact_team_debt_target.month = @fin_month_full
+	),
 	
 FinalBill AS (	
 	SELECT
@@ -428,7 +444,63 @@ Exceptions AS (
 	FROM #exceptions
 	--WHERE fed_code = '2016'
 	GROUP BY fed_code
-	)
+	),
+
+RR_PY AS (
+
+SELECT fed_code, 'YTD' fin_month,	
+		IIF(SUM(ISNULL(billed_minutes_recorded,0)) = 0, null, SUM(bill_amount) / SUM(billed_minutes_recorded / 60)) Actual_Recovery_Rate_PY
+	
+		-- select dim_employee.leftdate
+	FROM dbo.fact_agg_kpi_monthly_rollup 
+	INNER JOIN dim_date ON fact_agg_kpi_monthly_rollup.dim_gl_date_key = dim_date.dim_date_key
+	INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_agg_kpi_monthly_rollup.dim_fed_hierarchy_history_key
+	WHERE  dim_date.fin_year = 2020 --@fin_year - 1
+	AND billed_minutes_recorded IS NOT null
+	GROUP BY fed_code
+	),
+
+LTA_Exceptions AS (
+
+SELECT dim_fed_hierarchy_history.fed_code, 'YTD' fin_month,
+       SUM(   CASE WHEN dim_detail_finance.[output_wip_fee_arrangement] IS NULL THEN 1 ELSE 0 END) AS [Exfeearrangement],
+	   SUM(	  CASE WHEN ( (fact_finance_summary.[revenue_estimate_net_of_vat] < 1 AND [output_wip_fee_arrangement] IN ('Hourly Rate','Hourly rate','HOURLY'))
+                    OR (fact_finance_summary.[revenue_estimate_net_of_vat] IS NULL AND [output_wip_fee_arrangement] IN ('Hourly Rate','Hourly rate','HOURLY')
+						AND  date_opened_case_management < dateAdd(Day,-14,getdate()))) THEN 1 ELSE 0 END) AS [ExRevenueEstimate], 
+	   SUM(	  CASE WHEN DATEDIFF(d, dim_matter_header_current.date_opened_case_management, GETDATE()) > 14 AND [output_wip_fee_arrangement] IN ('Hourly Rate','Hourly rate','HOURLY') 
+					AND fact_finance_summary.disbursements_estimate_net_of_vat is NULL AND date_opened_case_management < dateAdd(Day,-14,getdate()) and date_opened_case_management > '2021-01-28'                                              
+					THEN 1 ELSE 0 END) AS [ExDisbursmentEstimate]
+
+FROM red_dw.dbo.fact_dimension_main
+    INNER JOIN red_dw.dbo.fact_finance_summary
+        ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+    INNER JOIN dbo.dim_matter_header_current
+        ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+    INNER JOIN red_dw.dbo.dim_detail_finance
+        ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+    LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+        ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+    LEFT OUTER JOIN dbo.dim_matter_worktype
+        ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_property
+        ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
+WHERE dim_matter_header_current.date_closed_practice_management IS NULL
+      AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
+      AND hierarchylevel2 = 'Legal Ops - LTA'
+      AND reporting_exclusions = 0
+      AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106' )
+      AND reporting_exclusions = 0
+      AND ISNULL(dim_detail_property.[commercial_bl_status], '') <> 'Pending                                                     '
+      AND ISNULL(output_wip_fee_arrangement, '') IN ( NULL,
+                                                      'Hourly Rate                                                 ',
+                                                      'Hourly rate                                                 ',
+                                                      'HOURLY', '',
+                                                      'Fixed Fee/Fee Quote/Capped Fee                              '
+                                                    )     
+GROUP BY dim_fed_hierarchy_history.fed_code
+
+)
+
 
 
     
@@ -491,7 +563,6 @@ SELECT
 	0 no_of_fixed_fee_matters_to_hit_target,
 
 
-
     Dibs.Disb_0_30_Days,
     Dibs.Disb_31_90_Days,
     Dibs.Disb_90_Days,	
@@ -504,12 +575,18 @@ SELECT
 	RepudiationRate_PY,
 	Exceptions.Total_Exceptions,
 	Exceptions.AVG_Exceptions,
-	AVG_Elapsed_Days_Closed_Cases_PY
-
+	AVG_Elapsed_Days_Closed_Cases_PY,
+	DebtTarget.debt_target_ytd,
+	RR_PY.Actual_Recovery_Rate_PY,
+	WIP_PY.wip_value_py,
+	LTA_Exceptions.Exfeearrangement Fee_Arrangment_Exception_Count,
+	LTA_Exceptions.ExRevenueEstimate Revenue_Est_Exception_Count,
+	LTA_Exceptions.ExDisbursmentEstimate Disb_Est_Exception_Count
 
 FROM (
 
 	SELECT fed_code,
+	--	dim_fed_hierarchy_history.hierarchylevel4hist,
 		dim_date.fin_year, cast (dim_date.fin_month_no AS VARCHAR(3)) fin_month,
 		-- Revenue
 		SUM(fed_level_budget_value) Billable_target,
@@ -557,6 +634,7 @@ FROM (
 LEFT OUTER JOIN WriteOffs WOF_Hourly ON ISNULL(main.fin_month,'YTD') = WOF_Hourly.fin_month AND WOF_Hourly.fixed_fee = 'Hourly' AND WOF_Hourly.fed_code = main.fed_code
 LEFT OUTER JOIN WriteOffs WOF_Fixed ON ISNULL(main.fin_month,'YTD') = WOF_Fixed.fin_month AND WOF_Fixed.fixed_fee = 'Fixed Fee' AND WOF_Fixed.fed_code = main.fed_code
 LEFT OUTER JOIN WIP ON WIP.fed_code = main.fed_code AND WIP.fin_month = ISNULL(main.fin_month,'YTD')
+LEFT OUTER JOIN WIP_PY ON WIP_PY.fed_code = main.fed_code AND WIP_PY.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN NumberOfFiles ON NumberOfFiles.fed_code = main.fed_code AND NumberOfFiles.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN Client_balances ON Client_balances.fed_code = main.fed_code AND Client_balances.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN TotalBudget ON TotalBudget.fed_code = main.fed_code AND TotalBudget.fin_month = ISNULL(main.fin_month,'YTD')
@@ -571,6 +649,10 @@ LEFT OUTER JOIN Dibs ON Dibs.fed_code = main.fed_code AND Dibs.fin_month = ISNUL
 LEFT OUTER JOIN Debt ON Debt.fed_code = main.fed_code AND Debt.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN Median_Fixed_Fee ON Median_Fixed_Fee.fed_code = main.fed_code AND Median_Fixed_Fee.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN Exceptions ON Exceptions.fed_code COLLATE Latin1_General_BIN = main.fed_code AND Exceptions.fin_month = ISNULL(main.fin_month,'YTD')
+LEFT OUTER JOIN RR_PY ON RR_PY.fed_code = main.fed_code AND Median_Fixed_Fee.fin_month = ISNULL(main.fin_month,'YTD')
+LEFT OUTER JOIN LTA_Exceptions ON LTA_Exceptions.fed_code = main.fed_code AND LTA_Exceptions.fin_month = ISNULL(main.fin_month,'YTD')
+INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code = main.fed_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.activeud = 1
+LEFT OUTER JOIN DebtTarget ON DebtTarget.team = dim_fed_hierarchy_history.hierarchylevel4hist AND DebtTarget.fin_month = ISNULL(main.fin_month,'YTD') 
 WHERE ISNULL(main.fin_month,'YTD') IN ('YTD',CAST(@fin_month AS VARCHAR(2)))
 
 ORDER BY 3, 2

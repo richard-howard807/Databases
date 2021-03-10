@@ -57,7 +57,13 @@ CREATE TABLE [onetoone].[user_stats]
 [Repudiation_Rate_Percent_PY] [float] NULL,
 [Total_Exceptions] [int] NULL,
 [AVG_Exceptions] [float] NULL,
-[AVG_Elapsed_Days_Closed_Cases_PY] [int] NULL
+[AVG_Elapsed_Days_Closed_Cases_PY] [int] NULL,
+[debt_target_ytd] [numeric] (13, 2) NULL,
+[Actual_Recovery_Rate_PY] [numeric] (38, 6) NULL,
+[wip_value_py] [numeric] (38, 2) NULL,
+[Fee_Arrangment_Exception_Count] [int] NULL,
+[Revenue_Est_Exception_Count] [int] NULL,
+[Disb_Est_Exception_Count] [int] NULL
 ) ON [WRK_TAB]
 GO
 GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL ROLE - DS_MI_ANALYST]
