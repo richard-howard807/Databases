@@ -70,6 +70,7 @@ SELECT
 	, dim_detail_core_details.proceedings_issued			                AS [Proceedings Issued]
 	
 	, CASE	
+	    WHEN ISNULL(fact_detail_reserve_detail.total_reserve_initial, 0) = 0 THEN 'No'
 		WHEN ISNULL(fact_detail_reserve_detail.total_reserve, 0) = (ISNULL(fact_detail_paid_detail.interim_damages_paid_by_client_preinstruction, 0) + ISNULL(msprod.udMIClientMSG_curCliOutRes	, 0)) THEN
 			'No'
 		ELSE
@@ -88,7 +89,7 @@ SELECT
 	, dim_detail_core_details.track				            AS [Track]
 	, dim_client_involvement.insurerclient_name		        AS [Insurer Associate]
 	, dim_detail_core_details.present_position			    AS [Present Position]
-	, msprod.udMIClientMSG_cboInsTypeMSG			        AS [Claims Strategy]  --cboInsTypeMSG -- Needs updating with new DWH field
+	, udMIClientMSG_mcbClaimStrat		        	        AS [Claims Strategy]  --cboInsTypeMSG -- Needs updating with new DWH field
 	, dim_detail_core_details.injury_type	        	    AS [Injury Type]
 	, fact_detail_paid_detail.damages_interims		        AS [Interim Damages Post Instruction]
 	, dim_detail_core_details.suspicion_of_fraud	        AS [Suspicion of Fraud]
@@ -99,8 +100,13 @@ SELECT
 	, fact_detail_reserve_detail.defence_costs_reserve		AS [Defence Costs Reserve]
 	, fact_detail_reserve_detail.total_reserve				AS [Total Reserve]
 	, fact_finance_summary.wip                              AS [WIP]
-
-
+	, clients_claims_handler_surname_forename               AS [Markerstudy Handler]
+	, LOWER(LTRIM(RTRIM(ISNULL(dim_detail_outcome.outcome_of_case, '')))) AS [Outcome of Case]
+	, ''                                                    AS [Receipt of electronic file acknowledged within 2 working days?]
+	, ''                                                    AS [C’s sols advised that we are instructed to accept service of proceedings?]
+	, ''                                                    AS [Strategy produced?]
+	, ''                                                    AS [Magic phone call made within 2 working days of setting strategy?]
+	, udMIClientMSG_cboInsTypeMSG                           AS [Instruction Type]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -126,7 +132,7 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT JOIN (
      SELECT DISTINCT
        udMIClientMSG.[fileID]
-      ,udMIClientMSG.[mcbClaimStrat]      AS udMIClientMSG_mcbClaimStrat
+      ,lkclaimsStrat.cdDesc               AS udMIClientMSG_mcbClaimStrat
       ,udMIClientMSG.[curCliOutRes]       AS udMIClientMSG_curCliOutRes
       ,udMIClientMSG.[curCliRecMade]      AS udMIClientMSG_curCliRecMade
       ,udMIClientMSG.[curCliRecRes]       AS udMIClientMSG_curCliRecRes
@@ -146,23 +152,27 @@ FROM red_dw.dbo.fact_dimension_main
   LEFT JOIN [MS_Prod].[dbo].udMIClientMSGClaimDamSL ON udMIClientMSGClaimDamSL.fileID = udMIClientMSG.fileID
   LEFT JOIN [MS_Prod].[dbo].dbCodeLookup lk ON lk.cdType = 'MSGOFF' AND lk.cdCode = cboTypeOffer 
   LEFT JOIN [MS_Prod].[dbo].udMIClientMSGDefDamSL ON udMIClientMSGDefDamSL.fileID = udMIClientMSG.fileID
-   
-   ) msprod ON ms_fileid = msprod.[fileID]
+  LEFT JOIN [MS_Prod].[dbo].dbCodeLookup lkclaimsStrat ON lkclaimsStrat.cdType = 'MSGSTRAT' AND lkclaimsStrat.cdCode = udMIClientMSG.[mcbClaimStrat]  
+
+
+  
+ ) msprod ON ms_fileid = msprod.[fileID]
 
 
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'W24438'
 	AND dim_matter_header_current.master_matter_number <> 0
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND LOWER(LTRIM(RTRIM(ISNULL(dim_detail_outcome.outcome_of_case, '')))) <> 'exclude from reports'
+	--AND LOWER(LTRIM(RTRIM(ISNULL(dim_detail_outcome.outcome_of_case, '')))) NOT IN ( 'exclude from reports', 'returned to client')
 	
 	AND msprod.udMIClientMSG_cboInsTypeMSG = 'MSG Savings project' --Need to update the field to dwh field
 
 ORDER BY	
-	dim_detail_core_details.date_instructions_received
-	, dim_matter_header_current.master_matter_number
+	
+	dim_matter_header_current.master_client_code
+	, CAST(dim_matter_header_current.master_matter_number AS INT) 
 
-
+--returned to client
 END	
 
 /*  Old Version pre 19/02/2021

@@ -28,7 +28,7 @@ BEGIN
 	, timekeeper.name AS [Time Recorder]
 	, SUM(fact_bill_detail.workhrs*60) AS [WIP Hours]
 	, SUM(fact_bill_detail.workamt) AS [WIP Amount]
-	, fact_bill_detail.bill_rate AS [WIP Rate]
+	, MAX(fact_bill_detail.bill_rate) AS [WIP Rate]
 	, SUM(bill_hours*60) AS [Hours]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='time' THEN bill_total_excl_vat END)  AS [Fees (ex VAT)]
 	, SUM(CASE WHEN fact_bill_detail.charge_type='disbursements' THEN bill_total_excl_vat END) AS [Disbursements (ex VAT)]
@@ -57,7 +57,8 @@ ON timekeeper.fed_code=fact_bill_detail.timekeeper
 AND timekeeper.dss_current_flag='Y'
 AND timekeeper.activeud=1
 
-LEFT OUTER JOIN (  SELECT   master_client_code,master_matter_number ,client_code,matter_number,ds_sh_3e_mattdate.matterlkup,
+LEFT OUTER JOIN (  SELECT  distinct 
+master_client_code,master_matter_number ,client_code,matter_number,ds_sh_3e_mattdate.matterlkup,
     ds_sh_3e_arrangement.description,nxstartdate,nxenddate,effstart
 	,fee_arrangement
 	,fileRatePerUnit
@@ -70,13 +71,18 @@ LEFT OUTER JOIN (  SELECT   master_client_code,master_matter_number ,client_code
    ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y' 
   LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_arrangement
   ON ds_sh_3e_mattdate.arrangement = ds_sh_3e_arrangement.code
-  WHERE dim_matter_header_current.master_client_code='W22511') AS [MatterRate]
+  WHERE dim_matter_header_current.master_client_code='W22511'
+  --AND dim_matter_header_current.master_matter_number='3'
+  --AND GETDATE() BETWEEN ds_sh_3e_mattdate.nxstartdate AND ds_sh_3e_mattdate.nxenddate
+
+  ) AS [MatterRate]
 ON MatterRate.master_client_code = dim_matter_header_current.master_client_code
 AND MatterRate.master_matter_number = dim_matter_header_current.master_matter_number
+AND CONVERT(DATE,bill_date.calendar_date, 103) BETWEEN CONVERT(DATE,[MatterRate].nxstartdate,103) AND CONVERT(DATE,[MatterRate].nxenddate,103)
 
 WHERE fact_bill_detail.client_code='W22511'
 AND reporting_exclusions=0
---AND fact_bill_detail.matter_number='00000012'
+--AND fact_bill_detail.matter_number='00000001'
 --AND work_date.calendar_date='2020-05-29 00:00:00.000'
 
 GROUP BY dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number,
@@ -102,8 +108,7 @@ GROUP BY dim_matter_header_current.master_client_code + '-' + dim_matter_header_
          bill_date.calendar_date,
          work_date.calendar_date,
          fact_bill_detail.bill_number,
-		 dim_matter_header_current.matter_number,
-         fact_bill_detail.bill_rate
+		 dim_matter_header_current.matter_number
 
 
 ORDER BY dim_matter_header_current.matter_number

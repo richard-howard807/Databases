@@ -14,6 +14,7 @@ CREATE PROCEDURE [dbo].[FinanceHolidayTracker]
 (
  @Month INT
  ,@Year INT
+ --,@MaxDate INT
  )
 
 AS
@@ -22,8 +23,13 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
---DECLARE @Month INT =7
+--DECLARE @Month INT =9
 --,@Year INT =2021
+DECLARE @MaxDate  INT =(SELECT MIN(dim_date_key) 
+				FROM red_dw.dbo.dim_date
+				WHERE fin_year=@Year
+				AND fin_month_no=@Month) 
+
 
 IF OBJECT_ID('tempdb..#MonthlyHolidays') IS NOT NULL DROP TABLE #MonthlyHolidays;
 IF OBJECT_ID('tempdb..#HolidaysTaken') IS NOT NULL DROP TABLE #HolidaysTaken;
@@ -38,7 +44,8 @@ ON dim_date.calendar_date=fact_employee_attendance.startdate
 AND dim_date.fin_year=@Year 
 AND dim_date.fin_month_no<=@Month
 
-WHERE category IN ('Holiday')
+--WHERE --category IN ('Holiday') AND 
+--fact_employee_attendance.employeeid='E1A7FD11-DDCC-406D-9CFF-B4C36167A4BF'
 						--AND fact_employee_attendance.employeeid='D1F10526-0E8B-41C9-9C20-934675B81DA3'
 				GROUP BY employeeid, dim_date.fin_year,dim_date.fin_period, dim_date.fin_quarter, dim_date.fin_month_no) 
 
@@ -78,6 +85,8 @@ SELECT
 	, dim_employee.leaverlastworkdate
 	, leavers_date.fin_month_no
 	, leavers_date.fin_year
+	, leavers_date.fin_month
+	
 
 FROM red_dw.dbo.dim_employee
 
@@ -119,13 +128,17 @@ WHERE
 --AND 
 red_dw.dbo.dim_employee.deleted_from_cascade <> 1 --added due to report bring back deleted emp
 AND red_dw.dbo.dim_employee.employeestartdate <= GETDATE() -- bring in new starters 
-AND #MonthlyHolidays.fin_month_no IS NOT NULL 
+--AND #MonthlyHolidays.fin_month_no IS NOT NULL 
 
-AND ((leavers_date.fin_month_no>=@Month
-AND leavers_date.fin_year>=@Year) OR dim_employee.leaverlastworkdate IS NULL)
+AND (leavers_date.dim_date_key>=@MaxDate
+--leavers_date.fin_month>=@Year+''+@Month
+--(leavers_date.fin_month_no>=@Month
+--AND leavers_date.fin_year>=@Year) 
+OR dim_employee.leaverlastworkdate IS NULL)
 
 --AND name ='Sharon Grugel'
 AND name IS NOT NULL 
 
 END
+
 GO

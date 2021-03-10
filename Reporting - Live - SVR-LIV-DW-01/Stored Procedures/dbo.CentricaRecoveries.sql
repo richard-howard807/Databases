@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -86,7 +87,7 @@ dim_detail_core_details.year_of_account [Year of Account ],
 
   DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, GETDATE())  [Elapsed Days]
 
-
+,dim_detail_core_details.[proceedings_issued]
 ,recovery_sent_to_client
 ,date_ph_notified_re_indemnity
 ,date_notes_updated
@@ -110,8 +111,18 @@ AS SuccessChance
 ,dim_detail_claim.[insured_vehicle_reg]
 
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS fileStatus
-,NULL AS PostLitFee
-,PostLitFeeType
+
+,CASE WHEN PostLitFee.PostLitFeeType='Specified Judgment' THEN 22.00 
+WHEN PostLitFee.PostLitFeeType='Defended over 3months to Trial' THEN 200
+WHEN PostLitFee.PostLitFeeType='Defended within 3 months of Trial' THEN 300
+WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought BETWEEN 25.00 AND 500.00 THEN 50.00
+WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought BETWEEN 500.01 AND 1000.00 THEN 70.00
+WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought BETWEEN 1000.01 AND 5000.00 THEN 80.00
+WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought >5000 THEN 100
+WHEN PostLitFee.PostLitFeeType='FT- Non Fixed Costs' THEN curFTNonFix
+END AS PostLitFee
+
+
 FROM 
 red_dw.dbo.fact_dimension_main 
 LEFT JOIN  red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -222,8 +233,8 @@ GROUP BY client_code,matter_number) AS HrsWorked
  ON fact_dimension_main.client_code=HrsWorked.client_code
  AND fact_dimension_main.matter_number=HrsWorked.matter_number
 LEFT OUTER JOIN (SELECT fileID,cboPostLitApp,cdDesc AS PostLitFeeType,curFTNonFix
-FROM ms_prod.dbo.udMIRecoveries
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup
+FROM ms_prod.dbo.udMIRecoveries WITH(NOLOCK)
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup WITH(NOLOCK)
  ON cboPostLitApp=cdCode AND cdType='POSTLITFEE'
 WHERE cboPostLitApp IS NOT NULL OR curFTNonFix IS NOT NULL) AS PostLitFee
  ON ms_fileid=PostLitFee.fileID

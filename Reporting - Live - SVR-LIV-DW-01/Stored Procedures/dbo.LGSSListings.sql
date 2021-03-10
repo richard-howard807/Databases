@@ -18,7 +18,7 @@ SELECT
 ,claimant_name AS [Claimant]
 ,dim_detail_core_details.[incident_date] AS  [Date of Loss]
 ,dim_detail_core_details.[incident_location] AS  [Location]
-,defendant_name AS  [Defendant]
+,defendant_name+' '+dim_client_involvement.insurerclient_reference AS  [Defendant]
 ,fact_finance_summary.[total_reserve] AS  [Reserve total (gross)]
 ,ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0) AS  [Own costs (exc. VAT)]
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]
@@ -33,7 +33,7 @@ WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and c
 WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and costs outstanding','Blank') AND CONVERT(DATE,dim_detail_claim.[date_of_witness_statement_exchange],103)<CONVERT(DATE,GETDATE(),103) AND dim_detail_court.[date_of_trial] IS NULL THEN 'Listing'
 WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and costs outstanding','Blank') AND CONVERT(DATE,dim_detail_court.[date_of_trial],103)>=CONVERT(DATE,GETDATE(),103) THEN 'Trial or listing windows or awaiting either'
 END AS [Position of claim]
-,dim_detail_core_details.[clients_claims_handler_surname_forename] AS [LGSS Handler]
+,dim_detail_core_details.[clients_claims_handler_surname_forename]+' ('+dim_matter_header_current.client_name+')' AS [LGSS Handler]
 ,CASE WHEN dim_detail_core_details.[is_there_an_issue_on_liability]='No' THEN 'Yes' ELSE 'No' END AS [Admitted?] 
 ,CASE WHEN CMC IS NOT NULL THEN 'Yes' ELSE 'No' END AS [Conference?]
 
@@ -46,6 +46,8 @@ ELSE 'Closed' END AS Tab
 ,dim_matter_header_current.present_position AS [Present Position]
 ,RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) AS [Weightmans Mattersphere Reference]
 ,matter_description AS [Matter Description]
+, dim_matter_header_current.date_opened_case_management AS [Date Opened]
+, dim_detail_core_details.referral_reason AS [Refrerral Reason]
 ,wip AS [WIP]
 ,fact_finance_summary.unpaid_bill_balance AS [Unpaid Bill Balance]
 ,last_bill_date AS [Last Bill Date]
@@ -149,5 +151,7 @@ AND work_type_group IN
 'Claims Handling','Disease','EL','Insurance Costs','LMT','Motor'
 ,'NHSLA','PL All','Prof Risk','RECOVERY'
 )
+
+AND NOT RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) IN ('A1001-11582','A1001-11662','G1001-5826','W21390-2','W19220-21')
 END
 GO

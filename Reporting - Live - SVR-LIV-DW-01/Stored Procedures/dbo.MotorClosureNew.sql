@@ -45,7 +45,7 @@ AS
 CASE WHEN 
 (( (dim_detail_core_details.present_position not IN
 (
---'Claim and costs concluded but recovery outstanding',
+'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 )
@@ -56,18 +56,18 @@ AND (dim_detail_outcome.outcome_of_case IS NULL OR
 			
 			(( (dim_detail_core_details.present_position IN
 (
---'Claim and costs concluded but recovery outstanding',
+
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 ) AND 
 
 (dim_detail_outcome.outcome_of_case IS NOT  NULL OR 
-            dim_detail_outcome.date_claim_concluded IS NOT NULL )))))) THEN 1 ELSE 0 END AS final, 
+            dim_detail_outcome.date_claim_concluded IS NOT NULL )))))) AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 ELSE 0 END AS final, 
 
       
 			
 
-				CASE WHEN fact_finance_summary.unpaid_bill_balance >1 THEN 1 ELSE 0 END AS [unpaidbillbalance],
+				CASE WHEN fact_finance_summary.unpaid_bill_balance >1 AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 ELSE 0 END AS [unpaidbillbalance],
 				
 CASE WHEN dim_detail_core_details.present_position IN
 (
@@ -77,7 +77,7 @@ CASE WHEN dim_detail_core_details.present_position IN
 'To be closed/minor balances to be clear'
 )
 
- AND fact_finance_summary.wip > 1  THEN 1 
+ AND fact_finance_summary.wip > 1 AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 
  WHEN 
  dim_detail_core_details.present_position IN
 (
@@ -86,7 +86,7 @@ CASE WHEN dim_detail_core_details.present_position IN
 'To be closed/minor balances to be clear'
 )
 
-AND fact_finance_summary.disbursement_balance > 1
+AND fact_finance_summary.disbursement_balance > 1 AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
 
 THEN 1 ELSE 0 END [unpaidbills], 
 
@@ -94,7 +94,7 @@ CASE WHEN ((dim_matter_header_current.fee_arrangement NOT   IN
 (
 'Fixed Fee/Fee Quote/Capped Fee                              '
 )
-AND dim_matter_header_current.fixed_fee_amount > 0 ) OR 
+AND dim_matter_header_current.fixed_fee_amount > 0  AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports') OR 
 
 
 (
@@ -102,7 +102,7 @@ dim_matter_header_current.fee_arrangement   IN
 (
 'Fixed Fee/Fee Quote/Capped Fee                              '
 )
-AND dim_matter_header_current.fixed_fee_amount = 0
+AND dim_matter_header_current.fixed_fee_amount = 0 AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
 
 
 )) THEN 1 ELSE 0 END AS 
@@ -112,21 +112,34 @@ AND dim_matter_header_current.fixed_fee_amount = 0
 
 CASE WHEN 
 
-
-dim_detail_core_details.present_position NOT IN
+( (dim_detail_core_details.present_position not IN
 (
 'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
-) AND (dim_detail_outcome.outcome_of_case IS NULL OR dim_detail_outcome.date_claim_concluded IS NULL ) THEN 1 
+)
 
-WHEN 
-dim_detail_core_details.present_position  IN
+AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
+
+AND (dim_detail_outcome.outcome_of_case IS NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NULL )) OR 
+			
+			
+			( (dim_detail_core_details.present_position IN
 (
-'Claim and costs concluded but recovery outstanding',
+--'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
-) AND (dim_detail_outcome.outcome_of_case IS NOT NULL OR dim_detail_outcome.date_claim_concluded IS not NULL ) THEN 1 ELSE 0 END AS [PP is inconsistent with DCC/ Outcome] , 
+) AND 
+ dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
+ AND 
+
+(dim_detail_outcome.outcome_of_case IS NOT  NULL OR 
+            dim_detail_outcome.date_claim_concluded IS NOT NULL ))) 
+			
+			AND  dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
+			
+			)THEN 1 ELSE 0 END AS [PP is inconsistent with DCC/ Outcome] , 
 
 CASE WHEN 
 
@@ -135,7 +148,11 @@ CASE WHEN
 'Final bill due - claim and costs concluded',
 'Final bill sent - unpaid',
 'To be closed/minor balances to be clear'
-) AND dim_detail_outcome.date_costs_settled IS NULL THEN 1 
+) AND dim_detail_outcome.date_costs_settled  IS NULL 
+
+
+AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports'
+THEN 1 
 
 WHEN 
  dim_detail_core_details.present_position NOT  IN
@@ -143,12 +160,12 @@ WHEN
 'Final bill due - claim and costs concluded',
 'Final bill sent - unpaid',
 'To be closed/minor balances to be clear'
-) AND dim_detail_outcome.date_costs_settled IS NOT NULL THEN 1 ELSE 0 END AS [PP is consistent with Costs Settled], 
+) AND dim_detail_outcome.date_costs_settled IS NOT NULL AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 ELSE 0 END AS [PP is consistent with Costs Settled], 
 
 CASE WHEN 
 
-	DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) > 60 THEN 1 ELSE 0 END AS [Not worked on for 60+ days],
-	CASE WHEN dim_fed_hierarchy_history.leaver= 1 THEN 1 ELSE 0 END AS [Leaver]
+	DATEDIFF(d, fact_matter_summary_current.last_time_transaction_date, GETDATE()) > 60 AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 ELSE 0 END AS [Not worked on for 60+ days],
+	CASE WHEN dim_fed_hierarchy_history.leaver= 1  AND dim_detail_outcome.outcome_of_case <> 'Exclude from reports' THEN 1 ELSE 0 END AS [Leaver]
 
 
 FROM 
@@ -246,9 +263,10 @@ AND dim_matter_header_current.fixed_fee_amount = 0
 
 
 CASE WHEN 
+ dim_detail_outcome.outcome_of_case <> 'Exclude from reports' AND 
 ( (dim_detail_core_details.present_position not IN
 (
---'Claim and costs concluded but recovery outstanding',
+'Claim and costs concluded but recovery outstanding',
 'Claim and costs outstanding',
 'Claim concluded but costs outstanding'
 )
@@ -324,6 +342,7 @@ AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Motor'
 --AND dim_fed_hierarchy_history.hierarchylevel4hist IN (@Team)
 --AND dim_fed_hierarchy_history.name IN (@FeeEarner)
 AND dim_matter_header_current.date_closed_case_management IS NULL 
+AND dim_matter_header_current.reporting_exclusions = 0
 
 GROUP BY	REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
             + REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0'),dim_detail_finance.output_wip_fee_arrangement,

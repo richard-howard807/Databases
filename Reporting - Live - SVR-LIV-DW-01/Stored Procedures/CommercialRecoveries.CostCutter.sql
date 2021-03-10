@@ -11,6 +11,9 @@ GO
 
 
 
+
+
+
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
@@ -64,30 +67,31 @@ END AS [Insolvency proceedings]
 -ISNULL(defence_costs_billed,0)<=0 THEN NULL ELSE defence_costs_billed/
 
 (ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0)) END AS DECIMAL(10,2)) AS [Net % to Costcutter]
-,CAST(master_matter_number AS INT) AS master_matter_number
+--,CAST(master_matter_number AS INT) AS master_matter_number
+,master_matter_number AS master_matter_number
 ,CostcutterStatus.curSetSumAgreed AS [Settlement Sum Agreed]
 ,CASE WHEN (ISNULL(Ledger.Payments,0)
 +ISNULL(CostcutterStatus.CostsRecovered,0))
 -ISNULL(defence_costs_billed,0)<=0 THEN 0 ELSE defence_costs_billed END AS DCB
 ,fileNotes
 ,fileExternalNotes
-FROM [MS_PROD].config.dbFile
-INNER JOIN [MS_PROD].config.dbClient
+FROM [MS_PROD].config.dbFile WITH(NOLOCK)
+INNER JOIN [MS_PROD].config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
-INNER JOIN [MS_PROD].dbo.udExtFile
+INNER JOIN [MS_PROD].dbo.udExtFile  WITH(NOLOCK)
  ON udExtFile.fileID = dbFile.fileID
-INNER JOIN red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.dim_matter_header_current  WITH(NOLOCK)
  ON dbFile.fileID=ms_fileid
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary  WITH(NOLOCK)
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN MS_Prod.dbo.dbUser
+LEFT OUTER JOIN MS_Prod.dbo.dbUser  WITH(NOLOCK)
  ON filePrincipleID=usrID
-LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation
+LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation  WITH(NOLOCK)
  ON udCRAccountInformation.fileID = dbFile.fileID
-LEFT OUTER JOIN [MS_PROD].dbo.udCRCore
+LEFT OUTER JOIN [MS_PROD].dbo.udCRCore  WITH(NOLOCK)
  ON udCRCore.fileID = dbFile.fileID
-LEFT OUTER JOIN [MS_PROD].dbo.udCRInsolvency 
+LEFT OUTER JOIN [MS_PROD].dbo.udCRInsolvency  WITH(NOLOCK) 
  ON udCRInsolvency.fileID = dbFile.fileID
 LEFT OUTER JOIN MS_Prod.dbo.udCRIssueDetails
  ON udCRIssueDetails.fileID = dbFile.fileID
@@ -104,20 +108,21 @@ SELECT MS_Prod.dbo.udCRLedgerSL.fileID
 ,ISNULL(SUM(CASE WHEN cboCatDesc='6' THEN curClient ELSE NULL END),0) AS [Receipta awaiting clearance]
 ,ISNULL(SUM(CASE WHEN cboCatDesc='3' THEN curOffice ELSE NULL END),0) AS [Original Balance]
 ,ISNULL(SUM(CASE WHEN cboCatDesc='5' AND YEAR(dtePosted)=YEAR(GETDATE()) THEN curClient ELSE NULL END),0) AS AnnualYTD
-FROM [MS_PROD].dbo.udCRLedgerSL
-INNER JOIN ms_prod.config.dbFile
+FROM [MS_PROD].dbo.udCRLedgerSL  WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbFile  WITH(NOLOCK)
  ON dbFile.fileID = udCRLedgerSL.fileID
-INNER JOIN ms_prod.config.dbClient
+INNER JOIN ms_prod.config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
-LEFT OUTER JOIN MS_Prod.dbo.udCRAccountInformation
+LEFT OUTER JOIN MS_Prod.dbo.udCRAccountInformation  WITH(NOLOCK)
  ON udCRAccountInformation.fileID = dbFile.fileID
+WHERE clNo='W22511' 
 GROUP BY udCRLedgerSL.fileID
 ) AS Ledger
  ON Ledger.fileID = dbFile.fileID
-LEFT OUTER JOIN (SELECT DISTINCT dbfile.fileID,assocRef AS [Reference] FROM MS_Prod.config.dbAssociates
-INNER JOIN ms_prod.config.dbFile
+LEFT OUTER JOIN (SELECT DISTINCT dbfile.fileID,assocRef AS [Reference] FROM MS_Prod.config.dbAssociates  WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbFile  WITH(NOLOCK)
  ON dbFile.fileID = dbAssociates.fileID
-INNER JOIN ms_prod.config.dbClient
+INNER JOIN ms_prod.config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
 WHERE assocType='CLIENT'
 AND clNo='W22511' 
@@ -125,17 +130,21 @@ AND assocOrder='0'
 AND assocRef IS NOT NULL
 ) AS InsuredREf
  ON InsuredREf.fileID = dbFile.fileID
-LEFT OUTER JOIN (SELECT fileID,contName AS Defendant,contTypeCode,addPostcode AS Postcode
-,ROW_NUMBER() OVER (PARTITION BY fileID ORDER BY assocID ASC) AS RowNumber
-FROM ms_prod.config.dbAssociates
-INNER JOIN ms_prod.config.dbContact
+LEFT OUTER JOIN (SELECT dbAssociates.fileID,contName AS Defendant,contTypeCode,addPostcode AS Postcode
+,ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocID ASC) AS RowNumber
+FROM ms_prod.config.dbAssociates  WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbFile  WITH(NOLOCK)
+ ON dbFile.fileID = dbAssociates.fileID
+INNER JOIN ms_prod.config.dbClient  WITH(NOLOCK)
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbContact  WITH(NOLOCK)
  ON dbContact.contID = dbAssociates.contID
-LEFT OUTER JOIN ms_prod.dbo.dbAddress
+LEFT OUTER JOIN ms_prod.dbo.dbAddress  WITH(NOLOCK)
  ON contDefaultAddress=addID
-WHERE assocType='DEFENDANT') AS Defendant
+WHERE assocType='DEFENDANT' AND clNo='W22511' ) AS Defendant
  ON Defendant.fileID = dbFile.fileID
  AND Defendant.RowNumber=1
-LEFT OUTER JOIN red_dw.dbo.Doogal
+LEFT OUTER JOIN red_dw.dbo.Doogal  WITH(NOLOCK)
  ON Doogal.Postcode = Defendant.Postcode COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN 
 (
@@ -153,24 +162,24 @@ SELECT fileID
 ,curCostRecOS AS [CostsRecovered]
 ,red_dw.dbo.datetimelocal(dteSettled) AS dteSettled
 ,curSetSumAgreed
-FROM ms_prod.dbo.udCRCostcutterDetails
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus
+FROM ms_prod.dbo.udCRCostcutterDetails  WITH(NOLOCK)
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus  WITH(NOLOCK)
  ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Enforce
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Enforce  WITH(NOLOCK)
  ON cboEnforcStatus=Enforce.cdCode AND Enforce.cdType='ENFORCEMENTSTS'
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Pre
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Pre  WITH(NOLOCK)
  ON cboPreProStatus=Pre.cdCode AND Pre.cdType='PREPROCEEDSTATS'
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Insolve
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Insolve  WITH(NOLOCK)
  ON cboInsolvStatus=Insolve.cdCode AND Insolve.cdType='INSOLVENCYSTS'
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Personal
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Personal  WITH(NOLOCK)
  ON cboPersnInsoSts=Personal.cdCode AND Personal.cdType='PERSINSOLSTATUS'
-LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Corp
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Corp  WITH(NOLOCK)
  ON cboCorpInsoSts=Corp.cdCode AND Corp.cdType='CORPINSOLSTATUS'
- LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Court
+ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Court  WITH(NOLOCK)
  ON cboCrtProStatus=Court.cdCode AND Court.cdType='COURTPROCEEDSTS'
- LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS InsolveType
+ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS InsolveType  WITH(NOLOCK)
  ON cboInsolvType=InsolveType.cdCode AND InsolveType.cdType='INSOLVENCYTYPE'
-  LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS ActionReq
+  LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS ActionReq  WITH(NOLOCK)
  ON cboactreqby=ActionReq.cdCode AND ActionReq.cdType='CCACTREQBY'
 
  
@@ -179,10 +188,10 @@ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS Corp
 LEFT OUTER JOIN 
 (
 SELECT dbTasks.fileID,MIN(tskDue)  AS HearingDate 
-FROM ms_prod.dbo.dbTasks
-INNER JOIN ms_prod.config.dbFile
+FROM ms_prod.dbo.dbTasks  WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbFile  WITH(NOLOCK)
  ON dbFile.fileID = dbTasks.fileID
-INNER JOIN MS_Prod.config.dbClient
+INNER JOIN MS_Prod.config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
 WHERE tskDesc  IN (--'Court hearing due - today',
 'Hearing - today')

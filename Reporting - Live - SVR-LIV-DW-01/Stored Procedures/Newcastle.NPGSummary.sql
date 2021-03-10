@@ -17,6 +17,7 @@ GO
 
 
 
+
 --DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2020-10-01'
@@ -82,6 +83,10 @@ WHEN clno IN ('WB164103','WB165100','W24159') THEN 'North East'END  AS [Area]
 ,cboNPGFileType
 ,dteEngrDispatch
 ,cboInsTypeNPG
+,usrFullName AS [Case Handler] 
+,fileType.cdDesc AS [Case type]
+,cboNPGFileType AS Team
+
 FROM MS_Prod.dbo.udExtFile
 INNER JOIN MS_Prod.config.dbFile
  ON dbFile.fileID = udExtFile.fileID
@@ -101,6 +106,8 @@ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS Insttype
 ON cboInsTypeNPG=Insttype.cdCode AND Insttype.cdType='INSTYPENPG'
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS MatStat
 ON cboMatterStat=MatStat.cdCode AND MatStat.cdType='STATUSNPG'
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS FileType
+ON filetype=FileType.cdCode AND FileType.cdType='FILETYPE'
 LEFT OUTER JOIN 
 (
 SELECT client_code,matter_number
