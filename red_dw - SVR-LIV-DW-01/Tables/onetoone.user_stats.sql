@@ -63,7 +63,11 @@ CREATE TABLE [onetoone].[user_stats]
 [wip_value_py] [numeric] (38, 2) NULL,
 [Fee_Arrangment_Exception_Count] [int] NULL,
 [Revenue_Est_Exception_Count] [int] NULL,
-[Disb_Est_Exception_Count] [int] NULL
+[Disb_Est_Exception_Count] [int] NULL,
+[bill_balance_lta] [int] NULL,
+[client_and_bill_balance_lta] [int] NULL,
+[client_balance_lta] [int] NULL,
+[to_be_closed_lta] [int] NULL
 ) ON [WRK_TAB]
 GO
 GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL ROLE - DS_MI_ANALYST]

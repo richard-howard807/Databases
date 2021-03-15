@@ -26,7 +26,7 @@ IF (SELECT COUNT(*) FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND 
 
 
 
--- Matters capable of closure
+-- Matters capable of closure -- Claims
 DROP TABLE IF EXISTS #matterscapableofclosure
 
 SELECT * INTO #matterscapableofclosure
@@ -35,6 +35,14 @@ FROM OPENROWSET
      'EXEC reporting.[dataservices].[claims_files_to_be_closed]')
 	 ;
 
+-- Matter 
+DROP TABLE IF EXISTS #matterscapableofclosurelta
+
+SELECT * INTO #matterscapableofclosurelta
+FROM OPENROWSET
+('SQLNCLI','Server=svr-liv-dw-01;Trusted_Connection=yes;',
+     'EXEC reporting.[dataservices].[lta_files_to_be_closed]')
+	 ;
 
 -- Exceptions
 DROP TABLE IF EXISTS #exceptions
@@ -275,6 +283,22 @@ Matterscapableofclosure AS (
 	),
 
 
+Matterscapableofclosurelta AS (
+	SELECT 	'YTD' fin_month, fed_code, [Bill Balance] bill_balance, [Client and Bill Balance] client_and_bill_balance, [Client Balance] client_balance, [To be closed] to_be_closed
+	FROM (
+		SELECT fed_code, status, COUNT(*) cnt
+		-- select *
+		FROM #matterscapableofclosurelta
+		--WHERE fed_code = '4664'
+		GROUP BY status, fed_code
+		) x
+	PIVOT
+		(
+		MAX(cnt)
+		FOR status IN ([Bill Balance], [Client and Bill Balance], [Client Balance], [To be closed]) 
+		) AS PivotTable
+	),
+
 Matters AS (
 	SELECT 'YTD' fin_month, fee_earner_code fed_code, IIF(output_wip_fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee', 'Fixed Fee', 'Hourly') fixed_fee, 
 		count (dim_detail_finance.matter_number) Matter_Cnt
@@ -503,7 +527,7 @@ GROUP BY dim_fed_hierarchy_history.fed_code
 
 
 
-    
+
 INSERT INTO [onetoone].[user_stats]
 
 
@@ -549,7 +573,8 @@ SELECT
 	  Total_Budget_Year,
 	  AVG_Elapsed_Days_Closed_Cases,
 	  Repudiation_Rate_Percent,
-	  bill_balance, client_and_bill_balance, client_balance, to_be_closed,
+	  Matterscapableofclosure.bill_balance, Matterscapableofclosure.client_and_bill_balance, Matterscapableofclosure.client_balance, Matterscapableofclosure.to_be_closed,
+
 	  FixedMatters.Matter_Cnt Fixed_fee_matters,
 	  HourlyMatters.Matter_Cnt Hourly_fee_matters,
 	  ISNULL( FixedMatters.Matter_Cnt, 0) + ISNULL(HourlyMatters.Matter_Cnt, 0) TotalMatters,
@@ -581,7 +606,11 @@ SELECT
 	WIP_PY.wip_value_py,
 	LTA_Exceptions.Exfeearrangement Fee_Arrangment_Exception_Count,
 	LTA_Exceptions.ExRevenueEstimate Revenue_Est_Exception_Count,
-	LTA_Exceptions.ExDisbursmentEstimate Disb_Est_Exception_Count
+	LTA_Exceptions.ExDisbursmentEstimate Disb_Est_Exception_Count,
+	Matterscapableofclosurelta.bill_balance bill_balance_lta, 
+	Matterscapableofclosurelta.client_and_bill_balance client_and_bill_balance_lta, 
+	Matterscapableofclosurelta.client_balance client_balance_lta, 
+	Matterscapableofclosurelta.to_be_closed to_be_closed_lta
 
 FROM (
 
@@ -643,6 +672,7 @@ LEFT OUTER JOIN FinalBill_PY ON FinalBill_PY.fed_code = main.fed_code AND FinalB
 LEFT OUTER JOIN RepudiationRate ON RepudiationRate.fed_code = main.fed_code AND RepudiationRate.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN RepudiationRate_PY ON RepudiationRate_PY.fed_code = main.fed_code AND RepudiationRate_PY.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN Matterscapableofclosure ON Matterscapableofclosure.fed_code COLLATE Latin1_General_BIN = main.fed_code AND Matterscapableofclosure.fin_month = ISNULL(main.fin_month,'YTD')
+LEFT OUTER JOIN Matterscapableofclosurelta ON Matterscapableofclosurelta.fed_code COLLATE Latin1_General_BIN = main.fed_code AND Matterscapableofclosurelta.fin_month = ISNULL(main.fin_month,'YTD')
 LEFT OUTER JOIN Matters FixedMatters ON FixedMatters.fed_code = main.fed_code AND FixedMatters.fin_month = ISNULL(main.fin_month,'YTD') AND FixedMatters.fixed_fee = 'Fixed Fee'
 LEFT OUTER JOIN Matters HourlyMatters ON HourlyMatters.fed_code = main.fed_code AND HourlyMatters.fin_month = ISNULL(main.fin_month,'YTD') AND HourlyMatters.fixed_fee = 'Hourly'
 LEFT OUTER JOIN Dibs ON Dibs.fed_code = main.fed_code AND Dibs.fin_month = ISNULL(main.fin_month,'YTD')
