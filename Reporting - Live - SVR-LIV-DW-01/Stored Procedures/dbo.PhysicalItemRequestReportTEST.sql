@@ -15,7 +15,7 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[PhysicalItemRequestReport] 
+CREATE PROCEDURE [dbo].[PhysicalItemRequestReportTEST] 
 (
    @Start AS DATETIME,
     @End AS DATETIME,
@@ -48,7 +48,7 @@ BEGIN
   x.[Date Requested],
   x.Comment,
   x.[Processing User],
-  CASE WHEN x.Result = 'PENDING' THEN NULL ELSE  x.[Date Processed] END [Date Processed],
+  x.[Date Processed],
   CASE WHEN x.Result ='No Original' THEN 'NO ORIGINAL' ELSE x.Result END AS Result,
   x.[Days Old],
   x.document_link,
@@ -220,7 +220,7 @@ END
   x.[Date Requested],
   x.Comment,
   x.[Processing User],
-  CASE WHEN x.Result = 'PENDING' THEN NULL ELSE  x.[Date Processed] END [Date Processed],
+  x.[Date Processed],
   CASE WHEN x.Result ='No Original' THEN 'NO ORIGINAL' ELSE x.Result END AS Result,
   x.[Days Old],
   x.document_link,

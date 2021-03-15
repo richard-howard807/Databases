@@ -4,6 +4,11 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
+
+
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -26,7 +31,6 @@ GO
 -- JB 20200825 Added date claim concluded date last changed #68418
 -- MT 20210127 Updated logic for Credit Hire Organisation
 -- OK 20210205 Added new costs estimates
--- MT 20210410 Added High Court Contact Name
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -44,17 +48,17 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
     IF OBJECT_ID('Reporting.dbo.selfservice') IS NOT NULL
         DROP TABLE dbo.selfservice;
- 
+
 
     SET NOCOUNT ON;
-  
 
 
-       
+
+
 
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
 
-	
+
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2021],
@@ -65,7 +69,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			   PVIOT.[2016]
 			   INTO #Revenue
 		FROM (
-	
+
 			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
 			FROM red_dw.dbo.fact_bill_activity
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
@@ -77,7 +81,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			SUM(Revenue)
 			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
 			) AS PVIOT
-	
+
 
 
 	SELECT PVIOT.client_code,
@@ -90,7 +94,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			   PVIOT.[2016]
 			   INTO #Billed_hours
 		FROM (
-	
+
 			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
 			FROM red_dw.dbo.fact_bill_billed_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
@@ -116,7 +120,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			   PVIOT.[2016]
 			   INTO #Chargeable_hours
 		FROM (
-	
+
 			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
 			FROM red_dw.dbo.fact_billable_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
@@ -141,7 +145,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			   PVIOT.[2016]
 			   INTO #Disbursements
 		FROM (
-	
+
 						SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
 			FROM red_dw.dbo.fact_bill_detail
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
@@ -172,7 +176,7 @@ SELECT DISTINCT
     REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
     + REPLACE(LTRIM(REPLACE(RTRIM([master_matter_number]), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference],
     dim_matter_header_current.[matter_description] AS [Matter Description],
-    
+
 	dim_fed_hierarchy_history.[name] AS [Case Manager],
 	matter_owner_full_name [Matter Owner Full Name],
 	matter_partner_full_name [Matter Partner],
@@ -186,7 +190,7 @@ SELECT DISTINCT
     dim_fed_hierarchy_history.[worksforname] AS [Team Manager],
     dim_detail_practice_area.[bcm_name] AS [BCM Name],
     dim_employee.locationidud AS [Office],
-		   
+
     dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team],
     dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department],
     dim_department.[department_code] AS [Department Code],
@@ -256,7 +260,7 @@ SELECT DISTINCT
     dim_detail_core_details.date_proceedings_issued AS [Date Proceedings Issued],
     dim_detail_litigation.reason_for_litigation AS [Reason For Litigation],
     dim_court_involvement.court_reference AS [Court Reference],
-    COALESCE(dim_court_involvement.court_name, HighCourt.CourtName COLLATE DATABASE_DEFAULT) AS [Court Name],  /*High Court Name - 91373  - Added 20210310*/
+    dim_court_involvement.court_name AS [Court Name],
     dim_detail_core_details.track AS [Track],
     dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
     COALESCE(
@@ -272,7 +276,7 @@ SELECT DISTINCT
 
     COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho]), dim_detail_hire_details.[other]
 ,dim_agents_involvement.cho_name) AS [Credit Hire Organisation], --dim_agents_involvement.cho_name AS [Credit Hire Organisation] 27/01/2021 - MT as per 86052,
-	
+
 CASE WHEN credit_hire_organisation_cho = 'Other                                                       ' THEN 
 other WHEN other IS NULL 
 THEN 'Other'
@@ -357,7 +361,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 
 	dim_detail_court.[date_of_first_day_of_trial_window] AS [Date of first day of trial window],
     dim_detail_court.[date_of_trial] AS [Date of Trial],
-		   
+
     dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
 	(SELECT fin_year FROM red_dw..dim_date WHERE dim_date.calendar_date = CAST(date_claim_concluded AS DATE)) AS [Fin Year Claim Concluded],
 	dim_detail_outcome.date_claim_concluded_date_last_changed		AS [Date "Date Claim Concluded" Last Changed],
@@ -544,9 +548,9 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	,dim_detail_core_details.[date_initial_report_due] AS [[Date_initial_report_due]
 	,dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an extension for the initial report]
 	,[Final Bill Date]
-	,archive_details.[latest_archive_date]
-	,archive_details.[latest_archive_status] 
-	,archive_details.[latest_archive_type]
+	, dim_matter_header_current.[latest_archive_date]
+	,dim_matter_header_current.[latest_archive_status] 
+	,dim_matter_header_current.[latest_archive_type]
 	,dim_detail_core_details.[trust_type_of_instruction] AS [Trust Type of Instruction]
 	,dim_detail_core_details.[covid_reason] [Covid Reason]
     ,dim_detail_core_details.[covid_other] [Covid Other]
@@ -566,14 +570,14 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, dim_detail_core_details.is_this_part_of_a_campaign		AS [Is This Part of a Campaign?]
 
 	, dim_detail_claim.[tier_1_3_case] -- Added as per request via HF 20210203 - MT
-	
+
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
 ,will_total_gross_reserve_on_the_claim_exceed_500000 AS [LL Damages £350k+]
 , ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 
 INTO Reporting.dbo.selfservice
-   
+
 ----------------------------------------------------
 FROM red_dw.dbo.fact_dimension_main
         --inner join PFC on PFC.client_code = fact_dimension_main.client_code and PFC.matter_number = fact_dimension_main.matter_number
@@ -667,7 +671,7 @@ FROM red_dw.dbo.fact_dimension_main
             ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
-			
+
 	LEFT JOIN red_dw.dbo.dim_involvement_full ON dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimantrep_1_key 
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
 		LEFT OUTER JOIN (SELECT fileID,CASE WHEN cboClientReqRep='Y' THEN 'Yes'
@@ -675,7 +679,7 @@ FROM red_dw.dbo.fact_dimension_main
 								FROM MS_Prod.dbo.udMICoreGeneral 
 								WHERE cboClientReqRep IS NOT NULL) AS cboClientReqRep
 									ON ms_fileid=cboClientReqRep.fileID
-   
+
         LEFT OUTER JOIN
         (
             SELECT fact_dimension_main.master_fact_key [fact_key],
@@ -939,113 +943,6 @@ FROM red_dw.dbo.fact_dimension_main
         ) AS MSvatAddress
             ON dim_matter_header_current.ms_fileid = MSvatAddress.fileID
                AND MSvatAddress.XOrder = 1
- ---- below added per request 8366              
--- LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2015/2016]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2015/2016]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2015/2016]
-
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	 INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2015-05-01' AND '2016-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2015
--- ON dim_matter_header_current.client_code=Revenue2015.client_code
---AND dim_matter_header_current.matter_number=Revenue2015.matter_number
-
---LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code, fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
---	-- select bill_fin_year
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2016
--- ON dim_matter_header_current.client_code=Revenue2016.client_code
---AND dim_matter_header_current.matter_number=Revenue2016.matter_number
-
-
---LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2017
--- ON dim_matter_header_current.client_code=Revenue2017.client_code
---AND dim_matter_header_current.matter_number=Revenue2017.matter_number
-
-
---LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2018
--- ON dim_matter_header_current.client_code=Revenue2018.client_code
---AND dim_matter_header_current.matter_number=Revenue2018.matter_number
-
-
---LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2019
--- ON dim_matter_header_current.client_code=Revenue2019.client_code
---AND dim_matter_header_current.matter_number=Revenue2019.matter_number
-
---LEFT OUTER JOIN 
---(
---	SELECT fact_bill_detail.client_code_bill_item client_code,fact_bill_detail.matter_number_bill_item matter_number
---	,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
---	,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
---	,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
---	FROM red_dw.dbo.fact_bill_detail
---	INNER JOIN red_dw.dbo.dim_bill_date
---	 ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
---	  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
---	 WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
---	AND charge_type='time'
---	GROUP BY fact_bill_detail.client_code_bill_item,fact_bill_detail.matter_number_bill_item
---) AS Revenue2020
--- ON dim_matter_header_current.client_code=Revenue2020.client_code
---AND dim_matter_header_current.matter_number=Revenue2020.matter_number
 
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
 LEFT OUTER JOIN #Revenue Revenue
@@ -1091,17 +988,17 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 	LEFT OUTER JOIN (
 	SELECT fileID, ClientAssocRef = STUFF((SELECT N'; ' + assocRef 
 	  FROM  
-	(SELECT DISTINCT fileID, assocRef 
-	FROM MS_Prod.config.dbAssociates 
-	WHERE assocType = 'CLIENT' AND assocRef IS NOT NULL ) AS assoc_def 
-	   WHERE assoc_def.fileID = p.fileID 
-	   ORDER BY assocRef
-	   FOR XML PATH(N'')), 1, 2, N'')
-	FROM (SELECT DISTINCT fileID, assocRef 
-	FROM MS_Prod.config.dbAssociates 
-	WHERE assocType = 'CLIENT' 
-	AND assocRef IS NOT NULL ) AS p
-	GROUP BY fileID
+	(	SELECT DISTINCT fileID, assocRef 
+		FROM MS_Prod.config.dbAssociates 
+		WHERE assocType = 'CLIENT' AND assocRef IS NOT NULL ) AS assoc_def 
+		   WHERE assoc_def.fileID = p.fileID 
+		   ORDER BY assocRef
+		   FOR XML PATH(N'')), 1, 2, N'')
+		FROM (SELECT DISTINCT fileID, assocRef 
+		FROM MS_Prod.config.dbAssociates 
+		WHERE assocType = 'CLIENT' 
+		AND assocRef IS NOT NULL ) AS p
+		GROUP BY fileID
 	) AS ClientAssociate
 	ON dim_matter_header_current.ms_fileid = ClientAssociate.fileID
 	LEFT OUTER JOIN (SELECT client_code_bill_item AS [client_code]
@@ -1124,56 +1021,35 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 	SELECT x.client_code, x.matter_number,MIN(x.a) [Final Bill Date]
 	FROM
     (
-        SELECT fact_dimension_main.client_code,
+               SELECT fact_dimension_main.client_code,
 			fact_dimension_main.matter_number
 			,dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] a 
 		 FROM red_dw.dbo.fact_dimension_main
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_court ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+		inner JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+		inner JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 		WHERE   (
                       dim_matter_header_current.date_closed_case_management >= '20160101'
                       OR dim_matter_header_current.date_closed_case_management IS NULL
                   ) 
+		AND [mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT null
         UNION
         SELECT fact_dimension_main.client_code
 			,fact_dimension_main.matter_number
 			,dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] a 
-		 FROM red_dw.dbo.fact_dimension_main
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-		 LEFT OUTER JOIN  red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
-		 LEFT OUTER JOIN  red_dw.dbo.dim_detail_court ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
-		 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+		 FROM red_dw.dbo.fact_dimension_main		
+		inner JOIN  red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+		INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 		WHERE   (
                       dim_matter_header_current.date_closed_case_management >= '20160101'
                       OR dim_matter_header_current.date_closed_case_management IS NULL
                   ) 
-       
+		AND [zurichnhs_date_final_bill_sent_to_client] IS NOT null
+
 		) x
 		GROUP BY x.client_code, x.matter_number
-		) AS minval ON minval.client_code = dim_client.client_code AND minval.matter_number = dim_detail_finance.matter_number
-
-	/* Archive Details */
-	LEFT OUTER JOIN (
-
-	 SELECT  
-		udDeedWill.fileID
-		,udDeedWill.dwArchivedDate [latest_archive_date]
-		,archstatus.cdDesc [latest_archive_status] 
-		,archtype.cdDesc [latest_archive_type]
+	) AS minval ON minval.client_code = dim_client.client_code AND minval.matter_number = dim_detail_finance.matter_number
 
 
-	FROM MS_Prod.dbo.udDeedWill udDeedWill
-	INNER JOIN MS_Prod.config.dbFile dbFile ON dbFile.fileID = udDeedWill.fileID
-	INNER JOIN MS_Prod.config.dbClient dbClient ON dbClient.clID = dbFile.clID
-	INNER JOIN (SELECT fileID,MAX(dwID) [dwID] FROM MS_Prod.dbo.udDeedWill GROUP BY fileID) d ON udDeedWill.dwID = d.dwID 
-	LEFT OUTER JOIN MS_PROD.dbo.dbCodeLookup archstatus ON cdType='ARCHSTATUS' AND archstatus.cdCode = udDeedWill.Status
-	LEFT OUTER JOIN MS_PROD.dbo.dbCodeLookup archtype ON archtype.cdType='ARCHTYPE' AND archtype.cdCode = udDeedWill.Status
-
-	) archive_details ON archive_details.fileID = dim_matter_header_current.ms_fileid
 
 
 	--Key Dates
@@ -1228,15 +1104,6 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 					ON cost_handler_revenue.client_code = dim_matter_header_current.client_code
 					AND cost_handler_revenue.matter_number = dim_matter_header_current.matter_number
 
- /*High Court Name - 91373  - Added 20210310*/
-	LEFT JOIN  (SELECT
-				 fileID
-				,MAX(contName) AS CourtName
-  FROM [MS_Prod].[config].[dbAssociates]
-  JOIN [MS_Prod].[config].[dbContact] ON [dbContact].[contID] = [dbAssociates].[contID]
-  WHERE assocType = 'HIGHCRT'
-  GROUP BY fileID
-   ) HighCourt ON CAST(HighCourt.fileID AS NVARCHAR(20))= CAST(ms_fileid AS NVARCHAR(20))COLLATE DATABASE_DEFAULT
 
 --- Final WHERE Clause -------------------------------------------------------------------------------------------------
 
@@ -1250,6 +1117,7 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
           )
 		  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA', 'Business Services','Client Relationships') -- Added Business Services as requested by A-M 20190920
 --AND dim_matter_header_current.date_opened_case_management >= '2015-01-01'
+
 
 
 

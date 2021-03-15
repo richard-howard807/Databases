@@ -175,6 +175,7 @@ SELECT
 		, chargeable_minutes_recorded/60 AS [Hours Recorded]
 		--15/01/2019 Added the below Future Loss of earnings for Christa
 		,[future_loss_of_earnings_paid] --fact_detail_paid_detail[future_loss_of_earnings_paid]
+		,red_dw.dbo.dim_detail_core_details.date_instructions_received
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

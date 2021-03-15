@@ -2,7 +2,19 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+  
+/*
+===================================================
+===================================================
+Author:				Julie Loughlin
+Created Date:		2021-03-10
+Description:		This is a copy of the Milestone Project but with MDX parameters to join to a cube
+Current Version:	Initial Create
+====================================================
 
+====================================================
+
+*/
 
 
 

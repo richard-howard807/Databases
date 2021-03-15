@@ -12,6 +12,7 @@ CREATE PROCEDURE [CIS].[CoopMIULeadLinkedTab]  -- EXEC [CIS].[CoopMIULeadLinkedT
 AS
 BEGIN
 
+set transaction isolation level read uncommitted
 
 DECLARE @PreviousData AS DATE
 

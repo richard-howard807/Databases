@@ -93,6 +93,7 @@ WHERE
 	--AND hierarchylevel2hist = 'Legal Ops - Claims'
 	AND (date_claim_concluded IS NULL 
 	OR date_claim_concluded >= '2019-01-01')
+	AND red_dw.dbo.dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'Yes' 
 	--AND dim_client.client_code = 'Z1001' AND dim_matter_header_current.matter_number = '00079750'
 					
 --=========================================================================================================================================================================================================================================================================
@@ -197,6 +198,7 @@ WHERE
 	OR date_claim_concluded>='2019-02-01')
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
+	AND red_dw.dbo.dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'Yes'
 	--AND dim_matter_header_current.master_client_code = 'Z1001' AND dim_matter_header_current.master_matter_number = '15025'
 
 

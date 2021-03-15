@@ -158,8 +158,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, fact_finance_summary.damages_reserve AS [Damages Reserve (gross)]
 	, fact_detail_cost_budgeting.personal_injury_reserve_current AS [Personal Injury Reserve Current (aka General Damages)]
 	, ISNULL(fact_finance_summary.damages_reserve,0) - ISNULL(fact_detail_cost_budgeting.personal_injury_reserve_current,0) AS [Special Damages]
-	, ISNULL(fact_finance_summary.[damages_reserve],0)+ISNULL(fact_detail_reserve_detail.[current_indemnity_reserve],0)
-		+ISNULL(fact_finance_summary.[defence_costs_reserve],0)+ISNULL(fact_finance_summary.[other_defendants_costs_reserve],0) AS [Total Reserve]
+	, ISNULL(fact_detail_reserve_detail.[current_indemnity_reserve],0)+ISNULL(fact_finance_summary.[defence_costs_reserve],0)+ISNULL(fact_finance_summary.[other_defendants_costs_reserve],0) AS [Total Reserve]
 	, dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded]
 	, fact_matter_summary_current.last_bill_date AS [Last Billed Date]
 	, CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN DATEDIFF(day, dim_matter_header_current.date_opened_case_management, GETDATE()) 

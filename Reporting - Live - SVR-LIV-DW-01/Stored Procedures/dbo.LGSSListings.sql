@@ -3,7 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
+--============================================
+-- ES 11-03-2021 #90787, amended some field logic and added key dates
+--============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
 
@@ -58,6 +60,12 @@ ELSE 'Closed' END AS Tab
 ,dim_detail_court.[date_of_trial] AS [Date of Trial]
 ,dim_matter_header_current.date_closed_case_management AS [Date Closed]
 ,work_type_group
+, [Defence].key_date AS [Defence Due]
+, [CMCDate].key_date AS [CMC Due]
+, [Disclosure].key_date AS [Disclosure]
+, [WitEvidence].key_date AS [Witness evidence]
+, [TrialWindow].key_date AS [Trial window]
+, [Trial].key_date AS [Trial Date]
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -95,6 +103,47 @@ LEFT OUTER JOIN (SELECT fileID,MAX(tskDue) AS [CMC]
 	GROUP BY fileID) AS CMC
 	 ON ms_fileid=CMC.fileID
 
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('DEFENCE')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [Defence]
+ON [Defence].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('CMC')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [CMCDate]
+ON [CMCDate].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('DISC')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [Disclosure]
+ON [Disclosure].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('WITEVIDENCE')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [WitEvidence]
+ON [WitEvidence].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('TRIALWINDOW')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [TrialWindow]
+ON [TrialWindow].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, client_code, matter_number, type, description, MAX(key_date) AS key_date
+FROM red_dw.dbo.dim_key_dates
+WHERE type IN ('TRIAL')
+AND is_active=1
+GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [Trial]
+ON [Trial].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
   
 WHERE
 (

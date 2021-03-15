@@ -91,6 +91,7 @@ SET NOCOUNT ON
            dim_fed_hierarchy_history.name [Case Manger Name],
            dim_fed_hierarchy_history.[worksforname] [Team  Managers Name],
            branch [Office],
+		   dim_fed_hierarchy_history.fed_code,
            dim_fed_hierarchy_history.hierarchylevel4hist [Team],
            dim_fed_hierarchy_history.hierarchylevel3hist [Department],
            dim_fed_hierarchy_history.hierarchylevel2hist [Division],

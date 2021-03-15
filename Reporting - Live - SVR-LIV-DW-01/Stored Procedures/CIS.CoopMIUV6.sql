@@ -5,7 +5,10 @@ GO
 
 CREATE PROCEDURE [CIS].[CoopMIUV6]
 AS
-BEGIN
+begin
+
+set tran isolation level read uncommitted
+
 SELECT 
 			 [case_id]
             ,[Client]
@@ -323,7 +326,7 @@ SELECT
 		    ,AllDisbLeadLink
 		    ,PreLitFees
 		   ,PostLitFees
-
+-- select *
 FROM red_dw.dbo.dim_matter_header_current AS a  WITH (NOLOCK)
 INNER JOIN red_dw.dbo.fact_dimension_main  AS b  WITH (NOLOCK) 
  ON a.dim_matter_header_curr_key=b.dim_matter_header_curr_key
