@@ -20,6 +20,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpening] --EXEC dbo.LTAMilestoneFileOpening '2021-02-01','2021-02-25'
 (
 @StartDate  AS DATE
@@ -50,6 +51,7 @@ SELECT
 	   WHEN NewTaskDesc='REM: Team Manager File Audit Review - Team Mananger' THEN 7  
 	   WHEN NewTaskDesc='ADM: Monthly review - Case Handler' THEN 8  
 	   WHEN NewTaskDesc='ADM: Cost Estimate Review – Case Handler' THEN 9  
+	   WHEN NewTaskDesc='Matter Creation – Support' THEN 10
 	   END AS TaskOrder,
        SUM(Summary.[Number Live Matters]) AS [Number Live Matters],
 	   SUM(Summary.[Days Diff Between File Open and Data Completed]) AS DateDiff,
@@ -141,8 +143,64 @@ AND tskFilter IN
 'Tsk001','tsk_01_2040_FileOpening','tsk_01_2020_AddAssociates','tsk_01_2090_OpeningRisk'
 ,'tsk_01_090_ADMCompleteCDD','tsk_02_050_REMReviewMatter','tsk_01_280_admcostsestimatereview','tsk_01_2110_FeeEarnerCheck','tsk_01_560_REMTMAuditRF'
 ,'tsk004','tsk014','tsk006'
-
 )
+UNION
+SELECT ms_fileid
+,master_client_code AS [Client]
+,client_name AS [Client Name]
+,master_matter_number AS [Matter]
+,master_client_code + '-' + master_matter_number AS [File]
+,name AS [Display_Name]
+,fed_code AS [Fee Earner]
+,hierarchylevel2hist AS [Business Line]
+,hierarchylevel3hist AS [Practice Area]
+,hierarchylevel4hist AS [Team]
+
+,matter_category AS [Matter Category]
+,work_type_code AS [Work Type]
+,work_type_name AS [Work Type Code]
+,NULL AS [Milestone]
+,NULL AS [Task Filter Code]
+,NULL AS [Task Flow Code]
+,NULL AS [Task Description]
+,red_dw.dbo.datetimelocal(dbFile.Created) AS [Date Created]
+,date_opened_case_management AS [File Open Date]
+,DATENAME(MONTH,date_opened_case_management) + CAST(YEAR(date_opened_case_management) AS NVARCHAR(4)) AS [Month/Year Open]
+,NULL AS [Task Due Date]
+,NULL  AS [Task Completed]
+,NULL AS [Date Completed]
+,NULL AS [Days Diff Between File Open and Data Completed]
+,usrFullName AS [Completed By]
+,NULL  AS [Deleted]
+,RoleType  AS [Role Completed By]
+,1 AS [Number Live Matters]
+,NULL Overdue
+,'Matter Creation – Support' AS NewTaskDesc
+,DATEDIFF(DAY,date_instructions_received,date_opened_case_management) AS ElapsedInstructiontoOpen
+FROM red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
+INNER JOIN MS_Prod.config.dbFile  WITH(NOLOCK)
+ ON ms_fileid=fileID
+LEFT OUTER JOIN MS_Prod.dbo.dbUser  WITH(NOLOCK)
+ ON dbFile.CreatedBy=dbUser.usrID
+LEFT OUTER JOIN (SELECT fed_code AS usralias,levelidud,postid,dim_employee.jobtitle,CASE WHEN management_role_one='Team Manager' THEN 'Team Manager' ELSE [classification] END AS RoleType
+FROM red_dw.dbo.dim_employee  WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
+ ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+WHERE dss_current_flag='Y'
+AND activeud=1) AS Roles
+ON Roles.usralias = dbUser.usrAlias COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+ AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+WHERE hierarchylevel2hist='Legal Ops - LTA'
+AND 
+CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
+
+
 ) AS Summary
 
 GROUP BY Summary.Display_Name,

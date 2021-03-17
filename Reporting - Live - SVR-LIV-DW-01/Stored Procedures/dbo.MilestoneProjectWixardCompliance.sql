@@ -11,6 +11,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -35,8 +36,8 @@ SELECT hierarchylevel2hist AS Division
 ,CONVERT(DATE,Milestones.DateLastCompleted,103) AS [LastTimeRan]
 ,DATEDIFF(DAY,CONVERT(DATE,Milestones.DateLastCompleted,103),GETDATE()) AS [DaysSinceWizardLastCompleted]
 ,CONVERT(DATE,GETDATE(),103) AS TodaysDate
-,dim_matter_header_current.client_code AS [Client]
-,dim_matter_header_current.matter_number AS [Matter]
+,dim_matter_header_current.master_client_code AS [Client]
+,dim_matter_header_current.master_matter_number AS [Matter]
 ,matter_description AS [MatterDescription]
 ,name AS [MatterOwner]
 ,dim_matter_header_current.present_position
