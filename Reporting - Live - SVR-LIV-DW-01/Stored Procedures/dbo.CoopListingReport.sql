@@ -19,7 +19,8 @@ GO
 -- JL 03/08/2018 - Added in costs settled for Tableau Dash
 -- sg 03/01/2019 - changed fee arragment to look at dim_matter_header and not dim_detail_client
 -- ld 15/01/2019 - added future loss of earnings
--- ES 24/02/2021 - #89228 added client code W24438 
+-- ES 24/02/2021 - #89228 added client code W24438--
+-- JL 17/03/2021 - #91487 added in Proceedings issued years/quarter split for dashboard chart
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopListingReport]
@@ -216,6 +217,14 @@ SELECT
            ELSE
                0
        END AS ProceedingsIsuued_2020
+	   ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' THEN 'Litigated'  ELSE 'Pre-lit'  END AS Litigation
+       ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued >date_instructions_received THEN 'Litigated Post Instructions'
+	         WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued <=date_instructions_received THEN'Litigated Pre Instructions' 
+			 WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND  dim_detail_core_details.date_proceedings_issued IS NULL THEN NULL
+			 WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='No'  THEN 'Pre-Lit'
+			  ELSE null 
+			 END AS LitigatedType
+		,dim_detail_outcome.[date_claim_concluded]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -291,5 +300,5 @@ END
 
 
  
-				
+	
 GO
