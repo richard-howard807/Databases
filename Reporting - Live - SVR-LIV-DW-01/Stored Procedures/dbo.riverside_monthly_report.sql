@@ -59,10 +59,10 @@ SELECT
 		ELSE 
 			0
 	  END					AS [Counsel Fees]
-	, ''				AS [Damages Paid]
+	, ms_data.curDamages				AS [Damages Paid]
 	, ms_data.curRevEstimate			AS [Panel Fees Agreed]
 	, fact_finance_summary.wip			AS [WIP Outstanding]
-	, fact_finance_summary.total_amount_billed		AS [Panel Fees to Date (Incl. VAT)]
+	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.defence_costs_vat, 0)	AS [Panel Fees to Date (Incl. VAT)]
 	, fact_detail_property.amount_claimed_tenant				AS [3rd Party Solicitor Fees Claimed (Incl. VAT)]
 	, fact_detail_property.tenants_solicitors_costs				AS [3rd Party Solicitor Fees Paid (Incl. VAT)]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)			AS [Case Closed Date]
@@ -94,6 +94,7 @@ FROM red_dw.dbo.dim_matter_header_current
 							, udMICoreGeneral.curRevEstimate
 							, udRealEstate.cboIssueProc
 							, udRealEstate.cboLiabAdmitted
+							, udRealEstate.curDamages
 						FROM MS_Prod.config.dbFile
 							INNER JOIN MS_Prod.config.dbClient
 								ON dbClient.clID = dbFile.clID
@@ -137,6 +138,5 @@ ORDER BY
 	[Date Opened]
 
 END
-
 
 GO
