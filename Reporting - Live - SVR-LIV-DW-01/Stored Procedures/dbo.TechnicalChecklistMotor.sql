@@ -6,20 +6,22 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[TechnicalChecklistMotor]
 
 AS 
 
 BEGIN
-SELECT client_code
-,matter_number
+SELECT dim_matter_header_current.client_code
+,dim_matter_header_current.matter_number
 ,matter_description 
 ,hierarchylevel3hist AS [Department]
 ,hierarchylevel4hist AS [Team]
 ,name AS matter_owner_full_name
 ,fed_code
-,tskDue
-,tskCompleted
+,red_dw.dbo.datetimelocal(tskDue) AS tskDue
+,red_dw.dbo.datetimelocal(tskCompleted) AS tskCompleted
 ,tskActive
 ,tskDesc
 ,CASE WHEN tskCompleted IS NULL AND tskActive=1 THEN 1 ELSE 0 END AS [ProcessDue]
@@ -82,9 +84,9 @@ CASE WHEN cboSugBrePol='Y' THEN 1 ELSE 0 END  AS Section1
   CASE WHEN cboAnoInsParty='Y' THEN 1 ELSE 0 END  + 
    CASE WHEN cboEleSubLoss='Y' THEN 1 ELSE 0 END   AS Section2
  
+ ,referral_reason
 
-
-
+ ,DATEDIFF(DAY,date_opened_case_management,GETDATE()) AS DateOpenedRange
 
 
 
@@ -93,9 +95,11 @@ INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
-INNER JOIN ms_prod.dbo.dbTasks 
+LEFT JOIN ms_prod.dbo.dbTasks 
  ON  ms_fileid=dbTasks.fileid AND tskFilter='tsk_01_02_010_TechCheckMot '
- 
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+ AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
  LEFT OUTER JOIN ms_prod.dbo.udTechMotor ON ms_fileid=udTechMotor.fileID
 
 WHERE 
@@ -103,6 +107,9 @@ WHERE
 AND date_opened_case_management>='2021-03-01'
 ) 
 AND reporting_exclusions=0
+AND referral_reason LIKE 'Dispute%'
+AND DATEDIFF(DAY,date_opened_case_management,GETDATE())>14
+
 
 END
 GO

@@ -22,6 +22,7 @@ GO
 -- ES 22/02/2019 - Added claimant postcode
 -- ES 08/03/2019 - Restriced to Dave Wilds team, requested by Christa W
 -- ES 24/02/2021 - #89228 added client code W24438 with restricted instruction types
+-- JL 17/03/2021 - #91487 added in Proceedings issued years/quarter split for dashboard chart
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopPortfolioComplexClaims]
@@ -223,6 +224,55 @@ SELECT
 		, fact_detail_paid_detail.[court_of_protection_paid_hundred_percent] --NMI240
 			as [Future C of P]
 		, ms_only
+		,red_dw.dbo.dim_detail_core_details.date_instructions_received
+			,CASE WHEN DATEPART(mm,dim_detail_core_details.date_proceedings_issued)<=3 THEN 'Qtr1'
+	WHEN DATEPART(mm,dim_detail_core_details.date_proceedings_issued)<=6 THEN 'Qtr2'
+	WHEN DATEPART(mm,dim_detail_core_details.date_proceedings_issued)<=9 THEN 'Qtr3'
+	WHEN DATEPART(mm,dim_detail_core_details.date_proceedings_issued)<=12 THEN 'Qtr4'
+	ELSE NULL END AS [Calendar Quarter Proceedings Issued]
+	,CAST(YEAR(dim_detail_core_details.date_proceedings_issued) as char(4)) + ' Q' + CAST(DATEPART(QUARTER,dim_detail_core_details.date_proceedings_issued) as char(1)) QuarterUniqueName
+	 ,CASE when
+           date.cal_quarter IN ( '201601', '201602', '201603', '201604')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2016
+	    ,CASE when
+           date.cal_quarter IN ( '201701', '201702', '201703', '201704')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2017 ,CASE when
+           date.cal_quarter IN ( '201801', '201802', '201803', '201804')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2018
+	   ,CASE when
+           date.cal_quarter IN ( '201901', '201902', '201903', '201904')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2019
+	   ,CASE when
+           date.cal_quarter IN ( '202001', '202002', '202003', '202004')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2020
+	   ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' THEN 'Litigated'  ELSE 'Pre-lit'  END AS Litigation
+       ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued >date_instructions_received THEN 'Litigated Post Instructions'
+	         WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued <=date_instructions_received THEN'Litigated Pre Instructions' 
+			 WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND  dim_detail_core_details.date_proceedings_issued IS NULL THEN NULL
+			 WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='No'  THEN 'Pre-Lit'
+			  ELSE null 
+			 END AS LitigatedType
+		,dim_detail_outcome.[date_claim_concluded]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -274,7 +324,7 @@ LEFT OUTER JOIN red_dw.dbo.Doogal ON dim_claimant_address.postcode=Doogal.Postco
 
 LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care ON fact_detail_future_care.master_fact_key=fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
-
+LEFT OUTER JOIN red_dw.dbo.dim_date as date ON  CAST(date.calendar_date AS DATE) = CAST(dim_detail_core_details.date_proceedings_issued AS DATE) 
 WHERE (dim_client.client_group_code = '00000004' 
 OR (dim_matter_header_current.master_client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op Back Book', 'Co-op Forward Book')))
 --AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >='2017-01-01')

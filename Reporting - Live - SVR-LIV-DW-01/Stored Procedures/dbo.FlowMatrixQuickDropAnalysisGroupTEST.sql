@@ -53,7 +53,10 @@ x.NewestItem,
 x.NoOver5Days,
 x.NumberCompleted,
 x.NumberPending,
-CASE WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 ELSE 0 END AS SortOrder
+CASE 
+WHEN [x].[Business Line] = 'Non-User Accounts' THEN 2 
+WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 
+ELSE 0 END AS SortOrder
 
 
  
@@ -84,10 +87,10 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,  
        j.queue_id,  
        created AS DateScanned  
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  
-    ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] 
-    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT ,'Unknown') AS [Full Name]  --Added owner 20210209 - MT
+    ,COALESCE([Business Line], 'Team QuickDrop Queues') AS [Business Line]  --[Business Line] 
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] --Added owner 20210209 - MT
+    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT)  AS Team  --Added owner 20210209 - MT
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
     ,1 AS ItemsCompleted
@@ -149,12 +152,12 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,
        j.queue_id,
        created AS DateScanned,
-	    forename + ' ' + surname AS [Full Name]
-	   ,hierarchylevel2hist AS [Business Line]
-	   ,hierarchylevel3hist AS [Practice Area]
-	   ,hierarchylevel4hist AS Team
-	   ,dim_employee.jobtitle AS [Role]
-	   ,locationidud AS [Office]	
+	    COALESCE(forename + ' ' + surname, j.owner COLLATE DATABASE_DEFAULT) AS [Full Name]
+	   ,COALESCE(hierarchylevel2hist, 'Non-User Accounts') AS [Business Line]
+	   ,COALESCE(hierarchylevel3hist,  j.owner COLLATE DATABASE_DEFAULT)  AS [Practice Area]
+	   ,COALESCE(hierarchylevel4hist, j.owner COLLATE DATABASE_DEFAULT)  AS Team
+	   ,ISNULL(dim_employee.jobtitle, 'Unknown' )AS [Role]
+	   ,ISNULL(locationidud, 'Unknown') AS [Office]	
 	   ,1 AS ItemsCompleted
 	   ,worksforname AS [Team Manager]
 	   ,worksforemail AS [TM Email]
@@ -164,7 +167,7 @@ FROM [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] j
  
 JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Queues] q ON j.queue_id = q.queue_id
 
-INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
+LEFT JOIN  red_dw.dbo.dim_fed_hierarchy_history
  ON windowsusername=[owner] COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
  AND (activeud= 1 OR windowsusername IN ('cwahle','awilli07')  
  OR windowsusername IN (SELECT DISTINCT windowsusername
@@ -174,7 +177,7 @@ AND windowsusername IS NOT NULL
 AND windowsusername NOT IN (SELECT DISTINCT windowsusername
 FROM red_dw.dbo.dim_fed_hierarchy_history
 WHERE activeud = 1 AND dss_current_flag = 'Y' AND windowsusername IS NOT null)))
-INNER JOIN   red_dw.dbo.dim_employee
+LEFT JOIN   red_dw.dbo.dim_employee
  ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
  --LEFT JOIN  #TeamLeaders 
  --ON TeamLeader=[owner] COLLATE DATABASE_DEFAULT AND RN = 1 
@@ -226,7 +229,10 @@ x.NewestItem,
 x.NoOver5Days,
 x.NumberCompleted, 
 x.NumberPending,
-CASE WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 ELSE 0 END AS SortOrder
+CASE 
+WHEN [x].[Business Line] = 'Non-User Accounts' THEN 2 
+WHEN [x].[Business Line] = 'Team QuickDrop Queues' THEN 1 
+ELSE 0 END AS SortOrder
  FROM 
  (
 --SELECT ROW_NUMBER() OVER (PARTITION BY 1  ORDER BY SUM(GroupedData.ItemsWaiting) DESC) AS [Leaderboard Place],  
@@ -254,10 +260,10 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,  
        j.queue_id,  
        created AS DateScanned  
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Full Name]  
-    ,'Team QuickDrop Queues' AS [Business Line]  --[Business Line] 
-    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] 
-    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT)  AS Team  
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT ,'Unknown') AS [Full Name]  --Added owner 20210209 - MT
+    ,COALESCE([Business Line], 'Team QuickDrop Queues') AS [Business Line]  --[Business Line] 
+    ,COALESCE(Team,[owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT,'Unknown') AS [Practice Area] -- [Practice Area] --Added owner 20210209 - MT
+    ,COALESCE(Team, [owner] COLLATE DATABASE_DEFAULT, owner COLLATE DATABASE_DEFAULT)  AS Team  --Added owner 20210209 - MT
     ,COALESCE([Role], 'Unknown') AS [Role]  
     ,COALESCE([Office], 'Unknown') AS [Office]   
     ,1 AS ItemsCompleted
@@ -319,12 +325,12 @@ SELECT j.[job_id] AS job_id,
        NULL workflow_id,
        j.queue_id,
        created AS DateScanned,
-	    forename + ' ' + surname AS [Full Name]
-	   ,hierarchylevel2hist AS [Business Line]
-	   ,hierarchylevel3hist AS [Practice Area]
-	   ,hierarchylevel4hist AS Team
-	   ,dim_employee.jobtitle AS [Role]
-	   ,locationidud AS [Office]	
+	    COALESCE(forename + ' ' + surname, j.owner COLLATE DATABASE_DEFAULT) AS [Full Name]
+	   ,COALESCE(hierarchylevel2hist, 'Non-User Accounts') AS [Business Line]
+	   ,COALESCE(hierarchylevel3hist,  j.owner COLLATE DATABASE_DEFAULT)  AS [Practice Area]
+	   ,COALESCE(hierarchylevel4hist, j.owner COLLATE DATABASE_DEFAULT)  AS Team
+	   ,ISNULL(dim_employee.jobtitle, 'Unknown' )AS [Role]
+	   ,ISNULL(locationidud, 'Unknown') AS [Office]	
 	   ,1 AS ItemsCompleted
 	   ,worksforname AS [Team Manager]
 	   ,worksforemail AS [TM Email]
@@ -334,7 +340,7 @@ FROM [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] j
  
 JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Queues] q ON j.queue_id = q.queue_id
 
-INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
+LEFT JOIN  red_dw.dbo.dim_fed_hierarchy_history
  ON windowsusername=[owner] COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
  AND (activeud= 1 OR windowsusername IN ('cwahle','awilli07')  
  OR windowsusername IN (SELECT DISTINCT windowsusername
@@ -344,7 +350,7 @@ AND windowsusername IS NOT NULL
 AND windowsusername NOT IN (SELECT DISTINCT windowsusername
 FROM red_dw.dbo.dim_fed_hierarchy_history
 WHERE activeud = 1 AND dss_current_flag = 'Y' AND windowsusername IS NOT null)))
-INNER JOIN   red_dw.dbo.dim_employee
+LEFT JOIN   red_dw.dbo.dim_employee
  ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
  --LEFT JOIN  #TeamLeaders 
  --ON TeamLeader=[owner] COLLATE DATABASE_DEFAULT AND RN = 1 

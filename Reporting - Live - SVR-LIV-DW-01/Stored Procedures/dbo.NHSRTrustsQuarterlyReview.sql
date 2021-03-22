@@ -8,6 +8,7 @@ GO
 -- Create date: 2020-09-02
 -- Ticket:		#68460
 -- Description:	New report for NHSR Trusts Quarterly Review
+-- Update: MT as per 92701 added [Risk Management Recommendations] 
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
@@ -387,6 +388,9 @@ SELECT
 					'7 - cl'
 			END
 	END							AS [Damages Tranche Order]
+
+	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
+	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

@@ -8,10 +8,11 @@ GO
 -- Create date: 2020-10-16
 -- Ticket:		#68460
 -- Description:	To deal with the Summary tables on NHSR Trusts Quarterly Review report, summary doesn't need @start_date & @end_date that NHSRTrustsQuarterlyReview uses
+-- Update: MT as per 92701 added [Risk Management Recommendations] 
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReviewSummary]
 (
-		@def_trust AS VARCHAR(MAX)
+		 @def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)
 		, @instruction_type AS VARCHAR(MAX)
 		, @referral_reason AS VARCHAR(MAX)	
@@ -200,6 +201,9 @@ SELECT
 		ELSE
 			0
 	  END				AS [Clinical Damages Paid Past 12 Months]
+
+	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
+	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -261,6 +265,7 @@ SELECT
 	, LEFT(DATENAME(MONTH, dim_date.calendar_date), 3) + '-' + FORMAT(dim_date.calendar_date, 'yy')
 	, 0
 	, 0
+	, NULL
 	, NULL
 	, NULL
 	, NULL
