@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -42,14 +44,14 @@ NULL AS [Date PH/driver notified re indemnity ],
 fact_detail_paid_detail.[total_damages_paid] [Claimant's damages paid ],
 fact_finance_summary.[total_tp_costs_paid_to_date] [Claimant's costs paid ],
 --fact_detail_paid_detail.[total_damages_paid] +fact_finance_summary.[total_tp_costs_paid_to_date] [Recovery sought],
-fact_detail_recovery_detail.[amount_recovery_sought] [Recovery sought],
+ISNULL(fact_detail_recovery_detail.[amount_recovery_sought],fact_detail_reserve_detail.[recovery_reserve]) [Recovery sought],
 --fact_finance_summary.[total_recovery] [Amount recovered],
 ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0) AS  [Amount recovered],
 --(fact_detail_paid_detail.[total_damages_paid] +fact_finance_summary.[total_tp_costs_paid_to_date] ) - fact_finance_summary.[total_recovery] [Balance outstanding],
 
 CASE WHEN balance_due_on_charging_order IS NOT NULL  THEN balance_due_on_charging_order
 WHEN date_recovery_concluded IS NOT NULL THEN 0 ELSE
-ISNULL(fact_detail_recovery_detail.[amount_recovery_sought],0) - ( ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0)) 
+ISNULL(fact_detail_recovery_detail.[amount_recovery_sought],ISNULL(fact_detail_reserve_detail.[recovery_reserve],0)) - ( ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0)) 
 END [Balance outstanding],
 fact_detail_client.[balance_due_on_charging_order] [Balance due on charging order],
 dim_detail_claim.[date_recovery_concluded][Date recovery concluded],
@@ -123,6 +125,9 @@ LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_
 LEFT JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ ON fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
+ AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
 
