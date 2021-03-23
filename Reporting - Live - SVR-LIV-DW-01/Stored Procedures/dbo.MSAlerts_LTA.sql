@@ -21,6 +21,9 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+-- For testing
+--DECLARE @FedCode AS VARCHAR(MAX) = '138467,137680,135873,128142,128096,128035,128012'
+--		, @Level AS VARCHAR(10) = 'Individual'
 
 DROP TABLE IF EXISTS #finacial_calcs
 DROP TABLE IF EXISTS #FedCodeList
@@ -68,19 +71,27 @@ SELECT
 	dim_matter_header_current.master_client_code																										AS client_code
 	, dim_matter_header_current.master_matter_number																									AS matter_number
 
-	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0)														AS ff_revenue_billed
+	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0)														AS revenue_billed_plus_wip
 	, ISNULL(fact_finance_summary.fixed_fee_amount, 0) - (ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0))	AS outstanding_ff
 	, ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0)		AS total_billed_unbilled
 	, ISNULL(fact_finance_summary.defence_costs_reserve, 0) - 
 		(ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0))	AS os_def_reserve
 	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0) -
 		(ISNULL(fact_bill_detail_summary.bill_total, 0) + ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0))	AS os_costs_est
+	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0)							AS total_billed_unbilled_disb
+	, ISNULL(fact_detail_reserve_detail.disbursements_estimate_net_of_vat, 0) - 
+		(ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0) + ISNULL(fact_finance_summary.disbursement_balance, 0))						AS os_disbursements
+	, ISNULL(fact_detail_reserve_detail.revenue_estimate_net_of_vat, 0) - 
+		(ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.wip, 0))													AS os_revenue_estimate
 INTO #finacial_calcs
 FROM red_dw.dbo.dim_matter_header_current 
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary 
 		ON fact_finance_summary.client_code = dim_matter_header_current.client_code AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.fact_bill_detail_summary fact_bill_detail_summary
 		ON fact_bill_detail_summary.master_fact_key = fact_finance_summary.master_fact_key
+	LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+		ON fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
+			AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
 WHERE dim_matter_header_current.date_closed_practice_management IS NULL
 	AND dim_matter_header_current.reporting_exclusions <> 1
 
@@ -111,13 +122,19 @@ SELECT
 	, dim_matter_header_current.fee_arrangement																AS [Fee Arrangement]
 	, CASE 
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
+			'ff'
+		ELSE
+			'hr'
+	  END							AS [ff_or_hr]
+	, CASE 
+		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
 			fact_finance_summary.fixed_fee_amount
 		ELSE
 			NULL
 	  END																					AS [Fixed Fee Amount]
 	, CASE	
 		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
-			ISNULL(#finacial_calcs.ff_revenue_billed, 0)
+			ISNULL(#finacial_calcs.revenue_billed_plus_wip, 0)
 		ELSE
 			NULL
 	  END																					AS [Total of Revenue Billed (net of VAT) +  WIP]
@@ -132,52 +149,49 @@ SELECT
 			CASE 
 				WHEN fact_finance_summary.fixed_fee_amount = 0 THEN
 					'Red'
-				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
+				WHEN #finacial_calcs.revenue_billed_plus_wip > (fact_finance_summary.fixed_fee_amount * 0.9) THEN
 					'Red'
-				WHEN #finacial_calcs.ff_revenue_billed > (fact_finance_summary.fixed_fee_amount * 0.75) THEN
-					'Amber'
-				WHEN 	fact_finance_summary.fixed_fee_amount IS NULL THEN 'nocolour'
+				WHEN #finacial_calcs.revenue_billed_plus_wip > (fact_finance_summary.fixed_fee_amount * 0.75) THEN
+					'Orange'
+				WHEN fact_finance_summary.fixed_fee_amount IS NULL THEN 'nocolour'
 				ELSE
 					'Green'
 			END	
 		ELSE
-			'N/A'
+			'Transparent'
 	  END																					AS [Fixed Fee RAG Status]
-	--, ISNULL(fact_finance_summary.defence_costs_reserve, 0)												AS [Defence Costs Reserve]
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
+			CASE 
+				WHEN fact_finance_summary.revenue_estimate_net_of_vat = 0 OR fact_finance_summary.revenue_estimate_net_of_vat IS NULL THEN
+					'Red'
+				WHEN #finacial_calcs.revenue_billed_plus_wip > (fact_finance_summary.revenue_estimate_net_of_vat * 0.9) THEN
+					'Red'
+				WHEN #finacial_calcs.revenue_billed_plus_wip > (fact_finance_summary.revenue_estimate_net_of_vat * 0.75) THEN
+					'Orange'
+				ELSE
+					'Green'
+			END	
+		ELSE
+			'Transparent'
+	  END																					AS [Revenue Estimate RAG Status]
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
+			CASE 
+				WHEN fact_finance_summary.disbursements_estimate_net_of_vat = 0 OR fact_finance_summary.disbursements_estimate_net_of_vat IS NULL THEN
+					'Red'
+				WHEN #finacial_calcs.total_billed_unbilled_disb > (fact_finance_summary.disbursements_estimate_net_of_vat * 0.9) THEN
+					'Red'
+				WHEN #finacial_calcs.total_billed_unbilled_disb > (fact_finance_summary.disbursements_estimate_net_of_vat * 0.75) THEN
+					'Orange'
+				ELSE
+					'Green'
+			END	
+		ELSE
+			'Transparent'
+	  END																					AS [Disbursement RAG Status]
 	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0)											AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)											AS [Total of Total Billed + WIP + Unbilled Disbursements]
-	--, CASE
-	--	WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
-	--		ISNULL(#finacial_calcs.os_def_reserve, 0)	
-	--	ELSE 
-	--		NULL
-	--	END																					AS [Outstanding defence reserve amount]
-	--, CASE
-	--	WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
-	--		CASE 
-	--			WHEN fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0 THEN
-	--				'Red'
-	--			WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.9) THEN
-	--				'Red'
-	--			WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.defence_costs_reserve * 0.75) THEN
-	--				'Amber'
-	--			ELSE
-	--				'Green'
-	--		END
-	--	ELSE	
-	--		'N/A'
-	--  END																					AS [Defence Costs Reserve RAG Status]
-	--, ISNULL(#finacial_calcs.os_costs_est, 0)													AS [Outstanding costs estimate amount]
-	--,CASE 
-	--	WHEN fact_finance_summary.commercial_costs_estimate IS NULL OR fact_finance_summary.commercial_costs_estimate = 0 THEN
-	--		'Red'
-	--	WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.commercial_costs_estimate * 0.9) THEN
-	--		'Red'
-	--	WHEN #finacial_calcs.total_billed_unbilled > (fact_finance_summary.commercial_costs_estimate * 0.75) THEN
-	--		'Amber'
-	--	ELSE
-	--		'Green'
-	--  END																					AS [Current Costs Estimate RAG Status]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)												AS [Revenue Billed (net of VAT)]
 	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0)						AS [Disbursements Billed (excl VAT)]
 	, ISNULL(fact_bill_detail_summary.vat_amount, 0)										AS [VAT]
@@ -192,14 +206,45 @@ SELECT
 				ELSE 
 					'FF amount complete'
 			END 
-		ELSE 
+	   END																								AS [Missing FF Amount Reserve]
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
 			CASE 
-				WHEN (fact_finance_summary.defence_costs_reserve IS NULL OR fact_finance_summary.defence_costs_reserve = 0) THEN 
-					'Defence costs reserve missing'
-				ELSE
-					'Defence costs reserve complete'
+				WHEN (fact_finance_summary.revenue_estimate_net_of_vat IS NULL OR fact_finance_summary.revenue_estimate_net_of_vat = 0) THEN 
+					'Revenue Estimate missing'
+				ELSE 
+					'Revenue Estimate complete'
 			END 
-	   END																								AS [Missing FF or Defence Costs Reserve]
+	   END																								AS [Missing Revenue Estimate]
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
+			CASE 
+				WHEN (fact_finance_summary.disbursements_estimate_net_of_vat IS NULL OR fact_finance_summary.disbursements_estimate_net_of_vat = 0) THEN 
+					'Disb Estimate missing'
+				ELSE 
+					'Disb Estimate complete'
+			END 
+	   END																								AS [Missing Disbursement Estimate]
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN 
+			#finacial_calcs.total_billed_unbilled_disb		
+		ELSE
+			NULL 
+	  END						AS [Total of Billed disbs and Unbilled disbs]
+	, fact_finance_summary.revenue_estimate_net_of_vat
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN 
+			#finacial_calcs.os_revenue_estimate			
+		ELSE
+			NULL 
+	  END										AS [Outstanding Revenue Estimate]
+	, fact_finance_summary.disbursements_estimate_net_of_vat
+	, CASE
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN 
+			#finacial_calcs.os_disbursements				
+		ELSE
+			NULL 
+	  END										AS [Outstanding Disbursements]
 	--, dim_detail_outcome.outcome_of_case																AS [Outcome]
 --select *
 FROM red_dw.dbo.dim_matter_header_current																							
@@ -230,7 +275,7 @@ WHERE
 	AND dim_fed_hierarchy_history.hierarchylevel2 = 'Legal Ops - LTA'
 	--AND RTRIM(worktype.work_type_name) <> 'Claims Handling' --this excludes outsource cases (mainly Zurich matters, under 200 non Z matters)
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(dim_detail_outcome.outcome_of_case) <> 'Exclude from reports')
-	AND RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'fixed fee/fee quote/capped fee'
+	AND RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) IN ('fixed fee/fee quote/capped fee', 'hourly rate')
 	--AND (h_current.present_position IS NULL OR RTRIM(h_current.present_position) NOT IN ('Final bill sent - unpaid', 'To be closed/minor balances to be clear'))
 	AND (RTRIM(dim_matter_worktype.work_type_name) NOT IN (
 													'Property View', 'Debt Recovery', 'Employment Advice Line', 'Holidays (including holiday pay)'
