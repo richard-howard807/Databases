@@ -17,8 +17,8 @@ client_balance,
 fact_dimension_main.client_code [Client Number],
 fact_dimension_main.matter_number [Matter number],
 Client.ClientReference AS [ClientRef],
-LEFT(RIGHT(Client.ClientReference, LEN(Client.ClientReference) - (PATINDEX('%[A-z]%', Client.ClientReference)-1)), 
-	PATINDEX('%[^A-z]%', RIGHT(Client.ClientReference, LEN(Client.ClientReference) - (PATINDEX('%[A-z]%', Client.ClientReference)-1)))-1)	AS [Work Type],
+LEFT(RIGHT(Client.cleaned_client_ref, LEN(Client.cleaned_client_ref) - (PATINDEX('%[A-z]%', Client.cleaned_client_ref)-1)), 
+	PATINDEX('%[^A-z]%', RIGHT(Client.cleaned_client_ref, LEN(Client.cleaned_client_ref) - (PATINDEX('%[A-z]%', Client.cleaned_client_ref)-1)))-1)	AS [Work Type],
 DriverName.DriverName AS [DriverName],
 THIRDPARTY.TPName AS [TPName],
 dim_matter_header_current.matter_description [Matter Description],
@@ -188,6 +188,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
                    assocType,
                    contName AS ClientName,
                    dbAssociates.assocRef AS ClientReference,
+				   -- Needed to clean misc characters at end of client reference that trim doesn't sort
+				   LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(dbAssociates.assocRef, CHAR(10), CHAR(32)),CHAR(13), CHAR(32)),CHAR(160), CHAR(32)),CHAR(9),CHAR(32)))) AS cleaned_client_ref,
                    ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
