@@ -45,8 +45,8 @@ SELECT
 		ELSE
 			'Y'
 	  END						AS [Settled]
-	, ms_data.cboLiabAdmitted				AS [Liability Denied]
-	, ms_data.cboIssueProc				AS [Litigated]
+	, dim_detail_property.liabilty_admited		AS [Liability Denied]
+	, dim_detail_property.issue_proceedings			AS [Litigated]
 	, CASE
 		WHEN LTRIM(RTRIM(LOWER(te_3e_disb.Description))) = 'court fees' THEN
 			te_3e_disb.disb_value
@@ -59,8 +59,8 @@ SELECT
 		ELSE 
 			0
 	  END					AS [Counsel Fees]
-	, ms_data.curDamages				AS [Damages Paid]
-	, ms_data.curRevEstimate			AS [Panel Fees Agreed]
+	, fact_detail_property.damages_amount				AS [Damages Paid]
+	, fact_finance_summary.revenue_estimate_net_of_vat			AS [Panel Fees Agreed]
 	, fact_finance_summary.wip			AS [WIP Outstanding]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0) + ISNULL(fact_finance_summary.defence_costs_vat, 0)	AS [Panel Fees to Date (Incl. VAT)]
 	, fact_detail_property.amount_claimed_tenant				AS [3rd Party Solicitor Fees Claimed (Incl. VAT)]
@@ -88,24 +88,6 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 		ON fact_finance_summary.client_code = dim_matter_header_current.client_code
 			AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
-	LEFT OUTER JOIN (
-						SELECT 
-							dbFile.fileID
-							, udMICoreGeneral.curRevEstimate
-							, udRealEstate.cboIssueProc
-							, udRealEstate.cboLiabAdmitted
-							, udRealEstate.curDamages
-						FROM MS_Prod.config.dbFile
-							INNER JOIN MS_Prod.config.dbClient
-								ON dbClient.clID = dbFile.clID
-							LEFT OUTER JOIN MS_Prod.dbo.udMICoreGeneral
-								ON udMICoreGeneral.fileID = dbFile.fileID
-							LEFT OUTER JOIN MS_Prod.[dbo].[udRealEstate]
-								ON dbFile.fileID = [udRealEstate].fileID
-						WHERE 1 = 1
-							AND dbClient.clNo = 'W15603'
-					) AS ms_data
-		ON ms_data.fileID = dim_matter_header_current.ms_fileid
 	LEFT OUTER JOIN (
 						SELECT DISTINCT
 							Matter.Number
