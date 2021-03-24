@@ -184,7 +184,8 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, ParalegalHours AS [Total Paralegal Hours Recorded]
 		, TraineeHours AS [Total Trainee Hours Recorded]
         , OtherHours AS  [Total Other Hours Recorded]
-
+		
+		
 
 		--Hire Deatils
 		, dim_detail_core_details.credit_hire AS [Credit Hire]
@@ -590,9 +591,10 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery Claimants Damages Third Party]
         , fact_finance_summary.[recovery_defence_costs_via_third_party_contribution] AS [Recovery Defence Cost Third Party]
         , fact_finance_summary.[recovery_defence_costs_from_claimant] AS [Recovery Defence Costs from Claimant]
-		, ISNULL(fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution],0)
-			+ ISNULL(fact_finance_summary.[recovery_defence_costs_via_third_party_contribution],0)
-			+ ISNULL(fact_finance_summary.[recovery_defence_costs_from_claimant],0) AS [Total Recovered]
+		, CASE WHEN fact_finance_summary.total_recovery>0 THEN  fact_finance_summary.total_recovery ELSE 
+			ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0) END AS [Total Recovered]
+		, dim_detail_claim.date_recovery_concluded AS [Date Recovery Concluded]
+		, dim_detail_claim.recovery_notes AS [Recovery Stage]
 
 		, fact_finance_summary.[special_damages_miscellaneous_paid] AS [Special Damages]
 		, fact_finance_summary.[personal_injury_paid] AS [General Damages]
