@@ -4,12 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -23,6 +17,8 @@ client_balance,
 fact_dimension_main.client_code [Client Number],
 fact_dimension_main.matter_number [Matter number],
 Client.ClientReference AS [ClientRef],
+LEFT(RIGHT(Client.ClientReference, LEN(Client.ClientReference) - (PATINDEX('%[A-z]%', Client.ClientReference)-1)), 
+	PATINDEX('%[^A-z]%', RIGHT(Client.ClientReference, LEN(Client.ClientReference) - (PATINDEX('%[A-z]%', Client.ClientReference)-1)))-1)	AS [Work Type],
 DriverName.DriverName AS [DriverName],
 THIRDPARTY.TPName AS [TPName],
 dim_matter_header_current.matter_description [Matter Description],
