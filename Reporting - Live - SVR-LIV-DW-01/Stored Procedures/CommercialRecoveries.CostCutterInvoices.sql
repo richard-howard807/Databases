@@ -7,6 +7,8 @@ GO
 -- Create date: 2021-02-12
 -- Description:	#87929, new report for Costcutter Invoices
 -- =============================================
+-- ES #93233 added nxstartdate, requested by connor kenny
+-- =============================================
 CREATE PROCEDURE [CommercialRecoveries].[CostCutterInvoices]
 AS
 
@@ -24,6 +26,7 @@ BEGIN
 	, work_type_name AS [Category of Work]
 	, CASE WHEN dim_matter_header_current.fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' THEN 'Yes' ELSE 'No' END AS [Fixed Fee]
 	, MatterRate.description AS [Rate]
+	, nxstartdate AS [Rate Start Date]
 	, narrative AS [Description of Work]
 	, timekeeper.name AS [Time Recorder]
 	, SUM(fact_bill_detail.workhrs*60) AS [WIP Hours]
@@ -103,6 +106,7 @@ GROUP BY dim_matter_header_current.master_client_code + '-' + dim_matter_header_
          dim_matter_header_current.matter_description,
          dim_matter_worktype.work_type_name,
          MatterRate.description,
+		 nxstartdate,
          dim_bill_narrative.narrative,
          timekeeper.name,
          bill_date.calendar_date,

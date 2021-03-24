@@ -23,9 +23,70 @@ Current Version:	Initial Create
 
 	AS
 	BEGIN
-  --DECLARE 
--- @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
--- @Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+
+	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
+	 
+	IF OBJECT_ID('tempdb..#WriteOff') IS NOT NULL DROP TABLE #WriteOff
+
+------------Testing-----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+ --DECLARE 
+ --@Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
+ --@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+
+
+ SELECT
+	 fact_write_off.[master_matter_number]
+      ,fact_write_off.[master_client_code]
+      --,[write_off_month] 
+	  --,write_off_date
+	  ,fin_year
+	  --,fin_month_no
+	  --,fin_period
+	  ,dim_matter_header_current.dim_matter_header_curr_key
+	      ,dim_fed_hierarchy_history.hierarchylevel3hist
+		 -- ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
+		 --  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Chargeable Time Not Billed'
+			--WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
+			--WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
+			--WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
+		 ,SUM(CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END )[ytd_value_Total]
+		 ,SUM(CASE WHEN fin_period<=@Month AND  fact_write_off.write_off_type = 'WA' THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END) [ytd_value_WIP_Adjustment]
+  INTO #WriteOff   
+   
+FROM red_dw.dbo.fact_write_off
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
+       ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_matter_owner_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  feeearner
+       ON feeearner.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_hierarchy_history_key
+INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_header_curr_key
+       = dim_matter_header_current.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+WHERE
+dim_write_off_date_key>=20180501
+AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' <=@Month
+AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+AND dim_date.current_fin_year = 'Current'
+AND fact_write_off.write_off_type IN ('WA','NC','BA','P')	
+--AND dim_matter_header_current.master_client_code  = '10015' AND dim_matter_header_current.master_matter_number = '3'
+
+GROUP BY
+ fact_write_off.[master_matter_number]
+      ,fact_write_off.[master_client_code]
+      --,[write_off_month] 
+	  --,write_off_date
+	  ,fin_year
+	  --,fin_month_no
+	  --,fin_period
+	  ,dim_matter_header_current.dim_matter_header_curr_key
+	      ,dim_fed_hierarchy_history.hierarchylevel3hist
+		 -- ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
+		 --  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Chargeable Time Not Billed'
+			--WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
+			--WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
+			--WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
+	
+ --------------------------------------------------------------------------------------
 
 SELECT 
 RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
@@ -42,7 +103,9 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 ,red_dw.dbo.fact_finance_summary.wip AS CurrentWIP
 , DaysConcludeLastBill.fin_period
 ,'[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]' AS ParameterValue
-,[ytd_value_Total] AS WriteOff_ytd_value_Total
+,[ytd_value_WIP_Adjustment]
+,[ytd_value_Total] AS YTD_WriteOff_Total
+
 
   
 FROM
@@ -52,6 +115,9 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_cu
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS hist ON hist.dim_fed_hierarchy_history_key=fact_dimension_main.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 INNER  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
+LEFT OUTER JOIN #WriteOff ON #WriteOff.dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
+
+
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----1 get the days between Date Opened and Last Bill Date for the current FY
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -179,7 +245,7 @@ LEFT OUTER JOIN
 		WHERE
 		bill_current_fin_year = 'Current'
 		AND  bill_amount <>0
-		AND client_code = '00752920'
+		AND client_code = '00752920' --	this is for Armour only
 		
 
 		GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number 	 ) AS CYRevenueBilled 
@@ -187,69 +253,26 @@ ON CYRevenueBilled.client_code = dim_matter_header_current.client_code AND CYRev
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
-LEFT OUTER JOIN
- (   
+--LEFT OUTER JOIN
+ --(   
+--DECLARE  @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] '
 
-SELECT
-	 fact_write_off.[master_matter_number]
-      ,fact_write_off.[master_client_code]
+		
 
-	  -- ,ISNULL(fact_write_off.bill_amt_wdn,0) as [mtd_value]
-
-	  ,SUM(ISNULL(fact_write_off.bill_amt_wdn,0))as [ytd_value_Total]
-      ,[write_off_month] 
-	  ,write_off_date
-	  ,fin_year
-	  ,fin_month_no
-	  ,fin_period
-	  ,fact_write_off.dim_fed_matter_owner_key AS [dim_fed_hierarchy_history_key]
-	      ,dim_fed_hierarchy_history.hierarchylevel3hist
-		  ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
-     
-   
-FROM red_dw.dbo.fact_write_off
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
-       ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_matter_owner_key
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  feeearner
-       ON feeearner.dim_fed_hierarchy_history_key = fact_write_off.dim_fed_hierarchy_history_key
-INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_header_curr_key
-       = dim_matter_header_current.dim_matter_header_curr_key
-INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-WHERE
-dim_write_off_date_key>=20180501
-
-AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' <=@Month
-and fin_year=(select  fin_year from red_dw.dbo.dim_date
-				WHERE fin_period =  '[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' 
-				AND fin_day_in_month = 1 )
-AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
-
---AND fact_write_off.master_client_code = 'A1001' AND fact_write_off.master_matter_number = '10687'
-
-GROUP BY
-  fact_write_off.[master_matter_number]
-      ,fact_write_off.[master_client_code]
-      ,[write_off_month] 
-	  ,write_off_date
-	  ,fin_year
-	  ,fin_month_no
-	  ,fin_period
-	  ,fact_write_off.dim_fed_matter_owner_key 
-	      ,dim_fed_hierarchy_history.hierarchylevel3hist
-		  ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist)   )
-		  AS TimeWriteOff
-ON TimeWriteOff.master_matter_number = fact_dimension_main.matter_number AND TimeWriteOff.master_client_code = fact_dimension_main.client_code
+--)AS TimeWriteOff
+--ON TimeWriteOff.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 
   				
 
 WHERE
 hierarchylevel2hist='Legal Ops - Claims'
---AND hist.hierarchylevel3hist = 'Motor'
 AND dim_matter_header_current.reporting_exclusions=0
 AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
 AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
 
+
 	
 END 
 
+		
 GO
