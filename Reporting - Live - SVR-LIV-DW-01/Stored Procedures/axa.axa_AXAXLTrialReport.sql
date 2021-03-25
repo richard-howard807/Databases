@@ -31,6 +31,7 @@ BEGIN
 		   ,dim_detail_core_details.[suspicion_of_fraud] 
            ,[Date of Trial] = COALESCE(dim_detail_court.[date_of_trial], MAX(dim_key_dates.key_date) OVER (PARTITION BY fact_dimension_main.master_fact_key))
 		   ,dim_matter_header_current.date_opened_case_management
+		   ,hierarchylevel3hist AS Department
 		
     FROM red_dw.dbo.fact_dimension_main
         INNER JOIN red_dw.dbo.dim_matter_header_current AS dim_matter_header_current
@@ -66,9 +67,9 @@ BEGIN
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_detail_outcome.[date_claim_concluded] IS NULL
-		  AND (dim_detail_core_details.[does_claimant_have_personal_injury_claim] = 'Yes' OR dim_detail_core_details.[suspicion_of_fraud] = 'Yes' ) 
+		 -- AND (dim_detail_core_details.[does_claimant_have_personal_injury_claim] = 'Yes' OR dim_detail_core_details.[suspicion_of_fraud] = 'Yes' ) 
 		  AND COALESCE(dim_detail_court.[date_of_trial], dim_key_dates.key_date) > GETDATE()
-		
+		  AND hierarchylevel3hist  = 'Motor'
       
 		  
    

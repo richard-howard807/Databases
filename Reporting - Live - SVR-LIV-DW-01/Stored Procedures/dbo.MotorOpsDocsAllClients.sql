@@ -17,7 +17,7 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[MotorOpsDocs] --EXEC dbo.MotorOpsDocs 'Ageas','Motor'
+CREATE PROCEDURE [dbo].[MotorOpsDocsAllClients] --EXEC dbo.MotorOpsDocs 'Ageas','Motor'
 (
 @Client AS NVARCHAR(MAX)
 ,@Department  AS NVARCHAR(MAX)
@@ -63,7 +63,7 @@ AND   DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) - 1 THEN 1 ELSE 0 END AS 
 WHEN master_client_code='A1001' THEN 'AXA XL'
 WHEN master_client_code='T3003' THEN 'Tesco'
 WHEN master_client_code='A3003'  AND dim_detail_claim.[name_of_instructing_insurer]='Tesco Underwriting (TU)' THEN 'Tesco'
-WHEN master_client_code='A3003' THEN 'Ageas' END AS ClientFilter
+WHEN master_client_code='A3003' THEN 'Ageas' ELSE client_name END AS ClientFilter
 ,CASE WHEN dim_detail_core_details.present_position='Claim and costs outstanding' OR dim_detail_core_details.present_position IS NULL THEN 1
 WHEN dim_detail_core_details.present_position='Claim concluded but costs outstanding' THEN 2
 WHEN dim_detail_core_details.present_position='Claim and costs concluded but recovery outstanding' THEN 3
@@ -109,7 +109,7 @@ INNER JOIN red_dw.dbo.dim_matter_header_current
  ON fileID=ms_fileid
 WHERE tskDesc LIKE '%Trial date - today%'
 AND tskType='KEYDATE'
-AND master_client_code IN ('A3003','T3003','W15564','A1001')
+
 GROUP BY fileID
 ) AS Trial
  ON ms_fileid=Trial.fileid
@@ -117,20 +117,18 @@ LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key,SUM
 FROM red_dw.dbo.fact_debt
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_debt.dim_matter_header_curr_key
-WHERE master_client_code IN ('A3003','T3003','W15564','A1001')
-AND age_of_debt>30
+WHERE  age_of_debt>30
 AND outstanding_total_bill>0
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS Debt
  ON Debt.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE master_client_code IN ('A3003','T3003','W15564','A1001')
-AND reporting_exclusions=0
+WHERE reporting_exclusions=0
 AND (date_closed_case_management IS NULL OR date_closed_case_management>='2018-01-01')
 AND (CASE WHEN master_client_code='W15564' THEN 'Sabre' 
 WHEN master_client_code='A1001' THEN 'AXA XL'
 WHEN master_client_code='T3003' THEN 'Tesco'
 WHEN master_client_code='A3003'  AND dim_detail_claim.[name_of_instructing_insurer]='Tesco Underwriting (TU)' THEN 'Tesco'
-WHEN master_client_code='A3003' THEN 'Ageas' END)=@Client
+WHEN master_client_code='A3003' THEN 'Ageas' ELSE client_name END)=@Client
 --AND hierarchylevel3hist='Motor'
 AND ISNULL(outcome_of_case,'')<>'Returned to Client'
 

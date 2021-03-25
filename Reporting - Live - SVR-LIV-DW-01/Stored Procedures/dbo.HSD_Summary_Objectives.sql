@@ -31,7 +31,7 @@ Current Version:	Initial Create
 ------------Testing-----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
  --DECLARE 
- --@Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
+-- @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
  --@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
 
 
@@ -73,18 +73,10 @@ AND fact_write_off.write_off_type IN ('WA','NC','BA','P')
 GROUP BY
  fact_write_off.[master_matter_number]
       ,fact_write_off.[master_client_code]
-      --,[write_off_month] 
-	  --,write_off_date
 	  ,fin_year
-	  --,fin_month_no
-	  --,fin_period
 	  ,dim_matter_header_current.dim_matter_header_curr_key
-	      ,dim_fed_hierarchy_history.hierarchylevel3hist
-		 -- ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
-		 --  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Chargeable Time Not Billed'
-			--WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
-			--WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
-			--WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
+	  ,dim_fed_hierarchy_history.hierarchylevel3hist
+
 	
  --------------------------------------------------------------------------------------
 
@@ -103,8 +95,8 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 ,red_dw.dbo.fact_finance_summary.wip AS CurrentWIP
 , DaysConcludeLastBill.fin_period
 ,'[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]' AS ParameterValue
+,[ytd_value_Total]
 ,[ytd_value_WIP_Adjustment]
-,[ytd_value_Total] AS YTD_WriteOff_Total
 
 
   
