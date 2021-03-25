@@ -17,6 +17,7 @@ Current Version:	Initial Create
 ====================================================
 -- ES 17-07-2020 #64922 added Andrew Currah
 -- ES 17-07-2020 #65156 added Ella Collett
+-- JB 25-03-2021 #93437	added client code W20352
 ====================================================
 */
 
@@ -251,7 +252,7 @@ AS
 				LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 					ON dim_matter_header_current.dim_matter_header_curr_key = red_dw.dbo.fact_wip.dim_matter_header_current_key
 			WHERE 
-				master_client_code IN ('C1001','W24438')
+				master_client_code IN ('C1001','W24438', 'W20352')
 				AND red_dw.dbo.dim_matter_header_current.date_closed_practice_management IS NULL
 				AND red_dw.dbo.dim_matter_header_current .reporting_exclusions <> 1
 			GROUP BY 
@@ -323,11 +324,12 @@ AS
 		LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 		 ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 	WHERE 
-		red_dw.dbo.dim_matter_header_current.master_client_code IN ('C1001','W24438')
+		red_dw.dbo.dim_matter_header_current.master_client_code IN ('C1001','W24438', 'W20352')
 		AND red_dw.dbo.dim_matter_header_current.date_closed_practice_management IS NULL
 		AND red_dw.dbo.dim_matter_header_current .reporting_exclusions <> 1
 		AND (red_dw.dbo.dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(red_dw.dbo.dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	
 	
 END
+
 GO
