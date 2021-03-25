@@ -275,6 +275,7 @@ AS
 	SELECT  
 		RTRIM(red_dw.dbo.dim_matter_header_current.master_client_code) 
 			+ ' ' + red_dw.dbo.dim_matter_header_current.master_matter_number						AS [Client and Matter Number]
+		, dim_matter_header_current.master_client_code
 		, red_dw.dbo.dim_matter_header_current.matter_owner_full_name								AS [Matter Owner]
 		, red_dw.dbo.dim_matter_header_current.matter_description									AS [Matter Description]
 		, CAST(red_dw.dbo.dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
