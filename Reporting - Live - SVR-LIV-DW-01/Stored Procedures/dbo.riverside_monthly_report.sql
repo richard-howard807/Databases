@@ -69,7 +69,7 @@ SELECT
 	, fact_detail_property.tenants_solicitors_costs				AS [3rd Party Solicitor Fees Paid (Incl. VAT)]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)			AS [Case Closed Date]
 	, dim_detail_property.status_comment			AS [Reason Case Length Exceeds 6 Months]
-	, dim_matter_worktype.work_type_name			AS [Work Type]
+	, RTRIM(dim_matter_worktype.work_type_name)			AS [Work Type]
 	, CAST(dim_detail_claim.gascomp_lba_expiry_date AS DATE)		AS [Expiry Date of Gas Safety Certificate]
 	, CAST(dim_detail_claim.gascomp_lba_date_upload AS DATE)		AS [Letter Before Action Sent Date]
 	, CAST(dim_detail_claim.gascomp_injunction_application_date AS DATE)		AS [Injunction Application Filed at Court Date]
@@ -92,7 +92,17 @@ SELECT
 			3
 		WHEN dim_matter_worktype.work_type_code = '1011' THEN --Injunction
 			4
-	  END						AS tab_order			
+	  END						AS tab_order
+	, CASE 
+		WHEN dim_matter_worktype.work_type_code = '1150' THEN --Landlord & Tenant - Disrepair
+			'Disrepair'
+		WHEN dim_matter_worktype.work_type_code = '1002' THEN --Landlord & Tenant - Residential
+			'ASB'
+		WHEN dim_matter_worktype.work_type_code = '1105' THEN --Social Housing - Property
+			'Housing Management'
+		WHEN dim_matter_worktype.work_type_code = '1011' THEN --Injunction
+			'Gas Compliance'
+	  END						AS tab_name
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
