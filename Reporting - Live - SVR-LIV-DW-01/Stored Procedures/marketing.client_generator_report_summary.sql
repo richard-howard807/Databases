@@ -4,14 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
-
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20/11/2017
@@ -30,7 +22,7 @@ AS
 	SET NOCOUNT ON;
 	
     --=== For testing purposes=============
---	DECLARE @fin_period INT = 201910
+	--DECLARE @fin_period INT = 202111
 	--======================================
 
 
@@ -113,8 +105,8 @@ N'Metropolitan Police',
 N'Sovini Group',
 N'Business Energy Solutions Ltd' ,                                                
 N'BES Utilities Holding Ltd',                                                    
-N'BES Metering Services Limited'  
-
+N'BES Metering Services Limited',  
+N'Northern Powergrid'
 )
 
 OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited')
