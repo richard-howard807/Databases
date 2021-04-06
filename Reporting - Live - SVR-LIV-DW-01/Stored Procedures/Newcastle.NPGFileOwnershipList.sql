@@ -6,20 +6,6 @@ GO
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -40,6 +26,7 @@ SELECT clNo+ '.'+fileNo  AS Matter_Code -- David T asked to remove the old refer
 WHEN [red_dw].[dbo].[datetimelocal](fileClosed) IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,Insttype.cdDesc AS Case_Type
 ,txtJobNumber AS [Job Number]
+, ms_workstream.workstream	AS [Workstream]
 ,usrFullName AS [fe_code]
 ,fileDesc AS [matter_desc]
 ,contname AS WayleaOfficer
@@ -118,13 +105,29 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS Warehouse
  ON dbFile.fileID=Warehouse.ms_fileid
+LEFT OUTER JOIN 
+(
+SELECT 
+	dbFile.fileID
+	, dbCodeLookup.cdDesc	AS workstream	
+FROM MS_Prod.config.dbFile
+	INNER JOIN MS_Prod.config.dbClient
+		ON dbClient.clID = dbFile.clID
+	INNER JOIN MS_Prod.dbo.udMIClientNPG
+		ON udMIClientNPG.fileID = dbFile.fileID
+	INNER JOIN MS_Prod.dbo.dbCodeLookup
+		ON dbCodeLookup.cdCode = udMIClientNPG.cboWorkstream
+WHERE 1 = 1
+	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+) AS ms_workstream
+	ON ms_workstream.fileID = dbFile.fileID
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 
 (
 'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
-
+AND dbFile.fileID<>5197870
 ORDER BY CRSystemSourceID
 
 END 
@@ -141,6 +144,7 @@ SELECT clNo+ '.'+fileNo  AS Matter_Code -- David T asked to remove the old refer
 WHEN [red_dw].[dbo].[datetimelocal](fileClosed) IS NULL THEN 'O' ELSE 'C' END  AS matter_status
 ,Insttype.cdDesc AS Case_Type
 ,txtJobNumber AS [Job Number]
+, ms_workstream.workstream	AS [Workstream]
 ,usrFullName AS [fe_code]
 ,fileDesc AS [matter_desc]
 ,contname AS WayleaOfficer
@@ -219,12 +223,29 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 WHERE dim_matter_header_current.client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS Warehouse
  ON dbFile.fileID=Warehouse.ms_fileid
+LEFT OUTER JOIN 
+(
+SELECT 
+	dbFile.fileID
+	, dbCodeLookup.cdDesc	AS workstream	
+FROM MS_Prod.config.dbFile
+	INNER JOIN MS_Prod.config.dbClient
+		ON dbClient.clID = dbFile.clID
+	INNER JOIN MS_Prod.dbo.udMIClientNPG
+		ON udMIClientNPG.fileID = dbFile.fileID
+	INNER JOIN MS_Prod.dbo.dbCodeLookup
+		ON dbCodeLookup.cdCode = udMIClientNPG.cboWorkstream
+WHERE 1 = 1
+	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+) AS ms_workstream
+	ON ms_workstream.fileID = dbFile.fileID
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 
 (
 'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
+AND dbFile.fileID<>5197870
 AND (CASE WHEN cboNPGFileType='PROPERTY' THEN 'NPG Property'
 WHEN cboNPGFileType='WAYLEAVE' THEN 'NPG Wayleave'
 WHEN cboNPGFileType='COMLIT' THEN 'NPG Com-Lit' END) =@Filter
