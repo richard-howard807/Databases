@@ -117,6 +117,7 @@ FROM MS_Prod.config.dbFile
 		ON udMIClientNPG.fileID = dbFile.fileID
 	INNER JOIN MS_Prod.dbo.dbCodeLookup
 		ON dbCodeLookup.cdCode = udMIClientNPG.cboWorkstream
+			AND dbCodeLookup.cdType = 'NPGWORK'
 WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
@@ -235,6 +236,7 @@ FROM MS_Prod.config.dbFile
 		ON udMIClientNPG.fileID = dbFile.fileID
 	INNER JOIN MS_Prod.dbo.dbCodeLookup
 		ON dbCodeLookup.cdCode = udMIClientNPG.cboWorkstream
+			AND dbCodeLookup.cdType = 'NPGWORK'
 WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
