@@ -13,17 +13,15 @@ CREATE  PROCEDURE [dbo].[AIG Monthly New Instructions]
 , @EndDate AS DATETIME 
 
 
---DECLARE @Startdate AS DATETIME  = '2019-08-01'
---DECLARE @EndDate AS DATETIME  = '2019-09-01'
+----DECLARE @Startdate AS DATETIME  = '2019-08-01'
+----DECLARE @EndDate AS DATETIME  = '2019-09-01'
 
 
 
 
---DECLARE @Team AS NVARCHAR (200) 
+----DECLARE @Team AS NVARCHAR (200) 
 
 AS
-
-
 
 
 BEGIN
@@ -133,13 +131,7 @@ dim_matter_header_current.billing_arrangement [Rate Arrangement],
 	   dim_detail_core_details.[aig_reference] [Aig Reference], 
 	   dim_detail_core_details. [aig_aig_department] [Aig Department], 
 	   dim_detail_client.[aig_litigation_number] [Litigation Number ]
-
-
-
-	
-
-
-
+	   , dim_detail_outcome.outcome_of_case
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
@@ -171,6 +163,7 @@ SELECT client_code AS [client_code]
     ,dbUser.usrfullname AS [MSUpdatedBy]
 	,tskCompleted
 	,tskActive
+	, ROW_NUMBER() OVER(PARTITION BY dim_matter_header_current.client_code, dim_matter_header_current.matter_number ORDER BY dbTasks.tskCompleted) AS rw_num
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN MS_Prod.dbo.dbTasks
  ON ms_fileid=fileID
@@ -178,25 +171,21 @@ LEFT OUTER JOIN MS_Prod.dbo.dbUser ON dbTasks.UpdatedBy=dbUser.usrid
 WHERE client_group_code='00000013'
 AND tskDesc LIKE '%File opening process%'
 AND tskComplete=1 AND tskActive=1 
- 
-
-
 
 ) AS fileopener ON fileopener.client_code = dim_matter_header_current.client_code AND fileopener.matter_number = dim_matter_header_current.matter_number
-
-
-
+	AND fileopener.rw_num = 1
 
 WHERE dim_matter_header_current.reporting_exclusions = 0 
 AND fact_dimension_main.matter_number <> 'ML'
-AND  dim_matter_header_current.date_opened_case_management BETWEEN @Startdate AND @EndDate
+AND  dim_matter_header_current.date_opened_practice_management >= @Startdate 
+AND dim_matter_header_current.date_opened_practice_management <= @EndDate
 AND dim_client.client_group_code = '00000013'
 AND fact_dimension_main.client_code = 'A2002'
 --AND red_dw.dbo.dim_fed_hierarchy_history.hierarchylevel3hist = @Team
-AND ISNULL(outcome_of_case,'') <> 'Exclude from reports             
-                 '
-
-
+AND ISNULL(LOWER(RTRIM(outcome_of_case)),'') <> 'exclude from reports'
+AND dim_matter_header_current.date_closed_practice_management IS NULL
 				 
 END
+
+
 GO
