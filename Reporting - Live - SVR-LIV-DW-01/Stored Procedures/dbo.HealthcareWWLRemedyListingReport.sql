@@ -47,7 +47,7 @@ SELECT
 	                                            THEN 'Open' ELSE 'Closed' END
 												
 ,[Matter Description]   =                         REPLACE(matter_description, 'REMEDY: Complaint - ', '')
-
+,[Present Position]	=							dim_detail_core_details.present_position
 
 FROM red_dw.dbo.fact_dimension_main 
 
