@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[markerstudy_savings_report]
 
 AS 
@@ -102,10 +103,10 @@ SELECT
 	, fact_finance_summary.wip                              AS [WIP]
 	, clients_claims_handler_surname_forename               AS [Markerstudy Handler]
 	, LOWER(LTRIM(RTRIM(ISNULL(dim_detail_outcome.outcome_of_case, '')))) AS [Outcome of Case]
-	, ''                                                    AS [Receipt of electronic file acknowledged within 2 working days?]
-	, ''                                                    AS [C’s sols advised that we are instructed to accept service of proceedings?]
-	, ''                                                    AS [Strategy produced?]
-	, ''                                                    AS [Magic phone call made within 2 working days of setting strategy?]
+	, CASE WHEN cboRecElAck ='Y' THEN 'Yes' WHEN  cboRecElAck='N' THEN 'No' ELSE cboRecElAck END AS [Receipt of electronic file acknowledged within 2 working days?]
+	, CASE WHEN cboClSolsAcpt ='Y' THEN 'Yes' WHEN  cboClSolsAcpt='N' THEN 'No' ELSE cboClSolsAcpt END                                                     AS [C’s sols advised that we are instructed to accept service of proceedings?]
+	, CASE WHEN cboStratPro ='Y' THEN 'Yes' WHEN  cboStratPro='N' THEN 'No' ELSE cboStratPro END                                                   AS [Strategy produced?]
+	, CASE WHEN cboMagicPhone ='Y' THEN 'Yes' WHEN  cboMagicPhone='N' THEN 'No' ELSE cboMagicPhone END AS [Magic phone call made within 2 working days of setting strategy?]
 	, udMIClientMSG_cboInsTypeMSG                           AS [Instruction Type]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
@@ -145,6 +146,10 @@ FROM red_dw.dbo.fact_dimension_main
 	  ,udMIClientMSGDefDamSL.curAmount    AS udMIClientMSGDefDamSL_curAmount
 	  ,udMIClientMSGDefDamSL.dteOffer     AS udMIClientMSGDefDamSL_dteOffer
 	  ,udMIClientMSGDefDamSL.cboTypeOffer AS udMIClientMSGDefDamSL_cboTypeOffer
+	  ,cboMagicPhone
+,cboStratPro
+,cboClSolsAcpt
+,cboRecElAck
        
   FROM [MS_Prod].[dbo].[udMIClientMSG]
   LEFT JOIN [MS_Prod].[dbo].dbCodeLookup ON cdType = 'MSGINSTYPE' AND cdCode = [cboInsTypeMSG]
