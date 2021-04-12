@@ -51,6 +51,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [TP Postcode Longitude] [decimal] (9, 6) NULL,
 [Insured Department Depot Latitude] [decimal] (8, 6) NULL,
 [Insured Department Depot Longitude] [decimal] (9, 6) NULL,
+[Client Reference] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Insurer Client Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Insured Client Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Insurer Client Reference] [varchar] (2000) COLLATE Latin1_General_BIN NULL,

@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 CREATE PROCEDURE [dbo].[RiversideBillLevel]
-
+-- Added several new fields listed below MT 20210409 - Ticket 93740
 AS 
 
 BEGIN
@@ -36,7 +36,13 @@ ISNULL([Disbursements - Counsel's Fees],0)
 ,red_dw.dbo.fact_bill.bill_number AS [Bill Number]
 ,fact_finance_summary.fixed_fee_amount AS [Fixed Fee Amount]
 ,dim_detail_core_details.proceedings_issued AS [Proceedings Issued]
-,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
+,dim_matter_header_current.date_closed_practice_management AS [Date Closed], 
+
+		   	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
+    [Expiry of Gas Certificate]  =  dteGasExp,
+	[Date Access Obtained] = dteAccObt, 
+	[Current Status]  = cdDesc,
+	[Reason over 3 months] = txtReasOvr3
 
 
  FROM red_dw.dbo.dim_matter_header_current
@@ -52,6 +58,11 @@ INNER JOIN red_dw.dbo.dim_bill
  LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+
+LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
+LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
+
+
 LEFT OUTER JOIN 
 (
 SELECT fact_bill_detail.dim_bill_key

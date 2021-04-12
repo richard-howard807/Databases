@@ -99,6 +99,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, CAST(CAST([TP_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [TP Postcode Longitude]
 		, CAST(CAST([Insured_Department_Depot_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Insured Department Depot Latitude]
 		, CAST(CAST([Insured_Department_Depot_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Insured Department Depot Longitude]
+		, dim_client_involvement.client_reference AS [Client Reference]
 		, dim_client_involvement.[insurerclient_name] AS [Insurer Client Name]
 		, dim_client_involvement.[insuredclient_name] AS [Insured Client Name]
 		, dim_client_involvement.insurerclient_reference AS [Insurer Client Reference]

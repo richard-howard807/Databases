@@ -40,7 +40,13 @@ ISNULL([Disbursements - Counsel's Fees],0)
 
 ,dim_detail_property.[disrepair_date_works_commenced] AS [Date works commenced]
 ,dim_detail_property.[disrepair_date_works_completed] AS [Date works completed]
-,fact_detail_property.[disrepair_cost_of_works] AS [Cost of works]
+,fact_detail_property.[disrepair_cost_of_works] AS [Cost of works], 
+
+   	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
+    [Expiry of Gas Certificate]  =  dteGasExp,
+	[Date Access Obtained] = dteAccObt, 
+	[Current Status]  = cdDesc,
+	[Reason over 3 months] = txtReasOvr3
 
  FROM red_dw.dbo.dim_matter_header_current
  INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -56,6 +62,10 @@ ON dim_detail_core_details.dim_detail_core_detail_key =dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_detail_property
  ON dim_detail_property.client_code = dim_matter_header_current.client_code
  AND dim_detail_property.matter_number = dim_matter_header_current.matter_number
+
+LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
+LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
+
 LEFT OUTER JOIN
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key

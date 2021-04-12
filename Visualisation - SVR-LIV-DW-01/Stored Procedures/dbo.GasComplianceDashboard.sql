@@ -6,6 +6,7 @@ GO
 -- Author:		Julie Loughlin
 -- Create date: 30/11/2020
 -- Description:	#80264
+-- Added several new fields listed below MT 20210409 - Ticket 93740
 -- =============================================
 CREATE PROCEDURE [dbo].[GasComplianceDashboard]
 
@@ -39,7 +40,13 @@ dim_matter_header_current.master_client_code AS [Client Code]
                    NULL
                ELSE
                    fact_matter_summary_current.last_bill_date
-           END AS [Last Bill Date]
+           END AS [Last Bill Date],
+
+		   	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
+    [Expiry of Gas Certificate]  =  dteGasExp,
+	[Date Access Obtained] = dteAccObt, 
+	[Current Status]  = cdDesc,
+	[Reason over 3 months] = txtReasOvr3
 
 FROM
 red_dw.dbo.fact_dimension_main
@@ -60,6 +67,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
             ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 
+LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
+LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
 WHERE 
 dim_matter_header_current.master_client_code = 'W15603'
 AND  dim_matter_worktype.[work_type_name] = 'Injunction'
