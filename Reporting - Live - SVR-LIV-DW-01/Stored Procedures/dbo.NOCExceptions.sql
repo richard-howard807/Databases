@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[NOCExceptions]
 
 AS 
@@ -172,5 +174,6 @@ AND ms_only=1
 AND date_closed_case_management IS NULL
 --AND ISNULL(referral_reason,'') <>'Advice only'
 AND dim_matter_header_current.client_code <>'00030645'
+AND ms_fileid NOT IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude)
 END
 GO

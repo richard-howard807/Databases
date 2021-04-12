@@ -3,10 +3,11 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
  
 CREATE PROCEDURE [dbo].[ChesterStreetTrialDates_v2](  --EXEC [dbo].[ChesterStreetTrialDates] '20160725'
 	@RunDate DATE,
-	@report int
+	@report INT
 	)
 AS
 BEGIN
@@ -39,7 +40,7 @@ SELECT    dim_matter_header_current.client_code, master_client_code+ '-'+ master
 ,    b.insurerclient_reference AS [Capita Claim Ref], c.claimant_name AS [Claimant Name]
 , date_of_trial AS Trial_Date
 ,date_of_first_day_of_trial_window AS Trial_Window
-,'MI Detail' source
+--,'MI Detail' source
 						 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_matter_header_current.client_code=dim_detail_outcome.client_code AND dim_matter_header_current.matter_number=dim_detail_outcome.matter_number
 LEFT OUTER JOIN
@@ -60,17 +61,17 @@ WHERE DATEDIFF(DAY, date_of_first_day_of_trial_window_changed, @RunDate) <= 7
  AND Window.matter_number = dim_matter_header_current.matter_number
 WHERE outcome_of_case IS NULL AND date_claim_concluded IS NULL 
 AND (date_of_trial IS NOT NULL OR date_of_first_day_of_trial_window IS NOT NULL)
-AND  case when @report = 1 AND dim_matter_header_current.client_code in ('00046253','00337896','W15373')  then 1
-								when  @report = 2 and dim_matter_header_current.client_code in ('00516705', '00560475', 'W15349') then 1 else 0  end =1
+AND  CASE WHEN @report = 1 AND dim_matter_header_current.client_code IN ('00046253','00337896','W15373')  THEN 1
+								WHEN  @report = 2 AND dim_matter_header_current.client_code IN ('00516705', '00560475', 'W15349') THEN 1 ELSE 0  END =1
 
-union
+UNION
 
 
 SELECT    dim_matter_header_current.client_code, master_client_code+ '-'+ master_matter_number [MS Ref]
 ,    b.insurerclient_reference AS [Capita Claim Ref], c.claimant_name AS [Claimant Name]
 , date_of_trial AS Trial_Date
 ,date_of_first_day_of_trial_window AS Trial_Window
-,'KeyDate'
+--,'KeyDate'
 						 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_matter_header_current.client_code=dim_detail_outcome.client_code AND dim_matter_header_current.matter_number=dim_detail_outcome.matter_number
 LEFT OUTER JOIN
@@ -97,8 +98,8 @@ LEFT OUTER JOIN (SELECT  dbTasks.fileID
 
 WHERE outcome_of_case IS NULL AND date_claim_concluded IS NULL 
 AND (date_of_trial IS NOT NULL OR date_of_first_day_of_trial_window IS NOT NULL)
-AND  case when @report = 1 AND dim_matter_header_current.client_code in ('00046253','00337896','W15373')  then 1
-								when  @report = 2 and dim_matter_header_current.client_code in ('00516705', '00560475', 'W15349') then 1 else 0  end =1
+AND  CASE WHEN @report = 1 AND dim_matter_header_current.client_code IN ('00046253','00337896','W15373')  THEN 1
+								WHEN  @report = 2 AND dim_matter_header_current.client_code IN ('00516705', '00560475', 'W15349') THEN 1 ELSE 0  END =1
 								 
 END
 

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
@@ -78,7 +79,7 @@ BEGIN
             ON fact_dimension_main.dim_claimant_thirdpart_key = dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key
         LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
             ON fact_dimension_main.dim_defendant_involvem_key = dim_defendant_involvement.dim_defendant_involvem_key
-    WHERE LOWER([nhs_scheme]) = LOWER(@Scheme)
+    WHERE LOWER(CASE WHEN [nhs_scheme] IN ('ELSGP (MPS)','ELSGP (MDDUS)') THEN 'ELSGP' ELSE [nhs_scheme] END) = LOWER(@Scheme)
           AND
           (
               (

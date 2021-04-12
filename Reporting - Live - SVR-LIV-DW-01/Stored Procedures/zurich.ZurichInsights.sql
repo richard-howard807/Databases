@@ -97,7 +97,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND  '2021-01-31'
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
-
+		, DATEDIFF(MONTH, dim_detail_claim.notification_to_zurich_date_old, dim_detail_outcome.date_claim_concluded) AS [Notifictation to Concluded]
+		
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -224,6 +225,8 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND  '2021-01-31'
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
+		, DATEDIFF(MONTH, dim_detail_claim.notification_to_zurich_date_old, dim_detail_outcome.date_claim_concluded) AS [Notifictation to Concluded]
+
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current

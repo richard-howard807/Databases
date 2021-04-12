@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGMattersByType]
 
 AS 
@@ -50,7 +51,7 @@ GROUP BY Matter) AS WIP
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND cboNPGFileType IS NOT NULL
-
+AND dbFile.fileID<>5197870
 ORDER BY CRSystemSourceID
 
 END

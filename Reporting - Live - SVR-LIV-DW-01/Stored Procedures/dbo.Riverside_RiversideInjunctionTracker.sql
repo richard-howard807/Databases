@@ -1,0 +1,74 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- =============================================
+-- Author:		Max Taylor
+-- Create date: 2021-03-29
+-- Description:	93740 - datasource for Riverside/Riverside Injunction Tracker 
+ 
+-- =============================================
+CREATE PROCEDURE [dbo].[Riverside_RiversideInjunctionTracker] 
+
+AS
+
+SELECT 
+	dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS [Weightmans Reference]
+	, dim_matter_worktype.work_type_name
+	, dim_client_involvement.client_reference			AS [UPRN]
+	, dim_matter_header_current.matter_description			AS [Matter Description]
+	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
+	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date Closed]
+	, dim_matter_header_current.matter_owner_full_name		AS [Case Manager]
+	, CAST(dim_detail_claim.gascomp_lba_date_upload	AS DATE)		AS [LBA Date Upload]
+	, CAST(dim_detail_claim.gascomp_lba_expiry_date AS DATE)		AS [LBA Expiry Date]
+	, CAST(dim_detail_claim.gascomp_injunction_application_date AS DATE)	AS [Injunction Application Date]
+	, dim_detail_claim.gascomp_injunction_type		AS [Injunction Type]
+	, CAST(dim_detail_claim.gascomp_hearing_date AS DATE)			AS [Hearing Date]
+	, CAST(dim_detail_claim.gascomp_date_order_served AS DATE)		AS [Date Order Served]
+	, CAST(dim_detail_claim.gascomp_injunction_service_date AS DATE)		AS [Injunction Service Date]
+	, dim_detail_claim.gascomp_comments				AS [Comments]
+	, fact_finance_summary.total_amount_bill_non_comp		AS [Total Billed]
+	, fact_finance_summary.defence_costs_billed			AS [Revenue]
+	, fact_finance_summary.disbursements_billed		AS [Disbursements]
+	, fact_finance_summary.vat_billed			AS [VAT]
+	, CASE
+		WHEN (fact_matter_summary_current.last_bill_date) = '1753-01-01' THEN
+			NULL
+		ELSE
+            CAST(fact_matter_summary_current.last_bill_date AS DATE)
+	  END													AS [Last Bill Date],
+
+	[Expiry of Gas Certificate]  =  dteGasExp,
+	[Date Access Obtained] = dteAccObt, 
+	[Current Status]  = cdDesc,
+	[Reason over 3 months] = txtReasOvr3
+
+FROM red_dw.dbo.dim_matter_header_current
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+		ON dim_detail_claim.client_code = dim_matter_header_current.client_code
+			AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+		ON fact_finance_summary.client_code = dim_matter_header_current.client_code
+			AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+		ON dim_client_involvement.client_code = dim_matter_header_current.client_code
+			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
+	INNER JOIN red_dw.dbo.dim_matter_worktype
+		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	LEFT OUTER JOIN	red_dw.dbo.fact_matter_summary_current
+		ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
+			AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
+
+
+	LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = ms_fileid
+	LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = cboCurrStat
+
+WHERE 1 = 1
+	AND dim_matter_header_current.reporting_exclusions = 0
+	AND dim_matter_header_current.master_client_code = 'W15603'
+	AND RTRIM(dim_matter_worktype.work_type_name) = 'Injunction'
+
+	
+	
+GO

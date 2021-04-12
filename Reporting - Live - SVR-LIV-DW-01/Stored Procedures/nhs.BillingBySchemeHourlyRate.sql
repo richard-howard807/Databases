@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
@@ -86,7 +87,7 @@ BEGIN
         JOIN ms_prod.config.dbFile ON  [dbAssociates].[fileID] = dbFile.fileID
 		GROUP BY dbFile.fileID) dbContact on CAST(dbContact.fileID AS NVARCHAR(50)) = CAST([ms_fileid] AS NVARCHAR(50)) COLLATE DATABASE_DEFAULT
 
-    WHERE LOWER([nhs_scheme]) = LOWER(@Scheme)
+    WHERE LOWER(CASE WHEN [nhs_scheme] IN ('ELSGP (MPS)','ELSGP (MDDUS)') THEN 'ELSGP' ELSE [nhs_scheme] END) = LOWER(@Scheme)
           AND
           (
               (

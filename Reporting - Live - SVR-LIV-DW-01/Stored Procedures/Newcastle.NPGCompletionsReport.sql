@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGCompletionsReport]
 (
 @StartDate AS DATE
@@ -59,6 +60,7 @@ LEFT OUTER JOIN MS_Prod.dbo.udPlotSalesExchange
 WHERE clName LIKE '%Northern Powergrid%'
 AND fileNo <>'0'
 AND [red_dw].[dbo].[datetimelocal](dteCompletionD) BETWEEN @StartDate AND @EndDate
+AND dbFile.fileID<>5197870
 ORDER BY clno,fileno
 END
 GO

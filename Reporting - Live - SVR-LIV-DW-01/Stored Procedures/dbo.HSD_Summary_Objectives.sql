@@ -15,7 +15,7 @@ Current Version:	Initial Create
 ====================================================
 
 */
-	CREATE PROCEDURE [dbo].[HSD_Summary_Objectives]	--'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)]','[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+	CREATE PROCEDURE [dbo].[HSD_Summary_Objectives]	--'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-09 (Jan-2021)]','[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
  
 	( 
 	@Month AS VARCHAR(max) ,
@@ -27,29 +27,25 @@ Current Version:	Initial Create
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
 	 
 	IF OBJECT_ID('tempdb..#WriteOff') IS NOT NULL DROP TABLE #WriteOff
+	IF OBJECT_ID('tempdb..#TotalExceptions') IS NOT NULL DROP TABLE #TotalExceptions
+	IF OBJECT_ID('tempdb..#MIexceptionsreducedfrom2to1') IS NOT NULL DROP TABLE #MIexceptionsreducedfrom2to1  
+	IF OBJECT_ID('tempdb..#FraudIndicatorchecklist') IS NOT NULL DROP TABLE #FraudIndicatorchecklist
 
 ------------Testing-----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
- --DECLARE 
--- @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] ',
- --@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+-- DECLARE 
+-- @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-09 (Jan-2021)] ',
+--@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
 
-
+ -----------------------------------------------------------------------------------------------------------------------------------
+ --------Write offs--------------------------------------------------------------------------------------------------------------------
  SELECT
-	 fact_write_off.[master_matter_number]
+RTRIM(fact_write_off.master_client_code)+'/'+fact_write_off.[master_matter_number] AS [Weightmans Reference]
+	 ,fact_write_off.[master_matter_number]
       ,fact_write_off.[master_client_code]
-      --,[write_off_month] 
-	  --,write_off_date
 	  ,fin_year
-	  --,fin_month_no
-	  --,fin_period
 	  ,dim_matter_header_current.dim_matter_header_curr_key
 	      ,dim_fed_hierarchy_history.hierarchylevel3hist
-		 -- ,RTRIM(dim_fed_hierarchy_history.hierarchylevel4hist) hierarchylevel4hist
-		 --  ,CASE WHEN fact_write_off.write_off_type = 'NC' THEN 'Chargeable Time Not Billed'
-			--WHEN  fact_write_off.write_off_type = 'BA' THEN 'Billing Adjustment'
-			--WHEN  fact_write_off.write_off_type = 'WA' THEN 'WIP Adjustment' 
-			--WHEN fact_write_off.write_off_type = 'P' THEN 'Purged Time' END AS write_off_type
 		 ,SUM(CASE WHEN fin_period<=@Month THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END )[ytd_value_Total]
 		 ,SUM(CASE WHEN fin_period<=@Month AND  fact_write_off.write_off_type = 'WA' THEN ISNULL(fact_write_off.bill_amt_wdn,0) ELSE 0 END) [ytd_value_WIP_Adjustment]
   INTO #WriteOff   
@@ -68,20 +64,126 @@ AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' <=@Month
 AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
 AND dim_date.current_fin_year = 'Current'
 AND fact_write_off.write_off_type IN ('WA','NC','BA','P')	
---AND dim_matter_header_current.master_client_code  = '10015' AND dim_matter_header_current.master_matter_number = '3'
+AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+dim_fed_hierarchy_history.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
 
 GROUP BY
- fact_write_off.[master_matter_number]
+RTRIM(fact_write_off.master_client_code)+'/'+fact_write_off.[master_matter_number]
+ ,fact_write_off.[master_matter_number]
       ,fact_write_off.[master_client_code]
 	  ,fin_year
 	  ,dim_matter_header_current.dim_matter_header_curr_key
 	  ,dim_fed_hierarchy_history.hierarchylevel3hist
 
-	
- --------------------------------------------------------------------------------------
+------------------------------------------------	MI exceptions reduced from 2 to 1 --------------- 
+
+
 
 SELECT 
-RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
+       hir.employeeid AS Employeed_ID,
+       hir.hierarchylevel3hist AS Department,
+       SUM(no_of_exceptions) no_of_exceptions  
+INTO  #TotalExceptions
+FROM Exceptions.dbo.MI_Management_firm_wide
+		JOIN red_dw.dbo.dim_fed_hierarchy_history hir
+        ON MI_Management_firm_wide.employeeid = hir.employeeid AND hir.dss_current_flag = 'Y'  AND hir.activeud = 1
+		JOIN red_dw.dbo.dim_employee 
+		ON dim_employee.dim_employee_key = hir.dim_employee_key  AND (leaverlastworkdate IS NULL OR leaverlastworkdate > GETDATE())
+WHERE hir.hierarchylevel2hist  IN ( 'Legal Ops - Claims' )
+AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hir.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
+GROUP BY hir.hierarchylevel3hist, hir.employeeid
+
+
+SELECT 
+       Department,
+       SUM(no_of_exceptions)  no_of_exceptions,
+	   SUM(ISNULL(critria_cases,0)) critria_cases,
+	   CAST(SUM(CAST(ISNULL(no_of_exceptions, 0) AS DECIMAL))  /  SUM(CAST(ISNULL(critria_cases,0) AS DECIMAL)) AS DECIMAL( 18, 2)) [Average Exceptions Per  Matter (Open\Closed)]
+ INTO #MIexceptionsreducedfrom2to1
+FROM #TotalExceptions
+    LEFT JOIN (SELECT dim_fed_hierarchy_history.employeeid,
+	    COUNT(dim_matter_header_current.ms_fileid) critria_cases
+FROM red_dw.dbo.fact_dimension_main
+    LEFT JOIN red_dw.dbo.dim_matter_header_current
+        ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+    LEFT JOIN red_dw.dbo.dim_detail_core_details
+        ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+    LEFT JOIN red_dw.dbo.dim_detail_outcome
+        ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+    LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history
+        ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+	LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+WHERE fact_dimension_main.client_code <> 'ml'
+      AND 1 = 1
+    and  referral_reason LIKE 'Dispute%' AND 
+(
+	date_claim_concluded IS NULL  OR 
+	date_claim_concluded >= '2017-01-01'  
+)  AND dim_matter_header_current.reporting_exclusions = 0    AND 
+LOWER(ISNULL(outcome_of_case, '')) NOT in ('exclude from reports','returned to client')  AND 
+(date_closed_case_management >= '2017-01-01' OR date_closed_case_management IS NULL
+)   AND employeeid NOT IN ('D7FCD8D2-A936-472A-8CEB-1BCBECFF65B9','49452DCE-A032-42C2-B328-AFCFE1079561','A7C4010A-8F29-4058-A11E-220C5461036F') AND 
+(dim_matter_header_current.ms_only = 1  ) AND hierarchylevel2hist = 'Legal Ops - Claims' AND work_type_code <> '0032'
+GROUP BY dim_fed_hierarchy_history.employeeid ) #critria_cases
+        ON #critria_cases.employeeid = #TotalExceptions.Employeed_ID
+GROUP BY Department
+
+
+
+
+------------------------------Fraud Indicator checklist @ 95%--------------------------------
+
+ SELECT DISTINCT
+		
+		 dim_fed_hierarchy_history.hierarchylevel3hist AS Department,
+
+		/*SUM(Fields!countscore.Value)/SUM(Fields!Number_of_Matters.Value) from Process/Fraud Indicator Results Summary*/
+	CAST(CAST(SUM(CASE WHEN totalpointscalc IS NOT NULL THEN 1 ELSE 0 END) OVER (PARTITION BY dim_fed_hierarchy_history.hierarchylevel3hist) AS DECIMAL(18,2)) 
+		/ SUM(CASE WHEN 
+	    dim_matter_header_current.reporting_exclusions=0
+		AND dim_matter_header_current.matter_number<>'ML'
+		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
+		AND LOWER(dim_detail_core_details.referral_reason) LIKE '%dispute%'
+		AND dim_detail_core_details.suspicion_of_fraud ='No'
+		AND dim_matter_worktype.work_type_group IN ('EL','PL All','Motor','Disease') 
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
+		THEN 1 ELSE 0 END) OVER (PARTITION BY dim_fed_hierarchy_history.hierarchylevel3hist) AS DECIMAL(18,2))  AS [Fraud Checklist Complete %]
+	INTO #FraudIndicatorchecklist
+	FROM 
+	red_dw.dbo.fact_dimension_main
+	JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key  
+	JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code =dim_matter_header_current.fee_earner_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y'  AND GETDATE() BETWEEN dss_start_date AND dss_end_date AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'AND leaver=0
+	JOIN red_dw.dbo.dim_detail_outcome ON fact_dimension_main.dim_detail_outcome_key = dim_detail_outcome.dim_detail_outcome_key
+	JOIN red_dw..dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+	JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	JOIN red_dw.dbo.ds_sh_ms_udficcommon ON fileid = ms_fileid
+	
+	WHERE 1 = 1
+
+		AND dim_matter_header_current.reporting_exclusions=0
+		AND dim_matter_header_current.matter_number<>'ML'
+		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
+		AND LOWER(referral_reason) LIKE '%dispute%'
+	    AND suspicion_of_fraud ='No'
+		AND work_type_group IN ('EL','PL All','Motor','Disease')
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
+		AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case,''))<>'exclude from reports'
+		AND ISNULL(dim_matter_worktype.work_type_code,'')<>'1603'
+		AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+dim_fed_hierarchy_history.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
+ 
+
+
+
+
+
+
+
+
+
+ ----------Main Code----------------------------------------------------------------------
+
+SELECT 
+RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference_]
+--,RTRIM(dim_matter_header_current.master_client_code)+'/'+dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 ,DaysConcludeLastBill.DaysLastBillToConclude
 ,DaystoDateClaimConcluded.DaysElapsedConcluded
 ,InitialReportSent.[Days to Send Initial Report]
@@ -97,8 +199,10 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 ,'[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]' AS ParameterValue
 ,[ytd_value_Total]
 ,[ytd_value_WIP_Adjustment]
-
-
+,[Average Exceptions Per  Matter (Open\Closed)]
+,[Fraud Checklist Complete %]
+, SUBSTRING(@Month, LEN(LEFT(@Month, CHARINDEX ('(', @Month))) + 1, LEN(@Month) - LEN(LEFT(@Month, 
+    CHARINDEX ('(', @Month))) - LEN(RIGHT(@Month, LEN(@Month) - CHARINDEX (')', @Month))) - 1) AS [Month] 
   
 FROM
 red_dw.dbo.fact_dimension_main
@@ -106,10 +210,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_curren
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS hist ON hist.dim_fed_hierarchy_history_key=fact_dimension_main.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-INNER  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
+left  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key AND LOWER(ISNULL(outcome_of_case,''))<>'exclude from reports'
 LEFT OUTER JOIN #WriteOff ON #WriteOff.dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
-
-
+LEFT JOIN #MIexceptionsreducedfrom2to1 ON hist.hierarchylevel3hist  = #MIexceptionsreducedfrom2to1.Department
+LEFT JOIN #FraudIndicatorchecklist ON hist.hierarchylevel3hist  = #MIexceptionsreducedfrom2to1.Department
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----1 get the days between Date Opened and Last Bill Date for the current FY
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -178,15 +282,12 @@ LEFT OUTER JOIN
 		LEFT OUTER JOIN red_dw.dbo.dim_date as datecliam_concluded ON  CAST(datecliam_concluded.calendar_date AS DATE) = CAST(dim_detail_outcome.date_claim_concluded AS DATE) 
 
 		WHERE 
-		 --hierarchylevel2hist='Legal Ops - Claims'
-		 datecliam_concluded.current_fin_year = 'Current'
+		 hierarchylevel2hist='Legal Ops - Claims'
+		 AND datecliam_concluded.current_fin_year = 'Current'
 		 AND dim_matter_header_current.reporting_exclusions=0
-		-- AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
-		 
-		 --AND RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number = 'A3003/00011622'
+
 		) AS DaystoDateClaimConcluded  ON DaystoDateClaimConcluded.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
-		--and '[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' =@Month
-		--AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 		-- 3 get the days between Date Opened and Date Initial Report Sent within the current FY
@@ -243,22 +344,10 @@ LEFT OUTER JOIN
 		GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number 	 ) AS CYRevenueBilled 
 ON CYRevenueBilled.client_code = dim_matter_header_current.client_code AND CYRevenueBilled.matter_number = dim_matter_header_current.matter_number
 
----------------------------------------------------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------------------------------------------------------
---LEFT OUTER JOIN
- --(   
---DECLARE  @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-10 (Feb-2021)] '
 
-		
-
---)AS TimeWriteOff
---ON TimeWriteOff.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-
-  				
 
 WHERE
 hierarchylevel2hist='Legal Ops - Claims'
-AND dim_matter_header_current.reporting_exclusions=0
 AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
 AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
 
@@ -266,5 +355,4 @@ AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+hist.hierarchyl
 	
 END 
 
-		
 GO

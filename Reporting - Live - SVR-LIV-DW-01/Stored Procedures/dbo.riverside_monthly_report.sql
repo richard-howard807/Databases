@@ -47,7 +47,13 @@ SELECT
 		ELSE
 			'Y'
 	  END						AS [Settled]
-	, dim_detail_property.liabilty_admited		AS [Liability Denied]
+	, dim_detail_property.liabilty_admited		AS [Liability Accepted/Part Accepted]
+	, CASE 
+		WHEN dim_detail_property.liabilty_admited = 'Yes' THEN
+			'No'
+		WHEN dim_detail_property.liabilty_admited = 'No' THEN
+			'Yes'
+	  END				AS [Liability Denied]
 	, dim_detail_property.issue_proceedings			AS [Litigated]
 	, CASE
 		WHEN LTRIM(RTRIM(LOWER(te_3e_disb.Description))) = 'court fees' THEN

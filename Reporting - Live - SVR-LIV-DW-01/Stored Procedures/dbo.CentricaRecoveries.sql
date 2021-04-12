@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -108,7 +109,10 @@ AS SuccessChance
 
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS fileStatus
 
-,CASE WHEN PostLitFee.PostLitFeeType='Specified Judgment' THEN 22.00 
+,CASE WHEN PostLitFee.PostLitFeeType='Specified Judgment' AND amount_recovery_sought BETWEEN 25.00 AND 500.00 THEN 50.00 +22.00
+WHEN PostLitFee.PostLitFeeType='Specified Judgment' AND amount_recovery_sought BETWEEN 500.01 AND 1000.00 THEN 70.00  +22.00
+WHEN PostLitFee.PostLitFeeType='Specified Judgment' AND amount_recovery_sought BETWEEN 1000.01 AND 5000.00 THEN 80.00  +22.00
+WHEN PostLitFee.PostLitFeeType='Specified Judgment' AND amount_recovery_sought >5000 THEN 100  +22.00
 WHEN PostLitFee.PostLitFeeType='Defended over 3months to Trial' THEN 200
 WHEN PostLitFee.PostLitFeeType='Defended within 3 months of Trial' THEN 300
 WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought BETWEEN 25.00 AND 500.00 THEN 50.00
@@ -117,7 +121,7 @@ WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought BETW
 WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought >5000 THEN 100
 WHEN PostLitFee.PostLitFeeType='FT- Non Fixed Costs' THEN curFTNonFix
 END AS PostLitFee
-
+,PostLitFee.PostLitFeeType
 
 FROM 
 red_dw.dbo.fact_dimension_main 

@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+-- Added several new fields listed below MT 20210409 - Ticket 93740
 CREATE  PROCEDURE [dbo].[RiversideMatterLevel]
 
 AS 
@@ -32,8 +34,13 @@ ISNULL([Disbursements - Counsel's Fees],0)
 +ISNULL(Disbursements.[Disbursements - Surveyor's Fees],0)
 ) AS [Disbursements - Other]
 ,vat_billed AS [VAT]
-,last_bill_date AS [Last Bill Date]
+,last_bill_date AS [Last Bill Date],
 
+	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
+    [Expiry of Gas Certificate]  =  dteGasExp,
+	[Date Access Obtained] = dteAccObt, 
+	[Current Status]  = cdDesc,
+	[Reason over 3 months] = txtReasOvr3
 
  FROM red_dw.dbo.dim_matter_header_current
  INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -44,6 +51,11 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_detail_property
  ON fact_detail_property.client_code = dim_matter_header_current.client_code
  AND fact_detail_property.matter_number = dim_matter_header_current.matter_number
+
+LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
+LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
+
+
 LEFT OUTER JOIN
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key

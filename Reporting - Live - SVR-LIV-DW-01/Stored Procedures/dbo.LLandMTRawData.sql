@@ -386,7 +386,8 @@ IN ('W24438-1', 'W24438-40','W24438-41', 'W24438-42' )
 THEN 'Co-op back book'  
 ELSE ms.msg_instruction_type   
  END   
-  
+ ,dim_detail_outcome.[ll28_provisional_damages_paid]
+ 
   
 FROM red_dw.dbo.dim_client  
 INNER JOIN red_dw.dbo.fact_dimension_main  
