@@ -4,10 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
 CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 (
 
@@ -418,6 +414,8 @@ SELECT #MainData.* FROM #MainData
 INNER JOIN #Team AS Team ON Team.ListValue 
 COLLATE DATABASE_DEFAULT = matter_owner_team COLLATE DATABASE_DEFAULT
 INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = fed_code COLLATE DATABASE_DEFAULT
+
+WHERE ms_fileid <> 4950772 -- added as per 95398 to exclude A2002-13947
 
 END
 GO

@@ -201,10 +201,10 @@ WHERE
 
 	--	 )
 
-AND( (core.[insured_sector] = 'Local & Central Government                                 ' )
+AND( (TRIM(core.[insured_sector]) = 'Local & Central Government' OR TRIM(client.sector) = 'Local & Central Government' )
 			OR( LOWER(insuredclient_name) LIKE '%council%' ) OR (LOWER(insuredclient_name) LIKE '% borough%') OR ( LOWER(insuredclient_name) LIKE '%mbc%'))
-AND( worktype.work_type_group IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
-OR client.sector <>'Local & Central Government')
+AND( TRIM(worktype.work_type_group) IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
+)
 
 --AND matter.client_code='M00001'
 --AND matter.matter_number='11111295'
@@ -346,9 +346,9 @@ OR client.sector <>'Local & Central Government')
 
 		--		)
 --1.1
-AND(( client.sector =  'Local & Central Government') OR (core.[insured_sector] = 'Local & Central Government                                 ' )
+AND(( TRIM(client.sector) =  'Local & Central Government') OR (TRIM(core.[insured_sector]) = 'Local & Central Government' )
 			OR( LOWER(insuredclient_name) LIKE '%council%' ) OR (LOWER(insuredclient_name) LIKE '% borough%') OR ( LOWER(insuredclient_name) LIKE '%mbc%'))
-AND worktype.work_type_group NOT IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
+AND TRIM(worktype.work_type_group) NOT IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
 
 --AND matter.client_code='M00001'
 --AND matter.matter_number='11111292'

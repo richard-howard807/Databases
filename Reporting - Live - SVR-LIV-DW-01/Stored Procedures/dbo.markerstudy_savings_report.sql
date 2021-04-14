@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[markerstudy_savings_report]
 
 AS 
@@ -79,7 +80,7 @@ SELECT
 	  END					AS [Reserve Recommendation Made]	--If there's a difference between out total reserve and (paid + outstanding columns) then Yes else No
 	
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date File Closed]
-	, ''				                                                            AS [Relevant Comments (Optional)] 
+	, txtRelComments				                                                            AS [Relevant Comments (Optional)] 
 	--======================================================================================================
 	-- Internal report fields below
 	--======================================================================================================
@@ -147,6 +148,7 @@ FROM red_dw.dbo.fact_dimension_main
 	  ,udMIClientMSGDefDamSL.dteOffer     AS udMIClientMSGDefDamSL_dteOffer
 	  ,udMIClientMSGDefDamSL.cboTypeOffer AS udMIClientMSGDefDamSL_cboTypeOffer
 	  ,cboMagicPhone
+	  ,txtRelComments
 ,cboStratPro
 ,cboClSolsAcpt
 ,cboRecElAck

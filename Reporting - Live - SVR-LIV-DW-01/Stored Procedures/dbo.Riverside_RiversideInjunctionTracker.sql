@@ -39,10 +39,10 @@ SELECT
             CAST(fact_matter_summary_current.last_bill_date AS DATE)
 	  END													AS [Last Bill Date],
 
-	[Expiry of Gas Certificate]  =  dteGasExp,
-	[Date Access Obtained] = dteAccObt, 
-	[Current Status]  = cdDesc,
-	[Reason over 3 months] = txtReasOvr3
+	[Expiry of Gas Certificate]  =  dim_detail_claim.[gascomp_expiry_of_gas_certificate] ,
+	[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained], 
+	[Current Status]  = dim_detail_claim.[gascomp_current_status],
+	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months]
 
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
@@ -60,9 +60,6 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
 			AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
 
-
-	LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = ms_fileid
-	LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = cboCurrStat
 
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
