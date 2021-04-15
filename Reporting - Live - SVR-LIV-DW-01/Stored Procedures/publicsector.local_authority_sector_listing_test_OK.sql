@@ -106,7 +106,7 @@ BEGIN
 		, @previous_period_to previous_period_to
 
 	FROM red_dw.dbo.dim_matter_header_current matter 
-		INNER JOIN [red_dw].dbo.dim_department dept ON dept.department_code = matter.department_code
+		LEFT JOIN [red_dw].dbo.dim_department dept ON dept.department_code = matter.department_code
 		INNER JOIN [red_dw].dbo.dim_matter_worktype worktype ON matter.dim_matter_worktype_key = worktype.dim_matter_worktype_key
 		INNER JOIN [red_dw].dbo.dim_detail_core_details core ON core.client_code = matter.client_code AND core.matter_number = matter.matter_number
 		INNER JOIN [red_dw].dbo.dim_detail_outcome outcome ON outcome.client_code = matter.client_code AND outcome.matter_number = matter.matter_number
@@ -264,7 +264,7 @@ AND( TRIM(worktype.work_type_group) IN ('EL','PL All','Disease','Claims Handling
 		, @previous_period_to previous_period_to
 		
 	FROM red_dw.dbo.dim_matter_header_current matter 
-		INNER JOIN [red_dw].dbo.dim_department dept ON dept.department_code = matter.department_code
+		LEFT JOIN [red_dw].dbo.dim_department dept ON dept.department_code = matter.department_code
 		INNER JOIN [red_dw].dbo.dim_matter_worktype worktype ON matter.dim_matter_worktype_key = worktype.dim_matter_worktype_key
 		INNER JOIN [red_dw].dbo.dim_detail_core_details core ON core.client_code = matter.client_code AND core.matter_number = matter.matter_number
 		INNER JOIN [red_dw].dbo.dim_detail_outcome outcome ON outcome.client_code = matter.client_code AND outcome.matter_number = matter.matter_number
