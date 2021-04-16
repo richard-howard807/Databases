@@ -9,7 +9,7 @@ AS
 
 BEGIN
 
-SELECT master_client_code + '-'+master_matter_number AS [MS Client/Matter Number]
+SELECT dim_matter_header_current.master_client_code + '-'+master_matter_number AS [MS Client/Matter Number]
 ,matter_description AS [Matter Description]
 ,red_dw.dbo.dim_matter_header_current.date_opened_case_management AS [Date Opened]
 ,work_type_name AS [Matter Type]
@@ -42,11 +42,11 @@ ISNULL([Disbursements - Counsel's Fees],0)
 ,dim_detail_property.[disrepair_date_works_completed] AS [Date works completed]
 ,fact_detail_property.[disrepair_cost_of_works] AS [Cost of works], 
 
-   	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
-    [Expiry of Gas Certificate]  =  dteGasExp,
-	[Date Access Obtained] = dteAccObt, 
-	[Current Status]  = cdDesc,
-	[Reason over 3 months] = txtReasOvr3
+ 		   	/* New fields - waiting on DWH taken from source - MT 20210409 - Ticket 93740*/
+   [Expiry of Gas Certificate]  =  dim_detail_claim.[gascomp_expiry_of_gas_certificate] ,
+	[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained], 
+	[Current Status]  = dim_detail_claim.[gascomp_current_status],
+	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months]
 
  FROM red_dw.dbo.dim_matter_header_current
  INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -63,8 +63,13 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_property
  ON dim_detail_property.client_code = dim_matter_header_current.client_code
  AND dim_detail_property.matter_number = dim_matter_header_current.matter_number
 
-LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
-LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
+ JOIN red_dw.dbo.fact_dimension_main
+ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT JOIN red_dw.dbo.dim_detail_claim
+	ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+
+--LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
+--LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
 
 LEFT OUTER JOIN
 (
@@ -93,7 +98,7 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
  AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
-  WHERE master_client_code='W15603'
+  WHERE dim_matter_header_current.master_client_code='W15603'
 
 END 
 GO
