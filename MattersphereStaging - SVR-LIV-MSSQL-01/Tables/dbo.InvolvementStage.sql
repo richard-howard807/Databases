@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[InvolvementStage]
 [InsertDate] [datetime] NOT NULL CONSTRAINT [DF__Involveme__Inser__2645B050] DEFAULT (getdate()),
 [StatusID] [tinyint] NOT NULL CONSTRAINT [DF__Involveme__Statu__2739D489] DEFAULT ((0)),
 [error] [int] NULL,
-[errormsg] [nvarchar] (2000) COLLATE Latin1_General_CI_AS NULL
+[errormsg] [nvarchar] (2000) COLLATE Latin1_General_CI_AS NULL,
+[AssocDIWOR] [int] NULL
 ) ON [PRIMARY]
 GO

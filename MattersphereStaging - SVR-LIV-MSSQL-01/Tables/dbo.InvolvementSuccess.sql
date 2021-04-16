@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[InvolvementSuccess]
 [InsertDate] [datetime] NOT NULL,
 [StatusID] [tinyint] NOT NULL,
 [error] [int] NULL,
-[errormsg] [nvarchar] (2000) COLLATE Latin1_General_CI_AS NULL
+[errormsg] [nvarchar] (2000) COLLATE Latin1_General_CI_AS NULL,
+[AssocDIWOR] [int] NULL
 ) ON [PRIMARY]
 GO

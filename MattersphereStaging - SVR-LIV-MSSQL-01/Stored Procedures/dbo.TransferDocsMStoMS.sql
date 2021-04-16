@@ -53,14 +53,11 @@ EXEC [dbo].[CUR_RunThirdPartyDocs]
 
 SELECT
 DocumentSource,
-DocumentLocation,
+DocumentLocation  AS Documentdestination,
 REVERSE(SUBSTRING(REVERSE(DocumentLocation), CHARINDEX('\',REVERSE(DocumentLocation),0),999 )) AS DestinationFolder,
 REVERSE(SUBSTRING(REVERSE(DocumentLocation), 0, CHARINDEX('\',REVERSE(DocumentLocation),0))) AS Document,
-DocID
+DocID AS CreationDate
 FROM  dbo.ThirdPartyDocumentStage  AS a
-
-
-
 
 
 END
