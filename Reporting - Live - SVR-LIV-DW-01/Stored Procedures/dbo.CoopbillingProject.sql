@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -38,6 +39,7 @@ END  AS ElapsedDays
 --,[Proforma].[Proforma Date]
 ,CASE WHEN LastBillDate BETWEEN DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0)  AND DATEADD (dd, -1, DATEADD(mm, DATEDIFF(mm, 0, GETDATE()) + 1, 0)) 
 THEN 'red' ELSE 'green' END AS color
+,client_reference
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -100,6 +102,10 @@ GROUP BY fact_all_time_activity.client_code,fact_all_time_activity.matter_number
 ) AS CostsSplit
  ON CostsSplit.client_code = dim_matter_header_current.client_code
  AND CostsSplit.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+ ON dim_client_involvement.client_code = dim_matter_header_current.client_code
+ AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
+
 WHERE master_client_code IN ('C1001','W24438')
 AND wip>=100
 AND  (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
