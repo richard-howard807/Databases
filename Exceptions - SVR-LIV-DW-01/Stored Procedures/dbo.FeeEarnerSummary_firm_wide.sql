@@ -87,12 +87,12 @@ WHERE fact_dimension_main.client_code <> 'ml'
     and  referral_reason LIKE 'Dispute%' AND 
 (
 	date_claim_concluded IS NULL  OR 
-	date_claim_concluded >= '2017-01-01'  
+	date_claim_concluded >= '2018-01-01'  
 )  AND 
 dim_matter_header_current.reporting_exclusions = 0    AND 
 LOWER(ISNULL(outcome_of_case, '')) NOT in ('exclude from reports','returned to client')  AND 
 (
-	date_closed_case_management >= '2017-01-01' OR date_closed_case_management IS NULL
+	date_closed_case_management >= '2018-01-01' OR date_closed_case_management IS NULL
 )       
 AND 
 employeeid NOT IN 
