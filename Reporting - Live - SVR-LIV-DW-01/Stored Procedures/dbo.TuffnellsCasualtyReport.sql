@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[TuffnellsCasualtyReport]
 
 AS 
@@ -37,7 +38,7 @@ SELECT  dim_matter_header_current.client_name AS [Client]
 ,fact_finance_summary.[total_reserve] AS [total_reserve]
 ,fact_finance_summary.[total_reserve_net] AS [total_reserve_net]
 --,fact_detail_paid_detail.[total_incurred] AS [total_incurred]
-,ISNULL(red_dw.dbo.fact_finance_summary.damages_paid_to_date,0)+ ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid_to_date,0)  AS [total_incurred]
+,ISNULL(red_dw.dbo.fact_finance_summary.damages_paid_to_date,0)+ ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid_to_date,0) +ISNULL(total_amount_billed,0)  AS [total_incurred]
 ,dim_detail_outcome.[outcome_of_case] AS [Outcome]
 ,dim_detail_outcome.[date_claim_concluded] AS [Date Claim Concluded]
 ,fact_finance_summary.[damages_interims] AS [Interim Damages Paid (Post Instruction)]

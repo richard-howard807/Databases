@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[VariousEateries]
 
 AS
@@ -56,7 +57,7 @@ SELECT
 	, dim_detail_property.site_number			AS [Site Number]
 	, dim_detail_property.site_name			AS [Site Name]	
 	, dim_file_notes.external_file_notes	
-	,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
+	,CASE WHEN dim_detail_property.completion_date IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus --amended per #95899
 	, Doogal.Latitude
 	, Doogal.Longitude
 FROM red_dw.dbo.dim_matter_header_current
