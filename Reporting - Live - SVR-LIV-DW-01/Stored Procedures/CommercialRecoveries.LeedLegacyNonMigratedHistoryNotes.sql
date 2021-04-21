@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedLegacyNonMigratedHistoryNotes]
 (
 @SourceSystemID AS NVARCHAR(100)
@@ -40,7 +41,11 @@ SELECT RTRIM(hiclin)+'-'+RTRIM(himatn) AS SourceSystemID
 ,hiamnt 
 ,hitype 
 FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[dhifile]
-WHERE RTRIM(hiclin)+'-'+RTRIM(himatn)=@SourceSystemID
+--WHERE RTRIM(hiclin)+'-'+RTRIM(himatn)=@SourceSystemID
+WHERE hiclin=(SUBSTRING(@SourceSystemID,0,CHARINDEX('-',@SourceSystemID,0)))
+AND himatn=(SUBSTRING(@SourceSystemID,CHARINDEX('-',@SourceSystemID)+1,LEN(@SourceSystemID)) )
+
+
 ORDER BY SourceSystemID ASC, hinumb ASC
 
 

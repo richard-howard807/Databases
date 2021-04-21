@@ -4,9 +4,10 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[WipAndDisbs] @FinMonth VARCHAR(50) 
 
-as
+AS
 
 /*
 RH 21-07-2020 - Fixed Fee arrangmentent on files with no WIP
@@ -167,7 +168,8 @@ dim_fed_hierarchy_history.hierarchylevel3hist as 'practice_area',
 dim_fed_hierarchy_history.hierarchylevel4hist as 'team',
 output_wip_fee_arrangement AS output_wip_fee_arrangement,
 fixed_fee,
-fixed_fee_amount
+fixed_fee_amount,
+dim_detail_finance.output_wip_percentage_complete
 
 INTO #disbs 
 
@@ -224,7 +226,8 @@ w.[Total Wip],
 COALESCE(w.fixed_fee, d.fixed_fee) fixed_fee,
 COALESCE(w.fixed_fee_amount, d.fixed_fee_amount) fixed_fee_amount,
 w.fee_earner_code,
-w.output_wip_percentage_complete, d.disbursement_balance 
+COALESCE(w.output_wip_percentage_complete,d.output_wip_percentage_complete) AS output_wip_percentage_complete
+, d.disbursement_balance 
 INTO #joined
 FROM #disbs  d
 left JOIN #wip w ON d.dim_matter_header_history_key = w.dim_matter_header_history_key

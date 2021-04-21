@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedLegacyNonMigratedFinancialsArch]
 (
 @SourceSystemID AS NVARCHAR(100)
@@ -49,8 +50,11 @@ SELECT alsern AS [Item]
 ,alclia AS [Client]
 ,albill AS [Bill]
 FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[fwact].[dbo].[alfile]
-WHERE RTRIM(CAST(alclin AS NVARCHAR(20))) + '-' + RTRIM(CAST(almatn AS NVARCHAR(20)))=@SourceSystemID
- ORDER BY alsern ASC
+--WHERE RTRIM(CAST(alclin AS NVARCHAR(20))) + '-' + RTRIM(CAST(almatn AS NVARCHAR(20)))=@SourceSystemID
+WHERE alclin=(SUBSTRING(@SourceSystemID,0,CHARINDEX('-',@SourceSystemID,0)))
+AND almatn=(SUBSTRING(@SourceSystemID,CHARINDEX('-',@SourceSystemID)+1,LEN(@SourceSystemID)) )
+
+ORDER BY alsern ASC
 
 
 SELECT [Item]

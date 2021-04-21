@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LeedLegacyNonMigratedDocs]
 (
 @SourceSystemID AS NVARCHAR(100)
@@ -36,7 +37,9 @@ mhdate AS [Date Added]
 ,mhmatn AS Matter
 FROM [SVR-LIV-SQL-04\LEGACYREADONLY].[webdb].[dbo].[MHFILE] WITH (NOLOCK)
 WHERE mhdesc LIKE '%<a href=file://fw1/documents%' 
-AND RTRIM(CAST(mhclin AS NVARCHAR(20)))+ '-' + RTRIM(CAST(mhmatn AS NVARCHAR(20)))=@SourceSystemID
+AND  mhclin=(SUBSTRING(@SourceSystemID,0,CHARINDEX('-',@SourceSystemID,0)))
+AND mhmatn=(SUBSTRING(@SourceSystemID,CHARINDEX('-',@SourceSystemID)+1,LEN(@SourceSystemID)) )
+
 
 
 
