@@ -8,7 +8,7 @@ GO
 -- Description:	93740 - datasource for Riverside/Riverside Injunction Tracker 
  
 -- =============================================
-CREATE PROCEDURE [dbo].[Riverside_RiversideInjunctionTracker] 
+CREATE PROCEDURE [dbo].[Riverside_RiversideInjunctionTrackerTEST] 
 AS
 
 SELECT 
@@ -45,7 +45,7 @@ SELECT
 
 	[Completed_Ongoing_Flag] = CASE WHEN dim_detail_claim.[gascomp_date_access_obtained] IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END,
 	[Tenant's Name] = TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin'), CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')), CHARINDEX('-',REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) - CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) + Len('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')),
-	[Tenant's Address] = CASE WHEN matter_description LIKE '%-%' THEN  TRIM(',' FROM REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(matter_description, TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(dim_matter_header_current.matter_description, CHARINDEX('GAS  ', dim_matter_header_current.matter_description), CHARINDEX('-',dim_matter_header_current.matter_description) - CHARINDEX('GAS  ', dim_matter_header_current.matter_description) + Len('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')), ''), RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1), ''), 'GAS  - ', ''), 'GAS -', ''), 'Martin - ', ''), 'Louise Darby - ', ''), 'Salam - ', ''), 'Ryan - ', '')) ELSE matter_description END
+	[Tenant's Address] =  TRIM(',' FROM REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(matter_description, TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(dim_matter_header_current.matter_description, CHARINDEX('GAS  ', dim_matter_header_current.matter_description), CHARINDEX('-',dim_matter_header_current.matter_description) - CHARINDEX('GAS  ', dim_matter_header_current.matter_description) + Len('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')), ''), RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1), ''), 'GAS  - ', ''), 'GAS -', ''), 'Martin - ', ''), 'Louise Darby - ', ''), 'Salam - ', ''), 'Ryan - ', ''))
 	,[Tenant's Postcode] =  RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1) 
 
   ,ms_fileid
@@ -71,7 +71,8 @@ WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'W15603'
 	AND RTRIM(dim_matter_worktype.work_type_name) = 'Injunction'
 
-
+	--Martin - 65 Newenham Crescent, Liverpool,
+	--Flat 6 Helen Court, 16 Hadlow Road, Sidcup,
 
 
 	

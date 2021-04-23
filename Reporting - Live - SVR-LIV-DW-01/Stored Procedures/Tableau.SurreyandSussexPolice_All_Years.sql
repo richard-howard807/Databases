@@ -7,9 +7,9 @@ GO
 /*
 ===================================================
 ===================================================
-Author:				Emily Smith
+Author:				Julie Loughlin
 Created Date:		2019-10-14
-Description:		Claims Division MI to drive the Tableau Dashboards, all years
+Description:		Sussex and Surrey MI to drive the Tableau Dashboards, all years
 Current Version:	Initial Create
 ====================================================
 -- ES 2020-05-06 Added new financial year requested by HW

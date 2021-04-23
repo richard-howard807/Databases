@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -40,12 +41,18 @@ END  AS ElapsedDays
 ,CASE WHEN LastBillDate BETWEEN DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0)  AND DATEADD (dd, -1, DATEADD(mm, DATEDIFF(mm, 0, GETDATE()) + 1, 0)) 
 THEN 'red' ELSE 'green' END AS color
 ,client_reference
+,red_dw.dbo.dim_detail_core_details.delegated
+,proceedings_issued
+,litigated_coop
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+LEFT JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+ AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 --LEFT OUTER  JOIN 
 --(
 --SELECT fileID AS ms_fileid
@@ -112,7 +119,7 @@ AND  (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)>=30
 AND ISNULL(fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
-AND ISNULL(fixed_fee,'')<>'Fixed Fee'
+AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Fixed Fee'
 AND ISNULL(RTRIM(red_dw.dbo.dim_matter_header_current.present_position),'')<>'To be closed/minor balances to be clear'
 
 END
