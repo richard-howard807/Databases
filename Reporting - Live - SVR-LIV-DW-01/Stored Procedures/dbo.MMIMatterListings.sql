@@ -41,7 +41,7 @@ ELSE 'Other' END  AS [Claim Type]-- for Work Type Group “Disease” show the W
 ,fact_detail_claim.[disease_insurer_clients_contrib_costs] AS [MMI’s % - Costs]
 ,fact_detail_client.[disease_insurer_clients_per_contribution_to_defence_costs] AS [MMI’s % - Defence costs - NMI997]
 ,CASE WHEN dim_detail_core_details.[is_this_the_lead_file]='No' THEN 'No' ELSE 'Yes' END  AS [MMI Lead]
-,date_opened_case_management AS [Open Date]
+,dim_matter_header_current.date_opened_case_management AS [Open Date]
 ,referral_reason AS [Referral reason (internal only)]
 ,dim_detail_core_details.[date_letter_of_claim]  AS [Date of LoC]
 ,dim_detail_core_details.[has_the_claimant_got_a_cfa] AS [Has the Claimant got a CFA? (internal only)]
@@ -60,7 +60,7 @@ ELSE 'Other' END  AS [Claim Type]-- for Work Type Group “Disease” show the W
 ,fact_detail_reserve_detail.[claimant_costs_reserve_current] AS [Reserve Claimant’s Costs (Gross) (Internal only)]
 ,CASE WHEN date_costs_settled IS NOT NULL THEN 0 ELSE fact_detail_reserve_detail.[claimant_costs_reserve_current] - (fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction] + fact_detail_paid_detail.[interim_costs_payments]) END AS [Reserve Claimant’s Costs (Net)]-- – Show “0” if FTR087 is complete, otherwise (TRA080 curClaCostReCur – (FTR049 curIntDamsPreIn + NMI066 curIntCoPayPost))]
 ,fact_finance_summary.[defence_costs_reserve] AS [Reserve Own Costs (Gross)]
-,CASE WHEN date_closed_case_management IS NOT NULL THEN 0 ELSE ISNULL(fact_finance_summary.[defence_costs_reserve],0)  - ISNULL(TotalBilled,0) END  AS [Reserve Own Costs (Net)]--– Show “0” if closed in MS, otherwise (TRA078 curDefCostReCur – “Total Billed exc. VAT” where payor contains “MMI” OR “Municipal Mutual Insurance”)]
+,CASE WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 0 ELSE ISNULL(fact_finance_summary.[defence_costs_reserve],0)  - ISNULL(TotalBilled,0) END  AS [Reserve Own Costs (Net)]--– Show “0” if closed in MS, otherwise (TRA078 curDefCostReCur – “Total Billed exc. VAT” where payor contains “MMI” OR “Municipal Mutual Insurance”)]
 ,NULL AS [Total O/S Reserve]-- – sum of “Reserve Damages (Net)” + “Reserve CRU (Net)” + “Reserve Claimant’s Costs (Net)” + “Reserve Own Costs (Net)”]
 ,fact_finance_summary.[damages_paid] AS [Damages Paid (inc. CRU) (Internal only)]
 ,ISNULL(fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction],0) + ISNULL(fact_finance_summary.[damages_interims],0) AS [Interim Damages Paid (Internal only) - FTR049 curIntDamsPreIn + NMI065 curInDamPayPo]
@@ -76,14 +76,36 @@ ISNULL(fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction],0
 ,fact_detail_claim.[mmi_claimants_part_36_offer] AS [Claimant’s P36 - LIT1214]
 ,fact_detail_claim.[mmi_defendants_part_36_offer] AS [Defendant’s P36 - LIT1215]
 ,outcome_of_case AS [Outcome (Internal only) – TRA068 cboOutcomeCase]
-,CASE WHEN date_closed_practice_management IS NULL THEN 'Open' ELSE 'Closed' END  AS [Status]
+,CASE WHEN dim_matter_header_current.date_closed_practice_management IS NULL THEN 'Open' ELSE 'Closed' END  AS [Status]
 ,dim_detail_core_details.present_position AS [Present Position (Internal only)]
 ,dim_detail_litigation.[mmi_present_position_barriers_to_settlement] AS [Present Position / Barriers to settlement - LIT1216]
 ,date_claim_concluded AS [Date Damages Settled]
 ,date_costs_settled AS [Date Costs Agreed]
 ,CASE WHEN dim_detail_core_details.present_position IN ('Final bill sent – unpaid','To be closed/minor balances to be clear')  THEN LastBillDate ELSE NULL END  AS [Date Final Bill Issued]-- - Show Date of last bill if TRA125 is set to “Final bill sent – unpaid”/ “To be closed/minor balances to be clear”]
-,date_closed_case_management AS [Closed Date]
+,dim_matter_header_current.date_closed_case_management AS [Closed Date]
 ,ms_fileid AS [MSFileID]
+,red_dw.dbo.fact_finance_summary.claimants_total_costs_paid_by_all_parties	AS [Damages Paid (all parties) (internal only)]
+,fact_detail_paid_detail.total_settlement_value_of_the_claim_paid_by_all_the_parties AS [Claimant’s Costs Paid (all parties) (internalonly)]
+,red_dw.dbo.fact_finance_summary.total_amount_billed AS [TotalBilled (internal only)]
+,CASE 
+WHEN red_dw.dbo.dim_detail_outcome.outcome_of_case  = 'Exclude fromreports' THEN 'Cancelled'
+WHEN dim_matter_header_current.date_closed_case_management IS NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 THEN 'Closed - Paid Claim'
+WHEN dim_matter_header_current.date_closed_case_management IS NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Discontinued','Won at trial','Struck out') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties =0 THEN 'Closed – Repudiated'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Discontinued','Won at trial','Struck out') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties =0 THEN 'Open – Repudiated'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND date_costs_settled IS NOT NULL THEN 'Open – CostsSettled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND fact_finance_summary.[claimants_costs_paid] >0THEN 'Open – CostsSettled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND date_costs_settled IS NULL AND fact_finance_summary.[claimants_costs_paid] = NULL OR fact_finance_summary.[claimants_costs_paid] =0 THEN 'Open – DamagesSettled'  
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND date_costs_settled IS NOT NULL THEN 'Open – Costs Settled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND date_claim_concluded IS NOT NULL THEN 'Open – Damages Settled'
+WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL AND referral_reason = 'Advice only'THEN 'Closed – Advice only'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND referral_reason = 'Advice only'THEN 'Open – Advice only'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND dim_detail_core_details.present_position IN   ('To be closed/minor balances to be clear', 'Final bill sent– unpaid','Final bill due – claim and costs concluded', 'Claim and costsconcluded but recovery outstanding') THEN 'Open - Costs Settled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND dim_detail_core_details.present_position IN ('Claim concluded but costs outstanding') THEN 'Open -Damages Settled'
+ELSE 'Live'
+END AS [Status (Internal Only)]
+,fact_matter_summary_current.last_bill_date
+,dim_detail_litigation.mmi_present_position_barriers_to_settlement 
+,NULLIF(dim_detail_core_details.associated_matter_numbers,'N/A') AS [Zurich Ref]
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -97,6 +119,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
+ AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
  ON dim_defendant_involvement.client_code = dim_matter_header_current.client_code
  AND dim_defendant_involvement.matter_number = dim_matter_header_current.matter_number
@@ -183,8 +207,29 @@ GROUP BY (coalesce(left(Matter.loadnumber,(charindex('-',Matter.loadnumber)-1)),
 
 WHERE (dim_matter_header_current.client_code='M00001' OR ms_fileid=4967122)
 AND dim_matter_header_current.matter_number <>'ML'
-AND (date_closed_case_management IS NULL OR date_closed_case_management>='2018-01-01')
- 
+AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-01-01')
+AND dim_detail_litigation.mmi_present_position_barriers_to_settlement <> 'Exclude - finalised pre-2018'
+AND RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current.matter_number NOT IN 
+( 'M00001/00101874',
+  'M00001/00101760',
+  'M00001/00101865',
+  'M00001/00101875',
+ 'M00001/00101858',
+ 'M00001/00101987',
+  'M00001/00101940',
+  'M00001/00101942',
+  'M00001/00101948',
+  'M00001/00101876',
+  'M00001/00101976',
+  'M00001/00101932',
+    'M00001/00102075',
+  'M00001/00102027',
+ 'M00001/00102038',
+  'M00001/11111696',
+  'M00001/11111697',
+  'M00001/11111692',
+  'M00001/11111698'
+)
 
 
 

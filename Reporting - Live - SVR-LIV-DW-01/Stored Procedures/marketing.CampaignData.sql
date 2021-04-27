@@ -305,15 +305,15 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 ELSE is_this_part_of_a_campaign
 END
 
-LEFT OUTER JOIN (SELECT Bills.dim_matter_header_curr_key
+LEFT OUTER JOIN (SELECT DISTINCT Bills.dim_matter_header_curr_key
 				, CASE WHEN Bills.dim_matter_header_curr_key IS NOT NULL THEN 1 ELSE 0 END AS BillFilter
 				FROM red_dw.dbo.dim_matter_header_current
 				LEFT OUTER JOIN 
 				(
-				SELECT DISTINCT dim_matter_header_curr_key FROM red_dw.dbo.fact_bill
+				SELECT DISTINCT dim_matter_header_curr_key FROM red_dw.dbo.fact_bill_activity
 				INNER JOIN red_dw.dbo.dim_bill_date
-				 ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-				WHERE bill_date BETWEEN @DateFrom AND @DateTo
+				 ON dim_bill_date.dim_bill_date_key = fact_bill_activity.dim_bill_date_key
+				WHERE dim_bill_date.bill_date BETWEEN @DateFrom AND @DateTo
 				) AS Bills
 				 ON Bills.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key ) AS [Bill]
 				 ON Bill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
