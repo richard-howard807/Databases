@@ -143,7 +143,7 @@ GROUP BY ms_fileid
 LEFT OUTER JOIN 
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key
-, TimeRecordedBy.name [Name]
+, dim_employee.surname +', ' + dim_employee.forename AS [Name]
 , TimeRecordedBy.fed_code [Unique timekeeper ID per timekeeper]
 , TimeRecordedBy.jobtitle [Level (solicitor, partner)]
 , DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) [PQE]
@@ -159,11 +159,12 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS TimeRecordedBy
  ON TimeRecordedBy.dim_fed_hierarchy_history_key = fact_bill_billed_time_activity.dim_fed_hierarchy_history_key
 INNER JOIN red_dw.dbo.dim_employee WITH(NOLOCK)
  ON dim_employee.dim_employee_key = TimeRecordedBy.dim_employee_key
+
 WHERE client_group_name='AXA XL'
 --AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty'
 AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
-, TimeRecordedBy.name 
+, dim_employee.surname +', ' + dim_employee.forename 
 , TimeRecordedBy.fed_code 
 , TimeRecordedBy.jobtitle
 , DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103))
@@ -206,5 +207,6 @@ AND date_claim_concluded IS NULL
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'
 AND reporting_exclusions = 0
 
-END 
+END
+
 GO

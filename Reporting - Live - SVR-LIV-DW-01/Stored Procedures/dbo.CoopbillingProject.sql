@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -44,6 +45,7 @@ THEN 'red' ELSE 'green' END AS color
 ,red_dw.dbo.dim_detail_core_details.delegated
 ,proceedings_issued
 ,litigated_coop
+,InstructionType.InstructionType
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -53,6 +55,14 @@ INNER JOIN red_dw.dbo.fact_finance_summary
 LEFT JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN 
+(
+SELECT fileID,cdDesc AS InstructionType FROM ms_prod.dbo.udMIClientMSG
+INNER JOIN ms_prod.dbo.dbCodeLookup 
+ ON cboInsTypeMSG=cdCode AND cdType='MSGINSTYPE'
+WHERE cboInsTypeMSG IS NOT NULL
+) AS InstructionType
+ ON ms_fileid=InstructionType.fileID
 --LEFT OUTER  JOIN 
 --(
 --SELECT fileID AS ms_fileid
