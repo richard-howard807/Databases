@@ -23,9 +23,8 @@ CASE
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' removed #90349
+--WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
 WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
-
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
 			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
@@ -41,6 +40,12 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
 END Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
@@ -133,7 +138,7 @@ AND (CASE
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' removed #90349
+--WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
 WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
@@ -150,8 +155,14 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
-END)  NOT IN ('GDPR','No','Pro Bono')
+END)  NOT IN ('GDPR','No','Pro Bono', 'Construction')
 
 
 
