@@ -39,6 +39,12 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
 END Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
@@ -127,12 +133,12 @@ FROM red_dw.dbo.fact_bill_activity
 WHERE bill_date >= @DateFrom AND bill_date <= @DateTo
 GROUP BY master_fact_key) fact_bill_activity ON fact_bill_activity.master_fact_key = fact_dimension_main.master_fact_key
 
-INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = CASE
-WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
+INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = 
+CASE
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+--WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
 WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
@@ -149,10 +155,14 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
-
-
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
-END
+END 
 
 
 WHERE 
@@ -167,11 +177,10 @@ UNION
 
 SELECT 
 CASE
-WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' removed #90349
+--WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
 WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
@@ -188,8 +197,12 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
-
-
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
 END Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
@@ -278,12 +291,12 @@ FROM red_dw.dbo.fact_bill_activity
 WHERE bill_date >= @DateFrom AND bill_date <= @DateTo
 GROUP BY master_fact_key) fact_bill_activity ON fact_bill_activity.master_fact_key = fact_dimension_main.master_fact_key
 
-INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = CASE
-WHEN is_this_part_of_a_campaign IS NOT NULL THEN is_this_part_of_a_campaign
+INNER JOIN #Campaign AS Campaign ON Campaign.ListValue COLLATE DATABASE_DEFAULT = 
+CASE
 WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
 WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
 WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future'
+--WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
 WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
 WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 		OR (
@@ -300,20 +313,24 @@ WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
 					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
 				)
 			) THEN 'Coronavirus'
-
-
+WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
+WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
+WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
+WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
+WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
+WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
 END
 
-LEFT OUTER JOIN (SELECT DISTINCT Bills.dim_matter_header_curr_key
+LEFT OUTER JOIN (SELECT Bills.dim_matter_header_curr_key
 				, CASE WHEN Bills.dim_matter_header_curr_key IS NOT NULL THEN 1 ELSE 0 END AS BillFilter
 				FROM red_dw.dbo.dim_matter_header_current
 				LEFT OUTER JOIN 
 				(
-				SELECT DISTINCT dim_matter_header_curr_key FROM red_dw.dbo.fact_bill_activity
+				SELECT DISTINCT dim_matter_header_curr_key FROM red_dw.dbo.fact_bill
 				INNER JOIN red_dw.dbo.dim_bill_date
-				 ON dim_bill_date.dim_bill_date_key = fact_bill_activity.dim_bill_date_key
-				WHERE dim_bill_date.bill_date BETWEEN @DateFrom AND @DateTo
+				 ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
+				WHERE bill_date BETWEEN @DateFrom AND @DateTo
 				) AS Bills
 				 ON Bills.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key ) AS [Bill]
 				 ON Bill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key

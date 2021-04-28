@@ -5,6 +5,7 @@ GO
 
 
 
+
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
@@ -146,9 +147,9 @@ BEGIN
                AltNumber AS AltNumber
         FROM TE_3E_Prod.dbo.Matter
     ) AS Matters
-        INNER JOIN TE_3E_Prod.dbo.Timecard AS UnbilledWIP
+        INNER JOIN TE_3E_Prod.dbo.Timecard AS UnbilledWIP WITH(NOLOCK)
             ON Matters.MattIndex = UnbilledWIP.Matter
-        LEFT JOIN TE_3E_Prod.dbo.Timekeeper
+        LEFT JOIN TE_3E_Prod.dbo.Timekeeper WITH(NOLOCK)
             ON UnbilledWIP.Timekeeper = TkprIndex
         --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
         -- ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
@@ -229,9 +230,9 @@ BEGIN
                AltNumber AS AltNumber
         FROM TE_3E_Prod.dbo.Matter
     ) AS Matters
-        INNER JOIN TE_3E_Prod.dbo.CostCard AS UnbilledWIP
+        INNER JOIN TE_3E_Prod.dbo.CostCard AS UnbilledWIP WITH(NOLOCK)
             ON Matters.MattIndex = UnbilledWIP.Matter
-        LEFT JOIN TE_3E_Prod.dbo.Timekeeper
+        LEFT JOIN TE_3E_Prod.dbo.Timekeeper WITH(NOLOCK)
             ON UnbilledWIP.Timekeeper = TkprIndex
         --INNER JOIN axxia01.dbo.camatgrp AS camatgrp 
         --ON Matters.Client=mg_client collate database_default  AND Matters.Matter=mg_matter collate database_default
@@ -244,7 +245,7 @@ BEGIN
         (
             SELECT [TaxLkUp] [TaxCode],
                    [Rate]
-            FROM [TE_3E_Prod].[dbo].[TaxDate]
+            FROM [TE_3E_Prod].[dbo].[TaxDate] WITH(NOLOCK)
             WHERE NxEndDate = '9999-12-31 00:00:00.000'
         ) tax
             ON UnbilledWIP.TaxCode = tax.[TaxCode]

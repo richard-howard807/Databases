@@ -15,7 +15,7 @@ GO
 
 
 
-CREATE PROCEDURE [nhs].[BillingBySchemeHourlyRate] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
+CREATE PROCEDURE [nhs].[BillingBySchemeHourlyRate_TEST20210427] -- EXEC dbo.NHSLABillingByScheme 'CNST','2017-10-31'
 (
     @Scheme AS VARCHAR(MAX),
     @EndDate AS DATETIME
@@ -100,7 +100,7 @@ BEGIN
                       AND [nhs_instruction_type] = 'Inquest - associated claim'
                   )
               )
-              --OR [output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee'
+              OR [output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee'
           );
 
     SELECT Matters.Client,

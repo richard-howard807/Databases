@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2020-09-02
@@ -81,40 +84,40 @@ SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit(
 SELECT 
 	dim_matter_header_current.client_code
 	, dim_matter_header_current.matter_number
-	, (CASE WHEN key_date_rag.rag = 'orange' THEN 'amber' ELSE key_date_rag.rag END) + ' - ' + 
+	, --(CASE WHEN key_date_rag.rag = 'orange' THEN 'amber' ELSE key_date_rag.rag END) + ' - ' + 
 		CAST(FORMAT(key_date_rag.date_due, 'd', 'en-gb') AS VARCHAR(10)) + ' -' + key_date_rag.task_desccription		AS [key_date_rag_trigger]
 	, CASE	
 		WHEN dim_detail_court.date_of_trial >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_trial) <= GETDATE() OR 
 			trial_key_date.trial_date >= GETDATE() AND DATEADD(MONTH, -6, trial_key_date.trial_date) <= GETDATE() THEN
-			'red - ' + CAST(FORMAT(COALESCE(trial_key_date.trial_date, dim_detail_court.date_of_trial), 'd', 'en-gb') AS VARCHAR(10)) + ' - trial date in 6 months'
+			'' + CAST(FORMAT(COALESCE(trial_key_date.trial_date, dim_detail_court.date_of_trial), 'd', 'en-gb') AS VARCHAR(10)) + ' - trial date in 6 months'
 	  END				AS [trial_date_rag_trigger]
 	, CASE
 		WHEN dim_detail_court.date_of_first_day_of_trial_window >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_first_day_of_trial_window) <= GETDATE() THEN
-			'red - ' + CAST(FORMAT(dim_detail_court.date_of_first_day_of_trial_window, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
+			'' + CAST(FORMAT(dim_detail_court.date_of_first_day_of_trial_window, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
 	  END				AS [trial_window_rag_trigger]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
-			'red - proceedings yes/publicity yes'
+			' proceedings yes/publicity yes'
 	  END				AS [proceedings_publicity_rag_trigger]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_claim_novel_contentious_repercussive) = 'Yes' THEN
-			'red - proceedings yes/repercussive yes'
+			' proceedings yes/repercussive yes'
 	  END				AS [proceedings_repercussive_rag_trigger]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
-			'red - proceedings yes/liability no'
+			' proceedings yes/liability no'
 	  END				AS [proceedings_liability_rag_trigger]
 	, CASE
 		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
-			'amber - proceedinds no/publicity yes'
+			' proceedinds no/publicity yes'
 	  END				AS [no_proceedings_publicity_rag_trigger]
 	, CASE
 		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_claim_novel_contentious_repercussive) = 'Yes' THEN
-			'amber - proceedings no/repercussive yes'
+			' proceedings no/repercussive yes'
 	  END				AS [no_proceedings_repercussive_rag_trigger]
 	, CASE
 		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
-			'amber - proceedings no/liability no'
+			' proceedings no/liability no'
 	  END				AS [no_proceedings_liability_rag_trigger]
 	, CASE	
 		WHEN key_date_rag.rag = 'red' THEN
@@ -273,6 +276,8 @@ FROM (
 			AND dim_date.calendar_date >= GETDATE()
 			AND LOWER(dim_tasks.task_desccription) LIKE '%today%'
 			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%cru expiry%'
+			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%nhsla solicitor''s report due - today%'
+			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%report to client due - today%'
 	) AS a
 	CROSS APPLY
 	(
@@ -292,6 +297,8 @@ FROM (
 			AND a.matter_number = b.matter_number
 			AND LOWER(dim_tasks.task_desccription) LIKE '%today%'
 			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%cru expiry%'
+			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%nhsla solicitor''s report due - today%'
+			AND LOWER(dim_tasks.task_desccription) NOT LIKE '%report to client due - today%'
 		ORDER BY
 			dim_date.calendar_date
 		FOR XML PATH('')
@@ -329,6 +336,25 @@ SELECT
 	--, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
 	--, dim_detail_health.nhs_scheme		AS [Scheme]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
+		,CASE WHEN nhs_instruction_type IN 
+	('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
+,'EL/PL - old delegated matters','EL/PL DA','NCFF 25'
+	) THEN 'Delegated authority'
+WHEN nhs_instruction_type IN 
+	('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
+,'CFF 250 (Non-PA)','CFF 250 (PA)','Clinical - Non DA','Clinical - Non DA (ENS)','Derbyshire Healthcare Group Action'
+,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
+,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
+,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
+,'Worcester Group Action','WWL - Data Breach group action') THEN 'Direct instruction'
+WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 'Inquest'
+WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
+,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
+,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
+,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
+,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 'Limited instructions'
+WHEN nhs_instruction_type IN ('Other') THEN 'Other'
+END AS NewInstructionType
 	, dim_claimant_thirdparty_involvement.claimant_name			AS [Claimant Name]
 	, dim_detail_core_details.injury_type		AS [Injury Type]
 	, CAST(dim_detail_core_details.incident_date AS DATE)		AS [Incident Date]

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 (
 
@@ -147,6 +148,7 @@ END  AS ElapsedDays
 ,LitLevel.Lit_defence_cost_billed
 ,LitLevel.Lit_total_amount_billed
 ,LitLevel.count AS [count]
+,dim_detail_claim.[aig_weightmans_costs_apportioned]
 ,lead_file_matter_number_client_matter_number
 ,CASE WHEN LitLevel.Approved>=1 THEN 'Yes' ELSE 'No' END AS Approved
 ,         CONCAT_WS(',',
@@ -170,7 +172,8 @@ CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN
 ,'RECVCA - Recovery'
 --,'AUTOEX - Motor Hourly'
 ) AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Hourly' 
-AND ISNULL(referral_reason,'')<>'Costs dispute'
+AND ISNULL(dim_detail_core_details.referral_reason,'')<>'Costs dispute'
+AND ISNULL(dim_detail_claim.[aig_weightmans_costs_apportioned],'') <>'Yes'
 THEN 'Incorrect fee scale' END,
 
 CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN 
@@ -182,7 +185,8 @@ CASE WHEN dim_detail_client.aig_rates_assigned_in_ascent IN
 
 ) 
 AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Fixed Fee' 
-AND ISNULL(referral_reason,'')<>'Costs dispute'
+AND ISNULL(dim_detail_core_details.referral_reason,'')<>'Costs dispute'
+AND ISNULL(dim_detail_claim.[aig_weightmans_costs_apportioned],'') <>'Yes'
 THEN 'Incorrect fee scale' END,
              CASE WHEN dim_detail_client.aig_litigation_number LIKE 'LIT-%'
                        AND dim_detail_client.aig_litigation_number <> 'LIT-16777 UKSC'
@@ -303,6 +307,11 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud WITH(NOLOCK)
 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
  ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
  AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_detail_claim WITH(NOLOCK)
+ ON dim_detail_claim.client_code = dim_matter_header_current.client_code
+ AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number
+
+ 
 LEFT OUTER JOIN red_dw.dbo.dim_matter_group WITH(NOLOCK)
  ON dim_matter_group.dim_matter_group_key = dim_matter_header_current.dim_matter_group_key
 LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK)

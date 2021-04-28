@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE [dbo].[AXAXLDataSubmission]
+CREATE PROCEDURE [dbo].[AXAXLDataSubmission_TEST]
 
 AS 
 
@@ -14,17 +14,36 @@ BEGIN
 SELECT  DISTINCT
 
 dim_matter_header_current.ms_fileid
-,client_reference AS [AXA XL Claim Number]
+,COALESCE(client_reference, insurerclient_reference) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
-, work_type_name AS  [Product Type]
+, CASE WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' END [New Line of Business]
+
+/*If Department is Casualty and  matter type:
+
+i)                    begins EL or PL then show as “Employer’s Liability and Public Liability”,
+ii)                   if it starts Motor then “Motor”
+iii)                 If begins Recovery then “Other”
+
+If Department is not Casualty and matter type:
+i)                    Begins Motor, EL or PL then “Accident”
+ii)                   Else “Other”
+ */
+ ,work_type_name   AS  [Product Type]
+,  CASE WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %') THEN 'Employer’s Liability and Public Liability'
+        WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Motor%' THEN 'Motor'
+		WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Recovery%' THEN 'Other'
+		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Accident'
+		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' THEN 'Other'
+		ELSE  work_type_name END  AS  [Product Type New]
+
 , insuredclient_name AS [Insured Name]
 , 1 AS [AXA XL Percentage line share of loss / expenses / recovery]
 , dim_detail_core_details.[clients_claims_handler_surname_forename]  AS [AXA XL Claims Handler]
 , NULL [Third Party Administrator]
 , NULL [Coverage / defence?]
 , branch_name AS [Law firm handling office (city)]
-, dim_detail_core_details.[date_instructions_received] AS [Date Instructed]
+, COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) AS [Date Instructed]
 , red_dw.dbo.dim_claimant_thirdparty_involvement.claimantsols_name AS  [Opposing Side's Solicitor Firm Name]
 , NULL [Reason For instruction]
 , dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
@@ -35,15 +54,15 @@ dim_matter_header_current.ms_fileid
 , dim_detail_court.[date_proceedings_issued] AS  [Date Proceedings Issued]
 , NULL [AXA XL as defendant]
 , NULL [Reason for proceedings]
-,  dim_detail_core_details.[track]  AS [Proceeding Track]
+, CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END AS [Proceeding Track]
 , ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
 , damages_reserve AS [Damages Reserve]
-, tp_costs_reserve AS [Opposing side's costs reserve]
+, COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
 , defence_costs_reserve AS [Panel budget/reserve]
 , NULL [Reason for panel budget change if occurred]
 , defence_costs_billed AS [Panel Fees Paid]
-, NULL [Counsel Paid]
-, NULL [Other Disbursements Paid]
+, Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
+, ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
 , fact_finance_summary.[tp_total_costs_claimed]  AS [Opposing side's Costs Claimed]
 , NULL [Timekeepers - Details of anyone who worked on the case during the time period.]
 , BilledTime.Name [Name]
@@ -52,11 +71,11 @@ dim_matter_header_current.ms_fileid
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, red_dw.dbo.dim_matter_header_current.date_closed_case_management AS [Date closed]
+, CASE WHEN final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
 , final_bill_date [Date of Final Panel Invoice]
 , date_claim_concluded [Date Damages settled]
 ,  fact_detail_paid_detail.[total_damages_paid] AS [Final Damages Amount]
-, NULL [Claimants Costs Handled by Panel?]
+, CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL THEN 'Yes' ELSE NULL END [Claimants Costs Handled by Panel?]
 , date_costs_settled AS  [Date Claimants costs settled]
 ,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
 , NULL [Mediated outcome - Select from list]
@@ -65,7 +84,10 @@ dim_matter_header_current.ms_fileid
 ,hierarchylevel3hist
 ,hierarchylevel4hist AS [Team]
 ,dim_fed_hierarchy_history.name AS [Weightmans Handler name]
-
+,dim_detail_core_details.referral_reason AS [Referral reason]
+,dim_detail_core_details.[proceedings_issued] 
+,[Counsel Paid / Other disbursements] = Disbursements.[Disbs - Counsel fees]
+,[Disbursements] = Disbursements.DisbAmount
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
@@ -116,6 +138,8 @@ AND tskDesc LIKE '%Trial date - today%'
 GROUP BY ms_fileid
 ) AS Trials
  ON Trials.ms_fileid = dim_matter_header_current.ms_fileid
+
+
 LEFT OUTER JOIN 
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key
@@ -147,6 +171,31 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
  ON BilledTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 
+ /*Disbursements*/
+LEFT JOIN(
+ SELECT dim_matter_header_current.dim_matter_header_curr_key
+,SUM(bill_total_excl_vat) AS DisbAmount
+,SUM(CASE WHEN LOWER(cost_type_description) IN ('counsel') THEN bill_total_excl_vat ELSE 0 END) AS  [Disbs - Counsel fees]
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current 
+ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_detail.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_bill WITH(NOLOCK)
+ON dim_bill.dim_bill_key = fact_bill_detail.dim_bill_key
+INNER JOIN red_dw.dbo.fact_bill WITH(NOLOCK)
+ON fact_bill.dim_bill_key = fact_bill_detail.dim_bill_key
+LEFT OUTER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+ON dim_bill_date.dim_bill_date_key = fact_bill_detail.dim_bill_date_key
+LEFT OUTER JOIN red_dw.dbo.dim_bill_cost_type ON dim_bill_cost_type.dim_bill_cost_type_key = fact_bill_detail.dim_bill_cost_type_key
+WHERE client_group_name='AXA XL'
+AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
+AND  fact_bill_detail.charge_type='disbursements'
+AND bill_reversed=0
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+
+
+) Disbursements ON Disbursements.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+
 WHERE client_group_name='AXA XL'
 --AND hierarchylevel3hist='Casualty'
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)='2021-03-29')
@@ -156,7 +205,6 @@ AND date_claim_concluded IS NULL
 --so this will be where date claim concluded or date costs settled are null
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'
 AND reporting_exclusions = 0
-
 
 END 
 GO
