@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[PlotCompletionReport]
 (
 @StartDate AS DATE
@@ -28,7 +29,7 @@ master_client_code + '-' + master_matter_number AS [Client & Matter Reference]
 ,curTTFee AS [TT Fee]
 ,curAdminFeePS AS [Admin Fee]
 ,curOtherDisbPS AS [Other Disbursements]
-,NULL  AS [Addressee – Invoice 1]
+,Company  AS [Addressee – Invoice 1]
 ,curDocFeePS AS [Document Fee]
 ,txtPurchaser1Fullname AS [Document Fee Paid by]
 ,curPartExFee AS [Part Exchange Legal Fee]
@@ -66,7 +67,17 @@ LEFT OUTER JOIN MS_Prod.dbo.udPlotSalesPreExc
  ON ms_fileid=udPlotSalesPreExc.fileID
 LEFT OUTER JOIN ms_prod.dbo.udPlotSalesExchange
  ON ms_fileid=udPlotSalesExchange.fileID
- 
+LEFT OUTER JOIN 
+(
+SELECT  fileID,STRING_AGG(contName,',') AS Company
+FROM ms_prod.config.dbAssociates
+INNER JOIN ms_prod.config.dbContact
+ ON dbContact.contID = dbAssociates.contID
+WHERE assocType='BUILDCOMPANY'
+AND assocActive=1
+GROUP BY fileID
+) AS Assoc
+ ON ms_fileid=Assoc.fileID
 WHERE  CONVERT(DATE,completion_date,103) BETWEEN @StartDate AND @EndDate
 AND cboFundRec ='Y'
 AND cboFinInstruct='N'

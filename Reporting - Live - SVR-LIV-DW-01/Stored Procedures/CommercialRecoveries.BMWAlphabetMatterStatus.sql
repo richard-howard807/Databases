@@ -8,6 +8,7 @@ GO
 
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -17,7 +18,7 @@ AS
 
 BEGIN
 
-SELECT COALESCE(txtCliRef,ClientRef.ClientRef) AS [Account Number]
+SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef END  AS [Account Number]
 ,clNo +'-' + fileNo  AS [Weightmans Reference]
 ,dbFile.Created AS [Date Instructred]
 ,Defendant.Defendant AS [Customer's Name]
