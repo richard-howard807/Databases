@@ -95,6 +95,11 @@ ii)                   Else “Other”
 ,dim_matter_header_current.date_closed_case_management 
 ,matter_description
 
+,dim_client_involvement.insuredbroker_name
+,dim_client_involvement.broker_name
+,fact_finance_summary.disbursements_billed
+
+
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main
 ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -180,7 +185,7 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 LEFT JOIN(
  SELECT dim_matter_header_current.dim_matter_header_curr_key
 ,SUM(bill_total_excl_vat) AS DisbAmount
-,SUM(CASE WHEN LOWER(cost_type_description) IN ('counsel') THEN bill_total_excl_vat ELSE 0 END) AS  [Disbs - Counsel fees]
+,SUM(CASE WHEN LOWER(cost_type_description) LIKE ('%counsel%') THEN bill_total_excl_vat ELSE 0 END) AS  [Disbs - Counsel fees]
 FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current 
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_detail.dim_matter_header_curr_key
@@ -201,9 +206,10 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 ) Disbursements ON Disbursements.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 
+
 WHERE client_group_name='AXA XL'
 --AND hierarchylevel3hist='Casualty'
-AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)='2021-03-29')
+AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)>='2021-03-29')
 AND date_costs_settled  IS NULL 
 AND date_claim_concluded IS NULL
 --just a quick one on this for the time being - can you restrict it to show files that are "live" - 

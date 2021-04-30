@@ -41,7 +41,7 @@ master_client_code + '-' + master_matter_number AS [Client & Matter Reference]
 ,txtAccNumberPS AS [Account Number]
 ,txtAccRefPS AS [Account Reference]
 ,CASE WHEN cboFinInstruct ='Y' THEN 'Yes' WHEN cboFinInstruct='N' THEN 'No' ELSE cboFinInstruct END  AS [Finance Instructed]
-,completion_date AS [Completion Date]
+,red_dw.dbo.datetimelocal(dteCompDate) AS [Completion Date]
 ,dim_detail_plot_details.exchange_date AS [Exchange Date]
 --,cboHasRetRec AS [Has retention undertaking been received?”]
 --,cboRecCTD AS [Have we received CTD – Confirmation to Developer]
@@ -78,7 +78,7 @@ AND assocActive=1
 GROUP BY fileID
 ) AS Assoc
  ON ms_fileid=Assoc.fileID
-WHERE  CONVERT(DATE,completion_date,103) BETWEEN @StartDate AND @EndDate
+WHERE  CONVERT(DATE,red_dw.dbo.datetimelocal(dteCompDate),103) BETWEEN @StartDate AND @EndDate
 AND cboFundRec ='Y'
 AND cboFinInstruct='N'
 
