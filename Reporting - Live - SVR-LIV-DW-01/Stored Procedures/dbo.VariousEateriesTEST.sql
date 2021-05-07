@@ -6,7 +6,7 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[VariousEateries]
+CREATE PROCEDURE [dbo].[VariousEateriesTEST]
 
 AS
 BEGIN 

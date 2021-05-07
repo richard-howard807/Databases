@@ -159,7 +159,7 @@ AND time_activity_code IN ('CB10','CB11','CB12','CB13')
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 ) AS CBCodes
  ON CBCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN (SELECT dim_matter_header_curr_key
+LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key
 ,CASE WHEN other_sides_cost_budget_5 IS NOT NULL THEN other_sides_cost_budget_5
 WHEN other_sides_cost_budget_4 IS NOT NULL THEN other_sides_cost_budget_4
 WHEN other_sides_cost_budget_3 IS NOT NULL THEN other_sides_cost_budget_3
@@ -350,7 +350,7 @@ AND time_activity_code IN ('CB10','CB11','CB12','CB13')
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 ) AS CBCodes
  ON CBCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN (SELECT dim_matter_header_curr_key
+LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key
 ,CASE WHEN other_sides_cost_budget_5 IS NOT NULL THEN other_sides_cost_budget_5
 WHEN other_sides_cost_budget_4 IS NOT NULL THEN other_sides_cost_budget_4
 WHEN other_sides_cost_budget_3 IS NOT NULL THEN other_sides_cost_budget_3

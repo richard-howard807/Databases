@@ -18,6 +18,26 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+DECLARE @FinYear AS INT
+DECLARE @FinYearPrev AS INT
+DECLARE @FinMonthNo AS INT
+DECLARE @FinMonth AS INT
+DECLARE @FinMonthPrev AS INT
+
+SET @FinYear=(SELECT fin_year FROM red_dw.dbo.dim_date
+WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(MONTH,-1,GETDATE()),103))
+
+SET @FinYearPrev=@FinYear-1
+
+SET @FinMonthNo=(SELECT fin_month_no FROM red_dw.dbo.dim_date
+WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(MONTH,-1,GETDATE()),103))
+
+SET @FinMonth=(SELECT fin_month FROM red_dw.dbo.dim_date
+WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(MONTH,-1,GETDATE()),103))
+
+SET @FinMonthPrev=(SELECT fin_month FROM red_dw.dbo.dim_date
+WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(YEAR,-1,DATEADD(MONTH,-1,GETDATE())),103))
+
 SELECT DISTINCT
 	dim_client.client_group_name AS [Client Group Name]
 	, YTDRevenue.[YTD Revenue]
@@ -54,10 +74,8 @@ LEFT OUTER JOIN (	SELECT client_group_name, SUM(bill_amount) AS [YTD Revenue]
 							,'00000013' --AIG
 							,'00000142' --pwc
 							)
-							WHERE bill_fin_year=(SELECT DISTINCT fin_year FROM red_dw.dbo.dim_date
-							WHERE current_fin_year='Current')
-							AND fact_bill_activity.bill_date<(SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date
-										WHERE current_fin_month='Current')
+							WHERE bill_fin_year=@FinYear
+							AND bill_fin_month_no<=@FinMonthNo
 							GROUP BY client_group_name) AS [YTDRevenue] ON YTDRevenue.client_group_name = dim_client.client_group_name
 
 LEFT OUTER JOIN (		SELECT client_group_name, SUM(bill_amount) AS [PY YTD Revenue] 
@@ -74,10 +92,8 @@ LEFT OUTER JOIN (		SELECT client_group_name, SUM(bill_amount) AS [PY YTD Revenue
 							,'00000013' --AIG
 							,'00000142' --pwc
 							)
-							WHERE bill_fin_year=(SELECT DISTINCT fin_year-1 FROM red_dw.dbo.dim_date
-							WHERE current_fin_year='Current')
-							AND fact_bill_activity.bill_date<(SELECT DATEADD(YEAR,-1,MIN(calendar_date)) FROM red_dw.dbo.dim_date
-										WHERE current_fin_month='Current')
+							WHERE bill_fin_year=@FinYearPrev
+							AND bill_fin_month_no<=@FinMonthNo
 							GROUP BY client_group_name) AS [PYYTDRevenue] ON PYYTDRevenue.client_group_name = dim_client.client_group_name
 
 LEFT OUTER JOIN (SELECT client_group_name
@@ -85,8 +101,8 @@ LEFT OUTER JOIN (SELECT client_group_name
 		FROM red_dw.dbo.dim_matter_header_current
 		INNER JOIN red_dw.dbo.dim_date
 		ON calendar_date=CAST(date_opened_case_management AS DATE)
-		AND fin_year=(SELECT DISTINCT fin_year FROM red_dw.dbo.dim_date
-							WHERE current_fin_year='Current')
+		AND fin_year=@FinYear
+		AND dim_date.fin_month_no<=@FinMonthNo
 		LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 		LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -102,8 +118,8 @@ LEFT OUTER JOIN (SELECT client_group_name
 							,'00000013' --AIG
 							,'00000142' --pwc
 							)
-		AND date_opened_case_management<(SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date
-										WHERE current_fin_month='Current')
+		--AND date_opened_case_management<(SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date
+		--								WHERE current_fin_month='Current')
 		AND reporting_exclusions=0
 		AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
 		GROUP BY client_group_name) AS [YTDInstructions] ON YTDInstructions.client_group_name = dim_client.client_group_name
@@ -113,8 +129,8 @@ LEFT OUTER JOIN (SELECT client_group_name
 		FROM red_dw.dbo.dim_matter_header_current
 		INNER JOIN red_dw.dbo.dim_date
 		ON calendar_date=CAST(date_opened_case_management AS DATE)
-		AND fin_year=(SELECT DISTINCT fin_year-1 FROM red_dw.dbo.dim_date
-							WHERE current_fin_year='Current')
+		AND fin_year=@FinYearPrev
+		AND dim_date.fin_month_no<=@FinMonthNo
 		LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 		LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -130,8 +146,8 @@ LEFT OUTER JOIN (SELECT client_group_name
 							,'00000013' --AIG
 							,'00000142' --pwc
 							)
-		AND date_opened_case_management<(SELECT DATEADD(YEAR,-1,MIN(calendar_date)) FROM red_dw.dbo.dim_date
-										WHERE current_fin_month='Current')
+		--AND date_opened_case_management<(SELECT DATEADD(YEAR,-1,MIN(calendar_date)) FROM red_dw.dbo.dim_date
+		--								WHERE current_fin_month='Current')
 		AND reporting_exclusions=0
 		AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
 		GROUP BY client_group_name) AS [PYYTDInstructions] ON PYYTDInstructions.client_group_name = dim_client.client_group_name
@@ -174,10 +190,7 @@ LEFT OUTER JOIN (SELECT client_group_name
 											)
 				INNER JOIN red_dw.dbo.dim_date
 				ON dim_transaction_date_key=dim_date_key
-				AND debt_month=(SELECT DISTINCT fin_month 
-								FROM red_dw.dbo.dim_date
-								WHERE current_fin_year='Current'
-								AND current_fin_month='Previous')
+				AND fact_debt_monthly.debt_month=@FinMonth
 
 				WHERE  daysbanding='Greater than 180 Days'
 
@@ -200,9 +213,7 @@ LEFT OUTER JOIN (SELECT client_group_name
 											)
 				INNER JOIN red_dw.dbo.dim_date
 				ON dim_transaction_date_key=dim_date_key
-				AND debt_month=(SELECT DISTINCT fin_month FROM red_dw.dbo.dim_date
-				WHERE current_fin_year='Previous'
-				AND cal_month_no=DATEPART(MONTH, GETDATE())-1)
+				AND fact_debt_monthly.debt_month=@FinMonthPrev
 
 				WHERE  daysbanding='Greater than 180 Days'
 
