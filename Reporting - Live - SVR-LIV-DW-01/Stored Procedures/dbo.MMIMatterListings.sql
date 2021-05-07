@@ -27,7 +27,6 @@ name AS [Fee Earner – Case Manager]
 ,CASE WHEN work_type_name LIKE 'Disease -%' THEN  REPLACE(work_type_name,'Disease - ','')
 WHEN work_type_code IN ('1571','1254','1255','1256','1257','1258','1259','1260'
 ,'1261','1262','1263','1274','1275','1276','1277') THEN 'Abuse'
-
 ELSE 'Other' END  AS [Claim Type]-- for Work Type Group “Disease” show the Work Type, but remove the “Disease – ” prefix, for work types 1254-1263, 1274-1277 or 1571 show “Abuse” and for all other work types, show “Other”]
 ,dim_detail_core_details.[occupation] AS [Job Role]        
 ,dim_detail_client.[mmi_abuse_risk_type] AS [Risk Type]
@@ -106,7 +105,7 @@ END AS [Status (Internal Only)]
 ,fact_matter_summary_current.last_bill_date
 ,dim_detail_litigation.mmi_present_position_barriers_to_settlement 
 ,NULLIF(dim_detail_core_details.associated_matter_numbers,'N/A') AS [Zurich Ref]
-
+INTO #temptabl
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -127,6 +126,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
 LEFT OUTER JOIN (SELECT fileID,contName AS ClaimantName 
 ,contChristianNames AS [FirstName]
 ,contSurname AS [Surname]
+
+
 FROM MS_Prod.config.dbAssociates
 INNER JOIN MS_Prod.config.dbContact
  ON dbContact.contID = dbAssociates.contID
@@ -197,7 +198,6 @@ AND Payor.DisplayName IN
 
 )
 GROUP BY (coalesce(left(Matter.loadnumber,(charindex('-',Matter.loadnumber)-1)),Client.altnumber,CASE WHEN ISNUMERIC(Client.number) = 1 THEN RIGHT(CAST(CAST(Client.number AS int)  + 100000000 AS varchar(9)),8) ELSE Client.number END))
-
 ,(isnull(right(Matter.loadnumber, len(Matter.loadnumber) - charindex('-',Matter.loadnumber))
 ,right(Matter.altnumber, len(Matter.altnumber) - charindex('-',Matter.altnumber))))) AS TotalBilled
  ON dim_matter_header_current.client_code=TotalBilled.client_code COLLATE DATABASE_DEFAULT
@@ -232,7 +232,16 @@ AND RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current.m
 )
 
 
+SELECT
+*,CASE WHEN [Claim Type] = 'Abuse' THEN 'N/A' ELSE [Job Role] END AS [Job Role_case]
+,CASE WHEN [Claim Type] <>'Abuse'THEN 'N/A' ELSE [Risk Type]END AS [Risk Type_case]
+,CASE WHEN [Claim Type] <> 'Abuse' THEN 'N/A' ELSE [Risk descriptor] END AS [Risk Descriptor_case]
+,CASE WHEN [Claim Type] <> 'Abuse' THEN 'N/A' ELSE [Abuse Codes] END AS [Abuse Code_case]
+,CASE WHEN [Claim Type] <> 'Abuse' THEN 'N/A' ELSE [Allegation type] END AS [Allegation_case]
+,CASE WHEN [Status (Internal Only)] = 'Open – Repudiated”/”Closed – Repudiated' THEN 'N/A - Repuduated' ELSE [MMI’s % - Damages] END AS [MMI'S Damages_case] 
 
+
+from #temptabl
 
 END
 GO

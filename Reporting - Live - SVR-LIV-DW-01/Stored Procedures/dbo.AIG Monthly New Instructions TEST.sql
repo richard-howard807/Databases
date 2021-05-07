@@ -7,7 +7,7 @@ GO
 -- Create date: 09-07-2019
 -- Description:	<report for kathy for new instructions per month for client - AIG ,,>
 -- =============================================
-CREATE  PROCEDURE [dbo].[AIG Monthly New Instructions]
+CREATE  PROCEDURE [dbo].[AIG Monthly New Instructions TEST]
 ----	-- Add the parameters for the stored procedure here
 @Startdate AS DATETIME  
 , @EndDate AS DATETIME 

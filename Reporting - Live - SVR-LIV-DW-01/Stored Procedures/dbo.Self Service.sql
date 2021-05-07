@@ -40,9 +40,9 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
  -- exec [dbo].[Self Service]
 
-    DECLARE @CurrentYear AS DATETIME = '2019-01-01',
+    DECLARE @CurrentYear AS DATETIME = '2017-01-01',
          --   @nDate AS DATETIME = DATEADD(YYYY, -3, GETDATE());
-			 @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
+			 @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 5 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
 
 		--	SELECT DATEADD(YYYY, -3, GETDATE());
 
@@ -1117,7 +1117,7 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
           )
 		  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA', 'Business Services','Client Relationships') -- Added Business Services as requested by A-M 20190920
 --AND dim_matter_header_current.date_opened_case_management >= '2015-01-01'
-
+--AND( dim_matter_worktype.work_type_name LIKE 'El%' OR dim_matter_worktype.work_type_name LIKE 'NHSLA%' OR dim_matter_worktype.work_type_name LIKE 'PL%')
 
 
 

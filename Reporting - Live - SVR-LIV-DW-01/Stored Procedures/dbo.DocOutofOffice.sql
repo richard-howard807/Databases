@@ -30,6 +30,9 @@ SELECT fileID
 ,cboApprover AS Approver
 ,Returned.cdDesc AS DocReturned
 ,txtDocShredded AS DocShredded
+
+
+
 ,CASE WHEN dteRemoved BETWEEN  DATEADD(mm, DATEDIFF(mm, 0, GETDATE()) - 1, 0) AND DATEADD(DAY, -(DAY(GETDATE())), GETDATE())
 THEN 1 ELSE 0 END AS PreviousMonth
 FROM MS_Prod.dbo.udDocumentRemoval
@@ -44,7 +47,8 @@ LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM MS_PROD.dbo.dbCodeLookup WHERE cdType
 LEFT OUTER JOIN (SELECT cdCode,cdDesc FROM MS_PROD.dbo.dbCodeLookup WHERE cdType='DOCRETURNED') AS Returned
  ON cboDocReturned=Returned.cdCode
 
-
+ --WHERE udDocumentRemoval.txtCliMatNum IN ('W24290-19','720451-1036',
+--'55148R-457')
  
  
  ORDER BY DateRemoved

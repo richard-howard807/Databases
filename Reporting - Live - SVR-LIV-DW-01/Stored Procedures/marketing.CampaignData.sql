@@ -8,7 +8,7 @@ CREATE PROCEDURE [marketing].[CampaignData]
 (
 @DateFrom AS DATE
 ,@DateTo AS DATE
-,@Campaign AS NVARCHAR(100)
+,@Campaign AS NVARCHAR(MAX)
 )
 AS
 
