@@ -9,6 +9,7 @@ Author:   Jamie Bonner
 Create date: 2021-03-19  
 Description: #92731 Zurich Large Loss report to review in flight matters  
 Update : 93105 - Added large_loss_hundred_perc_current_dam_res_total as per below 
+Update: #92731 - Altered where clause to look at large_loss_hundred_perc_current_dam_res_total and limit from £1m to £3m
 =============================================  
 */  
   
@@ -88,7 +89,8 @@ WHERE 1 = 1
  AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Large Loss'  
  AND (LTRIM(RTRIM(LOWER(dim_detail_core_details.present_position))) = 'claim and costs outstanding' OR  
   LTRIM(RTRIM(LOWER(dim_detail_core_details.present_position))) = 'claim concluded but costs outstanding')  
- AND fact_detail_reserve_detail.large_loss_hundred_perc_reserve_total >= 1000000  
+ AND fact_detail_reserve_detail.large_loss_hundred_perc_current_dam_res_total >= 3000000  
+
   
 END   
 GO

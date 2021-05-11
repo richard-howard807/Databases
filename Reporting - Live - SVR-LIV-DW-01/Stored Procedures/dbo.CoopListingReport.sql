@@ -225,6 +225,7 @@ SELECT
 	--		  ELSE null 
 	--		 END AS LitigatedType
 	--	,dim_detail_outcome.[date_claim_concluded]
+	, CASE WHEN dim_client.client_group_code = '00000004' OR (dim_matter_header_current.client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op back book', 'Co-op forward book')) THEN 1 ELSE 0 END AS [Co-op back/foward book]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

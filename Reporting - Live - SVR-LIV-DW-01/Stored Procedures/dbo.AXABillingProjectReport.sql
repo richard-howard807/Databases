@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+--ok 2021-05-11 #98208 changed to ( 'Legal Ops - Claims' ,'Legal Ops - LTA') and remove all reference to wip and FF jenny byfield
+
 
 
 CREATE PROCEDURE [dbo].[AXABillingProjectReport]
@@ -78,17 +80,18 @@ GROUP BY fact_bill.client_code,fact_bill.matter_number) AS LastBillNonDisbBill
 
 WHERE dim_matter_header_current.master_client_code='A1001'
 AND date_closed_practice_management IS NULL
-AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
-AND  hierarchylevel3hist='Casualty' 
-AND 
-(
-ISNULL(fee_arrangement,'') <>'Fixed Fee/Fee Quote/Capped Fee'
-OR (fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
-)                                                 
-AND wip>=500
-AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
-DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=90
+AND dim_fed_hierarchy_history.hierarchylevel2hist IN ( 'Legal Ops - Claims' ,'Legal Ops - LTA')
+AND dim_matter_header_current.present_position = 'Final bill due - claim and costs concluded                  '
+--AND  hierarchylevel3hist='Casualty' 
+--AND 
+--(
+--ISNULL(fee_arrangement,'') <>'Fixed Fee/Fee Quote/Capped Fee'
+--OR (fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
+--)                                                 
+--AND wip>=500
+--AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+--DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
+--END)>=90
 
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())

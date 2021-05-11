@@ -12,15 +12,20 @@ CREATE PROCEDURE [dbo].[RSADiseaseMonthlyReportRemainingClaims]
 
 AS
 
-
+DROP TABLE IF EXISTS #main
 
 SELECT DISTINCT
 
-[Solicitor Reference] = fact_dimension_main.master_client_code +'/'+ master_matter_number
+ [FED Client/Matter No] = CASE WHEN ISNUMERIC(dim_matter_header_current.client_code) = 1 THEN  CAST(CAST(dim_matter_header_current.client_code AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.client_code END +'/' + CASE WHEN ISNUMERIC(dim_matter_header_current.matter_number) = 1 THEN CAST(CAST(dim_matter_header_current.matter_number AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.matter_number end
+,[Solicitor Reference] = fact_dimension_main.master_client_code +'/'+ master_matter_number
+,[Matter Description] = matter_description
 ,[Total Current Reserve] = ISNULL(fact_finance_summary.[damages_reserve_net], 0) + ISNULL(fact_detail_reserve_detail.[current_claimant_solicitors_costs_reserve_net], 0) + ISNULL(fact_finance_summary.[defence_costs_reserve], 0)
 ,[Damages Reserve] = fact_finance_summary.[damages_reserve_net]
 ,[Claimant Costs Reserve] = fact_detail_reserve_detail.[current_claimant_solicitors_costs_reserve_net]
-,[RSA Solicitor Costs Reserve] = fact_finance_summary.[defence_costs_reserve]
+,[RSA Solicitor Costs Reserve] = CASE WHEN  ISNULL(fact_finance_summary.[defence_costs_reserve], 0) - (ISNULL(total_amount_billed, 0) -310)     < 0 THEN 0
+                                  ELSE ISNULL(fact_finance_summary.[defence_costs_reserve], 0) - (ISNULL(total_amount_billed, 0) -310)   END
+
+,[Defence Costs] = ISNULL(fact_finance_summary.[defence_costs_reserve], 0) 
 /*
  TTS Reserve Calculation 
 If "Total Reserve" is £5,000 or less, multiply by 1.12
@@ -43,15 +48,17 @@ WHEN (ISNULL(fact_finance_summary.[damages_reserve_net], 0) + ISNULL(fact_detail
 (ISNULL(fact_finance_summary.[damages_reserve_net], 0) + ISNULL(fact_detail_reserve_detail.[current_claimant_solicitors_costs_reserve_net], 0) + ISNULL(fact_finance_summary.[defence_costs_reserve], 0)) *1.3
 ELSE NULL END 
 
-,[RSA Solicitors Costs Spend] = total_amount_billed
-,[RSA Solicitors Costs Spend (RSA Share)] = total_amount_billed
+,[RSA Solicitors Costs Spend] = total_amount_billed - 310
+,[RSA Solicitors Costs Spend (RSA Share)] = total_amount_billed - 310
 
 /* If "WIP" and "Unpaid bill balance" are both £0, can we show the last bill paid date from 3E?*/
 ,[Date File Closed] = CASE WHEN ISNULL(wip, 0) + ISNULL(unpaid_bill_balance, 0) = 0 THEN MAX(last_pay_calendar_date) OVER (PARTITION BY fact_bill.master_fact_key) END 
  
-,[Total Spend] = fact_finance_summary.[damages_paid]  + fact_finance_summary.[claimants_costs_paid] + total_amount_billed
+,[Total Spend] = ISNULL(fact_finance_summary.[damages_paid], 0)  + ISNULL(fact_finance_summary.[claimants_costs_paid], 0) + ISNULL(total_amount_billed, 0)
 ,[WIP] =  fact_finance_summary.wip
 ,[Unpaid bill balance] =  fact_finance_summary.unpaid_bill_balance
+
+INTO #main
 FROM red_dw.dbo.fact_dimension_main
 
 JOIN red_dw.dbo.dim_matter_header_current 
@@ -82,4 +89,12 @@ JOIN red_dw.dbo.dim_last_pay_date
 ,'W15558-1437'
 ,'W15558-1527'
 )
+
+/* Final select */
+	SELECT *
+		   FROM #main 
+	WHERE [Date File Closed] IS NULL 
+	ORDER BY [Solicitor Reference]
+
+
 GO

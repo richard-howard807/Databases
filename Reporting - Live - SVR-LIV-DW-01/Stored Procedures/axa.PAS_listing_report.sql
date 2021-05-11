@@ -66,7 +66,7 @@ BEGIN
                       END,
            [Total Reserve] = fact_detail_reserve.total_reserve,
            [Repudiated] = [dim_detail_outcome].[repudiated],
-           [AXA Reason For Referal] = axa_reason_for_instruction,
+           [AXA Reason For Referal] = dim_detail_claim.axa_reason_for_instruction,
            dim_matter_worktype.work_type_name,
            COALESCE(dim_detail_claim.dst_insured_client_name, client_ref.insuredclient_name) [Insured Name],
            tp_ref.claimant_name [Claimant Name],

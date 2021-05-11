@@ -13,6 +13,8 @@ CREATE PROCEDURE [dbo].[MotorAXACSNotableCasesReport]--EXEC [dbo].[MotorAXACSNot
 (
 @Client AS NVARCHAR(MAX)
 ,@Department  AS NVARCHAR(MAX)
+,@DateFrom AS DATE
+,@DateTo AS DATE
 --,@Team AS NVARCHAR(MAX)
 --,@FeeEarner AS NVARCHAR(MAX)
 ) 
@@ -27,7 +29,7 @@ BEGIN
 IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
 SELECT ListValue  INTO #Department FROM 	dbo.udt_TallySplit('|', @Department)
 
----IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+--IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
 --SELECT ListValue  INTO #Team FROM 	dbo.udt_TallySplit('|', @Team)
 
 --IF OBJECT_ID('tempdb..#FeeEarner') IS NOT NULL   DROP TABLE #FeeEarner
@@ -59,6 +61,7 @@ red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 INNER JOIN #Department AS Department ON Department.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel3hist COLLATE DATABASE_DEFAULT
+
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON  dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
@@ -82,7 +85,8 @@ AND (date_closed_case_management IS NULL OR date_closed_case_management>='2018-0
 --WHEN master_client_code='A3003' THEN 'Ageas' END)=@Client
 --AND hierarchylevel3hist=@Client
 AND dim_matter_header_current.client_name =@Client
-AND ISNULL(red_dw.dbo.dim_detail_outcome.outcome_of_case,'') IN ('Won at Trial','Struck out','Won','Discontinued','won at trial')                                            
+AND ISNULL(red_dw.dbo.dim_detail_outcome.outcome_of_case,'') IN ('Won at Trial','Struck out','Won','Discontinued','won at trial')
+AND (dim_detail_outcome.date_claim_concluded >= @DateFrom AND dim_detail_outcome.date_claim_concluded <= @DateTo) 
 
 END 
 

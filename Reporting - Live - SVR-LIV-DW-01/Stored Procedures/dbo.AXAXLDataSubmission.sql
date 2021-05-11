@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
+--EXEC [dbo].[AXAXLDataSubmission]
 CREATE PROCEDURE [dbo].[AXAXLDataSubmission]
 
 AS 
@@ -13,7 +13,7 @@ BEGIN
 
 SELECT  DISTINCT
 
-dim_matter_header_current.ms_fileid
+ dim_matter_header_current.ms_fileid
 ,COALESCE(client_reference, insurerclient_reference) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
@@ -43,28 +43,28 @@ ii)                   Else “Other”
 		
 , COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name) AS [Insured Name] 
 
-, 1 AS [AXA XL Percentage line share of loss / expenses / recovery]
-, dim_detail_core_details.[clients_claims_handler_surname_forename]  AS [AXA XL Claims Handler]
-, NULL [Third Party Administrator]
-, NULL [Coverage / defence?]
+, COALESCE(udMICoreAXA.pctLineShare, 1) AS [AXA XL Percentage line share of loss / expenses / recovery] -- udMICoreAXA
+, dim_detail_core_details.[clients_claims_handler_surname_forename]                                        AS [AXA XL Claims Handler]
+, NULL [Third Party Administrator] 
+, COALESCE(cboCovDef.cdDesc, API.[cboCovDef_CaseText])  AS  [Coverage / defence?]  -- udMICoreAXA
 , branch_name AS [Law firm handling office (city)]
 , COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) AS [Date Instructed]
 , COALESCE(dim_detail_claim.[dst_claimant_solicitor_firm], red_dw.dbo.dim_claimant_thirdparty_involvement.claimantsols_name) AS  [Opposing Side's Solicitor Firm Name]
-, NULL [Reason For instruction]
+, COALESCE(cboReaIns.cdDesc,API.[cboReaIns_CaseText] ) AS [Reason For instruction]  -- udMICoreAXA
 , dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
-, NULL [First acknowledgement Date]
+, API.[FirstAcknowledgementDate] AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
-, dim_detail_court.[date_proceedings_issued] AS  [Date Proceedings Issued]
-, NULL [AXA XL as defendant]
-, NULL [Reason for proceedings]
+, COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
+, COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText])  [AXA XL as defendant] -- udMICoreAXA NEW*** 
+, COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) [Reason for proceedings]  -- udMICoreAXA
 , CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END AS [Proceeding Track]
 , ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
-, damages_reserve AS [Damages Reserve]
+, fact_finance_summary.damages_reserve AS [Damages Reserve]
 , COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
 , defence_costs_reserve AS [Panel budget/reserve]
-, NULL [Reason for panel budget change if occurred]
+, cboReaForPanel.cdDesc AS  [Reason for panel budget change if occurred] -- udMICoreAXA
 , defence_costs_billed AS [Panel Fees Paid]
 , Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
 , ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
@@ -83,9 +83,9 @@ ii)                   Else “Other”
 , CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL THEN 'Yes' ELSE NULL END [Claimants Costs Handled by Panel?]
 , date_costs_settled AS  [Date Claimants costs settled]
 ,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
-, NULL [Mediated outcome - Select from list]
-, NULL [Outcome of Instruction - Select from list]
-, NULL [Was litigation avoidable - Select from list]
+, cboMedOutcome.cdDesc AS  [Mediated outcome - Select from list]   -- udMICoreAXA
+, cboOutOfIns.cdDesc [Outcome of Instruction - Select from list]   -- udMICoreAXA
+, cboWasLitAv.cdDesc [Was litigation avoidable - Select from list]  -- udMICoreAXA
 ,hierarchylevel3hist
 ,hierarchylevel4hist AS [Team]
 ,dim_fed_hierarchy_history.name AS [Weightmans Handler name]
@@ -101,6 +101,9 @@ ii)                   Else “Other”
 ,dim_client_involvement.insuredbroker_name
 ,dim_client_involvement.broker_name
 ,fact_finance_summary.disbursements_billed
+
+, [Quantified Damages] = udMICoreAXA.curQuanDam -- udMICoreAXA NEW***
+
 
 /*Panel Fees
 
@@ -233,27 +236,11 @@ LEFT JOIN
 
 (
 
-/*Panel Fees
-
-=Fields!fact_finance_summary_defence_costs_billed_.Value 
-+Fields!fact_finance_summary_disbursements_billed_.Value 
-+ Fields!Damages.Value 
-+Fields!Costs.Value
-+(IIF(ISNOTHING(LOOKUP(TRIM(Fields!dim_client_client_code_.Value)&TRIM(Fields!dim_matter_header_current_matter_number_.Value)
-,TRIM(Fields!client_code.Value)&TRIM(Fields!matter_number.Value)
-,Fields!Total_VAT_Billed_to_Markel_In_Period.Value, "MarkelTax")),0,LOOKUP(TRIM(Fields!dim_client_client_code_.Value)&TRIM(Fields!dim_matter_header_current_matter_number_.Value)
-,TRIM(Fields!client_code.Value)&TRIM(Fields!matter_number.Value)
-,Fields!Total_VAT_Billed_to_Markel_In_Period.Value, "MarkelTax")))
-
-
-Fields!Damages.Value  =IIF(ISNOTHING(Fields!fact_finance_summary_damages_paid_.Value),Fields!fact_finance_summary_damages_interims_.Value,Fields!fact_finance_summary_damages_paid_.Value)
-Fields!Costs.Value=IIF(ISNOTHING(Fields!fact_finance_summary_claimants_costs_paid_.Value),Fields!fact_detail_paid_detail_interim_costs_payments_.Value,Fields!fact_finance_summary_claimants_costs_paid_.Value)
-*/
+/*Panel Fees  */
 
 SELECT 
   DISTINCT
   dim_matter_header_curr_key
-  --RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 ,SUM([AllData].[AXATax]) OVER (PARTITION BY  dim_matter_header_curr_key) AS [Total VAT Billed to AXA In Period]
 
 FROM
@@ -288,8 +275,81 @@ AND [AXATax] > 0
 
 ) PanelFees on PanelFees.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE client_group_name='AXA XL'
---AND hierarchylevel3hist='Casualty'
+/*Added as a temp fix before the datawarehouse fields are added in */
+LEFT JOIN ms_prod.dbo.udMICoreAXA
+ON fileID = dim_matter_header_current.ms_fileid
+
+/*Coverage Defence   - cboCovDef */
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboCovDef') cboCovDef ON cboCovDef.cdCode = udMICoreAXA.cboCovDef
+
+/*Reason for Instruction    - cboReaIns */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboReaIns') cboReaIns ON cboReaIns.cdCode = udMICoreAXA.cboReaIns
+
+/*Is AXA XL the Defendant  - cboIsAXADe */
+
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboIsAXADef') cboIsAXADef ON cboIsAXADef.cdCode = udMICoreAXA.cboIsAXADef
+
+/*Reason for Proceedings   - cboReForProc */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboReForProc') cboReForProc ON cboReForProc.cdCode = udMICoreAXA.cboReForProc
+
+/*Reason for panel budget change    - cboReaForPanel */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboReaForPanel') cboReaForPanel ON cboReaForPanel.cdCode = udMICoreAXA.cboReaForPanel
+
+/*Mediated Outcome    - cboMedOutcome */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboMedOutcome') cboMedOutcome ON cboMedOutcome.cdCode = udMICoreAXA.cboMedOutcome
+
+/*Outcome of Instruction     - cboOutOfIns */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboOutOfIns') cboOutOfIns ON cboOutOfIns.cdCode = udMICoreAXA.cboOutOfIns
+
+/*Was Litigation avoidable     - cboWasLitAv */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboWasLitAv') cboWasLitAv ON cboWasLitAv.cdCode = udMICoreAXA.cboWasLitAv 
+
+
+
+LEFT JOIN (SELECT fileID,  dateadd(DD, -14, cast(MAX(tskDue)as date)) AS [Acknowledgement of Service]
+	FROM ms_prod.dbo.dbTasks WHERE tskActive=1
+	AND tskType='KEYDATE' AND tskDesc ='Acknowledgement of Service due - today'
+	GROUP BY fileID) AS [KD_Acknowledgement] ON [KD_Acknowledgement].fileID=dim_matter_header_current.ms_fileid
+
+
+/* Temp Fix due to API issues. */
+
+LEFT JOIN 
+(
+SELECT ClNo 
+  
+ ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReForProc' THEN  TRIM([CaseText]) END) [cboReForProc_CaseText]
+ ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReaIns' THEN  TRIM([CaseText]) END) [cboReaIns_CaseText]
+ ,MAX(CASE WHEN TRIM([MSCode])  = 'cboCovDef' THEN  TRIM([CaseText]) END) [cboCovDef_CaseText]
+ ,MAX(CASE WHEN TRIM([MSCode])  = 'cboIsAXADe' THEN  TRIM([CaseText]) END) [cboIsAXADef_CaseText]
+ ,MAX(CASE WHEN TRIM([MSCode])  = 'Not created  - check' THEN  [CaseDate] END) [FirstAcknowledgementDate]
+  FROM [SQLAdmin].[dbo].[_20210509_API] 
+  WHERE TRIM([MSCode]) IN ('cboReForProc', 'cboReaIns', 'cboCovDef', 'cboIsAXADe', 'Not created  - check')
+  GROUP BY ClNo
+  ) API
+  ON API.ClNo  = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT + '-' + master_matter_number COLLATE DATABASE_DEFAULT
+
+ 
+
+WHERE 1 =1 
+
+AND client_group_name='AXA XL'
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)>='2021-03-29')
 AND date_costs_settled  IS NULL 
 AND date_claim_concluded IS NULL
@@ -300,5 +360,8 @@ AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number <> 'A1001-6044'
 
 END
+
+
+
 
 GO

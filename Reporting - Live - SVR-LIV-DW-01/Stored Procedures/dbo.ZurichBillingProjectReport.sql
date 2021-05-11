@@ -10,7 +10,7 @@ GO
 --2019-08-07 ES added Casualty Liverpool 2 requested by JB 
 --2020-01-13 ES added Casualty Birmingham requested by JB
 --2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
-
+--2021-05-07 OK currently only brings in claims, changed to bring in LTA & Claims 
 CREATE PROCEDURE [dbo].[ZurichBillingProjectReport]
 AS
 BEGIN
@@ -81,7 +81,12 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
 WHERE dim_matter_header_current.client_code='Z1001'
 AND date_opened_case_management>='2019-02-01'
 AND dim_matter_header_current.matter_number NOT IN ('00079227')
-AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+AND dim_fed_hierarchy_history.hierarchylevel2hist IN
+(
+N'Legal Ops - Claims',
+N'Legal Ops - LTA'
+)
+
 --AND hierarchylevel4hist IN (
 --'Large Loss Liverpool'
 --,'Casualty Liverpool 1'

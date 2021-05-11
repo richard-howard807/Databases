@@ -44,6 +44,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_detail_core_details.referral_reason AS [Referral Reason]
 	, dim_detail_core_details.track AS [Track]
 	, dim_matter_header_current.fee_arrangement AS [Fee Arrangement]
+	, dim_detail_finance.[output_wip_percentage_complete] AS [Percentage Completion]
 	, CASE WHEN dim_matter_header_current.fee_arrangement='Hourly rate' THEN ISNULL(fact_finance_summary.total_amount_billed,0)+ISNULL(fact_finance_summary.wip,0)
 		WHEN dim_matter_header_current.fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' THEN zurich_investidation_time.investigation_amount ELSE NULL END AS [Billed]
 	, dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS [Date of Receipt of Client's File of Papers]
@@ -99,6 +100,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
 ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 LEFT OUTER JOIN Reporting.zurich.PanelAverages ON PanelAverages.[Work Type Group]=dim_matter_worktype.work_type_group COLLATE DATABASE_DEFAULT
 AND PanelAverages.Track=dim_detail_core_details.track COLLATE DATABASE_DEFAULT
 
@@ -159,6 +162,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_detail_core_details.referral_reason AS [Referral Reason]
 	, dim_detail_core_details.track AS [Track]
 	, dim_matter_header_current.fee_arrangement AS [Fee Arrangement]
+	, dim_detail_finance.[output_wip_percentage_complete] AS [Percentage Completion]
 	, dim_matter_header_current.fixed_fee_amount AS [Fixed Fee Amount]
 	, dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS [Date of Receipt of Client's File of Papers]
 	, dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
@@ -216,6 +220,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
 ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 LEFT OUTER JOIN Reporting.zurich.PanelAverages ON PanelAverages.[Work Type Group]=dim_matter_worktype.work_type_group COLLATE DATABASE_DEFAULT
 AND PanelAverages.Track=dim_detail_core_details.track COLLATE DATABASE_DEFAULT
 
@@ -255,6 +261,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_detail_core_details.referral_reason AS [Referral Reason]
 	, dim_detail_core_details.track AS [Track]
 	, dim_matter_header_current.fee_arrangement AS [Fee Arrangement]
+	, dim_detail_finance.[output_wip_percentage_complete] AS [Percentage Completion]
 	, dim_matter_header_current.fixed_fee_amount AS [Fixed Fee Amount]
 	, dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS [Date of Receipt of Client's File of Papers]
 	, dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
@@ -312,8 +319,10 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
 ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 LEFT OUTER JOIN Reporting.zurich.PanelAverages ON PanelAverages.[Work Type Group]=dim_matter_worktype.work_type_group COLLATE DATABASE_DEFAULT
-AND PanelAverages.Track=dim_detail_core_details.track COLLATE DATABASE_DEFAULT
+AND PanelAverages.[Work Type Group]='Motor'
 
 INNER JOIN #Client AS Client ON Client.ListValue = (CASE WHEN ISNULL(dim_matter_header_current.client_group_code,'')='00000001' THEN 'Zurich'
 													WHEN ISNULL(dim_matter_header_current.client_group_code,'')<>'00000001' AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty' THEN 'Non-Zurich'
