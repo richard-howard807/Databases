@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 /*
 =============================================
 Author:			Jamie Bonner
@@ -98,6 +99,7 @@ SELECT
 			3
 		WHEN dim_matter_worktype.work_type_code = '1011' THEN --Injunction
 			4
+			ELSE 5
 	  END						AS tab_order
 	, CASE 
 		WHEN dim_matter_worktype.work_type_code = '1150' THEN --Landlord & Tenant - Disrepair
@@ -108,6 +110,7 @@ SELECT
 			'Housing Management'
 		WHEN dim_matter_worktype.work_type_code = '1011' THEN --Injunction
 			'Gas Compliance'
+		ELSE 'Remaining'
 	  END						AS tab_name
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -157,7 +160,7 @@ FROM red_dw.dbo.dim_matter_header_current
 								ON Voucher.VchrIndex = CostCard.Voucher
 						WHERE 1 = 1
 							AND dim_matter_header_current.master_client_code = 'W15603'
-							AND dim_matter_worktype.work_type_code IN ('1002', '1011', '1105', '1150')
+							--AND dim_matter_worktype.work_type_code IN ('1002', '1011', '1105', '1150')
 						GROUP BY
 							Matter.Number
 							, CASE
@@ -170,7 +173,7 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'W15603'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND dim_matter_worktype.work_type_code IN ('1002', '1011', '1105', '1150')
+	--AND dim_matter_worktype.work_type_code IN ('1002', '1011', '1105', '1150')
 ORDER BY
 	tab_order
 	, [Date Opened]

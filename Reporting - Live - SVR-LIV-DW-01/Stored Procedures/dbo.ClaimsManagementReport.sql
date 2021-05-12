@@ -11,6 +11,10 @@ GO
 
 
 
+
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -90,9 +94,13 @@ SELECT dim_employee.employeeid
 	, CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END AS [Utilisation %]
 	,Absenses.SicknessDays
 	,Absenses.OtherDays
-	,MonthlyContribution
-	,TeamTargets.[Chargeable hours target]
-	,TeamTargets.[Revenue target]
+	,CASE WHEN MonthlyContribution IS NULL THEN 0 ELSE MonthlyContribution END AS MonthlyContribution
+	,TeamTargetsMTD.[Chargeable hours target]
+	,TeamTargetsMTD.[Revenue target]
+		,TeamTargetsMTD.[Chargeable hours target] AS YTDTargetHrs
+	,TeamTargetsMTD.[Revenue target] AS YTDTargetRevenue
+	,[TeamTargetsAnnual].[Chargeable hours target Annual]
+	,TeamTargetsAnnual.[Revenue target Annual]
 FROM red_dw.dbo.dim_employee
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -238,7 +246,7 @@ INNER JOIN #Division AS Division ON Division.ListValue = hierarchylevel2hist
 	INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(hierarchylevel4hist,',','')
 	INNER JOIN #Individual AS Individual ON Individual.ListValue = dim_employee.employeeid
 
-INNER JOIN 
+LEFT OUTER JOIN 
 (
 SELECT FedCode,MonthlyContribution FROM MonthlyContributionTest
 ) AS Contrib
@@ -257,10 +265,42 @@ WHERE budget_fin_month_no=@FinMonth
 AND budget_fin_year=@FinYear
 GROUP BY hierarchylevel4hist
 
-) AS TeamTargets
- ON hierarchylevel4hist=Team COLLATE DATABASE_DEFAULT
+) AS TeamTargetsMTD
+ ON hierarchylevel4hist=TeamTargetsMTD.Team COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT hierarchylevel4hist AS Team
+,SUM(team_level_budget_value_hours) AS [Chargeable hours target]
+,SUM(team_level_budget_value) AS [Revenue target]
+FROM red_dw.dbo.fact_budget_activity
+INNER JOIN red_dw.dbo.dim_budget_date
+ ON dim_budget_date.dim_budget_date_key = fact_budget_activity.dim_budget_date_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
+WHERE budget_fin_month_no<=@FinMonth
+AND budget_fin_year=@FinYear
+GROUP BY hierarchylevel4hist
+
+) AS TeamTargetsYTD
+ ON hierarchylevel4hist=TeamTargetsYTD.Team COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT hierarchylevel4hist AS Team
+,SUM(team_level_budget_value_hours) AS [Chargeable hours target Annual]
+,SUM(team_level_budget_value) AS [Revenue target Annual]
+FROM red_dw.dbo.fact_budget_activity
+INNER JOIN red_dw.dbo.dim_budget_date
+ ON dim_budget_date.dim_budget_date_key = fact_budget_activity.dim_budget_date_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
+WHERE budget_fin_year=@FinYear
+GROUP BY hierarchylevel4hist
+
+) AS TeamTargetsAnnual
+ ON hierarchylevel4hist=TeamTargetsAnnual.Team COLLATE DATABASE_DEFAULT
 WHERE leaver=0
 AND hierarchylevel2hist='Legal Ops - Claims'
+AND normalworkingday <>0
 
 
 ORDER BY name
