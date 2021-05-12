@@ -11,6 +11,7 @@ GO
 -- RH | 09/10/2019 - Amended to show latest child record only and remove deleted Zurich references from result set.
 -- JB 2020-10-20 - added date proceedings issued 
 -- JB 2020-12-03 - Ticket #80905 added policy cover dates and ms_only flag
+-- JB 2021-05-11 - Ticket #95135 removed claimant address join, was producing multiple lines if data due to multiple claimant associates. Column no longer needed in report
 -- =============================================
 
 CREATE PROCEDURE [dbo].[ZurichDiseaseNewListings2019]
@@ -146,7 +147,7 @@ select distinct
 	, dim_matter_header_current.ms_only		AS [MS Flag]
 	, dim_detail_claim.national_insurance_number			AS [Claimant's National Insurance No.]
 	, CAST(dim_detail_core_details.claimants_date_of_birth AS  DATE)		AS [Claimant's DOB]
-	, claimants_address.claimant_address				AS [Claimant's Address]
+	--, claimants_address.claimant_address				AS [Claimant's Address]
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
         on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -189,32 +190,32 @@ from red_dw.dbo.fact_dimension_main
 	--LEFT JOIN red_dw.dbo.fact_child_detail child ON child.dim_parent_key = parent.dim_parent_key AND child.parent = parent.sequence_no
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_court
 		ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
-	LEFT OUTER JOIN
-	(
-		SELECT 
-			dim_matter_header_current.dim_matter_header_curr_key
-			, IIF(ISNULL(dim_client.address_line_1, '') = '', '', RTRIM(dim_client.address_line_1) + ', ')
-				+ IIF(ISNULL(dim_client.address_line_2, '') = '', '', RTRIM(dim_client.address_line_2) + ', ')
-				+ IIF(ISNULL(dim_client.address_line_3, '') = '', '', RTRIM(dim_client.address_line_3) + ', ')
-				+ IIF(ISNULL(dim_client.address_line_4, '') = '', '', RTRIM(dim_client.address_line_4) + ', ')
-				+ IIF(ISNULL(dim_client.address_line_5, '') = '', '', RTRIM(dim_client.address_line_5) + ', ')
-				+ IIF(ISNULL(dim_client.postcode, '') = '', '', dim_client.postcode) AS claimant_address
-		--SELECT TOP 100 *
-		FROM red_dw.dbo.dim_matter_header_current
-			INNER JOIN red_dw.dbo.dim_detail_core_details
-				ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
-					AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-			INNER JOIN red_dw.dbo.dim_involvement_full
-				ON dim_involvement_full.client_code = dim_matter_header_current.client_code
-					AND dim_involvement_full.matter_number = dim_matter_header_current.matter_number
-			INNER JOIN red_dw.dbo.dim_client
-				ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
-		WHERE
-			dim_matter_header_current.master_client_code = 'Z1001'
-			AND (dim_detail_core_details.injury_type_code = 'D17' OR dim_detail_core_details.injury_type_code = 'D31')
-			AND dim_involvement_full.capacity_code = 'CLAIMANT'
-	)	AS claimants_address
-		ON claimants_address.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	--LEFT OUTER JOIN
+	--(
+	--	SELECT 
+	--		dim_matter_header_current.dim_matter_header_curr_key
+	--		, IIF(ISNULL(dim_client.address_line_1, '') = '', '', RTRIM(dim_client.address_line_1) + ', ')
+	--			+ IIF(ISNULL(dim_client.address_line_2, '') = '', '', RTRIM(dim_client.address_line_2) + ', ')
+	--			+ IIF(ISNULL(dim_client.address_line_3, '') = '', '', RTRIM(dim_client.address_line_3) + ', ')
+	--			+ IIF(ISNULL(dim_client.address_line_4, '') = '', '', RTRIM(dim_client.address_line_4) + ', ')
+	--			+ IIF(ISNULL(dim_client.address_line_5, '') = '', '', RTRIM(dim_client.address_line_5) + ', ')
+	--			+ IIF(ISNULL(dim_client.postcode, '') = '', '', dim_client.postcode) AS claimant_address
+	--	--SELECT TOP 100 *
+	--	FROM red_dw.dbo.dim_matter_header_current
+	--		INNER JOIN red_dw.dbo.dim_detail_core_details
+	--			ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+	--				AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+	--		INNER JOIN red_dw.dbo.dim_involvement_full
+	--			ON dim_involvement_full.client_code = dim_matter_header_current.client_code
+	--				AND dim_involvement_full.matter_number = dim_matter_header_current.matter_number
+	--		INNER JOIN red_dw.dbo.dim_client
+	--			ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
+	--	WHERE
+	--		dim_matter_header_current.master_client_code = 'Z1001'
+	--		AND (dim_detail_core_details.injury_type_code = 'D17' OR dim_detail_core_details.injury_type_code = 'D31')
+	--		AND dim_involvement_full.capacity_code = 'CLAIMANT'
+	--)	AS claimants_address
+	--	ON claimants_address.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
     left outer join
     (
@@ -401,7 +402,7 @@ where (
 
 
 	-- AND WPS275 IS NOT null
-	 --AND red_dw.dbo.dim_matter_header_current.master_client_code = 'Z1001' AND red_dw.dbo.dim_matter_header_current.master_matter_number = '79496'	
+	-- AND red_dw.dbo.dim_matter_header_current.master_client_code = 'Z1001' AND red_dw.dbo.dim_matter_header_current.master_matter_number = '82057'	
 	
 	;
 
