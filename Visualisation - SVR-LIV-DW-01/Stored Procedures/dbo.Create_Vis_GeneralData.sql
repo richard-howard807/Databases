@@ -5,6 +5,7 @@ GO
 
 
 
+
 /*
 ===================================================
 ===================================================
@@ -628,6 +629,23 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		,ParalegalHours
 		,TraineeHours
         ,OtherHours
+		,dim_detail_core_details.[covid_contested_application_made]
+,dim_detail_core_details.[covid_counsel_unavailability]
+,dim_detail_core_details.[covid_directions_extended]
+,dim_detail_core_details.[covid_disclosure_delay_claimant]
+,dim_detail_core_details.[covid_disclosure_delay_defendant]
+,dim_detail_core_details.[covid_disclosure_delay_obtaining_docs]
+,dim_detail_core_details.[covid_expert_unavailability_claimant_third_party]
+,dim_detail_core_details.[covid_expert_unavailability_defendant]
+,dim_detail_core_details.[covid_hearing_vacated]
+,dim_detail_core_details.[covid_limitation_extension_or_moratorium]
+,dim_detail_core_details.[covid_medical_exam_postponed]
+,dim_detail_core_details.[covid_other]
+,dim_detail_core_details.[covid_witness_unavailability_defendant]
+,dim_detail_core_details.[covid_witness_unavailablility_claimant]
+,dim_detail_core_details.[covid_reason_code]
+,dim_detail_core_details.[covid_reason_desc]
+
 
 INTO dbo.Vis_GeneralData
 

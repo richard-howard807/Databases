@@ -481,6 +481,22 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Solicitor/LegalExecTimeHours] [numeric] (38, 6) NULL,
 [ParalegalHours] [numeric] (38, 6) NULL,
 [TraineeHours] [numeric] (38, 6) NULL,
-[OtherHours] [numeric] (38, 6) NULL
+[OtherHours] [numeric] (38, 6) NULL,
+[covid_contested_application_made] [bit] NULL,
+[covid_counsel_unavailability] [bit] NULL,
+[covid_directions_extended] [bit] NULL,
+[covid_disclosure_delay_claimant] [bit] NULL,
+[covid_disclosure_delay_defendant] [bit] NULL,
+[covid_disclosure_delay_obtaining_docs] [bit] NULL,
+[covid_expert_unavailability_claimant_third_party] [bit] NULL,
+[covid_expert_unavailability_defendant] [bit] NULL,
+[covid_hearing_vacated] [bit] NULL,
+[covid_limitation_extension_or_moratorium] [bit] NULL,
+[covid_medical_exam_postponed] [bit] NULL,
+[covid_other] [bit] NULL,
+[covid_witness_unavailability_defendant] [bit] NULL,
+[covid_witness_unavailablility_claimant] [bit] NULL,
+[covid_reason_code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
+[covid_reason_desc] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO
