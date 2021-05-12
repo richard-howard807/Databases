@@ -28,6 +28,7 @@ SELECT clNo +'-' + fileNo AS [MS Reference]
 ,NULL AS Instruction
 ,usrFullName AS [Solicitor Dealing]
 ,NULL AS [NHSBT Contact]
+, udRealEstate.txtPurcOrdNo		AS [Purchase Order Number]	-- #98541 
 ,dteDateInstRec AS [Date of instruction]
 ,dteNHSBTReport 
 ,CONVERT(CHAR(4), dteNHSBTReport, 100) + CONVERT(CHAR(4), dteNHSBTReport, 120) AS [Period]
@@ -58,6 +59,8 @@ INNER JOIN MS_Prod.dbo.dbUser
  ON filePrincipleID=usrID
 LEFT OUTER JOIN MS_Prod.dbo.udMICoreGeneral
  ON udMICoreGeneral.fileID = dbFile.fileID
+LEFT OUTER JOIN MS_Prod.dbo.udRealEstate
+ ON udRealEstate.fileID = dbFile.fileID
 WHERE hierarchylevel2hist='Legal Ops - LTA'
 
 END
