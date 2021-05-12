@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 /*
 =============================================
 Author:			Jamie Bonner
@@ -101,7 +103,7 @@ SELECT
 			4
 			ELSE 5
 	  END						AS tab_order
-	, CASE 
+	, CASE  WHEN master_client_code='W15603' AND master_matter_number='174' THEN 'Gas Compliance'
 		WHEN dim_matter_worktype.work_type_code = '1150' THEN --Landlord & Tenant - Disrepair
 			'Disrepair'
 		WHEN dim_matter_worktype.work_type_code = '1002' THEN --Landlord & Tenant - Residential
@@ -174,6 +176,8 @@ WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'W15603'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	--AND dim_matter_worktype.work_type_code IN ('1002', '1011', '1105', '1150')
+	AND date_opened_case_management>='2020-10-01'
+	AND RTRIM(master_client_code) +'-' + RTRIM(master_matter_number) <>'W15603-191'
 ORDER BY
 	tab_order
 	, [Date Opened]

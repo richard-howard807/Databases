@@ -92,6 +92,7 @@ AND dim_matter_header_current.present_position = 'Final bill due - claim and cos
 --AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 --DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 --END)>=90
+AND wip <> 0
 
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
