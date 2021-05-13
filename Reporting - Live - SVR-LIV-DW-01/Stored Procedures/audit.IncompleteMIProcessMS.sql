@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [audit].[IncompleteMIProcessMS]--'Family','5122'
 (
 @Div AS NVARCHAR(MAX),
@@ -53,7 +54,7 @@ SELECT dbFile.fileID
 FROM MS_Prod.config.dbFile
 INNER JOIN  MS_Prod.dbo.dbTasks
  ON dbFile.fileID=dbTasks.fileID
-WHERE tskDesc='REM File Opening Process'
+WHERE tskDesc IN ('REM File Opening Process','ADM: File opening procedure')
 AND tskComplete=1
 ) AS AlreadyCompleted
  ON dbFile.fileID=AlreadyCompleted.fileID
@@ -63,7 +64,7 @@ AND tskComplete=1
 INNER JOIN #Team1 AS Team1 ON Team1.ListValue   COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 		
 
-WHERE tskDesc='REM File Opening Process'
+WHERE tskDesc  IN ('REM File Opening Process','ADM: File opening procedure')
 AND tskComplete=0
 AND fileStatus='LIVE'
 AND clNo <>'30645'
@@ -92,7 +93,7 @@ clNo +'.' + fileNo AS [MS Ref]
 ,tskDue
 ,tskComplete
 ,tskDesc
-,DATEDIFF(DAY,tskDue,getdate()) AS DaysIncomplete 
+,DATEDIFF(DAY,tskDue,GETDATE()) AS DaysIncomplete 
 ,hierarchylevel2hist AS [Division]
 ,hierarchylevel3hist AS [Department]
 ,hierarchylevel4hist AS [Team]
@@ -106,7 +107,7 @@ LEFT OUTER JOIN MS_PROD.dbo.dbUser ON filePrincipleID=dbUser.usrID
 LEFT OUTER JOIN MS_Prod.dbo.udExtFile
  ON dbFile.fileID=udExtFile.fileID
 LEFT OUTER JOIN (SELECT * FROM red_dw.dbo.dim_fed_hierarchy_history WHERE dss_current_flag='Y') AS Structure
- ON dbUser.usrInits=fed_code collate database_default
+ ON dbUser.usrInits=fed_code COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN 
 (
 SELECT dbFile.fileID 

@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -22,8 +23,8 @@ SELECT ListValue  INTO #Referralreason  FROM Reporting.dbo.[udt_TallySplit]('|',
 DECLARE @GraphStart AS DATE
 DECLARE @GraphEnd AS DATE
 
-SET @GraphStart='2020-04-01'
-SET @GraphEnd='2021-04-30'
+SET @GraphStart='2021-04-01'
+SET @GraphEnd='2022-04-30'
 
 
 

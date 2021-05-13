@@ -282,43 +282,43 @@ ON fileID = dim_matter_header_current.ms_fileid
 /*Coverage Defence   - cboCovDef */
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboCovDef') cboCovDef ON cboCovDef.cdCode = udMICoreAXA.cboCovDef
+WHERE txtMSCode = 'cboCovDef' AND txtMSTable = 'udMICoreAXA') cboCovDef ON cboCovDef.cdCode = udMICoreAXA.cboCovDef
 
 /*Reason for Instruction    - cboReaIns */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboReaIns') cboReaIns ON cboReaIns.cdCode = udMICoreAXA.cboReaIns
+WHERE txtMSCode = 'cboReaIns' AND txtMSTable = 'udMICoreAXA') cboReaIns ON cboReaIns.cdCode = udMICoreAXA.cboReaIns
 
 /*Is AXA XL the Defendant  - cboIsAXADe */
 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboIsAXADef') cboIsAXADef ON cboIsAXADef.cdCode = udMICoreAXA.cboIsAXADef
+WHERE txtMSCode = 'cboIsAXADef' AND txtMSTable = 'udMICoreAXA') cboIsAXADef ON cboIsAXADef.cdCode = udMICoreAXA.cboIsAXADef
 
 /*Reason for Proceedings   - cboReForProc */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboReForProc') cboReForProc ON cboReForProc.cdCode = udMICoreAXA.cboReForProc
+WHERE txtMSCode = 'cboReForProc' AND txtMSTable = 'udMICoreAXA') cboReForProc ON cboReForProc.cdCode = udMICoreAXA.cboReForProc
 
 /*Reason for panel budget change    - cboReaForPanel */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboReaForPanel') cboReaForPanel ON cboReaForPanel.cdCode = udMICoreAXA.cboReaForPanel
+WHERE txtMSCode = 'cboReaForPanel' AND txtMSTable = 'udMICoreAXA') cboReaForPanel ON cboReaForPanel.cdCode = udMICoreAXA.cboReaForPanel
 
 /*Mediated Outcome    - cboMedOutcome */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboMedOutcome') cboMedOutcome ON cboMedOutcome.cdCode = udMICoreAXA.cboMedOutcome
+WHERE txtMSCode = 'cboMedOutcome' AND txtMSTable = 'udMICoreAXA') cboMedOutcome ON cboMedOutcome.cdCode = udMICoreAXA.cboMedOutcome
 
 /*Outcome of Instruction     - cboOutOfIns */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboOutOfIns') cboOutOfIns ON cboOutOfIns.cdCode = udMICoreAXA.cboOutOfIns
+WHERE txtMSCode = 'cboOutOfIns' AND txtMSTable = 'udMICoreAXA') cboOutOfIns ON cboOutOfIns.cdCode = udMICoreAXA.cboOutOfIns
 
 /*Was Litigation avoidable     - cboWasLitAv */ 
 LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
 JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
-WHERE txtMSCode = 'cboWasLitAv') cboWasLitAv ON cboWasLitAv.cdCode = udMICoreAXA.cboWasLitAv 
+WHERE txtMSCode = 'cboWasLitAv' AND txtMSTable = 'udMICoreAXA') cboWasLitAv ON cboWasLitAv.cdCode = udMICoreAXA.cboWasLitAv 
 
 
 
@@ -357,7 +357,41 @@ AND date_claim_concluded IS NULL
 --so this will be where date claim concluded or date costs settled are null
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'
 AND reporting_exclusions = 0
-AND dim_matter_header_current.master_client_code + '-' + master_matter_number <> 'A1001-6044'
+AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
+( 'A1001-6044'
+,'A1001-10784'
+,'A1001-10789'
+,'A1001-10798'
+,'A1001-10822'
+,'A1001-10877'
+,'A1001-10913'
+,'A1001-10992'
+,'A1001-11026'
+,'A1001-11140'
+,'A1001-11180'
+,'A1001-11237'
+,'A1001-11254'
+,'A1001-11329'
+,'A1001-11363'
+,'A1001-11375'
+,'A1001-11470'
+,'A1001-11547'
+,'A1001-11562'
+,'A1001-11566'
+,'A1001-11567'
+,'A1001-11586'
+,'A1001-11600'
+,'A1001-11616'
+,'A1001-11618'
+,'A1001-11624'
+,'A1001-11699'
+,'A1001-11749'
+,'A1001-11759'
+,'A1001-11832'
+,'A1001-11894'
+,'A1001-4822'
+,'A1001-9272'
+)
 
 END
 

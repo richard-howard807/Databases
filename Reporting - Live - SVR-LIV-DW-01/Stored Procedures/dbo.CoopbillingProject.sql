@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CoopbillingProject]
 
 AS 
@@ -127,7 +128,7 @@ WHERE master_client_code IN ('C1001','W24438')
 AND wip>=100
 AND  (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=30
+END)>=90 -- change from 30 to 90 per finance and Christa Whatamour reqest
 AND ISNULL(fee_arrangement,'')<>'Fixed Fee/Fee Quote/Capped Fee'
 AND ISNULL(dim_matter_header_current.fixed_fee,'')<>'Fixed Fee'
 AND ISNULL(RTRIM(red_dw.dbo.dim_matter_header_current.present_position),'')<>'To be closed/minor balances to be clear'
