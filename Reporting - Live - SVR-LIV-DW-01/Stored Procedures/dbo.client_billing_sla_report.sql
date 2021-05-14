@@ -266,14 +266,14 @@ SELECT
 	  END										AS [Can We Bill]
 	-- row colour in report needs to be blue if clients are billed centrally
 	, CASE
-		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572') THEN
+		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572', 'W24438') THEN
 			'LightSkyBlue'
 		ELSE
 			'Transparent'
 	  END										AS [centrally_billed_row_colour]
 	-- The Can We Bill column cells need to be blue for centrally billed clients, green for bills, orange for query.
 	, CASE	
-		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572') THEN
+		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572','W24438') THEN
 			'LightSkyBlue'
 		WHEN (
 				 CASE	
