@@ -40,7 +40,7 @@ SELECT
  , dim_detail_claim.dst_claimant_solicitor_firm  AS [Claimant Solicitor]  
  , large_loss_hundred_perc_current_dam_res_total    AS [100% Reserve Value]  --Swapped out fact_detail_reserve_detail.large_loss_hundred_perc_reserve_total -MT 20210323
  , fact_detail_reserve_detail.damages_reserve   AS [Damages Reserve (Gross)]  
- , fact_detail_reserve_detail.current_indemnity_reserve AS [Claimant's Costs Reserve (Gross)]  
+ , fact_detail_reserve_detail.claimant_costs_reserve_current AS [Claimant's Costs Reserve (Gross)]  
  , fact_finance_summary.defence_costs_reserve   AS [Defence Costs Reserve (Gross)]  
  , fact_detail_reserve_detail.other_defendants_costs_reserve  AS [Other Defendants Costs Reserve (Gross)]  
  , dim_detail_outcome.outcome_of_case   AS [Outcome]  
