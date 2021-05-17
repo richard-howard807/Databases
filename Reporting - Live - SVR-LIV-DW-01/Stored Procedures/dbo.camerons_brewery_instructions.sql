@@ -73,7 +73,7 @@ FROM red_dw.dbo.fact_dimension_main
 						INNER JOIN red_dw.dbo.dim_bill_date 
 							ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
 					WHERE 
-						RTRIM(fact_bill_activity.client_code) = 'W22555'
+						RTRIM(fact_bill_activity.client_code) IN ('W22555', 'W24107')
 						AND dim_bill_date.bill_cal_year = YEAR(GETDATE())
 						AND dim_bill_date.bill_cal_month_no = MONTH(GETDATE())
 					GROUP BY 
@@ -84,10 +84,13 @@ FROM red_dw.dbo.fact_dimension_main
 		ON monthly_fees.client_code = dim_matter_header_current.client_code
 			AND monthly_fees.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
-	AND dim_matter_header_current.master_client_code = 'W22555'
+	AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
 	AND dim_matter_header_current.reporting_exclusions = 0
 ORDER BY
 	OpenClosed DESC
 
 END	
+
+
+
 GO
