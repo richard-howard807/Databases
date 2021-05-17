@@ -35,10 +35,16 @@ SELECT
 	  END					AS [Agreed Fee]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)			AS [Fees billed to Date]
 	, ISNULL(monthly_fees.Revenue, 0)			AS [Monthly Fees]
-	, ISNULL(fact_finance_summary.revenue_estimate_net_of_vat, 0) - ISNULL(fact_finance_summary.defence_costs_billed, 0)			AS [Fees to be Billed]
+	, CASE
+		WHEN RTRIM(dim_detail_finance.output_wip_fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
+			ISNULL(fact_finance_summary.fixed_fee_amount, 0) - ISNULL(fact_finance_summary.defence_costs_billed, 0)
+		ELSE
+			ISNULL(fact_finance_summary.revenue_estimate_net_of_vat, 0) - ISNULL(fact_finance_summary.defence_costs_billed, 0)
+	  END													AS [Fees to be Billed]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date Closed]
 	, CASE
+
 		WHEN dim_matter_header_current.date_closed_practice_management IS NULL THEN
 			'Open'
 		ELSE
