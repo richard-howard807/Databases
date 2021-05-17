@@ -5,6 +5,9 @@ GO
 
 
 
+
+
+
 CREATE   PROCEDURE [dbo].[RealEstateKPIReports] -- EXEC RealEstateKPIReports '6034'
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -21,6 +24,32 @@ SELECT ListValue  INTO #FeeEarner FROM 	dbo.udt_TallySplit('|', @FeeEarner)
 IF OBJECT_ID('tempdb..#Client') IS NOT NULL   DROP TABLE #Client
 SELECT ListValue  INTO #Client FROM 	dbo.udt_TallySplit('|', @Client)
 
+IF OBJECT_ID('tempdb..#Exchange') IS NOT NULL DROP TABLE #Exchange
+IF OBJECT_ID('tempdb..#Completion') IS NOT NULL DROP TABLE #Completion
+
+
+
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS ExchangeDateCompleted
+INTO #Exchange
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_04_010_rem_cont_exch') 
+AND master_client_code IN ('190593P', '153838M','848629','W15353')
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
+
+
+
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS CompletionDateCompleted
+INTO #Completion
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_05_010_est_comp_today') 
+AND master_client_code IN ('190593P', '153838M','848629','W15353')
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
 
 SELECT client_name AS [Client Name]
 ,master_client_code AS [Client Number]
@@ -52,24 +81,20 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN (SELECT fileID,red_dw.dbo.datetimelocal(MSStage1Achieved) AS FileOpeningAchieved 
 FROM ms_prod.dbo.dbMSData_OMS2K  WITH(NOLOCK)
-WHERE MSStage1Achieved IS NOT NULL) AS MilestonePlans
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE MSStage1Achieved IS NOT NULL
+AND master_client_code IN ('190593P', '153838M','848629','W15353')) AS MilestonePlans
  ON ms_fileid=MilestonePlans.fileID
-LEFT OUTER JOIN (SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS ExchangeDateCompleted 
-FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
-WHERE tskFilter IN ('tsk_04_010_rem_cont_exch') 
-AND tskActive=1 AND tskComplete=1
-GROUP BY fileID) AS Excxhange
+LEFT OUTER JOIN #Exchange  AS Excxhange
  ON ms_fileid=Excxhange.fileID
-LEFT OUTER JOIN (SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS CompletionDateCompleted 
-FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
-WHERE tskFilter IN ('tsk_05_010_est_comp_today') 
-AND tskActive=1 AND tskComplete=1
-GROUP BY fileID) AS Completion
- ON ms_fileid=Completion.fileID
+LEFT OUTER JOIN #Completion AS Completion
+ON ms_fileid=Completion.fileID
 
   
 WHERE master_client_code IN ('190593P', '153838M','848629','W15353')
 AND (completion_date>='2021-01-01' OR completion_date IS NULL)
+AND (date_closed_case_management>='2021-01-01' OR date_closed_case_management IS NULL)
 AND work_type_name='Plot Sales'
 
 

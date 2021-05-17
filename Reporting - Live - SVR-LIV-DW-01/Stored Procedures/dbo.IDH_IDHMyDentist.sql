@@ -45,7 +45,7 @@ SELECT
 	, ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)	AS [Fees Estimate - Commercial Costs Estimate]
 	, fact_detail_cost_budgeting.fees_estimate				AS [Fees Estimate - Fees Estimate]
 	, fact_finance_summary.total_amount_billed				AS [Total Billed]
-	, fact_finance_summary.defence_costs_billed				AS [Revenue]
+	, ISNULL(fact_finance_summary.defence_costs_billed, '.00')				AS [Revenue]
 	, fact_finance_summary.disbursements_billed				AS [Disburesments]
 	, fact_finance_summary.vat_billed						AS [VAT]
 	, fact_finance_summary.wip								AS [WIP]
@@ -68,10 +68,10 @@ SELECT
 	, Doogal.Latitude
 	, Doogal.Longitude
 	, CASE
-        WHEN (fact_matter_summary_current.last_bill_date) = '1753-01-01' THEN
-            NULL
+        WHEN ISNULL(fact_matter_summary_current.last_bill_date, '1753-01-01') = '1753-01-01' THEN 'Not yet billed'
+
         ELSE
-            fact_matter_summary_current.last_bill_date
+            CAST(CAST(fact_matter_summary_current.last_bill_date AS DATE) AS NVARCHAR(20))
     END AS [Last Bill Date]
 	,dim_employee.locationidud AS [Office]
 

@@ -7,6 +7,8 @@ GO
 -- Author:		Lucy Dickinson
 -- Create date: 06/07/2018
 -- Description:	Returns a list of teams for the departments passed through
+
+-- RH 17/05/2021 Changed logic to remove 'not like %&%'' and get a distinct list of active teams
 -- =============================================
 
 
@@ -34,7 +36,9 @@ BEGIN
 		AND a.activeud = 1
 		AND a.hierarchylevel4hist IS NOT NULL
 		AND a.hierarchylevel3hist COLLATE DATABASE_DEFAULT IN (SELECT val FROM [dbo].[split_delimited_to_rows] (@department,','))
-		AND a.hierarchylevel4hist NOT LIKE '%&%'
+		--AND a.hierarchylevel4hist NOT LIKE '%&%'
+		and a.leaver = 0 
+		and a.dim_employee_key <> 0
 	RETURN 
 END
 
