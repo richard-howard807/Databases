@@ -3,27 +3,21 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
-
-
-
-
-
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
 --JL 20210311 Have put this into a table 
+--ES 20210518 Added drop table statement
 --================================================
 
 
 CREATE PROCEDURE [dbo].[CostCutter_Tableau]
 AS
 BEGIN
+
+IF OBJECT_ID('dbo.TableauTableCostCutter', 'U') IS NOT NULL
+DROP TABLE dbo.TableauTableCostCutter
+
 SELECT clNo +'-'+ fileNo AS [CaseCode] 
 ,fileDesc AS [CaseDesc]
 ,InsuredREf.Reference AS [AlternativeRef]
@@ -209,4 +203,5 @@ AND fileType='2038'
 
 
 END
+--SELECT * FROM [dbo].[TableauTableCostCutter]
 GO
