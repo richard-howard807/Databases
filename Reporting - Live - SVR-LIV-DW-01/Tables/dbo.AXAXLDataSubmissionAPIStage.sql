@@ -2,7 +2,6 @@ CREATE TABLE [dbo].[AXAXLDataSubmissionAPIStage]
 (
 [Status] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [AXA XL Claim Number] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[F3] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Law Firm Matter Number] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Line of Business] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Product Type] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -37,7 +36,6 @@ CREATE TABLE [dbo].[AXAXLDataSubmissionAPIStage]
 [Unique timekeeper ID per timekeeper] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Level solicitor partner ] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [PQE] [float] NULL,
-[F38] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Hours spent on case] [money] NULL,
 [Date closed] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Date of Final Panel Invoice] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -50,6 +48,6 @@ CREATE TABLE [dbo].[AXAXLDataSubmissionAPIStage]
 [Outcome of Instruction Select from list] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Was litigation avoidable Select from list] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [dss_load_date] [datetime] NULL,
-[dss_current_flag] [char] (1) COLLATE Latin1_General_CI_AS NULL
+[dss_current_flag] [nvarchar] (1) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE   PROCEDURE [dbo].[RealEstateKPIReports] -- EXEC RealEstateKPIReports '6034'
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -59,6 +60,7 @@ SELECT client_name AS [Client Name]
 ,hierarchylevel4hist AS [Team]
 ,date_instructions_received AS [Date Instructions Received]
 ,date_opened_case_management AS [Date File Opened]
+,date_closed_case_management AS [Date File Closed]
 ,FileOpeningAchieved AS [Date File Opening Process Completed]
 ,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,FileOpeningAchieved,103)) AS [Elapsed Days to File Opening Process]
 ,ExchangeDateCompleted AS [Date Exchange Process Completed]
