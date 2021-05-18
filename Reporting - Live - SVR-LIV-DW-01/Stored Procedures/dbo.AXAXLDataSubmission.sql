@@ -13,7 +13,8 @@ BEGIN
 
 SELECT  DISTINCT
 
- dim_matter_header_current.ms_fileid
+ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
+,dim_matter_header_current.ms_fileid
 ,COALESCE(client_reference, insurerclient_reference) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
@@ -69,8 +70,11 @@ ii)                   Else “Other”
 , Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
 , ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
 , fact_finance_summary.[tp_total_costs_claimed]  AS [Opposing side's Costs Claimed]
+
 , NULL [Timekeepers - Details of anyone who worked on the case during the time period.]
 , BilledTime.Name [Name]
+, BilledTime.[First name] AS Timekeepers_Firstname
+, BilledTime.[Last name] AS Timekeepers_Lastname
 , BilledTime.[Unique timekeeper ID per timekeeper] [Unique timekeeper ID per timekeeper]
 , BilledTime.[Level (solicitor, partner)] AS  [Level (solicitor, partner)]
 , BilledTime.PQE [PQE]
@@ -180,6 +184,8 @@ LEFT OUTER JOIN
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname +', ' + dim_employee.forename AS [Name]
+, dim_employee.forename AS [First name]
+, dim_employee.surname AS [Last name]
 , TimeRecordedBy.fed_code [Unique timekeeper ID per timekeeper]
 , TimeRecordedBy.jobtitle [Level (solicitor, partner)]
 , DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) [PQE]
@@ -203,6 +209,7 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname +', ' + dim_employee.forename 
 , TimeRecordedBy.fed_code 
 , TimeRecordedBy.jobtitle
+, dim_employee.surname, dim_employee.forename 
 , DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103))
 ) AS BilledTime
  ON BilledTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -358,39 +365,7 @@ AND date_claim_concluded IS NULL
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'
 AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
-( 'A1001-6044'
-,'A1001-10784'
-,'A1001-10789'
-,'A1001-10798'
-,'A1001-10822'
-,'A1001-10877'
-,'A1001-10913'
-,'A1001-10992'
-,'A1001-11026'
-,'A1001-11140'
-,'A1001-11180'
-,'A1001-11237'
-,'A1001-11254'
-,'A1001-11329'
-,'A1001-11363'
-,'A1001-11375'
-,'A1001-11470'
-,'A1001-11547'
-,'A1001-11562'
-,'A1001-11566'
-,'A1001-11567'
-,'A1001-11586'
-,'A1001-11600'
-,'A1001-11616'
-,'A1001-11618'
-,'A1001-11624'
-,'A1001-11699'
-,'A1001-11749'
-,'A1001-11759'
-,'A1001-11832'
-,'A1001-11894'
-,'A1001-4822'
-,'A1001-9272'
+( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272'
 )
 
 END
