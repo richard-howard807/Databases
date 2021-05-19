@@ -9,6 +9,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -61,6 +62,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -79,13 +81,14 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		PIVOT	
 			(
 			SUM(Revenue)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022])
 			) AS PVIOT
 
 
 
 	SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -105,7 +108,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		PIVOT	
 			(
 			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022])
 			) AS PVIOT
 
 -- Added Chargeable hours #45295
@@ -137,6 +140,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 --Added disbursements #61966
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -158,7 +162,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 		PIVOT	
 			(
 			SUM(Disbursements)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022])
 			) AS PVIOT
 
 
@@ -237,6 +241,7 @@ SELECT DISTINCT
     dim_client.client_name AS [Client Name],
     dim_client.client_group_name AS [Client Group Name],
     dim_client.[sector] AS [Client Sector],
+	ia_sic_code,
 	dim_client.sub_sector AS [Client Sub-Sector],
 	dim_client.segment AS  [Client Segment ],
     client_partner_name AS [Client Partner Name],
@@ -519,6 +524,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	 , Billed_hours.[2019] [Hours Billed 2018/2019]
 	 , Billed_hours.[2020] [Hours Billed 2019/2020]
 	 , Billed_hours.[2021] [Hours Billed 2020/2021]
+	 , Billed_hours.[2022] [Hours Billed 2021/2022]
 
 	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
 	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
@@ -526,6 +532,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	 , Chargeable_hours.[2019] [Chargeable Hours Posted 2018/2019]
 	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
 	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
+	 , Chargeable_hours.[2022] [Chargeable Hours Posted 2021/2022]
 
 	, Disbursements.[2016] [Disbursements Billed 2015/2016]
 	, Disbursements.[2017] [Disbursements Billed 2016/2017]
@@ -533,6 +540,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, Disbursements.[2019] [Disbursements Billed 2018/2019]
 	, Disbursements.[2020] [Disbursements Billed 2019/2020]
 	, Disbursements.[2021] [Disbursements Billed 2020/2021]
+	, Disbursements.[2022] [Disbursements Billed 2021/2022]
 
 	,dim_detail_claim.[stw_work_type] [STW Work Type]
 	,fact_finance_summary.minutes_recorded_cost_handler
@@ -1025,25 +1033,25 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 			fact_dimension_main.matter_number
 			,dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] a 
 		 FROM red_dw.dbo.fact_dimension_main
-		inner JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-		inner JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
-		WHERE   (
-                      dim_matter_header_current.date_closed_case_management >= '20160101'
-                      OR dim_matter_header_current.date_closed_case_management IS NULL
-                  ) 
-		AND [mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT null
-        UNION
-        SELECT fact_dimension_main.client_code
-			,fact_dimension_main.matter_number
-			,dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] a 
-		 FROM red_dw.dbo.fact_dimension_main		
-		inner JOIN  red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+		INNER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 		INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 		WHERE   (
                       dim_matter_header_current.date_closed_case_management >= '20160101'
                       OR dim_matter_header_current.date_closed_case_management IS NULL
                   ) 
-		AND [zurichnhs_date_final_bill_sent_to_client] IS NOT null
+		AND [mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL
+        UNION
+        SELECT fact_dimension_main.client_code
+			,fact_dimension_main.matter_number
+			,dim_detail_health.[zurichnhs_date_final_bill_sent_to_client] a 
+		 FROM red_dw.dbo.fact_dimension_main		
+		INNER JOIN  red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+		INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+		WHERE   (
+                      dim_matter_header_current.date_closed_case_management >= '20160101'
+                      OR dim_matter_header_current.date_closed_case_management IS NULL
+                  ) 
+		AND [zurichnhs_date_final_bill_sent_to_client] IS NOT NULL
 
 		) x
 		GROUP BY x.client_code, x.matter_number
@@ -1104,7 +1112,8 @@ LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.clien
 					ON cost_handler_revenue.client_code = dim_matter_header_current.client_code
 					AND cost_handler_revenue.matter_number = dim_matter_header_current.matter_number
 
-
+LEFT OUTER JOIN red_dw.dbo.dim_client_matter_summary 
+ ON dim_client.dim_client_key=dim_client_matter_summary.dim_client_key
 --- Final WHERE Clause -------------------------------------------------------------------------------------------------
 
 WHERE dim_matter_header_current.matter_number <> 'ML'

@@ -20,6 +20,7 @@ GO
 -- JB 20201013 Added reason_for_settlement as requested by Emma James
 -- JL 20201104 Added history as per ticket #77789
 -- JL 20201126 Removed history as per above but replaced it with history case statement #77789
+-- ES 20210519 #99395, added is the claimant a litigant in person flag
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -456,6 +457,7 @@ dim_detail_health.nhs_scheme IN
           -- dim_agents_involvement.cho_name AS [Credit Hire Organisation],
            --dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
+		   ClaimantsAddress.litigant_in_person AS [Is the claimant a litigant in person (LIP)?],
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
            fact_detail_client.number_of_defendants AS [Number of Defendants ],
            dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Does the Claimant have a PI Claim? ],
@@ -868,7 +870,8 @@ ON dim_matter_header_current.ms_fileid = HistoryReservesv2.fileid
                    dim_client.address_line_2 [claimant1_address_line_2],
                    dim_client.address_line_3 [claimant1_address_line_3],
                    dim_client.address_line_4 [claimant1_address_line_4],
-                   dim_client.postcode [claimant1_postcode]
+                   dim_client.postcode [claimant1_postcode],
+				   dim_involvement_full.litigant_in_person
             FROM red_dw.dbo.dim_claimant_thirdparty_involvement
                 INNER JOIN red_dw.dbo.fact_dimension_main
                     ON fact_dimension_main.dim_claimant_thirdpart_key = dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key

@@ -431,11 +431,17 @@ SELECT DISTINCT
       [Final Claimants Costs Amount],
       [Mediated outcome Select from list],
       [Outcome of Instruction Select from list],
-      [Was litigation avoidable Select from list]
+      [Was litigation avoidable Select from list],
+	  dss_load_date,
+	  dss_current_flag
+
       INTO #MainAPI
       FROM Reporting.[dbo].[AXAXLDataSubmissionAPIStage]
 
 	  WHERE dss_current_flag = 'Y'
+	  AND RowOrder = 1 
+
+	
 
 	  /*TimeKeeperLookup */
 
@@ -471,13 +477,13 @@ ON #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT= #AXAXLDataSubmiss
 UPDATE #AXAXLDataSubmission  
 
 SET #AXAXLDataSubmission.Status = 'Create Case'
-FROM #AXAXLDataSubmission 
 
+FROM #AXAXLDataSubmission 
 LEFT JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
 WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
+AND #AXAXLDataSubmission.[Date Instructed] > #MainAPI.dss_load_date
 
 /*Edit Case - If change in certain fields will result in change of status to Edit Case
-
 AXA XL Claim Number	
 Line of Business	Product Type	Insured Name	AXA XL Percentage line share of loss expenses recovery	AXA XL Claims Handler	Third Party Administrator	Coverage defence 	Law firm handling office city 	Date Instructed	Opposing Side's Solicitor Firm Name	Reason For instruction	Damages Claimed	Fee Scale 
 */
@@ -501,22 +507,16 @@ OR    #MainAPI.[Opposing Side's Solicitor Firm Name] COLLATE DATABASE_DEFAULT<> 
 OR    #MainAPI.[Reason For instruction] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Reason For instruction]
 OR    #MainAPI.[Fee Scale] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Fee Scale]
 
-
 /*Update Case - 
-
-
-First acknowledgement Date,	Report Date, 	Date Proceedings Issued, AXA XL as defendant,	Reason for proceedings,	Proceeding Track, Trial date, Damages Reserve, Opposing sides costs reserve	Panel budget reserve	Reason for panel budget change if occurred	Panel Fees Paid	Counsel Paid	Other Disbursements Paid	Opposing sides Costs Claimed
-
+First acknowledgement Date,	Report Date, 	Date Proceedings Issued, AXA XL as defendant,	Reason for proceedings,	Proceeding Track, 
+Trial date, Damages Reserve, Opposing sides costs reserve	Panel budget reserve	Reason for panel budget change if occurred	Panel Fees Paid	Counsel Paid	
+Other Disbursements Paid	Opposing sides Costs Claimed
 */
-
-
 UPDATE #AXAXLDataSubmission  
 SET #AXAXLDataSubmission.Status = 'Update Case'
 FROM #AXAXLDataSubmission
 JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
-
 WHERE 
-
    ISNULL(#MainAPI.[First acknowledgement Date], '3999-01-01') <> ISNULL(#AXAXLDataSubmission.[First acknowledgement Date], '3999-01-01')
 OR ISNULL(CAST(#MainAPI.[Report Date] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Report Date] AS DATE), '3999-01-01')
 OR ISNULL(CAST(#MainAPI.[Date Proceedings Issued] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Date Proceedings Issued] AS DATE), '3999-01-01')
@@ -525,10 +525,46 @@ OR ISNULL(#MainAPI.[Reason for proceedings], 1) COLLATE DATABASE_DEFAULT <> ISNU
 OR ISNULL(#MainAPI.[Proceeding Track], 1) COLLATE DATABASE_DEFAULT <>  ISNULL(#AXAXLDataSubmission.[Proceeding Track], 1) 
 OR ISNULL(#MainAPI.[Trial date],'3999-01-01') <> ISNULL(#AXAXLDataSubmission.[Trial date], '3999-01-01')
 
+/*Update Case - TimeKeeper */
+--1711
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Update Case'
+FROM #AXAXLDataSubmission
+JOIN #TimeKeepersAPI ON #TimeKeepersAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT =  #AXAXLDataSubmission.[Law Firm Matter Number]
+AND #AXAXLDataSubmission.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT  =  #TimeKeepersAPI.[Unique timekeeper ID per timekeeper]
+AND ISNULL(#TimeKeepersAPI.PQE, 100) =  ISNULL(#AXAXLDataSubmission.PQE, 100)
+AND ISNULL(#TimeKeepersAPI.[Level solicitor partner ], 'N/A') COLLATE DATABASE_DEFAULT = ISNULL(#AXAXLDataSubmission.[Level (solicitor, partner)], 'N/A')
+AND ISNULL(#TimeKeepersAPI.[Hours spent on case], -1) <> ISNULL(#AXAXLDataSubmission.[Hours spent on case], -1)
+
+/*Close Case 
+Update Status to Close Case when any of the following columns have changes. 
+Date closed,	Date of Final Panel Invoice,	Date Damages settled,	Final Damages Amount,	
+Claimants Costs Handled by Panel ,	Date Claimants costs settled,	Final Claimants Costs Amount	Mediated outcome Select from list	Outcome of Instruction Select from list	Was litigation avoidable Select from list
+*/
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Close Case'
+FROM #AXAXLDataSubmission
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE #AXAXLDataSubmission.RN = 1 
+AND 
+(
+ISNULL(#AXAXLDataSubmission.[Date closed],'3999-01-01')  <> ISNULL(#MainAPI.[Date closed], '3999-01-01')
+OR    ISNULL(#AXAXLDataSubmission.[Date of Final Panel Invoice],'3999-01-01') <> ISNULL(#MainAPI.[Date of Final Panel Invoice], '3999-01-01')
+OR    ISNULL(#AXAXLDataSubmission.[Date Damages settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Damages settled], '3999-01-01')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Damages Amount] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Final Damages Amount], '')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Claimants Costs Handled by Panel?] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Claimants Costs Handled by Panel ], '')
+OR    ISNULL(#AXAXLDataSubmission.[Date Claimants costs settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Claimants costs settled], '3999-01-01')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Claimants Costs Amount] AS NVARCHAR(20)), '') <>  ISNULL(#MainAPI.[Final Claimants Costs Amount], '') 
+OR    ISNULL(#AXAXLDataSubmission.[Mediated outcome - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Mediated outcome Select from list], '')
+OR    ISNULL(#AXAXLDataSubmission.[Outcome of Instruction - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Outcome of Instruction Select from list], '')  
+OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
+ 
+)
 
 
-SELECT * FROM #AXAXLDataSubmission
-ORDER BY ms_fileid, RN
+SELECT DISTINCT * FROM #AXAXLDataSubmission
+ORDER BY ms_fileid
+
 
 
 END

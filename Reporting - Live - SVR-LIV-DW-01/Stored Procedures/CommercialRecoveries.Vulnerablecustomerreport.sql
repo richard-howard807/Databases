@@ -72,8 +72,6 @@ WHERE  noteType = 10 OR ( noteType = 9 AND (LOWER(udCRHistoryNotesSL.txtDescript
 GROUP BY udCRHistoryNotesSL.fileID
 ) VulnerabilityNotes ON VulnerabilityNotes.fileID = dbFile.fileID
 
-
-
 WHERE 1 =1 
 
 
@@ -85,6 +83,8 @@ AND  VulnerabilityNotes.fileID IS NOT null
  AND (dim_matter_header_current.master_client_code IN ('FW22613', 'W15335', 'FW22135')
  OR fact_dimension_main.master_client_code='M1001')
 
+ AND (VulnerabilityNotes.txtDescription NOT IN ('VC - no', 'VC - NO','VC - No', 'VC - no', 'VC - NO' )
+ AND  VulnerabilityNotes.txtDescription NOT LIKE '%No VC%'  )
 
  ORDER BY 1, dim_matter_header_current.master_client_code, master_matter_number
 

@@ -48,6 +48,7 @@ CREATE TABLE [dbo].[AXAXLDataSubmissionAPIStage]
 [Outcome of Instruction Select from list] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Was litigation avoidable Select from list] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [dss_load_date] [datetime] NULL,
-[dss_current_flag] [nvarchar] (1) COLLATE Latin1_General_CI_AS NULL
+[dss_current_flag] [nvarchar] (1) COLLATE Latin1_General_CI_AS NULL,
+[RowOrder] [float] NULL
 ) ON [PRIMARY]
 GO
