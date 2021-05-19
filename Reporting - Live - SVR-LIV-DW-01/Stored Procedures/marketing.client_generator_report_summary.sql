@@ -22,7 +22,7 @@ AS
 	SET NOCOUNT ON;
 	
     --=== For testing purposes=============
-	--DECLARE @fin_period INT = 202111
+	--DECLARE @fin_period INT = 202112
 	--======================================
 
 
@@ -102,10 +102,11 @@ N'AIG',N'Royal Mail',N'Markel',N'Markel',N'BARRATT PLC',
 N'Surrey Police',N'Sussex Police',N'Sabre',N'pwc',N'Bibby Group',
 N'Clarion Housing Group Limited',
 N'Metropolitan Police',
-N'Sovini Group',
+N'Sovini Group', 
 N'Business Energy Solutions Ltd' ,                                                
 N'BES Utilities Holding Ltd',                                                    
 N'BES Metering Services Limited',  
+N'BES Group',
 N'Northern Powergrid'
 )
 
