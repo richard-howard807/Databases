@@ -16,7 +16,7 @@ CREATE TABLE [dbo].[AXAXLDataSubmissionAPIStage]
 [Reason For instruction] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Fee Scale] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Damages Claimed] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[First acknowledgement Date] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[First acknowledgement Date] [datetime] NULL,
 [Report Date] [datetime] NULL,
 [Date Proceedings Issued] [datetime] NULL,
 [AXA XL as defendant] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,

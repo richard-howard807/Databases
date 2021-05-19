@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [audit].[SanctionsV3] 
 
 
@@ -71,6 +72,7 @@ SELECT DISTINCT  Name AS SanctionNam
 ,MainData.SourceID
 ,[SanctionDOB]
 ,CaseID
+,MainData.txtAMLComments
 FROM (
 SELECT Sanctions.Name
 ,GroupID
@@ -95,6 +97,7 @@ SELECT Sanctions.Name
 ,ConflictSearch.SourceID AS SourceID
 --,COALESCE(dteDateofBirth,DOB) AS [SanctionDOB]
 ,DOB AS [SanctionDOB]
+,txtAMLComments
 FROM #Sanctions AS Sanctions
 INNER JOIN ConflictSearch.dbo.ConflictSearch
  ON LOWER(Sanctions.Name) = LOWER(CleanName)
@@ -143,6 +146,7 @@ LEFT OUTER JOIN (SELECT fileID,dteDateSanRev
 	  WHEN cboDoBObtain='YES' THEN 'Yes'
 	  WHEN cboDoBObtain='NOACP' THEN 'No - DOB appears in case plan' END AS cboDoBObtain 
 ,dteDateofBirth 
+,txtAMLComments
  FROM MS_Prod.dbo.udAMLProcess  WITH (NOLOCK) 
  WHERE dteDateSanRev IS NOT NULL OR 
 cboRevFileSanLi IS NOT NULL OR 

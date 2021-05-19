@@ -227,6 +227,179 @@ BEGIN
            dim_detail_claim.[defendant_trust] [ Defendant Trust],
            dim_detail_health.[nhs_location] [NHS Location],
            dim_detail_health.[nhs_scheme] [Scheme],
+		   CASE WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+THEN 'Clinical'
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+THEN 'Non-Clinical'
+WHEN dim_detail_health.nhs_scheme = 'LOT 3 work' THEN 'Other' END AS [Matter Type],
+
+
+CASE WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
+
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,001-£250,000'
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,001-£1,000,000'
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) > 1000000 THEN '£1,000,001+'
+
+
+
+
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+
+
+
+ 
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 1 AND 5001 THEN '£1-£5,001'
+
+
+  
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 5001 AND 10000 THEN '£5,001-£10,000'
+
+ WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 10001 AND 25000 THEN '£10,0001-£25,0001'
+
+  WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 25001 AND 50001 THEN '£25,001-£50,001'
+
+   WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)> 50001 THEN '£50,0001+'
+
+
+ END AS [NHSR Tranche],
+
+
            dim_detail_health.[nhs_speciality] [Speciality],
            dim_detail_health.[nhs_aig_date_damages_cheque_sent] [Date damages cheque sent],
            dim_detail_health.[nhs_sabre_date_claimants_costs_paid] [Date costs paid],
@@ -256,9 +429,9 @@ BEGIN
            dim_detail_core_details.insured_departmentdepot_postcode AS [Insured Department Depot Postcode],
            dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
            dim_matter_header_current.date_closed_case_management AS [Date Case Closed],
-           dim_detail_critical_mi.date_closed AS [Converge Date Closed],
+          -- dim_detail_critical_mi.date_closed AS [Converge Date Closed],
            dim_detail_core_details.present_position AS [Present Position],
-                                --dim_detail_critical_mi.claim_status AS [Converge Claim Status],
+            --dim_detail_critical_mi.claim_status AS [Converge Claim Status],
            dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent],
            dim_detail_core_details.date_instructions_received AS [Date Instructions Received],
            dim_detail_core_details.status_on_instruction AS [Status On Instruction],
@@ -270,18 +443,18 @@ BEGIN
            dim_court_involvement.court_name AS [Court Name],
            dim_detail_core_details.track AS [Track],
            dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
-           COALESCE(
-                       dim_detail_fraud.[fraud_initial_fraud_type],
-                       dim_detail_fraud.[fraud_current_fraud_type],
-                       dim_detail_fraud.[fraud_type_ageas],
-                       dim_detail_fraud.[fraud_current_secondary_fraud_type],
-                       dim_detail_client.[coop_fraud_current_fraud_type],
-                       dim_detail_fraud.[fraud_type],
-                       dim_detail_fraud.[fraud_type_disease_pre_lit]
-                   ) AS [Fraud Type],
-           dim_detail_core_details.credit_hire AS [Credit Hire],
-           dim_agents_involvement.cho_name AS [Credit Hire Organisation],
-           dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
+           --COALESCE(
+           --            dim_detail_fraud.[fraud_initial_fraud_type],
+           --            dim_detail_fraud.[fraud_current_fraud_type],
+           --            dim_detail_fraud.[fraud_type_ageas],
+           --            dim_detail_fraud.[fraud_current_secondary_fraud_type],
+           --            dim_detail_client.[coop_fraud_current_fraud_type],
+           --            dim_detail_fraud.[fraud_type],
+           --            dim_detail_fraud.[fraud_type_disease_pre_lit]
+           --        ) AS [Fraud Type],
+           --dim_detail_core_details.credit_hire AS [Credit Hire],
+          -- dim_agents_involvement.cho_name AS [Credit Hire Organisation],
+           --dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
            fact_detail_client.number_of_defendants AS [Number of Defendants ],
@@ -311,7 +484,7 @@ BEGIN
            END AS [Litigation / Regulatory],
            dim_detail_core_details.[is_there_an_issue_on_liability] AS [Liability Issue],
            dim_detail_core_details.delegated AS [Delegated],
-           dim_detail_core_details.[fixed_fee] AS [Fixed Fee],
+           --dim_detail_core_details.[fixed_fee] AS [Fixed Fee],
            ISNULL(fact_finance_summary.[fixed_fee_amount], 0) AS [Fixed Fee Amount],
            ISNULL(dim_detail_finance.[output_wip_fee_arrangement], 0) AS [Fee Arrangement],
            dim_detail_finance.[output_wip_percentage_complete] AS [Percentage Completion],
@@ -319,7 +492,7 @@ BEGIN
            dim_detail_health.leadfollow AS [Lead Follow],
            dim_detail_core_details.lead_file_matter_number_client_matter_number AS [Lead File Matter Number],
            dim_detail_core_details.[associated_matter_numbers] AS [Associated Matter Numbers],
-           dim_detail_core_details.grpageas_motor_moj_stage AS [MoJ stage],
+           --dim_detail_core_details.grpageas_motor_moj_stage AS [MoJ stage],
            dim_detail_core_details.incident_date AS [Incident Date],
            dim_detail_core_details.[incident_location] AS [Incident Location],
            dim_detail_core_details.has_the_claimant_got_a_cfa AS [Has the Claimant got a CFA? ],
@@ -328,10 +501,10 @@ BEGIN
                                 -- dim_claimant_thirdparty_involvement.claimantsols_name AS [Claimant's Solicitor],
            ClaimantsAddress.[claimant1_postcode] AS [Claimant's Postcode],
            fact_finance_summary.total_reserve AS [Total Reserve],
-           ISNULL(fact_detail_reserve_detail.converge_disease_reserve, 0) AS [Converge Disease Reserve],
+          -- ISNULL(fact_detail_reserve_detail.converge_disease_reserve, 0) AS [Converge Disease Reserve],
 		   fact_finance_summary.[damages_reserve_initial] [Damages Reserve (Initial)],
            fact_finance_summary.damages_reserve AS [Damages Reserve Current ],
-           fact_detail_paid_detail.hire_claimed AS [Hire Claimed ],
+         --  fact_detail_paid_detail.hire_claimed AS [Hire Claimed ],
 		   fact_finance_summary.[tp_costs_reserve_initial]  [Claimant Costs Reserve Current (Initial)], 
            fact_detail_reserve_detail.claimant_costs_reserve_current AS [Claimant Costs Reserve Current ],
 		   
@@ -372,7 +545,7 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            END AS [Damages Paid by Client ],
            fact_detail_paid_detail.[total_nil_settlements] AS [Outsource Damages Paid (WPS278+WPS279+WPS281)],
            fact_detail_paid_detail.personal_injury_paid AS [Personal Injury Paid],
-           fact_detail_paid_detail.amount_hire_paid AS [Hire Paid ],
+           --fact_detail_paid_detail.amount_hire_paid AS [Hire Paid ],
            CASE
                WHEN fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] IS NULL
                     AND fact_detail_paid_detail.[total_nil_settlements] IS NULL THEN

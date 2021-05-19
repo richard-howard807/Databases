@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [audit].[OFACSanctionsListings]
 AS
 BEGIN
@@ -142,7 +143,9 @@ SELECT [SanctionNam]
 ,[InsertDate]
 ,[Type check]
 ,[PreviousRunDOB]
-,COALESCE(MSRef1,MSRef2)  AS MSReference FROM #AllData AS AllData
+,COALESCE(MSRef1,MSRef2)  AS MSReference
+,txtAMLComments 
+FROM #AllData AS AllData
 
 LEFT OUTER JOIN (SELECT case_id,clNo+'.'+ fileNo AS MSRef1 FROM red_dw.dbo.dim_matter_header_current 
 INNER JOIN MS_Prod.config.dbFile ON ms_fileid=fileID
@@ -163,6 +166,7 @@ LEFT OUTER JOIN (SELECT case_id,dbfile.fileID,dteDateSanRev
 	  WHEN cboDoBObtain='YES' THEN 'Yes'
 	  WHEN cboDoBObtain='NOACP' THEN 'No - DOB appears in case plan' END AS cboDoBObtain 
 ,dteDateofBirth 
+,udAMLProcess.txtAMLComments 
 FROM MS_Prod.config.dbFile
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dbFile.fileID=ms_fileid
@@ -173,7 +177,7 @@ INNER JOIN MS_Prod.dbo.udExtFile
 INNER JOIN MS_Prod.dbo.udAMLProcess 
  ON dbFile.fileID=udAMLProcess.fileID
 ) AS SanctionReviewed
- ON AllData.[CaseID]=SanctionReviewed.case_id
+ ON MSRef2.ms_fileid=SanctionReviewed.fileID
  
 
 END

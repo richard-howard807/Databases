@@ -12,7 +12,7 @@ Current Version:	Initial Create
 ====================================================
  */
 
-CREATE PROCEDURE [dbo].[SupervisionMI]	--EXEC [dbo].[SupervisionMI] 'Legal Ops - Claims', 'Disease','Disease Liverpool 2','Open','Giselle Drouillard'
+CREATE PROCEDURE [dbo].[SupervisionMI]	--EXEC [dbo].[SupervisionMI] 'Legal Ops - Claims', 'Disease','Disease Liverpool 2','Closed','Giselle Drouillard'
 											  
 (
 @Division AS VARCHAR(MAX),
@@ -68,7 +68,7 @@ SELECT dim_matter_header_current.master_client_code +'-'+master_matter_number AS
 ,matter_description AS [Matter Description]
 ,date_opened_case_management AS [Date Opened]
 ,date_closed_case_management AS [Date Closed]
-,red_dw.dbo.dim_employee.locationidud AS Location
+--,red_dw.dbo.dim_employee.locationidud AS Location
 ,CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Open/Closed Case Status]
 
 
@@ -89,7 +89,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_f
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_client_involvement ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 LEFT OUTER JOIN red_dw.dbo.dim_involvement_full ON dim_involvement_full.dim_involvement_full_key = dim_client_involvement.insurerclient_1_key
-INNER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+--INNER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 
 
 
