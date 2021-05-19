@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 
 AS 
@@ -14,11 +15,11 @@ AS
 BEGIN 
 SELECT dbFile.fileID AS [ms_fileid]
 ,contChristianNames + ' '+contSurname AS [Name of Surveyor / Wayleave Officer]
-,NULL AS [Northern Powergrid Ref]
+,txtJobNumber AS [Northern Powergrid Ref]
 ,clNo + '-'+ fileNo AS [Law Firm Ref]
-,txtJobNumber AS [Job Description/Location]
+,fileDesc AS [Job Description/Location]
 ,Insttype.cdDesc AS [Type of Job]
-,'New' AS [Rights]
+,'New/Existing' AS [Rights]
 ,WIP.name AS [Fee earner initials]
 ,WIP.hourly_charge_rate AS [Hourly Rate]
 ,WIP.MinutesRecorded AS [Time]
@@ -38,14 +39,15 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,Disbs.VatonDisbs AS [VAT on Vatable Disbursements(Billed)]
 ,ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Net of Vat Disbursements]
 ,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
-
+,ISNULL(ms_workstream.workstream,'Other') AS workstream
+,cboNPGFileType
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
 LEFT OUTER JOIN (
 SELECT dbfile.fileid
-,		SUM(TB.billamt) as [Legal Costs]
-,		SUM(cbt.chrgamt) as [VAT on Legal Costs]
+,		SUM(TB.billamt) AS [Legal Costs]
+,		SUM(cbt.chrgamt) AS [VAT on Legal Costs]
 FROM red_dw.dbo.ds_sh_3e_armaster ARD WITH(NOLOCK)
 INNER JOIN red_dw.dbo.ds_sh_3e_matter AS m WITH(NOLOCK)
  ON ARD.matter=m.mattindex
@@ -76,8 +78,8 @@ INNER JOIN red_dw.dbo.ds_sh_ms_dbfile AS dbfile WITH(NOLOCK)
  ON m.mattindex=dbfile.fileextlinkid
 INNER JOIN red_dw.dbo.ds_sh_ms_dbclient WITH(NOLOCK)
  ON ds_sh_ms_dbclient.clid = dbfile.clid
-INNER JOIN red_dw.dbo.ds_sh_3e_costbill CB on CB.armaster = ard.armindex
-	left join red_dw.dbo.ds_sh_3e_chrgbilltax CBT on cb.costbillindex = cbt.costbill
+INNER JOIN red_dw.dbo.ds_sh_3e_costbill CB ON CB.armaster = ard.armindex
+	LEFT JOIN red_dw.dbo.ds_sh_3e_chrgbilltax CBT ON cb.costbillindex = cbt.costbill
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND ARD.arlist  IN ('Bill','BillRev')
 AND ARD.isreversed=0
@@ -123,9 +125,27 @@ AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','W
 GROUP BY ms_fileid,name,hourly_charge_rate 
 ) AS WIP
  ON dbFile.fileID=WIP.ms_fileid
-
+LEFT OUTER JOIN 
+(
+SELECT 
+	dbFile.fileID
+	, dbCodeLookup.cdDesc	AS workstream	
+FROM MS_Prod.config.dbFile
+	INNER JOIN MS_Prod.config.dbClient
+		ON dbClient.clID = dbFile.clID
+	INNER JOIN MS_Prod.dbo.udMIClientNPG
+		ON udMIClientNPG.fileID = dbFile.fileID
+	INNER JOIN MS_Prod.dbo.dbCodeLookup
+		ON dbCodeLookup.cdCode = udMIClientNPG.cboWorkstream
+			AND dbCodeLookup.cdType = 'NPGWORK'
+WHERE 1 = 1
+	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+) AS ms_workstream
+	ON ms_workstream.fileID = dbFile.fileID
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND fileNo<>'0'
+AND fileClosed IS NULL
+
 
 END
 GO
