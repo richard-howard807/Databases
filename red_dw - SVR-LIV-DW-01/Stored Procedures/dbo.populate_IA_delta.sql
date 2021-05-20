@@ -399,6 +399,7 @@ FROM dbo.dim_client dw2
 INNER JOIN [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1 ia ON ia.MAP_UCI = dw2.dim_client_key
 where dw2.client_code NOT like 'EMP%'
 and (push_to_ia = 0 or push_to_ia is null)
+and dw2.email <> 'unknown@sbc.root'
 
 union 
 
@@ -407,6 +408,7 @@ from dbo.dim_client
 where dim_client.dss_update_time >= @dim_max_date
 and client_code NOT like 'EMP%'
 and (push_to_ia = 0 or push_to_ia is null)
+and email <> 'unknown@sbc.root'
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_EMAIL$1]
 (
