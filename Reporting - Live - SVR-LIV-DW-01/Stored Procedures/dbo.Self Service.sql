@@ -27,7 +27,8 @@ GO
 -- JB 20200825 Added date claim concluded date last changed #68418
 -- MT 20210127 Updated logic for Credit Hire Organisation
 -- OK 20210205 Added new costs estimates
--- MT 20210520 Corrected issue with 2022 in Pivots 
+-- MT 20210520 Corrected issue with 2022 in Pivots
+-- JL 20210520 Adding in FIC Score #99701
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -578,6 +579,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, dim_detail_core_details.is_this_part_of_a_campaign		AS [Is This Part of a Campaign?]
 
 	, dim_detail_claim.[tier_1_3_case] -- Added as per request via HF 20210203 - MT
+	, dim_detail_claim.fic_score 	--JL added as per #99701
 
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]

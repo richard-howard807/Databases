@@ -188,6 +188,7 @@ CREATE TABLE [dbo].[selfservice]
 [Revenue 2018/2019] [numeric] (38, 2) NULL,
 [Revenue 2019/2020] [numeric] (38, 2) NULL,
 [Revenue 2020/2021] [numeric] (38, 2) NULL,
+[Revenue 2021/2022] [numeric] (38, 2) NULL,
 [Hours Billed 2015/2016] [numeric] (38, 5) NULL,
 [Hours Billed 2016/2017] [numeric] (38, 5) NULL,
 [Hours Billed 2017/2018] [numeric] (38, 5) NULL,
@@ -241,6 +242,7 @@ CREATE TABLE [dbo].[selfservice]
 [date of trial not KD] [datetime] NULL,
 [Is This Part of a Campaign?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [tier_1_3_case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[fic_score] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [LL Damages £350k+] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL

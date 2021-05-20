@@ -10,6 +10,7 @@ GO
 CREATE PROCEDURE [dbo].[MMIMatterListingsNonM00001]
 AS
 BEGIN
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 SELECT DISTINCT 
 name AS [Fee Earner – Case Manager]
 ,matter_partner_full_name AS [Supervising Partner – Matter Partner]

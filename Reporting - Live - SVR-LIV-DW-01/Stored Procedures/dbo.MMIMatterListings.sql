@@ -10,6 +10,7 @@ GO
 CREATE PROCEDURE [dbo].[MMIMatterListings]
 AS
 BEGIN
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 SELECT 
 name AS [Fee Earner – Case Manager]
 ,matter_partner_full_name AS [Supervising Partner – Matter Partner]
@@ -105,6 +106,7 @@ END AS [Status (Internal Only)]
 ,fact_matter_summary_current.last_bill_date
 ,dim_detail_litigation.mmi_present_position_barriers_to_settlement 
 ,NULLIF(dim_detail_core_details.associated_matter_numbers,'N/A') AS [Zurich Ref]
+
 INTO #temptabl
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
