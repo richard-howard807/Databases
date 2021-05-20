@@ -5,11 +5,6 @@ GO
 
 
 
-
-
-
-
-
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -32,6 +27,7 @@ GO
 -- JB 20200825 Added date claim concluded date last changed #68418
 -- MT 20210127 Updated logic for Credit Hire Organisation
 -- OK 20210205 Added new costs estimates
+-- MT 20210520 Corrected issue with 2022 in Pivots 
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -58,7 +54,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
-
+DROP TABLE IF EXISTS #Revenue
 
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
@@ -75,7 +71,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
 			FROM red_dw.dbo.fact_bill_activity
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022)
 			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
 			) AS revenue
 		PIVOT	
@@ -85,7 +81,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			) AS PVIOT
 
 
-
+DROP TABLE IF EXISTS #Billed_hours
 	SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2022],
@@ -102,7 +98,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			FROM red_dw.dbo.fact_bill_billed_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021,2022)
 			GROUP BY client_code, matter_number, bill_fin_year
 			) AS billedhours
 		PIVOT	
@@ -112,9 +108,10 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			) AS PVIOT
 
 -- Added Chargeable hours #45295
-
+DROP TABLE IF EXISTS #Chargeable_hours
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -128,15 +125,17 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 			FROM red_dw.dbo.fact_billable_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021)
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021, 2022)
 			GROUP BY client_code, matter_number, bill_fin_year
 			) AS revenue
 		PIVOT	
 			(
 			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022])
 			) AS PVIOT
 
+
+DROP TABLE IF EXISTS #Disbursements
 --Added disbursements #61966
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
@@ -153,7 +152,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 						SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
 			FROM red_dw.dbo.fact_bill_detail
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021)
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022)
 			AND charge_type='disbursements'
 	GROUP BY client_code,
              matter_number,
@@ -244,7 +243,7 @@ SELECT DISTINCT
 	ia_sic_code,
 	dim_client.sub_sector AS [Client Sub-Sector],
 	dim_client.segment AS  [Client Segment ],
-    client_partner_name AS [Client Partner Name],
+    dim_client.client_partner_name AS [Client Partner Name],
 	dim_client.client_type AS [Client Type],
     dim_client_involvement.[insurerclient_reference] AS [Insurer Client Reference FED],
     dim_client_involvement.[insurerclient_name] AS [Insurer Name FED],
@@ -517,6 +516,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, Revenue.[2019] [Revenue 2018/2019]
 	, Revenue.[2020] [Revenue 2019/2020]
 	, Revenue.[2021] [Revenue 2020/2021]
+	, Revenue.[2022] [Revenue 2021/2022]
 
 	 , Billed_hours.[2016] [Hours Billed 2015/2016]
 	 , Billed_hours.[2017] [Hours Billed 2016/2017]
