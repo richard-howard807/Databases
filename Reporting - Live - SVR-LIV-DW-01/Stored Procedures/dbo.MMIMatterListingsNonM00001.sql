@@ -57,7 +57,7 @@ name AS [Fee Earner – Case Manager]
 ,NULL AS [MMI’s % - Defence costs - NMI997]
 ,RTRIM(WPS276)  AS [MMI Lead]
 ,dim_matter_header_current.date_opened_case_management AS [Open Date]
-,red_dw.dbo.dim_detail_core_details.referral_reason  AS [Referral reason (internal only)]
+,dim_detail_core_details.referral_reason  AS [Referral reason (internal only)]
 ,dim_detail_core_details.[date_letter_of_claim]  AS [Date of LoC]
 ,dim_detail_core_details.[has_the_claimant_got_a_cfa] AS [Has the Claimant got a CFA? (internal only)]
 ,dim_detail_core_details.[date_of_cfa] AS [Date of CFA/DBA]
@@ -105,6 +105,26 @@ name AS [Fee Earner – Case Manager]
 ,last_bill_date AS [Date Final Bill Issued]
 ,date_settlement_form_sent_to_zurich AS [Closed Date]
 ,dim_detail_client.[old_zurich_reporting_category]
+,red_dw.dbo.fact_finance_summary.total_amount_billed AS [TotalBilled (internal only)]
+,red_dw.dbo.fact_finance_summary.claimants_total_costs_paid_by_all_parties	AS [Damages Paid (all parties) (internal only)]
+,fact_detail_paid_detail.total_settlement_value_of_the_claim_paid_by_all_the_parties AS [Claimant’s Costs Paid (all parties) (internalonly)]
+,CASE 
+WHEN red_dw.dbo.dim_detail_outcome.outcome_of_case  = 'Exclude fromreports' THEN 'Cancelled'
+WHEN dim_matter_header_current.date_closed_case_management IS NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 THEN 'Closed - Paid Claim'
+WHEN dim_matter_header_current.date_closed_case_management IS NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Discontinued','Won at trial','Struck out') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties =0 THEN 'Closed – Repudiated'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Discontinued','Won at trial','Struck out') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties =0 THEN 'Open – Repudiated'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND date_costs_settled IS NOT NULL THEN 'Open – CostsSettled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND fact_finance_summary.[claimants_costs_paid] >0THEN 'Open – CostsSettled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_outcome.outcome_of_case  IN( 'Settled','Lost at trial') OR fact_finance_summary.claimants_total_costs_paid_by_all_parties >0 AND date_costs_settled IS NULL AND fact_finance_summary.[claimants_costs_paid] = NULL OR fact_finance_summary.[claimants_costs_paid] =0 THEN 'Open – DamagesSettled'  
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND date_costs_settled IS NOT NULL THEN 'Open – Costs Settled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND date_claim_concluded IS NOT NULL THEN 'Open – Damages Settled'
+WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL AND red_dw.dbo.dim_detail_claim.referral_reason = 'Advice only'THEN 'Closed – Advice only'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND red_dw.dbo.dim_detail_claim.referral_reason = 'Advice only'THEN 'Open – Advice only'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND dim_detail_core_details.present_position IN   ('To be closed/minor balances to be clear', 'Final bill sent– unpaid','Final bill due – claim and costs concluded', 'Claim and costsconcluded but recovery outstanding') THEN 'Open - Costs Settled'
+WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL AND dim_detail_core_details.present_position IN ('Claim concluded but costs outstanding') THEN 'Open -Damages Settled'
+ELSE 'Live'
+END AS [Status (Internal Only)]
+,fact_matter_summary_current.last_bill_date
 
 FROM red_dw.dbo.fact_dimension_main
     INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -144,7 +164,9 @@ FROM red_dw.dbo.fact_dimension_main
     LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area
         ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
-    LEFT OUTER JOIN
+   LEFT OUTER JOIN  red_dw.dbo.fact_detail_paid_detail 
+		 ON fact_detail_paid_detail.client_code = dim_matter_header_current.client_code
+   LEFT OUTER JOIN
     (
         SELECT client_code,
                matter_number,
