@@ -648,7 +648,7 @@ FROM (
 	INNER JOIN dim_date ON fact_agg_kpi_monthly_rollup.dim_gl_date_key = dim_date.dim_date_key
 	INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_agg_kpi_monthly_rollup.dim_fed_hierarchy_history_key
 	INNER JOIN dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key 
-	WHERE  dim_date.fin_year = 2021 
+	WHERE  dim_date.fin_year = @fin_year 
 	AND leaver = 0
 	AND (dim_employee.leftdate IS NULL OR dim_employee.leftdate >= GETDATE())
 	--AND fed_code = '6059'
