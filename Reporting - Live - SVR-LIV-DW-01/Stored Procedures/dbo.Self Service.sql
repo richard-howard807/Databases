@@ -29,6 +29,7 @@ GO
 -- OK 20210205 Added new costs estimates
 -- MT 20210520 Corrected issue with 2022 in Pivots
 -- JL 20210520 Adding in FIC Score #99701
+-- JB 20210524 Updated Fraud Type logic #100041
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -269,6 +270,9 @@ SELECT DISTINCT
     dim_detail_core_details.track AS [Track],
     dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
     COALESCE(
+				dim_detail_fraud.fraud_type_motor,
+				dim_detail_fraud.fraud_type_casualty,
+				dim_detail_fraud.fraud_type_disease,
                 dim_detail_fraud.[fraud_initial_fraud_type],
                 dim_detail_fraud.[fraud_current_fraud_type],
                 dim_detail_fraud.[fraud_type_ageas],
@@ -276,7 +280,9 @@ SELECT DISTINCT
                 dim_detail_client.[coop_fraud_current_fraud_type],
                 dim_detail_fraud.[fraud_type],
                 dim_detail_fraud.[fraud_type_disease_pre_lit]
-            ) AS [Fraud Type],
+            ) AS [Fraud Type],	-- JB updated fraud type #100041
+	dim_detail_claim.fic_score, 	--JL added as per #99701
+	dim_detail_fraud.total_points_calc AS [Total FIC Point Calc],
     dim_detail_core_details.credit_hire AS [Credit Hire],
 
     COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho]), dim_detail_hire_details.[other]
@@ -579,7 +585,7 @@ WHEN (other IS NULL AND credit_hire_organisation_cho IS NULL ) THEN
 	, dim_detail_core_details.is_this_part_of_a_campaign		AS [Is This Part of a Campaign?]
 
 	, dim_detail_claim.[tier_1_3_case] -- Added as per request via HF 20210203 - MT
-	, dim_detail_claim.fic_score 	--JL added as per #99701
+	
 
 ---------------------------------------------------
 ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
@@ -1133,6 +1139,7 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
 
 
 END;
+
 
 
 GO

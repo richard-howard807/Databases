@@ -58,6 +58,8 @@ CREATE TABLE [dbo].[selfservice]
 [Track] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Suspicion of Fraud?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Fraud Type] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[fic_score] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Total FIC Point Calc] [float] NULL,
 [Credit Hire] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Organisation] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Org HF] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
@@ -242,7 +244,6 @@ CREATE TABLE [dbo].[selfservice]
 [date of trial not KD] [datetime] NULL,
 [Is This Part of a Campaign?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [tier_1_3_case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
-[fic_score] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [LL Damages £350k+] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL
