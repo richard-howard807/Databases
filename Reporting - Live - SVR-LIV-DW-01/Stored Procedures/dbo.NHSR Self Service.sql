@@ -457,7 +457,7 @@ dim_detail_health.nhs_scheme IN
           -- dim_agents_involvement.cho_name AS [Credit Hire Organisation],
            --dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
-		   ClaimantsAddress.litigant_in_person AS [Is the claimant a litigant in person (LIP)?],
+		   CASE WHEN ClaimantsAddress.litigant_in_person=1 THEN 'Yes' else NULL end AS [Is the claimant a litigant in person (LIP)?],
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
            fact_detail_client.number_of_defendants AS [Number of Defendants ],
            dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Does the Claimant have a PI Claim? ],

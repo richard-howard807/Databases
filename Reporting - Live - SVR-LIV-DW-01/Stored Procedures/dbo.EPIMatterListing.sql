@@ -20,6 +20,9 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
 ,client_group_name AS [Client Group]
 ,client_name AS [Client Name]
+,fact_finance_summary.[fixed_fee_amount] [Fixed Fee Amount]
+,dim_detail_finance.[output_wip_fee_arrangement] [Fee Arrangement]
+,fact_finance_summary.[revenue_estimate_net_of_vat] [Revenue Estimate]
 ,dim_detail_practice_area.[primary_case_classification] AS [Primary Case Classification]
 ,dim_detail_practice_area.[secondary_case_classification] AS [Secondary Case Classification]
 ,dim_detail_client.[emp_case_classification] AS [EMP Case Classification]
@@ -117,6 +120,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+ LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_matter_header_curr_key = dim_detail_advice.dim_matter_header_curr_key
 WHERE dim_matter_header_current.department_code='0012'
 AND (dim_matter_header_current.date_closed_practice_management IS NULL 
 OR dim_matter_header_current.date_closed_practice_management>='2016-01-01')

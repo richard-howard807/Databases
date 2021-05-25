@@ -72,7 +72,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Track] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Suspicion of Fraud?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Claimant Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
-[Is the claimant a litigant in person (LIP)?] [bit] NULL,
+[Is the claimant a litigant in person (LIP)?] [varchar] (3) COLLATE Latin1_General_CI_AS NULL,
 [Number of Claimants] [numeric] (13, 2) NULL,
 [Number of Defendants ] [numeric] (13, 2) NULL,
 [Does the Claimant have a PI Claim? ] [varchar] (255) COLLATE Latin1_General_BIN NULL,

@@ -23,6 +23,7 @@ BEGIN
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
 	 
 	 IF OBJECT_ID('tempdb..#ClientReportDates') IS NOT NULL DROP TABLE #ClientReportDates
+	 IF OBJECT_ID('tempdb..#MainData') IS NOT NULL DROP TABLE #MainData
 
 SELECT 
   dim_matter_header_current.master_client_code
@@ -34,10 +35,10 @@ SELECT
 	WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL 
 	THEN [dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
 	WHEN date_initial_report_due IS NULL 
-	THEN [dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
+	THEN [dbo].[AddWorkDaysToDate](CAST(dim_matter_header_current.date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
 	ELSE date_initial_report_due 
 	END	AS [initial_report_due]
-  	, [dbo].[ReturnElapsedDaysExcludingBankHolidays] (COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
+  	, [dbo].[ReturnElapsedDaysExcludingBankHolidays] (COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,dim_matter_header_current.date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
 --Logic for Subsequent Report Due (Date)
 , CASE 
 	WHEN do_clients_require_an_initial_report = 'No' 
@@ -104,7 +105,7 @@ SELECT
 	dim_client.client_name AS [Client Name]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 	, name AS [Matter Owner]
-	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(#ClientReportDates.grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
+	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(#ClientReportDates.grpageas_motor_date_of_receipt_of_clients_file_of_papers,date_instructions_received,dim_matter_header_current.date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
 	, dim_detail_core_details.date_initial_report_sent
 	, date_instructions_received AS [Date Instructions Received]
 , CASE
@@ -138,40 +139,67 @@ SELECT
 	  , red_dw.dbo.dim_detail_core_details.referral_reason AS [Referral Reason]
 	  , red_dw.dbo.dim_date.calendar_date
 	  ,red_dw.dbo.dim_date.current_fin_year
-,dim_detail_outcome.date_claim_concluded
-,CASE WHEN CAST(date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
-AND CAST(date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
-WHEN CAST(date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
-CAST(date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilter] 
-,date_opened_case_management
+	,dim_detail_outcome.date_claim_concluded
+ ,CASE WHEN CAST(dim_matter_header_current.date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
+	AND CAST(dim_matter_header_current.date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+	WHEN CAST(dim_matter_header_current.date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+	CAST(dim_matter_header_current.date_opened_case_management AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilter] 
+	,dim_matter_header_current.date_opened_case_management
 ,CASE WHEN CAST(date_claim_concluded AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
-AND CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
-WHEN CAST(date_claim_concluded AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
-CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterConcluded] 
-,  CASE WHEN dim_matter_header_current.reporting_exclusions=0
+	AND CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+	WHEN CAST(date_claim_concluded AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+	CAST(date_claim_concluded AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterConcluded] 
+,CASE WHEN CAST(date_costs_settled AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
+	AND CAST(date_costs_settled AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+	WHEN CAST(date_costs_settled AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+	CAST(date_costs_settled AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterCostSettled] 
+
+	,CASE WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
+	AND CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
+	WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
+	CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterDateofLastBill] 
+
+ ,CASE WHEN dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
 		AND dim_matter_header_current.date_opened_case_management >= '2019-01-01'
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
 		--AND work_type_group IN ('EL','PL All','Motor','Disease') 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
+		AND (DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management, GETDATE())>=14 OR totalpointscalc IS NOT null)
 		THEN 1 ELSE 0 END AS [Number of Matters]
 		, CASE WHEN totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
+	,red_dw.dbo.fact_finance_summary.damages_paid
+	,red_dw.dbo.fact_finance_summary.total_damages_and_tp_costs_reserve
+	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid
+	,red_dw.dbo.fact_finance_summary.defence_costs_billed
+	,CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
+	,red_dw.dbo.dim_matter_header_current.final_bill_flag
+	,fact_finance_summary.total_reserve
+	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
+	,red_dw.dbo.fact_finance_summary.total_recovery
+	,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
+	,dim_matter_worktype.work_type_group AS [Matter Type Group]
+	,dim_detail_client.zurich_date_introductory_call
+	,dim_detail_core_details.zurich_introductory_call
+	,dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers
+	,( SELECT MAX(v)FROM(VALUES(dim_matter_header_current.date_opened_case_management), (dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers)) AS value(v)) AS MaxValue
+	,CASE WHEN dim_detail_client.zurich_date_introductory_call IS NULL THEN 1 ELSE 0 END AS CountPhoneCallNotComplete
+	,fact_finance_summary.claimants_costs_paid
+	,total_amount_billed
+	,CAST(dim_matter_header_current.date_closed_case_management AS DATE) AS [Date Closed]
+	, CASE 
+	WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL  
+	THEN 1
+	WHEN RTRIM(dim_detail_core_details.present_position) 
+	IN ('Final bill due - claim and costs concluded',
+		'Final bill sent - unpaid',
+		'To be closed/minor balances to be clear') 
+	THEN 1
+	ELSE 0
+	END AS FILTER 
+	
 
-,red_dw.dbo.fact_finance_summary.damages_paid
-,red_dw.dbo.fact_finance_summary.total_damages_and_tp_costs_reserve
-,red_dw.dbo.fact_finance_summary.total_tp_costs_paid
-
-,red_dw.dbo.fact_finance_summary.defence_costs_billed
-
-
-, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
-,red_dw.dbo.dim_matter_header_current.final_bill_flag
-,fact_finance_summary.total_reserve
-,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
-,red_dw.dbo.fact_finance_summary.total_recovery
-,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
-
+INTO #MainData
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -188,6 +216,11 @@ LEFT OUTER JOIN red_dw.dbo.dim_date	ON 	dim_open_case_management_date_key	 = dim
 LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficmotor ON ds_sh_ms_udficmotor.fileid = dim_matter_header_current.ms_fileid
 LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficcommon ON 	 ds_sh_ms_udficmotor.fileid = ds_sh_ms_udficcommon.fileid
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+
+
+
 
 WHERE 
 	reporting_exclusions=0
@@ -202,7 +235,57 @@ WHERE
 	AND	  fact_finance_summary.damages_reserve >=150000 
 	--AND dim_matter_header_current.master_client_code = 'Z1001' AND dim_matter_header_current.master_matter_number = '15025'
 
+SELECT 
+[Client Name]
+, [Mattersphere Weightmans Reference]
+, [Matter Owner]
+, [Days to send initial report (working days)]
+, date_initial_report_sent
+, [Date Instructions Received]
+, [Initial Report SLA Status]
+, [Present Position]
+, [Do Clients Require an Initial Report?]
+, [Date Receipt of File Papers]
+, [Have we had an Extension?]
+, [Date Subsequent SLA Report Sent]
+, [date_subsequent_report_due]
+, [Subsequent Report is Overdue]
+, [Days to send Subsequent report (working days)]
+, [Lifecycle (date opened to date concluded)]
+, [Referral Reason]
+, calendar_date
+, current_fin_year
+, date_claim_concluded
+, [YearFilter] 
+, [YearFilterConcluded] 
+, [YearFilterCostSettled]
+, [YearFilterDateofLastBill] 
+, [Number of Matters]
+, [countscore]
+, damages_paid
+, total_damages_and_tp_costs_reserve
+, total_tp_costs_paid
+, defence_costs_billed
+, [Damages - Costs Paid]
+, final_bill_flag
+, (total_reserve	-Savings)/total_reserve	AS [Total Reserve %]
+, [Total Paid] 
+, total_recovery
+, Savings
+, total_reserve
+, [Matter Type Group]
+, DATEDIFF(DAY,  MaxValue ,zurich_date_introductory_call ) AS [Days between Date Opened and phone call date or receipt of client file of papers (whichever is later) ] 
+, zurich_date_introductory_call
+--, zurich_introductory_call
+, grpageas_motor_date_of_receipt_of_clients_file_of_papers
+, #MainData.date_opened_case_management
+, CountPhoneCallNotComplete
+, claimants_costs_paid
+, total_amount_billed
+, [Date Closed]
+, FILTER AS [Filter Date of Last Bill]
 
+FROM #MainData
 
    END
 

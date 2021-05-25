@@ -8,11 +8,50 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[TechnicalChecklistMotor]
 
 AS 
 
 BEGIN
+SELECT AllData.client_code,
+       AllData.matter_number,
+       AllData.matter_description,
+       AllData.Department,
+       AllData.Team,
+       AllData.matter_owner_full_name,
+       AllData.fed_code,
+       AllData.tskDue,
+       AllData.tskCompleted,
+       AllData.tskActive,
+       AllData.tskDesc,
+       AllData.ProcessDue,
+       AllData.ProcessCompleted,
+       AllData.Number,
+       AllData.[Has the insurer client told us they are not providing an indemnity e.g. said they are RTA or Article 75 insurer?],
+       AllData.[Is there and issue over the driver being covered by the client’s policy e.g. driver is not a named driver on the policy?],
+       AllData.[Is there an issue over the vehicle being covered by the client’s policy],
+       AllData.[Is there an issue over the use of the insured vehicle being covered by the terms of the policy],
+       AllData.[Is there a suggested breach of policy terms and conditions e.g. late reporting of accident?],
+       AllData.[Was the accident arguably on private land e.g. in a private car park, or on business premises?],
+       AllData.[Is there another insurer (in addition to the client) for the at-fault vehicle],
+       AllData.[Is there another insured party who might be partially or wholly to blame?],
+       AllData.[Is there an element of subrogated losses or losses that could have been claimed from the claimant’s own insurer],
+       AllData.[Have we been instructed specifically to advise in relation to a dispute or potential dispute between the client and MIB?],
+       AllData.[Have we been instructed specifically to advise on the insurer status and the implications?],
+       AllData.[Have we been instructed in relation to a Technical Committee / arbitration dispute?],
+       AllData.[Has the policy been cancelled or avoided, or has the vehicle been sold prior to the accident?],
+       AllData.[Total Score],
+       AllData.work_type_group,
+       AllData.ScoreISBlank,
+       CASE WHEN AllData.ScoreISBlank=1 THEN 0 ELSE AllData.Indemnity END AS Indemnity,
+       CASE WHEN AllData.ScoreISBlank=1 THEN 0 ELSE AllData.Nonindemnity END AS Nonindemnity,
+       AllData.Section1,
+       AllData.Section2,
+       AllData.referral_reason,
+       AllData.DateOpenedRange
+FROM 
+(
 SELECT dim_matter_header_current.client_code
 ,dim_matter_header_current.matter_number
 ,matter_description 
@@ -114,7 +153,7 @@ AND date_opened_case_management>='2021-03-01'
 AND reporting_exclusions=0
 AND referral_reason LIKE 'Dispute%'
 AND DATEDIFF(DAY,date_opened_case_management,GETDATE())>14
-
+) AS AllData
 
 END
 GO

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [audit].[OFACSanctionsListings]
 AS
 BEGIN
@@ -178,7 +179,15 @@ INNER JOIN MS_Prod.dbo.udAMLProcess
  ON dbFile.fileID=udAMLProcess.fileID
 ) AS SanctionReviewed
  ON MSRef2.ms_fileid=SanctionReviewed.fileID
- 
+WHERE AllData.[Weightmans Ref] + AllData.[Systems] NOT IN 
+(
+'Z1001.00078213FED' 
+,'00046018.00002739FED'
+,'Z00011.00000803FED'
+,'00093688.00000056FED'
+,'A00002.00006729FED'
+,'W15624.00000251FED'
+)-- Asked remove as it is included in the MS record - requested by Angela Shepard 24.05.21
 
 END
 GO
