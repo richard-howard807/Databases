@@ -70,13 +70,16 @@ SELECT client_name AS [Client Name]
 ,work_type_name
 ,[Exchange Date] = dim_detail_plot_details.exchange_date
 ,[Completion Date] = dim_detail_plot_details.pscompletion_date
+,[Completion Flag] = CASE WHEN dim_detail_plot_details.pscompletion_date IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END 
 
 
 ,[Fixed Fee] = fact_finance_summary.[fixed_fee_amount]
 ,[Hours Recorded] = TimeRecorded.HoursRecorded
 ,[Value of Hours Recorded] = TimeRecorded.RecordedValue
 ,[Revenue] = fact_finance_summary.defence_costs_billed
-,[Profit/ Loss] = (ISNULL(TimeRecorded.RecordedValue, 0) - ISNULL(COALESCE(fact_finance_summary.defence_costs_billed,fact_finance_summary.[fixed_fee_amount] ), 0))
+,[Revnue - fact_bill_activity_bill_amount] = revenue.Revenue
+,[Profit/ Loss] =  CASE WHEN fact_finance_summary.defence_costs_billed IS NULL THEN fact_finance_summary.[fixed_fee_amount] - ISNULL(TimeRecorded.RecordedValue, 0)
+ ELSE ISNULL(fact_finance_summary.defence_costs_billed, 0) - ISNULL(TimeRecorded.RecordedValue, 0) END
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main 
@@ -128,12 +131,19 @@ ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
         ) AS TimeRecorded
             ON TimeRecorded.master_fact_key = red_dw.dbo.fact_dimension_main.master_fact_key
 
+
+LEFT JOIN (SELECT master_fact_key,   SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity
+			
+			GROUP BY master_fact_key
+			) AS revenue ON revenue.master_fact_key = fact_dimension_main.master_fact_key
   
 WHERE dim_matter_header_current.master_client_code IN ('190593P', '153838M','848629','W15353')
 --AND (completion_date>='2021-01-01' OR completion_date IS NULL)
 --AND (date_closed_case_management>='2021-01-01' OR date_closed_case_management IS NULL)
 AND work_type_name='Plot Sales'
 --AND date_opened_case_management >= '2021-05-01'
+AND reporting_exclusions = 0
 
 
 END 

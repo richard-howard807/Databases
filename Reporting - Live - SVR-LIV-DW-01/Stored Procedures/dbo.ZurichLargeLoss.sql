@@ -196,7 +196,8 @@ SELECT
 		'To be closed/minor balances to be clear') 
 	THEN 1
 	ELSE 0
-	END AS FILTER 
+	END AS FILTER
+	,dim_detail_outcome.repudiation_outcome
 	
 
 INTO #MainData
@@ -284,6 +285,7 @@ SELECT
 , total_amount_billed
 , [Date Closed]
 , FILTER AS [Filter Date of Last Bill]
+, repudiation_outcome
 
 FROM #MainData
 

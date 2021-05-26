@@ -30,6 +30,7 @@ GO
 -- MT 20210520 Corrected issue with 2022 in Pivots
 -- JL 20210520 Adding in FIC Score #99701
 -- JB 20210524 Updated Fraud Type logic #100041
+--OK 20210526 removed matter zero BH
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -1132,9 +1133,11 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
               dim_matter_header_current.date_closed_case_management >= @nDate
               OR dim_matter_header_current.date_closed_case_management IS NULL
           )
-		  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA', 'Business Services','Client Relationships') -- Added Business Services as requested by A-M 20190920
+		  AND hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA', 'Business Services','Client Relationships')
+		  -- Added Business Services as requested by A-M 20190920
 --AND dim_matter_header_current.date_opened_case_management >= '2015-01-01'
 --AND( dim_matter_worktype.work_type_name LIKE 'El%' OR dim_matter_worktype.work_type_name LIKE 'NHSLA%' OR dim_matter_worktype.work_type_name LIKE 'PL%')
+AND dim_matter_header_current.matter_description <> 'New Client – Matter Zero' --BH
 
 
 
