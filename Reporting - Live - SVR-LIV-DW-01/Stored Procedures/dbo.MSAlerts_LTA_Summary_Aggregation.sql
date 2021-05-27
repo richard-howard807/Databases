@@ -109,6 +109,7 @@ SELECT
 	, dim_matter_header_current.dim_matter_header_curr_key													AS [Matter Header Current Key]
 	, dim_matter_header_current.matter_description															AS [Matter Description]
 	, dim_matter_header_current.matter_owner_full_name														AS [Matter Owner]
+	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 		, CASE WHEN dim_matter_header_current.client_group_name IS NULL THEN dim_matter_header_current.client_name ELSE dim_matter_header_current.client_group_name END AS client
 	, dim_fed_hierarchy_history.hierarchylevel4														AS [Team]
 	, dim_fed_hierarchy_history.hierarchylevel3														AS [Department]
@@ -165,7 +166,8 @@ SELECT
 			'Transparent'
 	  END																					AS [Fixed Fee RAG Status]
 	, CASE
-		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' 
+		AND dim_matter_header_current.date_opened_practice_management < DATEADD(DAY, -14, CAST(GETDATE() AS DATE)) THEN
 			CASE 
 				WHEN fact_finance_summary.revenue_estimate_net_of_vat = 0 OR fact_finance_summary.revenue_estimate_net_of_vat IS NULL THEN
 					'Red'
@@ -180,7 +182,9 @@ SELECT
 			'Transparent'
 	  END																					AS [Revenue Estimate RAG Status]
 	, CASE
-		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate'
+		AND	dim_matter_header_current.date_opened_practice_management > '2021-01-28'
+		AND dim_matter_header_current.date_opened_practice_management < DATEADD(DAY, -14, CAST(GETDATE() AS DATE)) THEN
 			CASE 
 				WHEN fact_finance_summary.disbursements_estimate_net_of_vat = 0 OR fact_finance_summary.disbursements_estimate_net_of_vat IS NULL THEN
 					'Red'
@@ -194,7 +198,7 @@ SELECT
 		ELSE
 			'Transparent'
 	  END																					AS [Disbursement RAG Status]
-	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0)											AS [Current Costs Estimate]
+	, ISNULL(ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate), 0)							AS [Current Costs Estimate]
 	, ISNULL(#finacial_calcs.total_billed_unbilled, 0)											AS [Total of Total Billed + WIP + Unbilled Disbursements]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)												AS [Revenue Billed (net of VAT)]
 	, ISNULL(fact_bill_detail_summary.disbursements_billed_exc_vat, 0)						AS [Disbursements Billed (excl VAT)]
@@ -203,31 +207,28 @@ SELECT
 	, ISNULL(fact_finance_summary.wip, 0)																AS [WIP]
 	, ISNULL(fact_finance_summary.disbursement_balance, 0)												AS [Unbilled Disbursements]
 	, CASE
-		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN
-			CASE 
-				WHEN (fact_finance_summary.fixed_fee_amount IS NULL OR fact_finance_summary.fixed_fee_amount = 0) THEN 
-					1
-				ELSE 
-					0
-			END 
-	   END																								AS [Missing FF Amount Reserve]
+		WHEN RTRIM(dim_matter_header_current.fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee'
+		AND ISNULL(fact_finance_summary.fixed_fee_amount, 0) = 0 THEN 
+			1
+		ELSE 
+			0
+	   END																							AS [Missing FF Amount Reserve]
 	, CASE
-		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
-			CASE 
-				WHEN (fact_finance_summary.revenue_estimate_net_of_vat IS NULL OR fact_finance_summary.revenue_estimate_net_of_vat = 0) THEN 
-					1
-				ELSE 
-					0
-			END 
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' 
+		AND dim_matter_header_current.date_opened_practice_management < DATEADD(DAY, -14, CAST(GETDATE() AS DATE))
+		AND (fact_finance_summary.revenue_estimate_net_of_vat IS NULL OR fact_finance_summary.revenue_estimate_net_of_vat = 0) THEN 
+			1
+		ELSE 
+			0
 	   END																								AS [Missing Revenue Estimate]
 	, CASE
-		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN
-			CASE 
-				WHEN (fact_finance_summary.disbursements_estimate_net_of_vat IS NULL OR fact_finance_summary.disbursements_estimate_net_of_vat = 0) THEN 
-					1
-				ELSE 
-					0
-			END 
+		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' 
+		AND (ISNULL(fact_finance_summary.disbursements_estimate_net_of_vat, 0) = 0) 
+		AND	dim_matter_header_current.date_opened_practice_management > '2021-01-28'
+		AND dim_matter_header_current.date_opened_practice_management < DATEADD(DAY, -14, CAST(GETDATE() AS DATE)) THEN
+			1
+		ELSE 
+			0
 	   END																								AS [Missing Disbursement Estimate]
 	, CASE
 		WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' THEN 
@@ -288,6 +289,7 @@ WHERE
 												  )
 	--OR (RTRIM(dim_matter_worktype.work_type_name) = 'Plot Sales' AND RTRIM(dim_detail_property.commercial_bl_status) <> 'Pending')		--removed until Mandy's team can set up on MS
 		)
+	--AND dim_fed_hierarchy_history.name = 'Edwina Farrell'
 	AND red_dw.dbo.dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
               (
                   SELECT (CASE
@@ -331,7 +333,13 @@ SELECT
 	, SUM(#lta_report.ff_case_count)													AS [Number of FF Cases]
 	, SUM(#lta_report.hr_case_count)													AS [Number of HR Cases]
 	, SUM(#lta_report.[Missing FF Amount Reserve])							AS [Missing FF Amount Reserve]
-	, SUM(ISNULL(#lta_report.[Missing Revenue Estimate], 0)) + SUM(ISNULL(#lta_report.[Missing Disbursement Estimate], 0))		AS [Number of Missing Revenue and Disb Estimate]
+	, SUM(CASE 
+		WHEN ISNULL(#lta_report.[Missing Revenue Estimate], 0) = 1 OR ISNULL(#lta_report.[Missing Disbursement Estimate], 0) = 1 THEN
+			1 
+		ELSE
+			0
+		END	
+		)												AS [Number of Missing Revenue and Disb Estimate]	
 	, SUM(CASE
 			WHEN #lta_report.[Fixed Fee RAG Status] = 'Orange' THEN 
 				1
@@ -414,4 +422,8 @@ ORDER BY
 
 END
 		
+
+
+
+
 GO
