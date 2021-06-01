@@ -134,7 +134,7 @@ FROM (
 		AND armaster.invdate >= @processdate
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
-		OR c.number IN ('123447R','W21348','W21295')) -- Request to exclude two clients from hard date cut off by Laura Harrison 'W21295' from Greg 
+		OR c.number IN ('123447R','W21348','W21295','89377S')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S' from Anna
 
 	   --  AND timecard.timekeeper NOT IN (SELECT timekeeper FROM @timekeepers  ) -- Exclues any timecard transactions by client introducer
 	 --  AND timecard.timekeeper <> co.timekeeper
@@ -177,7 +177,7 @@ FROM (
 		-- AND matter.mattindex = 2999097
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
-		OR c.number IN ('123447R','W21348','W21295')) -- Request to exclude two clients from hard date cut off by Laura Harrison
+		OR c.number IN ('123447R','W21348','W21295','89377S')) -- Request to exclude two clients from hard date cut off by Laura Harrison
 
 		AND armaster.invdate >= @processdate
 
