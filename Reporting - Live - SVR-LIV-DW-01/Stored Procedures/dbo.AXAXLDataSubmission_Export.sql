@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 --EXEC [dbo].[AXAXLDataSubmission]
-CREATE PROCEDURE [dbo].[AXAXLDataSubmission]
+CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export]
 
 AS 
 
@@ -12,9 +12,12 @@ BEGIN
 
 DROP TABLE IF EXISTS #AXAXLDataSubmission
 
-SELECT  DISTINCT
 
-ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
+--2298
+--2162
+SELECT  DISTINCT
+[Status] = CAST('' AS NVARCHAR(20))
+,ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
 ,dim_matter_header_current.ms_fileid
 ,COALESCE(client_reference, insurerclient_reference) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
@@ -56,7 +59,7 @@ ii)                   Else “Other”
 , dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
-, convert(datetime,  API.[FirstAcknowledgementDate], 103)  AS [First acknowledgement Date]
+, API.[FirstAcknowledgementDate] AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
 , COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
 , COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
@@ -66,7 +69,7 @@ ii)                   Else “Other”
 , fact_finance_summary.damages_reserve AS [Damages Reserve]
 , COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
 , defence_costs_reserve AS [Panel budget/reserve]
-,  COALESCE(cboReaForPanel.cdDesc, 'No change') AS  [Reason for panel budget change if occurred] -- udMICoreAXA
+, COALESCE(cboReaForPanel.cdDesc, 'No change') AS  [Reason for panel budget change if occurred] -- udMICoreAXA
 , defence_costs_billed AS [Panel Fees Paid]
 , Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
 , ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
@@ -81,7 +84,7 @@ ii)                   Else “Other”
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, CASE WHEN final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
+, CASE WHEN dim_matter_header_current.final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
 , final_bill_date [Date of Final Panel Invoice]
 , date_claim_concluded [Date Damages settled]
 ,  fact_detail_paid_detail.[total_damages_paid] AS [Final Damages Amount]
@@ -131,7 +134,10 @@ ISNULL(defence_costs_billed, 0) +
 COALESCE(ISNULL(fact_finance_summary.damages_paid, 0), ISNULL(fact_finance_summary.damages_interims, 0)) +
 COALESCE(ISNULL(fact_finance_summary.claimants_costs_paid, 0), ISNULL(fact_detail_paid_detail.interim_costs_payments, 0)) +
 ISNULL(PanelFees.[Total VAT Billed to AXA In Period], 0)
+
+
 INTO #AXAXLDataSubmission
+
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main
 ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -172,7 +178,6 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 INNER JOIN MS_Prod.dbo.dbTasks WITH(NOLOCK)
  ON ms_fileid=fileID
 WHERE client_group_name='AXA XL'
---AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty'
 AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
 AND tskActive=1
 AND tskDesc LIKE '%Trial date - today%'
@@ -204,7 +209,6 @@ INNER JOIN red_dw.dbo.dim_employee WITH(NOLOCK)
  ON dim_employee.dim_employee_key = TimeRecordedBy.dim_employee_key
 
 WHERE client_group_name='AXA XL'
---AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty'
 AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname +', ' + dim_employee.forename 
@@ -353,8 +357,17 @@ SELECT ClNo
   ) API
   ON API.ClNo  = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT + '-' + master_matter_number COLLATE DATABASE_DEFAULT
 
- 
 
+--/* Staging table for status collumn*/
+
+
+
+--AND AXAXLDataSubmissionAPIStage.dss_current_flag = 'Y'
+--AND AXAXLDataSubmissionAPIStage.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT = BilledTime.[Unique timekeeper ID per timekeeper] 
+--AND ISNULL(CAST(AXAXLDataSubmissionAPIStage.PQE AS NVARCHAR(20)), '99') COLLATE DATABASE_DEFAULT = ISNULL(CAST(BilledTime.PQE AS NVARCHAR(20)), '99')
+--AND ISNULL(CAST(AXAXLDataSubmissionAPIStage.[Hours spent on case] AS NVARCHAR(20)), '1000')  COLLATE DATABASE_DEFAULT  = ISNULL(CAST(CAST(BilledTime.[Hours spent on case] AS DECIMAL(18,2)) AS NVARCHAR(20)), '99')
+
+ 
 WHERE 1 =1 
 
 AND client_group_name='AXA XL'
@@ -368,7 +381,6 @@ AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
 ( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272'
 )
-
 
 
 /* Main Lookup */
@@ -425,6 +437,140 @@ SELECT DISTINCT
 	  WHERE dss_current_flag = 'Y'
 	  AND RowOrder = 1 
 
+	
+
+	  /*TimeKeeperLookup */
+
+	  DROP TABLE IF EXISTS #TimeKeepersAPI
+	  SELECT DISTINCT
+	  [Law Firm Matter Number],
+	  First_name,
+      Last_name,
+      [Unique timekeeper ID per timekeeper],
+      [Level solicitor partner ],
+      PQE,
+      [Hours spent on case]
+     
+      INTO #TimeKeepersAPI
+	  FROM  Reporting.dbo.AXAXLDataSubmissionAPIStage
+	  WHERE dss_current_flag = 'Y'
+	  AND [Unique timekeeper ID per timekeeper] IS NOT NULL
+	  
+	
+
+/* Check for Existing */
+UPDATE #AXAXLDataSubmission  
+
+SET #AXAXLDataSubmission.Status = 'Exisitng'
+FROM #AXAXLDataSubmission 
+
+JOIN #MainAPI
+
+ON #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT= #AXAXLDataSubmission.[Law Firm Matter Number]
+
+/* Create case - If new case update status to Create Case*/
+
+UPDATE #AXAXLDataSubmission  
+
+SET #AXAXLDataSubmission.Status = 'Create Case'
+
+FROM #AXAXLDataSubmission 
+LEFT JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
+AND #AXAXLDataSubmission.[Date Instructed] > #MainAPI.dss_load_date
+
+/*Edit Case - If change in certain fields will result in change of status to Edit Case
+AXA XL Claim Number	
+Line of Business	Product Type	Insured Name	AXA XL Percentage line share of loss expenses recovery	AXA XL Claims Handler	Third Party Administrator	Coverage defence 	Law firm handling office city 	Date Instructed	Opposing Side's Solicitor Firm Name	Reason For instruction	Damages Claimed	Fee Scale 
+*/
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Edit Case'
+
+FROM #AXAXLDataSubmission 
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE 
+      #MainAPI.[AXA XL Claim Number] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[AXA XL Claim Number] 
+OR    #MainAPI.[Line of Business] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[New Line of Business]
+OR    #MainAPI.[Product Type]  COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Product Type New] 
+OR    #MainAPI.[Insured Name] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Insured Name]
+OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> #AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]
+OR    #MainAPI.[AXA XL Claims Handler] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[AXA XL Claims Handler]
+OR    #MainAPI.[Third Party Administrator] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Third Party Administrator]
+OR    #MainAPI.[Coverage defence ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Coverage / defence?]
+OR    #MainAPI.[Law firm handling office city ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Law firm handling office (city)]
+OR    CAST(#MainAPI.[Date Instructed] AS DATE) <> CAST(#AXAXLDataSubmission.[Date Instructed] AS DATE)
+OR    #MainAPI.[Opposing Side's Solicitor Firm Name] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[Opposing Side's Solicitor Firm Name]
+OR    #MainAPI.[Reason For instruction] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Reason For instruction]
+OR    #MainAPI.[Fee Scale] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Fee Scale]
+
+/*Update Case - 
+First acknowledgement Date,	Report Date, 	Date Proceedings Issued, AXA XL as defendant,	Reason for proceedings,	Proceeding Track, 
+Trial date, Damages Reserve, Opposing sides costs reserve	Panel budget reserve	Reason for panel budget change if occurred	Panel Fees Paid	Counsel Paid	
+Other Disbursements Paid	Opposing sides Costs Claimed
+*/
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Update Case'
+
+FROM #AXAXLDataSubmission
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE 
+   ISNULL(#MainAPI.[First acknowledgement Date], '3999-01-01') <> ISNULL(#AXAXLDataSubmission.[First acknowledgement Date], '3999-01-01')
+OR ISNULL(CAST(#MainAPI.[Report Date] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Report Date] AS DATE), '3999-01-01')
+OR ISNULL(CAST(#MainAPI.[Date Proceedings Issued] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Date Proceedings Issued] AS DATE), '3999-01-01')
+OR ISNULL(#MainAPI.[AXA XL as defendant], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[AXA XL as defendant], 1)
+OR ISNULL(#MainAPI.[Reason for proceedings], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[Reason for proceedings], 1)
+OR ISNULL(#MainAPI.[Proceeding Track], 1) COLLATE DATABASE_DEFAULT <>  ISNULL(#AXAXLDataSubmission.[Proceeding Track], 1) 
+OR ISNULL(#MainAPI.[Trial date],'3999-01-01') <> ISNULL(#AXAXLDataSubmission.[Trial date], '3999-01-01')
+OR ISNULL(REPLACE(#MainAPI.[Damages Reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Damages Reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Opposing sides costs reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's costs reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
+OR ISNULL(#MainAPI.[Reason for panel budget change if occurred], '') <> ISNULL(#AXAXLDataSubmission.[Reason for panel budget change if occurred], '')
+OR  ISNULL(REPLACE(#MainAPI.[Panel Fees Paid], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel Fees Paid]  AS NVARCHAR(20)), '')
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Counsel Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Counsel Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Other Disbursements Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Other Disbursements Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Opposing sides Costs Claimed], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's Costs Claimed]  AS DECIMAL(18,2)), 0.00)
+/*Update Case - TimeKeeper */
+--1711
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Update Case'
+FROM #AXAXLDataSubmission
+JOIN #TimeKeepersAPI ON #TimeKeepersAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT =  #AXAXLDataSubmission.[Law Firm Matter Number]
+AND #AXAXLDataSubmission.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT  =  #TimeKeepersAPI.[Unique timekeeper ID per timekeeper]
+AND ISNULL(#TimeKeepersAPI.PQE, 100) =  ISNULL(#AXAXLDataSubmission.PQE, 100)
+AND ISNULL(#TimeKeepersAPI.[Level solicitor partner ], 'N/A') COLLATE DATABASE_DEFAULT = ISNULL(#AXAXLDataSubmission.[Level (solicitor, partner)], 'N/A')
+AND ISNULL(#TimeKeepersAPI.[Hours spent on case], -1) <> ISNULL(#AXAXLDataSubmission.[Hours spent on case], -1)
+
+/*Close Case 
+Update Status to Close Case when any of the following columns have changes. 
+Date closed,	Date of Final Panel Invoice,	Date Damages settled,	Final Damages Amount,	
+Claimants Costs Handled by Panel ,	Date Claimants costs settled,	Final Claimants Costs Amount	Mediated outcome Select from list	Outcome of Instruction Select from list	Was litigation avoidable Select from list
+*/
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Close Case'
+FROM #AXAXLDataSubmission
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE #AXAXLDataSubmission.RN = 1 
+AND 
+(
+ISNULL(#AXAXLDataSubmission.[Date closed],'3999-01-01')  <> ISNULL(#MainAPI.[Date closed], '3999-01-01')
+OR    ISNULL(#AXAXLDataSubmission.[Date of Final Panel Invoice],'3999-01-01') <> ISNULL(#MainAPI.[Date of Final Panel Invoice], '3999-01-01')
+OR    ISNULL(#AXAXLDataSubmission.[Date Damages settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Damages settled], '3999-01-01')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Damages Amount] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Final Damages Amount], '')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Claimants Costs Handled by Panel?] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Claimants Costs Handled by Panel ], '')
+OR    ISNULL(#AXAXLDataSubmission.[Date Claimants costs settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Claimants costs settled], '3999-01-01')
+OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Claimants Costs Amount] AS NVARCHAR(20)), '') <>  ISNULL(#MainAPI.[Final Claimants Costs Amount], '') 
+OR    ISNULL(#AXAXLDataSubmission.[Mediated outcome - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Mediated outcome Select from list], '')
+OR    ISNULL(#AXAXLDataSubmission.[Outcome of Instruction - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Outcome of Instruction Select from list], '')  
+OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
+ 
+)
+
+
+/*Update [Reason for panel budget change if occurred]
+flagging if the amount in the Panel Budget reserve column has changed 
+eg A1001-10856 has increased from £2500 to £3000
+*/
+
 
 UPDATE #AXAXLDataSubmission  
 SET #AXAXLDataSubmission.[Reason for panel budget change if occurred] = #AXAXLDataSubmission.[Law Firm Matter Number] + ' has increased from £' + CAST(ISNULL(#MainAPI.[Panel budget reserve], 0.00) AS NVARCHAR(20)) + ' to £' + CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
@@ -443,5 +589,6 @@ END
 
 
 
-
+--4951539
+--A1001-10274
 GO

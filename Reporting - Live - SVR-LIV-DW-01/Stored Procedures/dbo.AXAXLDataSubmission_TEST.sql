@@ -510,6 +510,7 @@ Other Disbursements Paid	Opposing sides Costs Claimed
 */
 UPDATE #AXAXLDataSubmission  
 SET #AXAXLDataSubmission.Status = 'Update Case'
+
 FROM #AXAXLDataSubmission
 JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
 WHERE 
@@ -520,7 +521,14 @@ OR ISNULL(#MainAPI.[AXA XL as defendant], 1) COLLATE DATABASE_DEFAULT <> ISNULL(
 OR ISNULL(#MainAPI.[Reason for proceedings], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[Reason for proceedings], 1)
 OR ISNULL(#MainAPI.[Proceeding Track], 1) COLLATE DATABASE_DEFAULT <>  ISNULL(#AXAXLDataSubmission.[Proceeding Track], 1) 
 OR ISNULL(#MainAPI.[Trial date],'3999-01-01') <> ISNULL(#AXAXLDataSubmission.[Trial date], '3999-01-01')
-
+OR ISNULL(REPLACE(#MainAPI.[Damages Reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Damages Reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Opposing sides costs reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's costs reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
+OR ISNULL(#MainAPI.[Reason for panel budget change if occurred], '') <> ISNULL(#AXAXLDataSubmission.[Reason for panel budget change if occurred], '')
+OR  ISNULL(REPLACE(#MainAPI.[Panel Fees Paid], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel Fees Paid]  AS NVARCHAR(20)), '')
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Counsel Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Counsel Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Other Disbursements Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Other Disbursements Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Opposing sides Costs Claimed], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's Costs Claimed]  AS DECIMAL(18,2)), 0.00)
 /*Update Case - TimeKeeper */
 --1711
 UPDATE #AXAXLDataSubmission  
