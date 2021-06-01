@@ -10,7 +10,8 @@ GO
 -- Description:	<ticket #43507 new logic for InterEurope listing report>
 -- Update as per Ticket 83725 -- removal of 351402.52
 -- =============================================
-
+-- ES 2021-06-01 #100867, amended status, claim category and damages paid logic
+-- =============================================
 CREATE PROCEDURE [dbo].[InterEuropeListingReportNew]
 AS
 BEGIN
@@ -26,6 +27,7 @@ BEGIN
            --, LTRIM(RTRIM(client_involv.insuredclient_name))	AS [Insurer Client]
            foreigninsurer.name AS [Insurer Client],
            CAST(core_details.date_instructions_received AS DATE) AS [Date Instructions Received],
+		   CONCAT(dim_date.cal_month_name,'-',dim_date.cal_year) AS [Month Instructions Received],
            CASE
                WHEN core_details.referral_reason = 'Costs dispute' THEN
                    'Costs Only'
@@ -37,13 +39,15 @@ BEGIN
                    'Small Claims'
                WHEN core_details.track = 'Fast Track' THEN
                    'Fast Track'
+			   WHEN core_details.track = 'Multi Track' AND fin_sum.damages_reserve > 5000000 THEN
+                   'Multi Track > £5m'
                WHEN core_details.track = 'Multi Track' THEN
                    'Multi Track'
                ELSE
                    NULL
            END AS [Claim Category],
            CASE
-               WHEN outcome.outcome_of_case = 'Exclude from reports' THEN
+               WHEN outcome.outcome_of_case = 'Exclude from reports' AND h_current.matter_owner_full_name<>'Steven Hassall' THEN
                    'Excluded'
                WHEN outcome.date_costs_settled IS NULL THEN
                    'Open'
@@ -81,7 +85,7 @@ BEGIN
            END AS [Live elapsed days],
            elapsed_days.elapsed_days_conclusion AS [Number of days to settlement],
            elapsed_days.elapsed_days_costs_to_settle AS [Damages to costs lifecycle],
-           paid_detail.total_damages_paid AS [Damages Paid],
+           fin_sum.damages_paid AS [Damages Paid],
            'TBC' AS [Damages Saving against Reserve],
            --, fin_sum.total_tp_costs_paid_to_date																				
            fin_sum.total_tp_costs_paid AS [TP Costs Paid],
@@ -135,6 +139,8 @@ BEGIN
             ON detail_fin.dim_detail_finance_key = fact_dim_main.dim_detail_finance_key
         INNER JOIN red_dw.dbo.fact_detail_reserve_detail res_detail
             ON res_detail.master_fact_key = fact_dim_main.master_fact_key
+		INNER JOIN red_dw.dbo.dim_date
+		ON dim_date.calendar_date=CAST(core_details.date_instructions_received AS DATE)
         LEFT OUTER JOIN
         (
             SELECT court.client_code,

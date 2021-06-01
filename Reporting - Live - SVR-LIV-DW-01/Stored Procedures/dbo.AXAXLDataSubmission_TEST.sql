@@ -13,9 +13,6 @@ BEGIN
 DROP TABLE IF EXISTS #AXAXLDataSubmission
 
 
-
-
-
 --2298
 --2162
 SELECT  DISTINCT
@@ -65,14 +62,14 @@ ii)                   Else “Other”
 , API.[FirstAcknowledgementDate] AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
 , COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
-, COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText])  [AXA XL as defendant] -- udMICoreAXA NEW*** 
+, COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
 , COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) [Reason for proceedings]  -- udMICoreAXA
 , CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END AS [Proceeding Track]
 , ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
 , fact_finance_summary.damages_reserve AS [Damages Reserve]
 , COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
 , defence_costs_reserve AS [Panel budget/reserve]
-, cboReaForPanel.cdDesc AS  [Reason for panel budget change if occurred] -- udMICoreAXA
+, COALESCE(cboReaForPanel.cdDesc, 'No change') AS  [Reason for panel budget change if occurred] -- udMICoreAXA
 , defence_costs_billed AS [Panel Fees Paid]
 , Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
 , ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
@@ -87,7 +84,7 @@ ii)                   Else “Other”
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, CASE WHEN final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
+, CASE WHEN dim_matter_header_current.final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
 , final_bill_date [Date of Final Panel Invoice]
 , date_claim_concluded [Date Damages settled]
 ,  fact_detail_paid_detail.[total_damages_paid] AS [Final Damages Amount]
@@ -138,6 +135,7 @@ COALESCE(ISNULL(fact_finance_summary.damages_paid, 0), ISNULL(fact_finance_summa
 COALESCE(ISNULL(fact_finance_summary.claimants_costs_paid, 0), ISNULL(fact_detail_paid_detail.interim_costs_payments, 0)) +
 ISNULL(PanelFees.[Total VAT Billed to AXA In Period], 0)
 
+
 INTO #AXAXLDataSubmission
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -180,7 +178,6 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 INNER JOIN MS_Prod.dbo.dbTasks WITH(NOLOCK)
  ON ms_fileid=fileID
 WHERE client_group_name='AXA XL'
---AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty'
 AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
 AND tskActive=1
 AND tskDesc LIKE '%Trial date - today%'
@@ -212,7 +209,6 @@ INNER JOIN red_dw.dbo.dim_employee WITH(NOLOCK)
  ON dim_employee.dim_employee_key = TimeRecordedBy.dim_employee_key
 
 WHERE client_group_name='AXA XL'
---AND dim_fed_hierarchy_history.hierarchylevel3hist='Casualty'
 AND (date_closed_case_management IS NULL OR CONVERT(DATE,date_closed_case_management,103)='2021-03-29')
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname +', ' + dim_employee.forename 
@@ -561,6 +557,20 @@ OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list],
  
 )
 
+
+/*Update [Reason for panel budget change if occurred]
+flagging if the amount in the Panel Budget reserve column has changed 
+eg A1001-10856 has increased from £2500 to £3000
+*/
+
+
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.[Reason for panel budget change if occurred] = #AXAXLDataSubmission.[Law Firm Matter Number] + ' has increased from £' + CAST(ISNULL(#MainAPI.[Panel budget reserve], 0.00) AS NVARCHAR(20)) + ' to £' + CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
+
+FROM #AXAXLDataSubmission 
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
+AND CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)) <> ISNULL(#MainAPI.[Panel budget reserve], '0.00')
 
 SELECT DISTINCT * FROM #AXAXLDataSubmission
 ORDER BY ms_fileid
