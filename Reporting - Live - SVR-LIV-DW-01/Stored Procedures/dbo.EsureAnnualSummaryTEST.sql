@@ -5,7 +5,7 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[EsureAnnualSummary]
+CREATE PROCEDURE [dbo].[EsureAnnualSummaryTEST]
 (
 @Year AS INT
 )

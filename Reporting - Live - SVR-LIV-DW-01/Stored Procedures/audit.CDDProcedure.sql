@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE [audit].[CDDProcedure] --'Family','5122'
+CREATE PROCEDURE [audit].[CDDProcedure] --'Real Estate','Real Estate Liverpool','5709:Alan Woodward'
 (
 	@Department AS NVARCHAR(MAX),
     @Team AS NVARCHAR(MAX),
@@ -44,7 +44,8 @@ BEGIN
            [Division],
            [Department],
            [Team],
-           last_time_transaction_date AS LastTransaction
+           last_time_transaction_date AS LastTransaction,
+		   filemilestonecode
     FROM
     (
         SELECT clNo + '.' + fileNo AS [MS Ref],
@@ -64,6 +65,7 @@ BEGIN
                hierarchylevel2hist AS [Division],
                hierarchylevel3hist AS [Department],
                hierarchylevel4hist AS [Team],
+			   ft.filemilestonecode,
                CASE
                    WHEN udextfile.FEDCode IS NULL THEN
                (CASE
@@ -100,6 +102,8 @@ BEGIN
                 ON filePrincipleID = dbUser.usrID
             LEFT OUTER JOIN MS_Prod.dbo.udExtFile
                 ON dbFile.fileID = udextfile.fileID
+			LEFT OUTER JOIN MS_PROD.dbo.dbFileType ft  WITH(NOLOCK) on ft.typeCode = dbfile.fileType
+			
             LEFT OUTER JOIN
             (
                 SELECT *

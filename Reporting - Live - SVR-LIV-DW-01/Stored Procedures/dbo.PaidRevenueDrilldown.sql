@@ -42,7 +42,8 @@ SELECT fact_bill_receipts_detail.client_code
 ,bill_date
 ,bill_number
 ,revenue
-,CASE WHEN receipt_fin_month_no=@FinMonth THEN 1  ELSE 0 END AS [MTD]
+,CASE WHEN receipt_fin_month_no=@FinMonth THEN 1  ELSE 0 END AS [MTD],
+dim_receipt_date.receipt_date
 
 FROM red_dw.dbo.fact_bill_receipts_detail 
 INNER JOIN red_dw.dbo.dim_matter_header_current

@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningCompletions] -- EXEC  dbo.ClaimsMilestoneFileOpeningCompletions'2021-05-01','2021-05-12'
 (
 @StartDate AS DATE
@@ -47,7 +48,7 @@ SELECT master_client_code + '-' + master_matter_number AS [File]
 ,'4158','4295','5674','3752','137','5862','1890','4957','4866','4188','1972','5425','5825'
 ,'1579','958','4781','1966','2078','3078','6485','5790','835','6169','1732','5152','3497'
 ,'2090','3393','5518','4234','4410','5508','6299','5798','6378','5527','551','4157','5405'
-,'1067','3257','1500') THEN 'Yes' ELSE 'No' END AS CompletedByCorrectPerson
+,'1067','3257','1500','5518','6195','3949','1586') THEN 'Yes' ELSE 'No' END AS CompletedByCorrectPerson
 ,CASE WHEN tskFilter='tsk_01_010_ADMCommenceMIprocess' THEN 'MI Process'
 WHEN tskFilter='tsk_031_01_010_ClientCare' THEN 'Client Care Process'
 WHEN tskFilter='tsk_042_01_010_CCFA' THEN 'Commence CCFA'
@@ -119,7 +120,7 @@ SELECT master_client_code + '-' + master_matter_number AS [File]
 ,'4158','4295','5674','3752','137','5862','1890','4957','4866','4188','1972','5425','5825'
 ,'1579','958','4781','1966','2078','3078','6485','5790','835','6169','1732','5152','3497'
 ,'2090','3393','5518','4234','4410','5508','6299','5798','6378','5527','551','4157','5405'
-,'1067','3257','1500') THEN 'Yes' ELSE 'No' END AS CompletedByCorrectPerson
+,'1067','3257','1500','5518','6195','3949','1586')THEN 'Yes' ELSE 'No' END AS CompletedByCorrectPerson
 ,'Matter Creation' AS Area
 ,1 AS xOrder
 ,RoleType

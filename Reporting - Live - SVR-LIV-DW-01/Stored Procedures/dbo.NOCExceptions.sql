@@ -9,11 +9,22 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[NOCExceptions]
 
+
+CREATE PROCEDURE [dbo].[NOCExceptions] -- EXEC NOCExceptions 'Casualty Birmingham'
+(
+@Team NVARCHAR(MAX)
+)
 AS 
 
 BEGIN
+
+IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+
+	CREATE TABLE #Team 
+	( ListValue NVARCHAR(MAX) collate Latin1_General_BIN)
+	INSERT INTO #Team
+	SELECT ListValue  FROM 	dbo.udt_TallySplit(',', @Team) 
 
 SELECT 
 ms_fileid
@@ -78,12 +89,17 @@ END AS ExceptionsColourPreLit
 ,hierarchylevel3hist AS [Practice Area]
 ,hierarchylevel4hist AS [Team]
 ,1 AS [Number Live Matters]
+,dim_detail_core_details.present_position
+,branch_name
+,branch_code
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.[dbo].[dim_fed_hierarchy_history]
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
- LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(hierarchylevel4hist,',','')
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
   ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
   AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+
 LEFT OUTER JOIN 
 (
 SELECT Defendant.fileID,
@@ -168,12 +184,16 @@ GROUP BY fileID
 
 ) AS ClaimantSols
  ON ms_fileid=ClaimantSols.fileID
-
+LEFT OUTER JOIN ms_prod.config.dbFile
+ ON dbFile.fileID = Claimants.fileID
 WHERE [hierarchylevel2hist]='Legal Ops - Claims'
 AND ms_only=1
 AND date_closed_case_management IS NULL
 --AND ISNULL(referral_reason,'') <>'Advice only'
 AND dim_matter_header_current.client_code <>'00030645'
 AND ms_fileid NOT IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude)
+AND ISNULL(dim_detail_core_details.present_position,'') NOT IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear')
+AND ISNULL(branch_name,'') <>'Liverpool'
+
 END
 GO

@@ -76,10 +76,11 @@ SELECT client_name AS [Client Name]
 ,[Fixed Fee] = fact_finance_summary.[fixed_fee_amount]
 ,[Hours Recorded] = TimeRecorded.HoursRecorded
 ,[Value of Hours Recorded] = TimeRecorded.RecordedValue
-,[Revenue] = fact_finance_summary.defence_costs_billed
+,[Revenue] = revenue.Revenue
 ,[Revnue - fact_bill_activity_bill_amount] = revenue.Revenue
-,[Profit/ Loss] =  CASE WHEN fact_finance_summary.defence_costs_billed IS NULL THEN fact_finance_summary.[fixed_fee_amount] - ISNULL(TimeRecorded.RecordedValue, 0)
- ELSE ISNULL(fact_finance_summary.defence_costs_billed, 0) - ISNULL(TimeRecorded.RecordedValue, 0) END
+,[Profit/ Loss] =  CASE WHEN revenue.Revenue IS NOT NULL THEN ISNULL(revenue.Revenue, 0) - ISNULL(TimeRecorded.RecordedValue, 0) 
+  ELSE fact_finance_summary.[fixed_fee_amount] - ISNULL(TimeRecorded.RecordedValue, 0)
+  END
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main 
