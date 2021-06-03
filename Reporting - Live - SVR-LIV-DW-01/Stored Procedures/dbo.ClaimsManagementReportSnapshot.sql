@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -35,7 +37,7 @@ SET @StartDate=(SELECT MIN(calendar_date) AS StartDate FROM red_dw.dbo.dim_date 
 SET @EndDate=(SELECT MAX(calendar_date) AS StartDate FROM red_dw.dbo.dim_date WHERE fin_year=@FinYear)
 
 
-DELETE FROM dbo.ClaimsManagementReportSnapshotTable WHERE FinYear=@FinYear AND @FinMonth=@FinMonth
+DELETE FROM dbo.ClaimsManagementReportSnapshotTable WHERE FinYear=@FinYear AND FinMonth=@FinMonth
 
 
 
@@ -92,18 +94,18 @@ SELECT dim_employee.employeeid
 	, CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours.ChargeableHours/ContractedHours.ContractedHours) END AS [Utilisation %]
 	,Absenses.SicknessDays
 	,Absenses.OtherDays
-	,CASE WHEN MonthlyContribution IS NULL THEN 0 ELSE MonthlyContribution END AS MonthlyContribution
-	,CASE WHEN MonthlyContribution IS NULL THEN 0 ELSE MonthlyContribution END AS YTDContribution
+	,CASE WHEN Contrib.MTDContribution IS NULL THEN 0 ELSE Contrib.MTDContribution END AS MonthlyContribution
+	,CASE WHEN YTDContribution IS NULL THEN 0 ELSE YTDContribution END AS YTDContribution
 	,TeamTargetsMTD.[Chargeable hours target]
 	,TeamTargetsMTD.[Revenue target]
-		,TeamTargetsMTD.[Chargeable hours target] AS YTDTargetHrs
+	,TeamTargetsMTD.[Chargeable hours target] AS YTDTargetHrs
 	,TeamTargetsMTD.[Revenue target] AS YTDTargetRevenue
 	,[TeamTargetsAnnual].[Chargeable hours target Annual]
 	,TeamTargetsAnnual.[Revenue target Annual]
 	,@FinMonth AS FinMonth
 	,@FinYear AS FinYear
 	,@Period AS [Period]
-	,fed_code
+	,dim_fed_hierarchy_history.fed_code
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -221,9 +223,17 @@ FROM
 
 LEFT OUTER JOIN 
 (
-SELECT FedCode,MonthlyContribution FROM MonthlyContributionTest WITH(NOLOCK)
+SELECT fact_budget_activity.dim_fed_hierarchy_history_key
+,SUM(fed_level_contribution_value) AS YTDContribution
+,SUM(CASE WHEN financial_budget_month=@FinMonth THEN fed_level_contribution_value ELSE 0 END) AS MTDContribution
+FROM red_dw.dbo.fact_budget_activity
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
+WHERE financial_budget_year=@FinYear
+AND fed_level_contribution_value IS NOT NULL
+GROUP BY fact_budget_activity.dim_fed_hierarchy_history_key
 ) AS Contrib
-ON fed_code=FedCode COLLATE DATABASE_DEFAULT
+ON  Contrib.dim_fed_hierarchy_history_key = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
 LEFT OUTER JOIN 
 (
 SELECT hierarchylevel4hist AS Team

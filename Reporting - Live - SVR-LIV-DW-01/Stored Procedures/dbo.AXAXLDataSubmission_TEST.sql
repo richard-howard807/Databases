@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 --EXEC [dbo].[AXAXLDataSubmission]
+--EXEC [dbo].[AXAXLDataSubmission]
 CREATE PROCEDURE [dbo].[AXAXLDataSubmission_TEST]
 
 AS 
@@ -588,6 +589,9 @@ ORDER BY ms_fileid
 END
 
 
+
+--4951539
+--A1001-10274
 
 --4951539
 --A1001-10274

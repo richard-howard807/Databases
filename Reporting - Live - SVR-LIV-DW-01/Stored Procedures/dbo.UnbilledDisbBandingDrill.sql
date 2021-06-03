@@ -6,6 +6,7 @@ GO
 --==========================================================
 -- Amendments
 -- ES 20200825 #69196 Added last bill date and last bill flag
+-- ES 20210602 #100471 amended finmonth parameter as drill through wasn't working
 --==========================================================
 
 CREATE PROCEDURE [dbo].[UnbilledDisbBandingDrill] --EXEC [dbo].[UnbilledDisbBanding] '201912'
@@ -83,7 +84,8 @@ ON fact_matter_summary_current.master_fact_key = a.master_fact_key
  WHERE dim_bill_key=0
 AND total_unbilled_disbursements <> 0
 --AND reporting_exclusions=0  -- Requested by steve Scullion to remove
-AND b.transaction_fin_month=@finMonth
+--AND b.transaction_fin_month=@finMonth
+AND b.transaction_cal_month_name + '-' + right(b.transaction_cal_year, 2)=@finMonth
 AND display_name=@DisplayName
 ) AS AllData
 GROUP BY Client,Matter,matter_description,date_opened_practice_management,date_closed_practice_management

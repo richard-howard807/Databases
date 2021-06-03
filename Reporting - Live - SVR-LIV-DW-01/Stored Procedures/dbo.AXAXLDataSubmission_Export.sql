@@ -3,7 +3,12 @@ GO
 SET ANSI_NULLS ON
 GO
 
---EXEC [dbo].[AXAXLDataSubmission]
+/*Created by: Max Taylor
+   Date: 20210602 
+   Report - 5 - Client Reports /AXA / AXA XL Data Submission Export
+                                                                 
+*/
+--EXEC [dbo].[AXAXLDataSubmission_Export]
 CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export]
 
 AS 
@@ -27,16 +32,6 @@ SELECT  DISTINCT
 		WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
 		WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' END [New Line of Business]
 
-/*If Department is Casualty and  matter type:
-
-i)                    begins EL or PL then show as “Employer’s Liability and Public Liability”,
-ii)                   if it starts Motor then “Motor”
-iii)                 If begins Recovery then “Other”
-
-If Department is not Casualty and matter type:
-i)                    Begins Motor, EL or PL then “Accident”
-ii)                   Else “Other”
- */
  ,work_type_name   AS  [Product Type]
 ,  CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
         WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %') THEN 'Employer’s Liability and Public Liability'
@@ -59,7 +54,7 @@ ii)                   Else “Other”
 , dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
-, API.[FirstAcknowledgementDate] AS [First acknowledgement Date]
+, COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103))  AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
 , COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
 , COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
@@ -84,7 +79,7 @@ ii)                   Else “Other”
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, CASE WHEN dim_matter_header_current.final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
+, CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
 , final_bill_date [Date of Final Panel Invoice]
 , date_claim_concluded [Date Damages settled]
 ,  fact_detail_paid_detail.[total_damages_paid] AS [Final Damages Amount]
@@ -473,11 +468,10 @@ ON #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT= #AXAXLDataSubmiss
 UPDATE #AXAXLDataSubmission  
 
 SET #AXAXLDataSubmission.Status = 'Create Case'
-
 FROM #AXAXLDataSubmission 
-LEFT JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+LEFT JOIN #MainAPI ON #MainAPI.[Law Firm Matter Number] = #AXAXLDataSubmission.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT
 WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
-AND #AXAXLDataSubmission.[Date Instructed] > #MainAPI.dss_load_date
+AND #AXAXLDataSubmission.[Date Instructed] > (SELECT DISTINCT #MainAPI.dss_load_date FROM #MainAPI)
 
 /*Edit Case - If change in certain fields will result in change of status to Edit Case
 AXA XL Claim Number	
@@ -580,8 +574,20 @@ JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #
 WHERE ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
 AND CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)) <> ISNULL(#MainAPI.[Panel budget reserve], '0.00')
 
-SELECT DISTINCT * FROM #AXAXLDataSubmission
+
+/* Final check for blank  statuses - may have been created on the day of upload. */
+
+UPDATE #AXAXLDataSubmission  
+SET #AXAXLDataSubmission.Status = 'Create Case'
+FROM #AXAXLDataSubmission
+WHERE ISNULL(Status, '') = ''
+
+
+SELECT * FROM #AXAXLDataSubmission
 ORDER BY ms_fileid
+
+--A1001-12012 = 2021-05-19 00:00:00.000
+
 
 
 

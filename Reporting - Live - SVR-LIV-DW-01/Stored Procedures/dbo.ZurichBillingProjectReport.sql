@@ -4,15 +4,15 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
 --2019-08-07 ES added Casualty Liverpool 2 requested by JB 
 --2020-01-13 ES added Casualty Birmingham requested by JB
 --2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
 --2021-05-07 OK currently only brings in claims, changed to bring in LTA & Claims 
+--2021-09-03 ES #101252, amended fee arrangment logic to look at dim_detail_finance.[output_wip_fee_arrangement]
+
 CREATE PROCEDURE [dbo].[ZurichBillingProjectReport]
 AS
+
 BEGIN
 SELECT dim_matter_header_current.client_code AS [Client]
 ,dim_matter_header_current.matter_number AS [Matter]
@@ -30,8 +30,9 @@ DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END  AS ElapsedDays
 ,wip AS [WIP]
 ,red_dw.dbo.dim_matter_header_current.present_position AS [Present Position]
-,dim_matter_header_current.fixed_fee AS [Fixed Fee]
+,dim_matter_header_current.fixed_fee 
 ,fee_arrangement
+,dim_detail_finance.[output_wip_fee_arrangement] AS [Fixed Fee]
 ,dim_matter_header_current.fixed_fee_amount
 ,Proforma.[Proforma Status]
 ,Proforma.[Proforma Elapsed Days]
@@ -78,6 +79,10 @@ AND bill_reversed=0
 GROUP BY client_code,matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
+
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
 WHERE dim_matter_header_current.client_code='Z1001'
 AND date_opened_case_management>='2019-02-01'
 AND dim_matter_header_current.matter_number NOT IN ('00079227')
@@ -114,8 +119,8 @@ AND date_opened_case_management >='2019-02-01'
 --AND UPPER(fee_arrangement) LIKE '%FIXED%'
 AND 
 (
-ISNULL(fee_arrangement,'') <>'Fixed Fee/Fee Quote/Capped Fee'
-OR (fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
+ISNULL(dim_detail_finance.[output_wip_fee_arrangement],'') <>'Fixed Fee/Fee Quote/Capped Fee'
+OR (dim_detail_finance.[output_wip_fee_arrangement]='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
 )                                                 
 AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 

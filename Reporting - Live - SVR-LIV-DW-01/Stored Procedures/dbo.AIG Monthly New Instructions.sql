@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		<Orlagh Kelly>
 -- Create date: 09-07-2019
@@ -137,7 +138,7 @@ dim_matter_header_current.billing_arrangement [Rate Arrangement],
 
 
 	   ,CASE
-	       WHEN [track] in ('Small Claims')THEN 'Small Claims' 
+	       WHEN [track] IN ('Small Claims')THEN 'Small Claims' 
 	       WHEN TRIM(referral_reason) IN( 'Infant Approval','Infant approval') THEN 'Infant Approval'
 	       WHEN TRIM(dim_instruction_type.instruction_type) ='Motor non-Fraud' AND track = 'Fast Track' AND 
 	  	  	    TRIM(aig_current_fee_scale) = 'AFA - Delegated Authority ("D/A") ' THEN 'Fast Track Delegated'
@@ -214,7 +215,9 @@ dim_matter_header_current.billing_arrangement [Rate Arrangement],
                 AND TRIM(aig_current_fee_scale) NOT IN ( 'Hourly Rate','Hourly') THEN 'Costs - % Saving'
            WHEN TRIM(dim_instruction_type.instruction_type) = 'Costs only'
                 AND TRIM(aig_current_fee_scale) IN ( 'Hourly Rate','Hourly') THEN'Costs - Disbs HR'
-           ELSE
+           WHEN TRIM(aig_current_fee_scale) IN ( 'Hourly Rate','Hourly') AND TRIM(dim_instruction_type.instruction_type) IN ( 'Motor non-Fraud','Motor Fraud') THEN 'Hourly – Motor' -- added in #101278
+		   
+		   ELSE
                'Other'
        END AS [Categories]
 
@@ -241,7 +244,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_cli
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_client ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_date ON dim_date.dim_date_key = fact_matter_summary_current.dim_date_key
-LEFT outer JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+LEFT OUTER JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key 
 LEFT JOIN (
 

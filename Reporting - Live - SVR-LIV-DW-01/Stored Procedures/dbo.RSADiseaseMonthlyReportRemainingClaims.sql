@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2021-03-22
@@ -16,7 +17,7 @@ DROP TABLE IF EXISTS #main
 
 SELECT DISTINCT
 
- [FED Client/Matter No] = CASE WHEN ISNUMERIC(dim_matter_header_current.client_code) = 1 THEN  CAST(CAST(dim_matter_header_current.client_code AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.client_code END +'/' + CASE WHEN ISNUMERIC(dim_matter_header_current.matter_number) = 1 THEN CAST(CAST(dim_matter_header_current.matter_number AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.matter_number end
+ [FED Client/Matter No] = CASE WHEN ISNUMERIC(dim_matter_header_current.client_code) = 1 THEN  CAST(CAST(dim_matter_header_current.client_code AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.client_code END +'/' + CASE WHEN ISNUMERIC(dim_matter_header_current.matter_number) = 1 THEN CAST(CAST(dim_matter_header_current.matter_number AS INT) AS NVARCHAR(20)) ELSE dim_matter_header_current.matter_number END
 ,[Solicitor Reference] = fact_dimension_main.master_client_code +'/'+ master_matter_number
 ,[Matter Description] = matter_description
 ,[Total Current Reserve] = ISNULL(fact_finance_summary.[damages_reserve_net], 0) + ISNULL(fact_detail_reserve_detail.[current_claimant_solicitors_costs_reserve_net], 0) + CASE WHEN  ISNULL(fact_finance_summary.[defence_costs_reserve], 0) - (ISNULL(total_amount_billed, 0) -310)     < 0 THEN 0
@@ -67,6 +68,20 @@ ELSE NULL END
 ,[WIP] =  fact_finance_summary.wip
 ,[Unpaid bill balance] =  fact_finance_summary.unpaid_bill_balance
 
+
+
+,fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] AS [Gross (Global) Damages Agreed]
+,fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] AS [Total Damages Paid by All Parties]
+,fact_finance_summary.[damages_paid] AS [Total Damages Paid by RSA]
+,fact_finance_summary.[claimants_total_costs_paid_by_all_parties] AS [Total Claimants Costs Agreed Global ]
+,fact_finance_summary.[claimants_costs_paid] AS [Claimant Solicitors Total Paid]
+,fact_detail_paid_detail.[tp_total_costs_claimed_all_parties] AS [Total Claimed Costs Bill]
+,NULL AS [Net Profit Costs Claimed (Global)]
+,NULL AS [Net Profit Costs Settled (Global)]
+,dim_detail_outcome.[date_claim_concluded] AS [Damages Settlement Date]
+,dim_detail_outcome.[date_claimants_costs_received] AS [Date Costs Received]
+,dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
+
 INTO #main
 FROM red_dw.dbo.fact_dimension_main
 
@@ -84,6 +99,12 @@ JOIN red_dw.dbo.fact_bill
 
 JOIN red_dw.dbo.dim_last_pay_date 
 	ON dim_last_pay_date.dim_last_pay_date_key = fact_bill.dim_last_pay_date_key 
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+ ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+ AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
+ ON fact_detail_paid_detail.client_code = dim_matter_header_current.client_code
+ AND fact_detail_paid_detail.matter_number = dim_matter_header_current.matter_number
 
 	WHERE fact_dimension_main.master_client_code +'-' + master_matter_number IN 
 (
