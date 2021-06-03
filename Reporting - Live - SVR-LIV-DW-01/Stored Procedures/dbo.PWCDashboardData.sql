@@ -53,6 +53,9 @@ master_client_code + '-' + master_matter_number AS [MatterSphere Client/Matter R
 ,fact_finance_summary.disbursement_balance AS [Unpaid bill balance]
 ,last_bill_date AS [Date of Last Bill]
 ,last_time_transaction_date AS [Date of Last Posting]
+, dim_client_involvement.insuredclient_name		AS [Associate Insured Client Name]
+, dim_detail_claim.dst_insured_client_name		AS [Data Services Insured Client Name]
+, dim_detail_claim.dst_claimant_solicitor_firm	AS [Data Services Claimant Solicitor Firm]
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
