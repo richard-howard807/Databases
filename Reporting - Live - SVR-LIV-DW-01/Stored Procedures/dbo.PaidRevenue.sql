@@ -27,10 +27,10 @@ BEGIN
 DECLARE @FinYear AS INT
 DECLARE @FinMonth AS INT
 
-SET @FinMonth=(SELECT  DISTINCT  bill_fin_month_no FROM red_dw.dbo.dim_bill_date
+SET @FinMonth=(SELECT  DISTINCT bill_fin_month_no FROM red_dw.dbo.dim_bill_date
 WHERE bill_fin_period=@Period)
 
-SET @FinYear=(SELECT DISTINCT  bill_fin_year FROM red_dw.dbo.dim_bill_date
+SET @FinYear=(SELECT DISTINCT bill_fin_year FROM red_dw.dbo.dim_bill_date
 WHERE bill_fin_period=@Period)
 
 	DROP TABLE  IF EXISTS #FedCodeList
@@ -110,6 +110,7 @@ INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
                          )
                   FROM #FedCodeList
               ) 
+and receipt_fin_month_no<=@FinMonth
 GROUP BY hierarchylevel2hist 
 ,hierarchylevel3hist 
 ,hierarchylevel4hist 

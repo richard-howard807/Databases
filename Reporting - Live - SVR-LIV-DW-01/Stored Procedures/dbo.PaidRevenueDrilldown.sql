@@ -43,6 +43,7 @@ SELECT fact_bill_receipts_detail.client_code
 ,bill_number
 ,revenue
 ,CASE WHEN receipt_fin_month_no=@FinMonth THEN 1  ELSE 0 END AS [MTD],
+
 dim_receipt_date.receipt_date
 
 FROM red_dw.dbo.fact_bill_receipts_detail 
@@ -53,6 +54,7 @@ INNER JOIN red_dw.dbo.dim_receipt_date
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history
  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_bill_receipts_detail.dim_fed_hierarchy_history_key
  WHERE receipt_fin_year=@FinYear
+ and receipt_fin_month_no<=@FinMonth
 AND dim_fed_hierarchy_history.fed_code=@FedCode
 AND hierarchylevel2hist=@Division
 AND hierarchylevel3hist=@Department
