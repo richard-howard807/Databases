@@ -14,13 +14,21 @@ GO
 */
 
 CREATE PROCEDURE [dbo].[camerons_brewery_instructions]
-
+(
+	@start_date AS DATE
+	, @end_date AS DATE
+)
 AS
 
 BEGIN
 	
 	SET NOCOUNT ON;
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
+----Testing
+--DECLARE @start_date	AS DATE = CONVERT(DATE,DATEADD(mm, DATEDIFF(mm, 0, GETDATE()) - 1, 0),103)
+--		, @end_date AS DATE = CONVERT(DATE,DATEADD(DAY, -(DAY(GETDATE())), GETDATE()),103) 
+
 
 SELECT 
 	dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number			AS [MatterSphere Client/Matter Number]
@@ -34,6 +42,7 @@ SELECT
 			fact_finance_summary.revenue_estimate_net_of_vat
 	  END					AS [Agreed Fee]
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)			AS [Fees billed to Date]
+	, ISNULL(fact_finance_summary.disbursements_billed, 0)			AS [Disbursements Billed to Date]
 	, ISNULL(monthly_fees.Revenue, 0)			AS [Monthly Fees]
 	, CASE
 		WHEN RTRIM(dim_detail_finance.output_wip_fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
@@ -41,6 +50,7 @@ SELECT
 		ELSE
 			ISNULL(fact_finance_summary.revenue_estimate_net_of_vat, 0) - ISNULL(fact_finance_summary.defence_costs_billed, 0)
 	  END													AS [Fees to be Billed]
+	, ISNULL(fact_finance_summary.disbursement_balance, 0)		AS [Unbilled Disbursements]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date Closed]
 	, CASE
@@ -74,8 +84,7 @@ FROM red_dw.dbo.fact_dimension_main
 							ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
 					WHERE 
 						RTRIM(fact_bill_activity.client_code) IN ('W22555', 'W24107')
-						AND dim_bill_date.bill_cal_year = YEAR(GETDATE())
-						AND dim_bill_date.bill_cal_month_no = MONTH(GETDATE())
+						AND dim_bill_date.bill_date BETWEEN @start_date AND @end_date
 					GROUP BY 
 						fact_bill_activity.client_code
 						, fact_bill_activity.matter_number
@@ -85,6 +94,7 @@ FROM red_dw.dbo.fact_dimension_main
 			AND monthly_fees.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
+	--AND dim_matter_header_current.master_matter_number = '211'
 	AND dim_matter_header_current.reporting_exclusions = 0
 ORDER BY
 	OpenClosed DESC
