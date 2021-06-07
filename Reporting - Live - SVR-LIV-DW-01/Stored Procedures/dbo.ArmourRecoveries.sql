@@ -4,10 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
 CREATE PROCEDURE [dbo].[ArmourRecoveries]
 
 AS
@@ -221,8 +217,9 @@ GROUP BY client_code,matter_number) AS HrsWorked
  ON fact_dimension_main.client_code=HrsWorked.client_code
  AND fact_dimension_main.matter_number=HrsWorked.matter_number
 
-WHERE 
-fact_dimension_main.client_code = '00752920'
+WHERE
+dim_matter_header_current.master_client_code = '752920'
+--fact_dimension_main.client_code = '00752920'
 AND dim_fed_hierarchy_history.name = 'Sam Gittoes'
 AND reporting_exclusions = 0 
 AND ms_only= 1 
