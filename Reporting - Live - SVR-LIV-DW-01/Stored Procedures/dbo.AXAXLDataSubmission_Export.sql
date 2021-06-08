@@ -24,7 +24,7 @@ SELECT  DISTINCT
 [Status] = CAST('' AS NVARCHAR(20))
 ,ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
 ,dim_matter_header_current.ms_fileid
-,COALESCE(client_reference, insurerclient_reference) AS [AXA XL Claim Number]
+,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
 , CASE  
@@ -54,7 +54,7 @@ SELECT  DISTINCT
 , dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
-, COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103))  AS [First acknowledgement Date]
+, COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103), udMICoreAXA.[dteFirstAck])  AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
 , COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
 , COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
@@ -189,7 +189,7 @@ SELECT dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname AS [Last name]
 , TimeRecordedBy.fed_code [Unique timekeeper ID per timekeeper]
 , TimeRecordedBy.jobtitle [Level (solicitor, partner)]
-, DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) [PQE]
+, CASE WHEN DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) >= 10 THEN 10 ELSE DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) END  [PQE]
 , SUM(CAST(minutes_recorded AS DECIMAL(10,2)))/60 [Hours spent on case]
 FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
@@ -210,7 +210,8 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 , TimeRecordedBy.fed_code 
 , TimeRecordedBy.jobtitle
 , dim_employee.surname, dim_employee.forename 
-, DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103))
+, CASE WHEN DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) >= 10 THEN 10 ELSE DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) END
+
 ) AS BilledTime
  ON BilledTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
@@ -351,6 +352,15 @@ SELECT ClNo
   GROUP BY ClNo
   ) API
   ON API.ClNo  = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT + '-' + master_matter_number COLLATE DATABASE_DEFAULT
+
+
+   /* MS fix for [AXA XL Claim Number] */
+ LEFT JOIN 
+ (
+ SELECT fileID, assocRef  AS AXAXLClaimNumber FROM ms_prod.[config].[dbAssociates]
+WHERE 1 = 1 
+AND assocType = 'CLIENT'
+) AXAXLClaimNumber ON CAST(AXAXLClaimNumber.fileID AS NVARCHAR(20)) = CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
 
 
 --/* Staging table for status collumn*/

@@ -3,13 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
-
+-- ES 2021-06-07 amended logic to include the excluded matters and add them to the exceptions colour count to show them  in the report 
 
 CREATE PROCEDURE [dbo].[NOCExceptions] -- EXEC NOCExceptions 'Casualty Birmingham'
 (
@@ -46,7 +40,8 @@ ms_fileid
 ,ClaimantSols.ClaimantSolsCorrectDefaultAddress
 ,ClaimantSols.ClaimantSolEmail
 ,ClaimantSols.ClaimantSolRef
-,CASE WHEN ISNULL(Defendant.NumberDefendants,0) >1 
+,CASE WHEN ms_fileid IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude) THEN 'Excluded'
+WHEN ISNULL(Defendant.NumberDefendants,0) >1 
 OR ISNULL(Claimants.NumberClaimants,0)>1
 OR ISNULL(Court.NumberCourt,0)>1 
 OR ISNULL(ClaimantSols.NumberClaimantSols,0)>1
@@ -67,7 +62,8 @@ AND ClaimantSols.ClaimantSolRef='Yes'
 THEN 'Green' ELSE 'Orange'
 END AS ExceptionsColour
 
-,CASE WHEN ISNULL(Defendant.NumberDefendants,0) >1 
+,CASE WHEN ms_fileid IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude) THEN 'Excluded'
+WHEN ISNULL(Defendant.NumberDefendants,0) >1 
 OR ISNULL(Claimants.NumberClaimants,0)>1
 OR ISNULL(ClaimantSols.NumberClaimantSols,0)>1 THEN 'Red' 
 WHEN ISNULL(Defendant.NumberDefendants,0)=1 
@@ -191,7 +187,8 @@ AND ms_only=1
 AND date_closed_case_management IS NULL
 --AND ISNULL(referral_reason,'') <>'Advice only'
 AND dim_matter_header_current.client_code <>'00030645'
-AND ms_fileid NOT IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude)
+--2021-06-07 excluded as per Andy Griffiths request
+--AND ms_fileid NOT IN (SELECT fileID FROM ms_prod.dbo.udClaimCleanseExclude)
 AND ISNULL(dim_detail_core_details.present_position,'') NOT IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND ISNULL(branch_name,'') <>'Liverpool'
 

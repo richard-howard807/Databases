@@ -11,6 +11,7 @@ GO
 -- Update as per Ticket 83725 -- removal of 351402.52
 -- =============================================
 -- ES 2021-06-01 #100867, amended status, claim category and damages paid logic
+-- ES 2021-06-08 #101696, added quantified reserve fields
 -- =============================================
 CREATE PROCEDURE [dbo].[InterEuropeListingReportNew]
 AS
@@ -99,9 +100,9 @@ BEGIN
            CAST(core_details.date_subsequent_sla_report_sent AS DATE) AS [Date of Subsequent Report],
            CAST(core_details.date_the_closure_report_sent AS DATE) AS [Date Of Report Closure (internal)],
            fin_sum.damages_reserve AS [Damages Reserve  (not NET)],
-           'TBC' AS [Quantified Damages Reserve (Not NET)],
+           res_detail.quantified_damages_reserve AS [Quantified Damages Reserve (Not NET)],
            res_detail.claimant_costs_reserve_current AS [TP costs Reserve (Not NET)],
-           'TBC' AS [Quantified Costs Reserve (Not NET)],
+           res_detail.quantified_tp_costs_reserve AS [Quantified Costs Reserve (Not NET)],
            find_trial_date.trial_date AS [Trial date],
            core_details.present_position AS [Present Position],
            detail_fin.output_wip_fee_arrangement AS [Fee Arrangement],
