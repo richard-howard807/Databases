@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -48,7 +49,7 @@ BEGIN
 
 
 
-SELECT employeeid,
+SELECT ClaimsManagementReportSnapshotTable.employeeid,
        Name,
        Division,
        Department,
@@ -76,14 +77,16 @@ SELECT employeeid,
        FinMonth,
        FinYear,
        Period,
-       fed_code
+       classification
 	   FROM dbo.ClaimsManagementReportSnapshotTable
+	   LEFT OUTER JOIN red_dw.dbo.dim_employee
+	    ON dim_employee.employeeid = ClaimsManagementReportSnapshotTable.employeeid
 
 
 INNER JOIN #Division AS Division ON Division.ListValue = Division 
 	INNER JOIN #Department AS Department ON Department.ListValue = Department 
 	INNER JOIN #Team AS Team ON Team.ListValue = REPLACE(Team,',','')
-	INNER JOIN #Individual AS Individual ON Individual.ListValue = employeeid
+	INNER JOIN #Individual AS Individual ON Individual.ListValue = ClaimsManagementReportSnapshotTable.employeeid
 WHERE [Period]=@Period
 
 ORDER BY name
