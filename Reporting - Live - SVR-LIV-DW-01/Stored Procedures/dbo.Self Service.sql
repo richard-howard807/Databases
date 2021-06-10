@@ -1137,7 +1137,8 @@ WHERE dim_matter_header_current.matter_number <> 'ML'
 		  -- Added Business Services as requested by A-M 20190920
 --AND dim_matter_header_current.date_opened_case_management >= '2015-01-01'
 --AND( dim_matter_worktype.work_type_name LIKE 'El%' OR dim_matter_worktype.work_type_name LIKE 'NHSLA%' OR dim_matter_worktype.work_type_name LIKE 'PL%')
-AND dim_matter_header_current.matter_description <> 'New Client – Matter Zero' --BH
+AND dim_matter_header_current.matter_description <> 'New Client – Matter Zero'
+AND ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0
 
 
 

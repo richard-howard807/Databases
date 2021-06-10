@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBudgetsAndBillingCombined]
 (
 
@@ -419,7 +420,9 @@ AND red_dw.dbo.dim_matter_header_current.ms_fileid <>4344242
 
 
 
-SELECT #MainData.* FROM #MainData
+SELECT #MainData.*
+,RTRIM(client_code_trimmed) +'-' +RTRIM(matter_number_trimmed) AS FEDRef
+FROM #MainData
 INNER JOIN #Team AS Team ON Team.ListValue 
 COLLATE DATABASE_DEFAULT = matter_owner_team COLLATE DATABASE_DEFAULT
 INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue COLLATE DATABASE_DEFAULT = fed_code COLLATE DATABASE_DEFAULT

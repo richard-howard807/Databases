@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[BAIBillingProjectReport]
 AS
 BEGIN
@@ -92,7 +93,7 @@ GROUP BY client_code,matter_number) AS WIPNonCosts
 
 WHERE dim_matter_header_current.master_client_code='W15349'
 AND date_closed_practice_management IS NULL
-                                                 
+AND ISNULL(present_position,'') NOT IN('Claim concluded but costs outstanding')    --#89317                                         
 AND 
 (
 (wip>=500

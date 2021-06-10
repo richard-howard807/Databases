@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2021-03-22
@@ -76,8 +77,8 @@ ELSE NULL END
 ,fact_finance_summary.[claimants_total_costs_paid_by_all_parties] AS [Total Claimants Costs Agreed Global ]
 ,fact_finance_summary.[claimants_costs_paid] AS [Claimant Solicitors Total Paid]
 ,fact_detail_paid_detail.[tp_total_costs_claimed_all_parties] AS [Total Claimed Costs Bill]
-,NULL AS [Net Profit Costs Claimed (Global)]
-,NULL AS [Net Profit Costs Settled (Global)]
+,curNetPCAgainst AS [Net Profit Costs Claimed (Global)]
+,curNetPCPaid AS [Net Profit Costs Settled (Global)]
 ,dim_detail_outcome.[date_claim_concluded] AS [Damages Settlement Date]
 ,dim_detail_outcome.[date_claimants_costs_received] AS [Date Costs Received]
 ,dim_detail_outcome.[date_costs_settled] AS [Date Costs Settled]
@@ -105,7 +106,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
  ON fact_detail_paid_detail.client_code = dim_matter_header_current.client_code
  AND fact_detail_paid_detail.matter_number = dim_matter_header_current.matter_number
-
+LEFT OUTER JOIN ms_prod.dbo.udMIOutcomeCosts
+ ON ms_fileid=fileID
 	WHERE fact_dimension_main.master_client_code +'-' + master_matter_number IN 
 (
 'W15558-1417'

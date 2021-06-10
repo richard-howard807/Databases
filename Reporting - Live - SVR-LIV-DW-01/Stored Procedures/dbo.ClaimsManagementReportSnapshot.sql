@@ -6,6 +6,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -73,6 +76,7 @@ employeeid
 	,FinYear
 	,[Period]
 	,fed_code
+	,MaternityDays
 )
 
 
@@ -98,14 +102,15 @@ SELECT dim_employee.employeeid
 	,CASE WHEN YTDContribution IS NULL THEN 0 ELSE YTDContribution END AS YTDContribution
 	,TeamTargetsMTD.[Chargeable hours target]
 	,TeamTargetsMTD.[Revenue target]
-	,TeamTargetsMTD.[Chargeable hours target] AS YTDTargetHrs
-	,TeamTargetsMTD.[Revenue target] AS YTDTargetRevenue
+	,TeamTargetsYTD.[Chargeable hours target] AS YTDTargetHrs
+	,TeamTargetsYTD.[Revenue target] AS YTDTargetRevenue
 	,[TeamTargetsAnnual].[Chargeable hours target Annual]
 	,TeamTargetsAnnual.[Revenue target Annual]
 	,@FinMonth AS FinMonth
 	,@FinYear AS FinYear
 	,@Period AS [Period]
 	,dim_fed_hierarchy_history.fed_code
+	,Maternity.MaternityDays
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -200,7 +205,7 @@ SELECT employeeid, SUM(minutes_recorded)/60 AS [ChargeableHoursYTD]
 LEFT OUTER JOIN 
 (
 SELECT CurrentAbsence.employeeid,SUM(CASE WHEN CurrentAbsence.category='Sickness' THEN CurrentAbsence.days ELSE 0 END) AS SicknessDays
-,SUM(CASE WHEN ISNULL(CurrentAbsence.category,'')<>'Sickness' THEN CurrentAbsence.days ELSE 0 END) AS OtherDays
+,SUM(CASE WHEN ISNULL(CurrentAbsence.category,'') NOT IN ('Maternity','Sickness') THEN CurrentAbsence.days ELSE 0 END) AS OtherDays
 FROM
 (SELECT employeeid, attendancekey, category, SUM(durationdays) days, MIN(startdate) startdate, MAX(startdate) enddate
 				FROM red_dw.dbo.fact_employee_attendance WITH(NOLOCK)
@@ -281,6 +286,28 @@ GROUP BY hierarchylevel4hist
 
 ) AS TeamTargetsAnnual
  ON hierarchylevel4hist=TeamTargetsAnnual.Team COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT CurrentAbsence.employeeid,SUM(CurrentAbsence.days) AS MaternityDays
+FROM
+(SELECT employeeid, attendancekey, category, SUM(durationdays) days, MIN(startdate) startdate, MAX(startdate) enddate
+				FROM red_dw.dbo.fact_employee_attendance WITH(NOLOCK)
+				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
+											FROM red_dw.dbo.dim_date WITH(NOLOCK)
+											WHERE current_fin_year='Current')
+											AND durationdays<>0
+											--AND startdate<=GETDATE()
+											--AND ISNULL(category,'')='Maternity'
+											--AND employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
+											--AND CONVERT(DATE,startdate,103) BETWEEN @StartDate AND @EndDate
+											AND CONVERT(DATE,startdate,103) NOT IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' OR holiday_flag='Y')
+AND category='Maternity'
+						GROUP BY employeeid, attendancekey,
+                                 category
+								 ) AS [CurrentAbsence]
+								 GROUP BY CurrentAbsence.employeeid
+) AS Maternity 
+ ON Maternity.employeeid = dim_employee.employeeid
 WHERE leaver=0
 AND hierarchylevel2hist='Legal Ops - Claims'
 AND normalworkingday <>0
