@@ -302,12 +302,15 @@ FROM (
 		INNER JOIN red_dw.dbo.ds_sh_3e_invmaster		AS invmaster ON timebill_1.invmaster = invmaster.invindex
 		INNER JOIN red_dw.dbo.ds_sh_3e_armaster       AS armaster ON timebill_1.armaster = armaster.armindex
 		LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_timekeeper	AS timekeeper_1 ON timekeeper_1.tkprindex = mattprlftkpr.timekeeper
-	WHERE  armaster.invdate >= @processdate
-		AND matter_1.opendate >= '20190501'
-		AND DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095
+	WHERE  armaster.invdate >= '20190501'
+			and ((matter_1.opendate >= '20190501'		
+			and DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095)
 
+				or matter_1.number IN ('720451-1001')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
+				and matter_1.number = '720451-1001'
 
-	UNION ALL
+	UNION all
+    
         -- Charges
 		SELECT NULL AS [entity number] ,
 		client_1.number AS client ,
@@ -340,8 +343,10 @@ FROM (
 		INNER JOIN red_dw.dbo.ds_sh_3e_armaster       AS armaster ON timebill_1.armaster = armaster.armindex
 		LEFT OUTER JOIN red_dw.dbo.ds_sh_3e_timekeeper	AS timekeeper_1 ON timekeeper_1.tkprindex = mattprlftkpr.timekeeper
 	WHERE  armaster.invdate >= @processdate
-		AND matter_1.opendate >= '20190501'
-		AND DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095
+			and ((matter_1.opendate >= '20190501'		
+			and DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095)
+
+				or matter_1.number IN ('720451-1001')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
 
 ) x 
 
