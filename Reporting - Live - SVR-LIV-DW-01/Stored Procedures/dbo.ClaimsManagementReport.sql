@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -79,6 +80,7 @@ SELECT ClaimsManagementReportSnapshotTable.employeeid,
        FinYear,
        Period,
        classification,ISNULL(MaternityDays,0) AS MaternityDays
+	   ,ISNULL(MaternityYTD,0) AS MaternityYTD
 	   FROM dbo.ClaimsManagementReportSnapshotTable
 	   LEFT OUTER JOIN red_dw.dbo.dim_employee
 	    ON dim_employee.employeeid = ClaimsManagementReportSnapshotTable.employeeid

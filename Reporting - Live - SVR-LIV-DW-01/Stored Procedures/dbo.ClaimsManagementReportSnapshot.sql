@@ -9,6 +9,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -77,6 +79,7 @@ employeeid
 	,[Period]
 	,fed_code
 	,MaternityDays
+	,MaternityYTD
 )
 
 
@@ -111,6 +114,7 @@ SELECT dim_employee.employeeid
 	,@Period AS [Period]
 	,dim_fed_hierarchy_history.fed_code
 	,Maternity.MaternityDays
+	,MaternityYTD
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -217,7 +221,7 @@ FROM
 											AND ISNULL(category,'')<>'Holiday'
 											--AND employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
 											AND CONVERT(DATE,startdate,103) BETWEEN @StartDate AND @EndDate
-											AND CONVERT(DATE,startdate,103) NOT IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' OR holiday_flag='Y')
+											AND CONVERT(DATE,startdate,103)  IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' AND dim_date.holiday_flag = 'N')
 
 						GROUP BY employeeid, attendancekey,
                                  category
@@ -289,8 +293,9 @@ GROUP BY hierarchylevel4hist
 LEFT OUTER JOIN 
 (
 SELECT CurrentAbsence.employeeid,SUM(CurrentAbsence.days) AS MaternityDays
+,SUM(CurrentAbsence.daystodate) AS MaternityYTD
 FROM
-(SELECT employeeid, attendancekey, category, SUM(durationdays) days, MIN(startdate) startdate, MAX(startdate) enddate
+(SELECT employeeid, attendancekey, category, SUM(durationdays) days,SUM(CASE WHEN startdate<=CONVERT(DATE,GETDATE(),103) THEN durationdays ELSE 0 END) AS daystodate, MIN(startdate) startdate, MAX(startdate) enddate
 				FROM red_dw.dbo.fact_employee_attendance WITH(NOLOCK)
 				WHERE  entitlement_year=(SELECT DISTINCT fin_year 
 											FROM red_dw.dbo.dim_date WITH(NOLOCK)
@@ -300,7 +305,7 @@ FROM
 											--AND ISNULL(category,'')='Maternity'
 											--AND employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
 											--AND CONVERT(DATE,startdate,103) BETWEEN @StartDate AND @EndDate
-											AND CONVERT(DATE,startdate,103) NOT IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' OR holiday_flag='Y')
+											AND CONVERT(DATE,startdate,103)  IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' AND dim_date.holiday_flag = 'N')
 AND category='Maternity'
 						GROUP BY employeeid, attendancekey,
                                  category
