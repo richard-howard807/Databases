@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 /*
 -- =============================================
 -- Author:		Jamie Bonner
@@ -13,7 +14,7 @@ GO
 -- =============================================
 */
 
-CREATE PROCEDURE [dbo].[camerons_brewery_instructions]
+CREATE PROCEDURE [dbo].[camerons_brewery_instructions] --EXEC [dbo].[camerons_brewery_instructions] '2021-05-01','2021-05-31'
 (
 	@start_date AS DATE
 	, @end_date AS DATE
@@ -44,6 +45,7 @@ SELECT
 	, ISNULL(fact_finance_summary.defence_costs_billed, 0)			AS [Fees billed to Date]
 	, ISNULL(fact_finance_summary.disbursements_billed, 0)			AS [Disbursements Billed to Date]
 	, ISNULL(monthly_fees.Revenue, 0)			AS [Monthly Fees]
+	, ISNULL(DisbsBilled,0) AS [Monthly Disbs]
 	, CASE
 		WHEN RTRIM(dim_detail_finance.output_wip_fee_arrangement) = 'Fixed Fee/Fee Quote/Capped Fee' THEN 
 			ISNULL(fact_finance_summary.fixed_fee_amount, 0) - ISNULL(fact_finance_summary.defence_costs_billed, 0)
@@ -92,6 +94,16 @@ FROM red_dw.dbo.fact_dimension_main
 				)	AS monthly_fees
 		ON monthly_fees.client_code = dim_matter_header_current.client_code
 			AND monthly_fees.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN (SELECT fact_bill.dim_matter_header_curr_key,SUM(paid_disbursements) + SUM(unpaid_disbursements) AS DisbsBilled
+FROM red_dw.dbo.fact_bill 
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_bill ON dim_bill.dim_bill_key = fact_bill.dim_bill_key
+INNER JOIN red_dw.dbo.dim_bill_date ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key 
+WHERE bill_date BETWEEN @start_date AND @end_date
+AND bill_reversed=0
+AND master_client_code IN ('W22555', 'W24107') GROUP BY fact_bill.dim_matter_header_curr_key) AS DisbursementsMonth
+ ON DisbursementsMonth.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
 	--AND dim_matter_header_current.master_matter_number = '211'
