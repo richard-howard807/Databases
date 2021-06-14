@@ -38,71 +38,157 @@ BEGIN
 -- table to deal with lengthy client report date logics
 --=========================================================================================================================================================================================================================================================================
 
-	SELECT 
-		dim_matter_header_current.master_client_code
-		, dim_matter_header_current.master_matter_number
-		, CASE 
-			WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
-				[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
-			WHEN date_initial_report_due IS NULL THEN 
-				[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
-			ELSE 
-				date_initial_report_due 
-			END						AS [initial_report_due]
-		,  CASE 
-			WHEN do_clients_require_an_initial_report = 'No' THEN
-				NULL
-			WHEN RTRIM(dim_detail_core_details.present_position) IN (
-																		'Final bill due - claim and costs concluded',
-																		'Final bill sent - unpaid',
-																		'To be closed/minor balances to be clear'            
-																	) THEN
-				NULL
-			WHEN dim_detail_core_details.date_initial_report_sent IS NULL AND dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
-				NULL
-			WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NOT NULL THEN 
-				CASE 
-					-- Needing to make sure future date is a weekday
-					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Saturday' THEN
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+2
-					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Sunday' THEN
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+1
-					ELSE 
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)
+SELECT 
+	dim_matter_header_current.master_client_code
+	, dim_matter_header_current.master_matter_number
+	, dim_detail_health.nhs_instruction_type
+	, CASE
+		WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
+			'No'
+		ELSE
+        	dim_detail_core_details.do_clients_require_an_initial_report
+	  END			AS do_clients_require_an_initial_report 
+	/*
+	Initial Report
+	*/
+	, CASE 
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN 
+			CASE
+				WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
+					NULL
+				WHEN dim_detail_health.nhs_instruction_type IN ('Schedule 4 (ENS)', 'Schedule 5 (ENS)', 'ISS 250 Advisory', 'ISS Plus', 'ISS Plus Advisory') THEN
+					DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, nhs_key_dates.key_date)					
+				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
+					DATEADD(DAY, ClientSLAsNHSR.initial_report_sla_days, CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE))
+				WHEN date_initial_report_due IS NULL THEN
+					DATEADD(DAY, ClientSLAsNHSR.initial_report_sla_days, CAST(date_opened_case_management AS DATE)) 
+				WHEN date_initial_report_due IS NOT NULL THEN
+					dim_detail_core_details.date_initial_report_due
+				ELSE 
+					NULL 
+			END	
+		ELSE
+			CASE
+				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
+					[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
+				WHEN date_initial_report_due IS NULL THEN 
+					[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
+				ELSE 
+					date_initial_report_due 
 				END
-			WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
-				CASE 
-					-- Needing to make sure future date is a weekday
-					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Saturday' THEN
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+2
-					WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Sunday' THEN
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+1
-					ELSE 
-						DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)
-				END
-			ELSE 
-				NULL
-			END									AS [date_subsequent_report_due]
-	INTO #ClientReportDates
-	FROM red_dw.dbo.fact_dimension_main
-		LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
-			ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
-		LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
-			ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-		LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
-			ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-		LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
-			ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
-				AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
-		LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
-			ON days.master_fact_key = fact_dimension_main.master_fact_key
-		LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
-			ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
-	WHERE 
-		reporting_exclusions = 0
-		AND hierarchylevel2hist = 'Legal Ops - Claims'
-		AND (date_closed_case_management IS NULL 
-			OR date_closed_case_management >= '2017-01-01')
+	  END						AS [initial_report_due]
+	/*
+	Subsequent report
+	*/
+	, CASE 
+		WHEN RTRIM(dim_detail_core_details.present_position) IN (
+																	'Final bill due - claim and costs concluded',
+																	'Final bill sent - unpaid',
+																	'To be closed/minor balances to be clear'            
+																) THEN
+			NULL
+		WHEN dim_detail_core_details.date_initial_report_sent IS NULL AND dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
+			NULL
+		-- NHS has to come 1st to override "dim_detail_core_details.do_clients_require_an_initial_report" data
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN 
+			CASE
+				WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NOT NULL THEN 
+					CASE 
+						-- Needing to make sure future date is a weekday
+						WHEN DATENAME(wk, DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Saturday' THEN
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_subsequent_sla_report_sent)+2
+						WHEN DATENAME(wk, DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Sunday' THEN
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_subsequent_sla_report_sent)+1
+						ELSE 
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_subsequent_sla_report_sent)
+					END
+				WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
+					CASE 
+						-- Needing to make sure future date is a weekday
+						WHEN DATENAME(wk, DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_initial_report_sent)) = 'Saturday' THEN
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_initial_report_sent)+2
+						WHEN DATENAME(wk, DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_initial_report_sent)) = 'Sunday' THEN
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_initial_report_sent)+1
+						ELSE 
+							DATEADD(MONTH, CAST(ClientSLAsNHSR.subsequent_report_months AS INT), dim_detail_core_details.date_initial_report_sent)
+					END
+			END 
+		WHEN dim_detail_core_details.do_clients_require_an_initial_report = 'No' THEN
+			NULL
+		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NOT NULL THEN 
+			CASE 
+				-- Needing to make sure future date is a weekday
+				WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Saturday' THEN
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+2
+				WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)) = 'Sunday' THEN
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)+1
+				ELSE 
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_subsequent_sla_report_sent)
+			END
+		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
+			CASE 
+				-- Needing to make sure future date is a weekday
+				WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Saturday' THEN
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+2
+				WHEN DATENAME(wk, DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)) = 'Sunday' THEN
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)+1
+				ELSE 
+					DATEADD(MONTH, ISNULL(CAST(ClientSLAs.[Update Report SLA (months)] AS INT), 3), dim_detail_core_details.date_initial_report_sent)
+			END
+		ELSE 
+			NULL
+		END									AS [date_subsequent_report_due]
+INTO #ClientReportDates
+FROM red_dw.dbo.fact_dimension_main
+	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+		ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+		ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
+		ON days.master_fact_key = fact_dimension_main.master_fact_key
+	LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
+		ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_health
+		ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN Reporting.dbo.ClientSLAsNHSR
+		ON ClientSLAsNHSR.master_client_code = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT
+			AND ClientSLAsNHSR.nhs_instruction_type = dim_detail_health.nhs_instruction_type COLLATE DATABASE_DEFAULT
+	LEFT OUTER JOIN (
+						SELECT *
+						FROM (
+							SELECT 
+								dim_key_dates.dim_matter_header_curr_key
+								, dim_key_dates.description
+								, dim_key_dates.key_date
+								, dim_key_dates.days_to_key_date
+								, ROW_NUMBER() OVER(PARTITION BY dim_key_dates.dim_matter_header_curr_key ORDER BY dim_key_dates.key_date)	AS rw
+							FROM red_dw.dbo.dim_key_dates
+								INNER JOIN red_dw.dbo.dim_matter_header_current
+									ON dim_matter_header_current.dim_matter_header_curr_key = dim_key_dates.dim_matter_header_curr_key
+								LEFT OUTER JOIN red_dw.dbo.dim_detail_health
+									ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+							WHERE 1 = 1
+								AND dim_matter_header_current.master_client_code = 'N1001'
+								AND dim_key_dates.description IN ('Date Letter of response due', 'Date Schedule 5 expert summit')
+								AND dim_detail_health.nhs_instruction_type IN ('Schedule 4 (ENS)', 'Schedule 5 (ENS)', 'ISS 250 Advisory', 'ISS Plus', 'ISS Plus Advisory')
+								AND dim_key_dates.key_date >= CAST(GETDATE() AS DATE)
+								AND dim_key_dates.is_active = 1
+							) AS key_dates
+						WHERE
+							key_dates.rw = 1
+					) AS nhs_key_dates
+		ON nhs_key_dates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+WHERE 
+	reporting_exclusions = 0
+	AND hierarchylevel2hist = 'Legal Ops - Claims'
+	AND (date_closed_case_management IS NULL 
+		OR date_closed_case_management >= '2017-01-01')
+	--AND dim_matter_header_current.master_client_code = 'N1001'
 					
 --=========================================================================================================================================================================================================================================================================
 --=========================================================================================================================================================================================================================================================================
@@ -128,19 +214,19 @@ SELECT
 	, date_instructions_received AS [Date Instructions Received]
 	, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, date_initial_report_sent AS [Date Initial Report Sent]
-	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
+	, #ClientReportDates.do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
 	, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Receipt of File Papers]
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, #ClientReportDates.initial_report_due				AS [Date Initial Report Due (if extended)]
 	, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
-	, CASE WHEN do_clients_require_an_initial_report = 'No' THEN NULL
+	, CASE WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN NULL
 		WHEN date_initial_report_sent IS NOT NULL THEN NULL
 		WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())
 		WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
 		ELSE NULL END AS [Days without Initial Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' OR
+		WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -196,7 +282,7 @@ SELECT
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			'Orange'
 		WHEN (CASE 
-					WHEN do_clients_require_an_initial_report = 'No' OR
+					WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' OR
 									RTRIM(dim_detail_core_details.present_position) IN (
 																					'Final bill due - claim and costs concluded',
 																					'Final bill sent - unpaid',
@@ -221,7 +307,7 @@ SELECT
 	,referral_reason
 	, dim_detail_core_details.delegated
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' OR
+		WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' OR
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
@@ -235,7 +321,7 @@ SELECT
 			0
 	  END										AS [Count Initial Report Due In 5 Working Days]
 	, CASE 
-		WHEN do_clients_require_an_initial_report = 'No' OR 
+		WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' OR 
 						RTRIM(dim_detail_core_details.present_position) IN (
 																		'Final bill due - claim and costs concluded',
 																		'Final bill sent - unpaid',
