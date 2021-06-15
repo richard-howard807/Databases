@@ -41,13 +41,36 @@ BEGIN
 SELECT 
 	dim_matter_header_current.master_client_code
 	, dim_matter_header_current.master_matter_number
-	, dim_detail_health.nhs_instruction_type
+	, CASE 
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN
+			dim_detail_health.nhs_instruction_type
+		ELSE
+			NULL
+	  END					AS nhs_instruction_type
+	, CASE	
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN
+			ClientSLAsNHSR.initial_report_sla_days
+		ELSE
+			ClientSLAs.[Initial Report SLA (days)]
+	  END							AS initial_report_days
+	, CASE
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN
+			ClientSLAsNHSR.subsequent_report_rule
+		ELSE
+			ClientSLAs.[Update Report SLA]
+	  END											AS update_report_sla			
 	, CASE
 		WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
 			'No'
 		ELSE
         	dim_detail_core_details.do_clients_require_an_initial_report
 	  END			AS do_clients_require_an_initial_report 
+	, CASE
+		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN
+			IIF(ClientSLAsNHSR.subsequent_report_rule = 'subsequent report not needed', 0, ClientSLAsNHSR.subsequent_report_working_days)
+		ELSE
+			ClientSLAs.[Update Report SLA (working days)]
+	  END				AS update_report_sla_working_days
 	/*
 	Initial Report
 	*/
@@ -209,6 +232,7 @@ SELECT
 	, CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Status]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number			 AS [Mattersphere Weightmans Reference]
 	, dim_detail_core_details.present_position AS [Present Position]
+	, #ClientReportDates.nhs_instruction_type	AS [NHS Instruction Type (N1001 Only)]
 	, date_opened_case_management AS [Date Opened]
 	, date_closed_case_management AS [Date Closed]
 	, date_instructions_received AS [Date Instructions Received]
@@ -250,11 +274,16 @@ SELECT
 	--Client SLA's
 	, [File Opening SLA (days)]
 	, ISNULL(ClientSLAs.[File Opening SLA (days)], 2)		AS [File Opening SLA hidden on report for highlighting]
-	, [Initial Report SLA (days)]
-	, ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)	AS [Initial Report SLA hidden on report for highlighting]
-	, ClientSLAs.[Update Report SLA]
-	, ClientSLAs.[Update Report SLA (working days)]
-	, ISNULL(ClientSLAs.[Update Report SLA (working days)], 63)		AS [Update Report SLA hidden on report for highlighting]
+	, #ClientReportDates.initial_report_days		AS [Initial Report SLA (days)]
+	, CASE
+		WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN
+			0
+		ELSE
+        	ISNULL(#ClientReportDates.initial_report_days, 10)	
+	  END														AS [Initial Report SLA hidden on report for highlighting]
+	, #ClientReportDates.update_report_sla		AS [Update Report SLA]
+	, #ClientReportDates.update_report_sla_working_days											AS [Update Report SLA (working days)]
+	, ISNULL(#ClientReportDates.update_report_sla_working_days, 63)		AS [Update Report SLA hidden on report for highlighting]
 	, CASE 
 			WHEN (CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END) <0 THEN 
 				'Transparent'
