@@ -10,7 +10,7 @@ GO
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
 	ES - 20190702 - had to revert this back as the macro helen duffy uses wasn't working, fixed fee cases have been removed for now
-
+	JB - 20210615 - #102528 added in Solicitors PQE years and office location
 */
 
 
@@ -27,7 +27,7 @@ BEGIN
     -- For Testing Purposes
 
     --DECLARE @Scheme AS VARCHAR(200) = 'CNST'
-    --DECLARE @EndDate AS DATE = '20190131'
+    --DECLARE @EndDate AS DATE = '20210614'
 
 
     IF OBJECT_ID('tempdb..#Details') IS NOT NULL
@@ -130,7 +130,9 @@ BEGIN
            END AS HourlyRate,
            Number AS FE,
            1 AS xOrder,
-           Matters.AltNumber AS AltNumber
+           Matters.AltNumber AS AltNumber,
+		   DATEDIFF(YEAR, pqe_date.admissiondateud, CONVERT(DATE, UnbilledWIP.WorkDate, 103))	AS years_pqe,
+		   pqe_date.locationidud AS office
 		   --NULL AS [UnbilledDisbs]
     FROM
     (
@@ -156,6 +158,17 @@ BEGIN
         INNER JOIN #Details AS Details
             ON Matters.Client = Details.client COLLATE DATABASE_DEFAULT
                AND Matters.Matter = Details.matter COLLATE DATABASE_DEFAULT
+		LEFT OUTER JOIN (
+							SELECT 
+								dim_fed_hierarchy_current.name
+								, dim_fed_hierarchy_current.fed_code
+								, dim_employee.admissiondateud
+								, dim_employee.locationidud
+							FROM red_dw.dbo.dim_fed_hierarchy_current
+								INNER JOIN red_dw.dbo.dim_employee
+									ON dim_employee.employeeid = dim_fed_hierarchy_current.employeeid
+						) AS pqe_date
+			ON pqe_date.fed_code COLLATE DATABASE_DEFAULT = Timekeeper.Number
     WHERE WIPRemoveDate IS NULL
           AND
           (
@@ -181,7 +194,9 @@ BEGIN
              [Fee Arrangement Filter],
              Number,
              Matters.AltNumber,
-             [InstructionType]
+             [InstructionType],
+			 DATEDIFF(YEAR, pqe_date.admissiondateud, CONVERT(DATE, UnbilledWIP.WorkDate, 103)),
+			 pqe_date.locationidud
     UNION
     SELECT Matters.Client,
            Matters.Matter,
@@ -213,7 +228,9 @@ BEGIN
            NULL AS HourlyRate,
            Number AS FE,
            2 AS xOrder,
-           Matters.AltNumber AS AltNumber
+           Matters.AltNumber AS AltNumber,
+		   NULL AS years_pqe,
+		   NULL AS office
 		  --CostCard.WorkAmt AS [UnbilledDisbs]
     FROM
     (
