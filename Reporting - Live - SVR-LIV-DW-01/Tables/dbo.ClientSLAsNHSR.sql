@@ -8,6 +8,7 @@ CREATE TABLE [dbo].[ClientSLAsNHSR]
 [subsequent_report_rule] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [subsequent_report_days] [float] NULL,
 [subsequent_report_working_days] [float] NULL,
-[subsequent_report_months] [float] NULL
+[subsequent_report_months] [float] NULL,
+[inverted_initial_rule] [varchar] (3) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO
