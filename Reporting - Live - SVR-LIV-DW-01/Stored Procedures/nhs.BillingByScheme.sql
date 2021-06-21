@@ -4,15 +4,12 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
 	ES - 20190702 - had to revert this back as the macro helen duffy uses wasn't working, fixed fee cases have been removed for now
 	JB - 20210615 - #102528 added in Solicitors PQE years and office location
 */
-
 
 
 
@@ -27,7 +24,7 @@ BEGIN
     -- For Testing Purposes
 
     --DECLARE @Scheme AS VARCHAR(200) = 'CNST'
-    --DECLARE @EndDate AS DATE = '20210614'
+    --DECLARE @EndDate AS DATE = '20210621'
 
 
     IF OBJECT_ID('tempdb..#Details') IS NOT NULL
@@ -131,7 +128,13 @@ BEGIN
            Number AS FE,
            1 AS xOrder,
            Matters.AltNumber AS AltNumber,
-		   DATEDIFF(YEAR, pqe_date.admissiondateud, CONVERT(DATE, UnbilledWIP.WorkDate, 103))	AS years_pqe,
+		   DATEDIFF(YEAR, pqe_date.admissiondateud, UnbilledWIP.WorkDate)- 
+				CASE 
+					WHEN (MONTH(pqe_date.admissiondateud) > MONTH(UnbilledWIP.WorkDate)) OR (MONTH(pqe_date.admissiondateud) = MONTH(UnbilledWIP.WorkDate) AND DAY(pqe_date.admissiondateud) > DAY(UnbilledWIP.WorkDate)) THEN 
+						1 
+					ELSE 
+						0 
+				END				AS years_pqe,
 		   pqe_date.locationidud AS office
 		   --NULL AS [UnbilledDisbs]
     FROM
@@ -195,8 +198,15 @@ BEGIN
              Number,
              Matters.AltNumber,
              [InstructionType],
-			 DATEDIFF(YEAR, pqe_date.admissiondateud, CONVERT(DATE, UnbilledWIP.WorkDate, 103)),
+			 DATEDIFF(YEAR, pqe_date.admissiondateud, UnbilledWIP.WorkDate)- 
+				CASE 
+					WHEN (MONTH(pqe_date.admissiondateud) > MONTH(UnbilledWIP.WorkDate)) OR (MONTH(pqe_date.admissiondateud) = MONTH(UnbilledWIP.WorkDate) AND DAY(pqe_date.admissiondateud) > DAY(UnbilledWIP.WorkDate)) THEN 
+						1 
+					ELSE 
+						0 
+				END,
 			 pqe_date.locationidud
+
     UNION
     SELECT Matters.Client,
            Matters.Matter,
