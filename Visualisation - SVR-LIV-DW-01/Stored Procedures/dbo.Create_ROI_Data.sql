@@ -18,6 +18,9 @@ RH 20200805 - Amened to include charges which are reported as revenue 'Fees'
 			- Report documentation \\sbc.root\usershares\Restricted\Business Services\Information Systems\Teams\Development\Business Intelligence\Documentation\Partners Billing Introductions and Referrals Documentation.docx
 
 RH 20200204 - Excluded two clients from hard cutoff date after request from Laura Harrison 
+
+ES 20210610 - added legal directors and martin vincent, requested by greg
+
 exec [dbo].[Create_ROI_Data] '20190101'
 */
 
@@ -56,9 +59,9 @@ AS
 		INNER JOIN red_dw.dbo.ds_sh_3e_title c ON b.Title = c.code COLLATE DATABASE_DEFAULT
 
 	WHERE  c.description IN (
-	'Fixed Share Partner' )
+	'Fixed Share Partner', 'Legal Director' )
 	--20200210, 46543
-	OR a.displayname='Robert Turnbull'
+	OR a.displayname IN ('Robert Turnbull','Martin Vincent')
 
 
 	DECLARE @matter_refs TABLE (timekeeper INT)
@@ -75,7 +78,44 @@ AS
     TRUNCATE TABLE ROI;
 
     INSERT INTO ROI
-SELECT ROI.* ,
+	(
+	[entity number],
+       [client number],
+       clientindex,
+       [client name],
+       [client status],
+       [client open date],
+       [Client Introducer],
+       timekeeper,
+       ROI.mattindex,
+       postdate,
+       billamt,
+       billhrs,
+       workamt,
+       workhrs,
+       ref_type,
+       reftypeno,
+	   [percentage] ,
+    update_time,
+    altnumber
+	)
+SELECT [entity number],
+       [client number],
+       clientindex,
+       [client name],
+       [client status],
+       [client open date],
+       [Client Introducer],
+       timekeeper,
+       ROI.mattindex,
+       postdate,
+       billamt,
+       billhrs,
+       workamt,
+       workhrs,
+       ref_type,
+       reftypeno
+	   ,[percentage] ,
     GETDATE() ,
     altnumber
 FROM   (   
@@ -98,7 +138,9 @@ SELECT x.[entity number],
        x.workhrs,
        x.ref_type,
        x.reftypeno
+	   ,x.percentage
 FROM (
+
 	SELECT c.entity AS 'entity number' ,
 		c.number AS 'client number' ,
 		c.clientindex ,
@@ -119,6 +161,7 @@ FROM (
 		'Intro of Client Billing' AS ref_type 
 		-- , co.percentage / 100,
 		,2 AS reftypeno
+		,co.percentage
 		-- select mattindex, co.*
 	FROM   red_dw.dbo.ds_sh_3e_client				AS c WITH ( NOLOCK )
 		INNER JOIN red_dw.dbo.ds_sh_3e_clidate		AS cd WITH ( NOLOCK ) ON cd.clientlkup = c.clientindex  AND cd.nxenddate = '99991231'
@@ -163,6 +206,7 @@ FROM (
 		'Intro of Client Billing' AS ref_type 
 		-- , co.percentage / 100,
 		,2 AS reftypeno
+		,co.percentage
 		-- select mattindex, co.*
 	FROM   red_dw.dbo.ds_sh_3e_client				AS c WITH ( NOLOCK )
 		INNER JOIN red_dw.dbo.ds_sh_3e_clidate		AS cd WITH ( NOLOCK ) ON cd.clientlkup = c.clientindex  AND cd.nxenddate = '99991231'
@@ -205,6 +249,7 @@ SELECT NULL AS [entity number] ,
         timebill_2.workhrs ,
         'Personal Billing' AS ref_type ,
         1 AS reftypeno
+		,NULL 
 FROM   red_dw.dbo.ds_sh_3e_timecard					AS timecard_2
         INNER JOIN red_dw.dbo.ds_sh_3e_timebill		AS timebill_2 ON timebill_2.timecard = timecard_2.timeindex
         INNER JOIN red_dw.dbo.ds_sh_3e_invmaster	AS invmaster1 ON timebill_2.invmaster = invmaster1.invindex
@@ -236,6 +281,7 @@ SELECT NULL AS [entity number] ,
         0 ,
         'Personal Billing' AS ref_type ,
         1 AS reftypeno
+		,NULL  
 FROM   red_dw.dbo.ds_sh_3e_chrgcard					AS timecard_2
         INNER JOIN red_dw.dbo.ds_sh_3e_chrgbill		AS timebill_2 ON timebill_2.chrgcard = timecard_2.chrgcardindex  AND trantype = 'FEES'
         INNER JOIN red_dw.dbo.ds_sh_3e_invmaster	AS invmaster1 ON timebill_2.invmaster = invmaster1.invindex
@@ -262,7 +308,7 @@ SELECT x.[entity number],
        x.[client introducer],
        x.timekeeper,
        x.mattindex,
-       x.invdate,       
+       x.invdate,  
        --x.billamt - x.personalbillings billamt,
 	   x.billamt billamt,
 	   x.billhrs,
@@ -270,6 +316,7 @@ SELECT x.[entity number],
        x.workhrs,
        x.ref_type,
        x.reftypeno
+	   ,x.percentage
 FROM (
 
 	SELECT NULL AS [entity number] ,
@@ -292,6 +339,7 @@ FROM (
 		timebill_1.workhrs ,
 		'Referral of Matters' AS ref_type ,
 		3 AS reftypeno
+		,mattprlftkpr.percentage
 		-- select mattprlftkpr.*
 	FROM red_dw.dbo.ds_sh_3e_timecard					AS timecard_1
 		INNER JOIN red_dw.dbo.ds_sh_3e_timebill			AS timebill_1 ON timebill_1.timecard = timecard_1.timeindex
@@ -306,11 +354,11 @@ FROM (
 			and ((matter_1.opendate >= '20190501'		
 			and DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095)
 
-				or matter_1.number IN ('720451-1001')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
-				and matter_1.number = '720451-1001'
-
+				or matter_1.number IN ('720451-1001','W21334-1')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
+				--and matter_1.number = '720451-1001'
+		
 	UNION all
-    
+
         -- Charges
 		SELECT NULL AS [entity number] ,
 		client_1.number AS client ,
@@ -332,6 +380,7 @@ FROM (
 		0 ,
 		'Referral of Matters' AS ref_type ,
 		3 AS reftypeno
+		,mattprlftkpr.percentage
 		-- select mattprlftkpr.*
 	FROM   red_dw.dbo.ds_sh_3e_chrgcard					AS timecard_1
 		INNER JOIN red_dw.dbo.ds_sh_3e_chrgbill			AS timebill_1 ON timebill_1.chrgcard = timecard_1.chrgcardindex  AND trantype = 'FEES'
@@ -346,7 +395,7 @@ FROM (
 			and ((matter_1.opendate >= '20190501'		
 			and DATEDIFF(D, matter_1.opendate, armaster.invdate) < 1095)
 
-				or matter_1.number IN ('720451-1001')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
+				or matter_1.number IN ('720451-1001','W21334-1')) -- Request to exclude matter from cut-off date from Anna | '720451-1001
 
 ) x 
 
@@ -377,6 +426,7 @@ SELECT c.entity AS 'entity number' ,
     timebill.workhrs ,
     'Intro of Client Billing' AS ref_type ,
     2 AS reftypeno
+	,co.percentage
 FROM   red_dw.dbo.ds_sh_3e_client				AS c WITH ( NOLOCK )
     INNER JOIN red_dw.dbo.ds_sh_3e_clidate		AS cd WITH ( NOLOCK ) ON cd.clientlkup = c.clientindex  AND cd.nxenddate = '99991231'
     INNER JOIN red_dw.dbo.ds_sh_3e_cliorgtkpr	AS co WITH ( NOLOCK ) ON co.clieffdate = cd.clidateid
@@ -410,6 +460,7 @@ SELECT NULL AS [entity number] ,
         timebill_2.workhrs ,
         'Personal Billing' AS ref_type ,
         1 AS reftypeno
+		,NULL 
 FROM   red_dw.dbo.ds_sh_3e_timecard					AS timecard_2
         INNER JOIN red_dw.dbo.ds_sh_3e_timebill		AS timebill_2 ON timebill_2.timecard = timecard_2.timeindex
         INNER JOIN red_dw.dbo.ds_sh_3e_invmaster	AS invmaster1 ON timebill_2.invmaster = invmaster1.invindex
@@ -442,6 +493,7 @@ SELECT NULL AS [entity number] ,
     timebill_1.workhrs ,
     'Referral of Matters' AS ref_type ,
     3 AS reftypeno
+	,mattprlftkpr.percentage
 FROM   red_dw.dbo.ds_sh_3e_timecard					AS timecard_1
     INNER JOIN red_dw.dbo.ds_sh_3e_timebill			AS timebill_1 ON timebill_1.timecard = timecard_1.timeindex
     INNER JOIN red_dw.dbo.ds_sh_3e_matter			AS matter_1 ON matter_1.mattindex = timecard_1.billmatter

@@ -20,6 +20,7 @@ Current Version:	Initial Create
 -- JL 17-01-2020 Added in involvement table v 1.1
 -- JL 08-12-2020 Its been advised that the face_dimention_main key for history needs to be fixed by Richard. Have removed the join and replaced untill its fixed. v 1.2
 -- ES 11/02/2021 #88316, added dim_detail_core_details.[do_clients_require_an_initial_report]
+-- ES 18/06/2021 added dim_detail_core_details[will_total_gross_reserve_on_the_claim_exceed_500000] for EJ
 ====================================================
 
 */
@@ -646,6 +647,8 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 ,dim_detail_core_details.[covid_reason_code]
 ,dim_detail_core_details.[covid_reason_desc]
 
+--Large Loss
+,dim_detail_core_details.[will_total_gross_reserve_on_the_claim_exceed_500000] AS [Will total gross damages reserve exceed £350,000?]
 
 INTO dbo.Vis_GeneralData
 

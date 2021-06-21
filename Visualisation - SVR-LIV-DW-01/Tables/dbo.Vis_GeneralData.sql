@@ -497,6 +497,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [covid_witness_unavailability_defendant] [bit] NULL,
 [covid_witness_unavailablility_claimant] [bit] NULL,
 [covid_reason_code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
-[covid_reason_desc] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL
+[covid_reason_desc] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
+[Will total gross damages reserve exceed £350,000?] [varchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO
