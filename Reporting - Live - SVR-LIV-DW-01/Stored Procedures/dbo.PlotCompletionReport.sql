@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[PlotCompletionReport]
 (
 @StartDate AS DATE
@@ -34,7 +35,7 @@ master_client_code + '-' + master_matter_number AS [Client & Matter Reference]
 ,txtPurchaser1Fullname AS [Document Fee Paid by]
 ,curPartExFee AS [Part Exchange Legal Fee]
 ,curPartExDisb AS [Part Exchange Other Disbursement]
-,NULL AS [Part Exchange File Reference]
+,txtFileNumber   AS [Part Exchange File Reference]
 ,mtxtAddressPartEx   AS [Part Exchange Property Address]
 ,NULL AS [Builder Account Details]
 ,txtSortCodePS AS [Sort Code]

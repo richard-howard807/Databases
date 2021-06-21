@@ -13,6 +13,8 @@ Description:		Sussex and Surrey MI to drive the Tableau Dashboards, all years
 Current Version:	Initial Create
 ====================================================
 -- ES 2020-05-06 Added new financial year requested by HW
+-- ES 2021-06-16 Added DVPO victim postcode with longitudes and latitudes for dvpo map and additional dvpo details for filters on the map
+-- ES 2021-06-18 Added policing priority field, joined to the work type lookup table
 ====================================================
 
 */
@@ -60,6 +62,7 @@ ELSE work_type_name END AS [Work Type]
 , fee_earner_code
 , hierarchylevel4hist AS Team
 ,dbo.PoliceWorkTypes.GroupWorkTypeLookup
+,dbo.PoliceWorkTypes.[Policing Priority]
 --,bill_total AS [Total Billed to date]
 --,fees_total as [Profit Costs to date]
 ,SUM(Billed.TotalBilled) AS [Total Billed]
@@ -68,6 +71,22 @@ ELSE work_type_name END AS [Work Type]
 ,Time.[Hours Recorded] AS [HoursCharged]
 --,Billed.Disbursementsincvat as [Disbursements Billed (1st April 16 - 31st March 17)]
 ,TFY [Financial Years]
+, dim_detail_advice.dvpo_victim_postcode AS [DVPO Victim Postcode]
+, CAST(CAST([DVPO_Victim_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [DVPO Victim Postcode Latitude]
+, CAST(CAST([DVPO_Victim_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [DVPO Victim Postcode Longitude]
+, dim_detail_advice.dvpo_number_of_children AS [DVPO Number of Children]
+, dim_detail_advice.dvpo_division AS [DVPO Division]
+, dim_detail_advice.dvpo_granted AS [DVPO Granted?]
+, dim_detail_advice.dvpo_contested AS [DVPO Contested?]
+, dim_detail_advice.dvpo_breached AS [DVPO Breached?]
+, dim_detail_advice.dvpo_is_first_breach AS [DVPO is First Breach?]
+, dim_detail_advice.dvpo_breach_admitted AS [DVPO Breach Admitted]
+, dim_detail_advice.dvpo_breach_proved AS [DVPO Breach Proved?]
+, dim_detail_advice.dvpo_breach_sentence AS [DVPO Breach Sentence]
+, dim_detail_advice.dvpo_breach_sentence_length AS [DVPO Breach Sentence Length]
+, dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
+, dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
+, dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
 
 --into dbo.PoliceExtract
 FROM red_dw..fact_dimension_main
@@ -78,7 +97,7 @@ LEFT JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_workt
 LEFT JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT JOIN red_dw.dbo.dim_detail_advice ON red_dw.dbo.dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
 LEFT JOIN reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.work_type_name = [dbo].[PoliceWorkTypes].[Work Type] COLLATE DATABASE_DEFAULT
-
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] ON [DVPO_Victim_Postcode].Postcode=dim_detail_advice.dvpo_victim_postcode
 
 INNER JOIN 
        (           --select * from red_dw..fact_bill_matter_detail where client_code  = '00451638' and matter_number = '00000058'                  
@@ -225,21 +244,38 @@ GROUP BY CASE
          ELSE
          work_type_name
          END,
+         CAST(CAST([DVPO_Victim_Postcode].Latitude AS FLOAT) AS DECIMAL(8, 6)),
+         CAST(CAST([DVPO_Victim_Postcode].Longitude AS FLOAT) AS DECIMAL(9, 6)),
          fact_dimension_main.client_code,
          fact_dimension_main.matter_number,
-         client_name,
-         matter_description,
-         matter_owner_full_name,
-         date_opened_case_management,
-         date_closed_case_management,
-         borough,
-         source_of_instruction,
-         surrey_police_stations,
-         fee_earner_code,
-         hierarchylevel4hist,
-         GroupWorkTypeLookup,
+         dim_matter_header_current.client_name,
+         dim_matter_header_current.matter_description,
+         dim_matter_header_current.matter_owner_full_name,
+         dim_matter_header_current.date_opened_case_management,
+         dim_matter_header_current.date_closed_case_management,
+         dim_detail_claim.borough,
+         dim_detail_claim.source_of_instruction,
+         dim_detail_advice.surrey_police_stations,
+         dim_matter_header_current.fee_earner_code,
+         dim_fed_hierarchy_history.hierarchylevel4hist,
+         PoliceWorkTypes.GroupWorkTypeLookup,
+		 dbo.PoliceWorkTypes.[Policing Priority],
          Time.[Hours Recorded],
-         Billed.TFY
+         Billed.TFY,
+         dim_detail_advice.dvpo_victim_postcode,
+         dim_detail_advice.dvpo_number_of_children,
+         dim_detail_advice.dvpo_division,
+         dim_detail_advice.dvpo_granted,
+         dim_detail_advice.dvpo_contested,
+         dim_detail_advice.dvpo_breached,
+         dim_detail_advice.dvpo_is_first_breach,
+         dim_detail_advice.dvpo_breach_admitted,
+         dim_detail_advice.dvpo_breach_proved,
+         dim_detail_advice.dvpo_breach_sentence,
+         dim_detail_advice.dvpo_breach_sentence_length,
+         dim_detail_advice.dvpo_legal_costs_sought,
+         dim_detail_advice.dvpo_court_fee_awarded,
+         dim_detail_advice.dvpo_own_fees_awarded
 
 END
 

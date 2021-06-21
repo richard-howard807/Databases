@@ -19,32 +19,33 @@ SELECT ListValue  INTO #FeeEarner FROM 	dbo.udt_TallySplit('|', @FeeEarner)
 IF OBJECT_ID('tempdb..#Client') IS NOT NULL   DROP TABLE #Client
 SELECT ListValue  INTO #Client FROM 	dbo.udt_TallySplit('|', @Client)
 
---IF OBJECT_ID('tempdb..#Exchange') IS NOT NULL DROP TABLE #Exchange
---IF OBJECT_ID('tempdb..#Completion') IS NOT NULL DROP TABLE #Completion
+IF OBJECT_ID('tempdb..#Exchange') IS NOT NULL DROP TABLE #Exchange
+IF OBJECT_ID('tempdb..#Completion') IS NOT NULL DROP TABLE #Completion
 
 
 
---SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS ExchangeDateCompleted
---INTO #Exchange
---FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
---INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
--- ON ms_fileid=fileID
---WHERE tskFilter IN ('tsk_04_010_rem_cont_exch') 
---AND master_client_code IN ('190593P', '153838M','848629','W15353')
---AND tskActive=1 AND tskComplete=1
---GROUP BY fileID
+
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS ExchangeDateCompleted
+INTO #Exchange
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_04_010_rem_cont_exch') 
+AND master_client_code IN ('190593P', '153838M','848629','W15353')
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
 
 
 
---SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS CompletionDateCompleted
---INTO #Completion
---FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
---INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
--- ON ms_fileid=fileID
---WHERE tskFilter IN ('tsk_05_010_est_comp_today') 
---AND master_client_code IN ('190593P', '153838M','848629','W15353')
---AND tskActive=1 AND tskComplete=1
---GROUP BY fileID
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS CompletionDateCompleted
+INTO #Completion
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_05_010_est_comp_today') 
+AND master_client_code IN ('190593P', '153838M','848629','W15353')
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
 
 SELECT client_name AS [Client Name]
 ,dim_matter_header_current.master_client_code AS [Client Number]
@@ -58,12 +59,13 @@ SELECT client_name AS [Client Name]
 ,FileOpeningAchieved AS [Date File Opening Process Completed]
 ,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,FileOpeningAchieved,103)) AS [Elapsed Days to File Opening Process]
 ,NULL AS [Date Exchange Process Completed]
-,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate),103)) AS [Elapsed Days to Exchange]
+,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange]),103)) AS [Elapsed Days to Exchange]
 ,NULL AS [Date Completion Process Completed]
 ,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate),103))  AS [Elapsed Days to Completion]
 ,work_type_name
-,[Exchange Date] = COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate)
-,[Completion Date] = COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate)
+,[Exchange Date] = COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange])
+
+,[Completion Date] = COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate, CompletionDateCompleted)
 ,[Completion Flag] = CASE WHEN dim_detail_plot_details.pscompletion_date IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END 
 
 
@@ -104,10 +106,10 @@ INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 WHERE MSStage1Achieved IS NOT NULL
 AND master_client_code IN ('190593P', '153838M','848629','W15353')) AS MilestonePlans
  ON ms_fileid=MilestonePlans.fileID
---LEFT OUTER JOIN #Exchange  AS Excxhange
--- ON ms_fileid=Excxhange.fileID
---LEFT OUTER JOIN #Completion AS Completion
---ON ms_fileid=Completion.fileID
+LEFT OUTER JOIN #Exchange  AS Excxhange
+ ON ms_fileid=Excxhange.fileID
+LEFT OUTER JOIN #Completion AS Completion
+ON ms_fileid=Completion.fileID
 LEFT JOIN red_dw.dbo.fact_finance_summary
 ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
  LEFT OUTER JOIN

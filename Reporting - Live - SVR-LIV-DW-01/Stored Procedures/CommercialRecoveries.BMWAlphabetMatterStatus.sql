@@ -9,6 +9,7 @@ GO
 
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -28,6 +29,9 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,curPayArrAmoun AS [Payment arrangement agreed]
 ,curOriginalBal AS [Balance for recovery on instruction]
 ,TotalCollections AS [Total payments collected to date]
+,Interest.Interest
+,RecoverableCosts.[Recoverable Costs]
+,RecoverableDisbursements.[Recoverable Disbursements]
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -54,6 +58,22 @@ FROM [MS_PROD].dbo.udCRLedgerSL
 WHERE   cboCatDesc='5'
 GROUP BY fileID) AS TotalPayments
  ON TotalPayments.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS Interest
+FROM [MS_PROD].dbo.udCRLedgerSL
+WHERE   cboCatDesc='4'
+GROUP BY fileID) AS Interest
+ ON Interest.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS [Recoverable Costs]
+FROM [MS_PROD].dbo.udCRLedgerSL
+WHERE   cboCatDesc='2'
+GROUP BY fileID) AS RecoverableCosts
+ ON RecoverableCosts.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS [Recoverable Disbursements]
+FROM [MS_PROD].dbo.udCRLedgerSL
+WHERE   cboCatDesc='1'
+GROUP BY fileID) AS RecoverableDisbursements
+ ON RecoverableDisbursements.fileID = dbFile.fileID
+
 LEFT OUTER JOIN (SELECT fileID,assocRef AS ClientRef FROM ms_prod.config.dbAssociates
 WHERE assocType='CLIENT'
 AND assocRef IS NOT NULL) AS ClientRef

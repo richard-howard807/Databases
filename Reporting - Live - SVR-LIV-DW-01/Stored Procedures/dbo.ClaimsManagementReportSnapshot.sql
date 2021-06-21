@@ -11,6 +11,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -186,7 +189,8 @@ LEFT OUTER JOIN (SELECT dim_employee.employeeid, SUM(Dates.[Trading Days]) [Trad
 					FROM red_dw.dbo.dim_date WITH(NOLOCK)
 					WHERE current_fin_year='Current'
 					AND calendar_date<=(SELECT calendar_date FROM red_dw.dbo.dim_date WITH(NOLOCK)
-										WHERE current_cal_day='Current')  ) Dates 
+									WHERE current_cal_day='Current')  
+					) Dates 
 				WHERE Dates.calendar_date > dim_employee.employeestartdate
 				-- AND dim_employee.employeeid IN ('13E3D529-2BD9-4C6F-9471-58A303D7A946', '7DE27206-711E-47C1-A214-D40A46EEFD1B')
 				GROUP BY dim_employee.employeeid ) AS [TradingHours] ON TradingHours.employeeid = dim_employee.employeeid
@@ -304,7 +308,7 @@ FROM
 											--AND startdate<=GETDATE()
 											--AND ISNULL(category,'')='Maternity'
 											--AND employeeid='19AB983F-4D45-49AC-9155-B9BCA6B36D2F'
-											--AND CONVERT(DATE,startdate,103) BETWEEN @StartDate AND @EndDate
+											AND CONVERT(DATE,startdate,103) BETWEEN @StartDate AND @EndDate
 											AND CONVERT(DATE,startdate,103)  IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' AND dim_date.holiday_flag = 'N')
 AND category='Maternity'
 						GROUP BY employeeid, attendancekey,

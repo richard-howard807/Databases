@@ -43,12 +43,16 @@ SELECT
 ·         Condition suffered – for Mental Health Crisis only
 ·         Date ended – from the wizard
 */
-,[Mental Health Crisis or Standard Breathing space] = ''
-,[Date commenced] = CAST(NULL AS DATE) 
-,[Applied through Debt Management Agency or Local Authority] = ''
-,[For 30 or 60 days (for standard only)] = ''
-,[Condition suffered – for Mental Health Crisis only] = ''
-,[Date ended] = CAST(NULL AS DATE) 
+,[Mental Health Crisis or Standard Breathing space] = cboBreathApply.cboBreathApply
+,[Date commenced] = CAST(dteBreathCom AS DATE) 
+,[Applied through Debt Management Agency or Local Authority] = cboAppOnDef.cboAppOnDef
+,[For 30 or 60 days (for standard only)] = cboPeriodOT.cboPeriodOT
+,[Condition suffered – for Mental Health Crisis only] = txtDefCondition
+,[Date ended] = CAST(dteEnded AS DATE) 
+,[What breathing space has been applied for?] = cboBreathApply.cboBreathApply
+,[Who has applied on behalf of the Defendant?] = cboAppOnDef.cboAppOnDef
+,[What condition is the Defendant suffering from?] =  txtDefCondition
+
 
 FROM 
 
@@ -74,6 +78,31 @@ LEFT JOIN  ( SELECT DISTINCT ROW_NUMBER () OVER (PARTITION BY fileID ORDER BY as
 						defendant ON defendant.fileID = dbFile.fileID AND defendant.RN = 1 
 
 
+LEFT JOIN ms_prod.dbo.udBreathingSpace
+ON udBreathingSpace.fileid = ms_fileid
+
+
+/*cboBreathApply  */ 
+
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc AS cboBreathApply FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboBreathApply' AND txtMSTable = 'udBreathingSpace') cboBreathApply 
+ON cboBreathApply.cdCode = udBreathingSpace.cboBreathApply 
+
+/*cboAppOnDef  */ 
+
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc AS cboAppOnDef FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboAppOnDef' AND txtMSTable = 'udBreathingSpace') cboAppOnDef 
+ON cboAppOnDef.cdCode = udBreathingSpace.cboAppOnDef 
+
+/*cboPeriodOT  */ 
+
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc AS cboPeriodOT FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboPeriodOT' AND txtMSTable = 'udBreathingSpace') cboPeriodOT 
+ON cboPeriodOT.cdCode = udBreathingSpace.cboPeriodOT 
+
 WHERE 1 =1 
 
 
@@ -85,7 +114,9 @@ WHERE 1 =1
 
  AND reporting_exclusions = 0
 
- ORDER BY 1, dim_matter_header_current.master_client_code, master_matter_number
+ AND dteBreathCom IS NOT NULL 
+
+ ORDER BY 1, dim_matter_header_current.client_code, dim_matter_header_current.matter_number 
 
  END
 

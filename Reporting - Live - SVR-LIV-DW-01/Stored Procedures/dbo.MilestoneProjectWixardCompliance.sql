@@ -7,14 +7,11 @@ GO
 
 
 
-
-
-
-
-
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
+--MT 15-06-2021 - #102676 - excluded clients as per ticket 
+--JL 21-06-2012 - #103411 - excluded client and referral reason as per ticket 
 
 
 
@@ -45,6 +42,8 @@ SELECT hierarchylevel2hist AS Division
 ,DATEDIFF(DAY,'2020-09-28','2021-01-31') AS Day1
 ,DATEDIFF(DAY,'2020-09-28','2021-04-30') AS Day2
 ,DATEDIFF(DAY,'2020-09-28','2021-07-31') AS Day3
+,date_closed_practice_management
+,date_closed_case_management
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_matter_worktype
@@ -71,8 +70,11 @@ AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Fi
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'
 AND leaver =0
+AND not  (dim_matter_header_current.client_code = '00752920' AND referral_reason ='Recovery')
 AND master_client_code <> '30645'
-AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current.matter_number NOT IN  ('00015526/00000275',
+AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current.matter_number 
+NOT IN  
+('00015526/00000275',
 '125409T/00001126',
 '125409T/00000047',
 '125409T/00001259',
@@ -121,6 +123,7 @@ AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current
 'W16179/00000014',
 'W15526/00000275', 
 'POW025/00000423'
+
 ) 
 --AND fed_code='5900'
 AND  ms_fileid NOT IN 
@@ -128,7 +131,9 @@ AND  ms_fileid NOT IN
 ,5096365,5097171,5097193,5097355,5097677,5097684,5097751,5098182,5098201
 ,5098209,5098213,5098214,5098218,5098222,5098226,5098228,5098515,5098518
 ,5098521,5098530,5098898,5099062,5099250,
-5097691,5097677,5098182,5098222,5098228) --Old Remedy Cases to exclude per request from Bob H
+5097691,5097677,5098182,5098222,5098228
+,4353408, 4930309
+) --Old Remedy Cases to exclude per request from Bob H
 AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_this_the_lead_file='No' THEN 1 ELSE 0 END=0 -- Filter per #87593
 AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
 ('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
