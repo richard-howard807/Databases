@@ -7,6 +7,7 @@ GO
 
 
 
+
 --SELECT * FROM dbo.IA_Client_Data
 
 
@@ -158,13 +159,14 @@ GROUP BY segmentname,sectorname
 LEFT OUTER JOIN (SELECT dim_ia_contact_lists.dim_client_key
 	, dim_ia_lists.list_name
 	, dim_ia_contact_lists.ia_client_id
+	,ROW_NUMBER() OVER (PARTITION BY ia_client_id ORDER BY list_name DESC) AS xOrder
 	  FROM red_dw.dbo.dim_ia_lists
 	  INNER JOIN red_dw.dbo.dim_ia_contact_lists ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
 	  WHERE dim_ia_lists.list_name IN ('Clients (Active)','Clients (Lapsed)','Non client','Patron','Star')
 	  AND dim_ia_contact_lists.dim_client_key<>0
 	  AND list_type_desc='Status'
 	  ) AS [Lists]
-	  ON Lists.ia_client_id=dim_be_opportunities.ia_client_id
+	  ON Lists.ia_client_id=dim_be_opportunities.ia_client_id AND xOrder=1
 
 WHERE UPPER(dim_be_opportunities.title)  NOT LIKE '%TEST%' AND UPPER(dim_be_opportunities.title)  NOT LIKE '%ERROR%'
 --AND dim_be_opportunities.target_company='Severn Trent Water'
