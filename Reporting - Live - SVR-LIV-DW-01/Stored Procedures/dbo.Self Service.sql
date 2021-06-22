@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -253,7 +254,14 @@ SELECT DISTINCT
     dim_detail_core_details.clients_claims_handler_surname_forename AS [Clients Claim Handler ],
     dim_client_involvement.[insuredclient_reference] AS [Insured Client Reference FED],
     dim_client_involvement.[insuredclient_name] AS [Insured Client Name FED],
-    dim_detail_core_details.insured_sector AS [Insured Sector],
+    CASE WHEN RTRIM(dim_detail_core_details.insured_sector)='Business services' THEN 'Business Services'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='MANufacturing' THEN 'Manufacturing'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='Property management' THEN 'Property Management'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='Social housing' THEN 'Social Housing'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='Societies/Political/Religious' THEN 'Societies/political/religious'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='transport & Logistics' THEN 'Transport & Logistics'
+	WHEN RTRIM(dim_detail_core_details.insured_sector)='individual' THEN 'Individual'
+	ELSE RTRIM(dim_detail_core_details.insured_sector) END AS [Insured Sector],
     dim_detail_core_details.[insured_departmentdepot] AS [Insured Department],
     dim_detail_core_details.insured_departmentdepot_postcode AS [Insured Department Depot Postcode],
 

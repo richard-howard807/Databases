@@ -198,7 +198,8 @@ SELECT
 	ELSE 0
 	END AS FILTER
 	,dim_detail_outcome.repudiation_outcome
-	
+	, ISNULL(damages_paid,0) + ISNULL(claimants_costs_paid,0)	+ ISNULL(total_amount_billed,0) -ISNULL(vat_billed,0)   AS [Indemnity Spend]
+	,vat_billed
 
 INTO #MainData
 FROM red_dw.dbo.fact_dimension_main
@@ -282,10 +283,12 @@ SELECT
 , #MainData.date_opened_case_management
 , CountPhoneCallNotComplete
 , claimants_costs_paid
-, total_amount_billed
+, total_amount_billed	- vat_billed  AS [total_amount_billed]
 , [Date Closed]
 , FILTER AS [Filter Date of Last Bill]
 , repudiation_outcome
+, [Indemnity Spend]
+,vat_billed
 
 FROM #MainData
 

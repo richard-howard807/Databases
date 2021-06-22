@@ -14,6 +14,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -92,8 +95,8 @@ SELECT dim_employee.employeeid
 	, hierarchylevel3hist AS [Department]
 	, hierarchylevel4hist AS [Team]
 	, normalworkingday AS [Contractual hours per day]
-	, totalentitlementdays AS [Annual Holiday Allowance]
-	, remaining_fte_working_days_year AS [Annual Working Days]
+	, totalentitlementdays  AS [Annual Holiday Allowance] -- Minus 1 for two half days
+	, remaining_fte_working_days_year - 1 AS [Annual Working Days]
 	, durationholidaydays AS [Holidays Taken to Date]
 	, ISNULL(totalentitlementdays,0)-ISNULL(durationholidaydays,0) AS [Holidays yet to Take]
 	, [Trading Days] * red_dw.dbo.fact_employee_days_fte.fte AS [Working Days to Date]
@@ -184,7 +187,11 @@ INNER JOIN (SELECT employeeid, SUM(contracted_hours_in_month) AS [ContractedHour
 
 LEFT OUTER JOIN (SELECT dim_employee.employeeid, SUM(Dates.[Trading Days]) [Trading Days]
 				FROM red_dw.dbo.dim_employee WITH(NOLOCK)
-				CROSS APPLY (	SELECT dim_date.calendar_date, CASE WHEN trading_day_flag='Y' AND dim_date.holiday_flag = 'N' THEN 1 ELSE 0 END AS [Trading Days]
+				CROSS APPLY (	SELECT dim_date.calendar_date, CASE 
+				WHEN calendar_date='2021-12-24' THEN 0.5
+				WHEN calendar_date='2021-12-31' THEN 0.5
+				WHEN trading_day_flag='Y' AND dim_date.holiday_flag = 'N' THEN 1 
+				ELSE 0 END AS [Trading Days]
 					-- select *
 					FROM red_dw.dbo.dim_date WITH(NOLOCK)
 					WHERE current_fin_year='Current'
