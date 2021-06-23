@@ -20,6 +20,31 @@ BEGIN
 --IF OBJECT_ID('tempdb..#Client') IS NOT NULL   DROP TABLE #Client
 --SELECT ListValue  INTO #Client FROM 	dbo.udt_TallySplit('|', @Client)
 
+IF OBJECT_ID('tempdb..#Exchange') IS NOT NULL DROP TABLE #Exchange
+IF OBJECT_ID('tempdb..#Completion') IS NOT NULL DROP TABLE #Completion
+
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS ExchangeDateCompleted
+INTO #Exchange
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_04_010_rem_cont_exch') 
+AND master_client_code = 'W15353'
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
+
+
+
+SELECT fileID,MAX(red_dw.dbo.datetimelocal(tskCompleted)) AS CompletionDateCompleted
+INTO #Completion
+FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ ON ms_fileid=fileID
+WHERE tskFilter IN ('tsk_05_010_est_comp_today') 
+AND master_client_code = 'W15353'
+AND tskActive=1 AND tskComplete=1
+GROUP BY fileID
+
 SELECT 
 
 
@@ -31,9 +56,9 @@ SELECT
 ,[Date Instructions Received] = date_instructions_received 
 ,[Date File Opened] = date_opened_case_management 
 ,[Date File Closed] = date_closed_case_management 
-,[Exchange Date] = COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate)
+,[Exchange Date] = COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange])
 ,[Date Notice of Exchange Sent] = dim_detail_plot_details.date_exchange_documentation_sent
-,[Completion Date] = COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate)
+,[Completion Date] = COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate, CompletionDateCompleted)
 ,[Date Notice of Completion Sent] = dim_detail_plot_details.date_completion_documentation_sent 
 ,[Completion Flag] = CASE WHEN dim_detail_plot_details.pscompletion_date IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -59,6 +84,11 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
 			
 /* Exchange Date*/
 LEFT JOIN ms_prod.dbo.udPlotSalesExchange ON udPlotSalesExchange.fileID = ms_fileid
+
+LEFT OUTER JOIN #Exchange  AS Excxhange
+ ON ms_fileid=Excxhange.fileID
+LEFT OUTER JOIN #Completion AS Completion
+ON ms_fileid=Completion.fileID
  
 WHERE dim_matter_header_current.master_client_code = 'W15353'
 AND dim_detail_plot_details.[type_of_scheme] = 'Help to Buy'
