@@ -1,5 +1,6 @@
 CREATE TABLE [dbo].[selfservice]
 (
+[ms_fileid] [bigint] NULL,
 [Date Case Opened] [datetime] NULL,
 [Fin Year Opened] [int] NULL,
 [Date Case Closed] [datetime] NULL,
@@ -31,7 +32,6 @@ CREATE TABLE [dbo].[selfservice]
 [Client Name] [char] (80) COLLATE Latin1_General_BIN NULL,
 [Client Group Name] [varchar] (40) COLLATE Latin1_General_BIN NULL,
 [Client Sector] [char] (40) COLLATE Latin1_General_BIN NULL,
-[ia_sic_code] [nvarchar] (800) COLLATE Latin1_General_BIN NULL,
 [Client Sub-Sector] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Client Segment ] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Client Partner Name] [varchar] (100) COLLATE Latin1_General_BIN NULL,
@@ -136,9 +136,9 @@ CREATE TABLE [dbo].[selfservice]
 [Are we pursuing a recovery?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Total Recovery (NMI112,NMI135,NMI136,NMI137)] [numeric] (13, 2) NULL,
 [Outsource Recovery Paid] [numeric] (13, 2) NULL,
-[Total Bill Amount - Composite (IncVAT )] [numeric] (16, 2) NULL,
+[Total Bill Amount - Composite (IncVAT )] [numeric] (13, 2) NULL,
 [Revenue Costs Billed] [numeric] (13, 2) NULL,
-[Disbursements Billed ] [numeric] (16, 2) NULL,
+[Disbursements Billed ] [numeric] (13, 2) NULL,
 [VAT Billed] [numeric] (13, 2) NULL,
 [WIP] [numeric] (13, 2) NULL,
 [Unbilled Disbursements] [numeric] (13, 2) NULL,
