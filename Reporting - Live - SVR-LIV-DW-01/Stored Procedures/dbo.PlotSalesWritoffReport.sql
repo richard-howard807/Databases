@@ -6,7 +6,8 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[PlotSalesWritoffReport]
+
+CREATE PROCEDURE [dbo].[PlotSalesWritoffReport]--EXEC  [dbo].[PlotSalesWritoffReport]'2021-06-20','2021-06-23'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -41,8 +42,8 @@ GROUP BY dim_matter_header_current_key
  ON  dim_matter_header_current.dim_matter_header_curr_key=WIP.dim_matter_header_current_key
 LEFT OUTER JOIN 
 (
-SELECT dim_matter_header_curr_key,bill_date,bill_total,bill_number
-,ROW_NUMBER() OVER (PARTITION BY dim_matter_header_curr_key ORDER BY dim_bill_date_key DESC) AS RecordN
+SELECT fact_bill_matter_detail_summary.dim_matter_header_curr_key,bill_date,bill_total,bill_number
+,ROW_NUMBER() OVER (PARTITION BY fact_bill_matter_detail_summary.dim_matter_header_curr_key ORDER BY dim_bill_date_key DESC) AS RecordN
 FROM red_dw.dbo.fact_bill_matter_detail_summary
 INNER JOIN red_dw.dbo.dim_detail_property
 ON dim_detail_property.client_code = fact_bill_matter_detail_summary.client_code
