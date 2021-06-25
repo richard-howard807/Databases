@@ -33,9 +33,22 @@ BEGIN
  -- Test 
  --DECLARE @Start AS DATE = GETDATE() - 100
  --      , @End AS DATE = GETDATE()
+	--   ,@Status AS int = 0
 
 
- SELECT Final.*
+ SELECT DISTINCT
+		Final.job_id,
+        Final.[Requesting User],
+        Final.[Date Requested],
+        Final.scan_datetime,
+        Final.Comment,
+        Final.[Processing User],
+        Final.[Date Processed],
+        Final.Result,
+        Final.[Days Old],
+        Final.document_link,
+        Final.SourceSystem,
+        Final.OriginalStatus
 
  FROM 
 
@@ -48,32 +61,33 @@ BEGIN
   x.[Date Requested],
   x.Comment,
   x.[Processing User],
-  CASE WHEN x.Result = 'PENDING' THEN NULL ELSE  x.[Date Processed] END [Date Processed],
+  x.[Date Processed],
   CASE WHEN x.Result ='No Original' THEN 'NO ORIGINAL' ELSE x.Result END AS Result,
   x.[Days Old],
+  x.scan_datetime,
   x.document_link,
   'FlowMatrix' AS SourceSystem
   ,x.OriginalStatus AS [OriginalStatus]
-
-
+ 
 
   FROM
  ( 
 
  SELECT DISTINCT 
-   T1.[job_id],
-   dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT  +' (' +T1.[username] +')'  AS 'Requesting User', --T1.[username] 
-   T1.[event_time] AS 'Date Requested',
-   T1.[comment]    AS 'Comment',
-   ProUser.name COLLATE DATABASE_DEFAULT  + ' (' + T2.[username] + ')'  AS 'Processing User', -- T2.[username] 
-   T2.[event_time] AS 'Date Processed', 
-   COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') AS 'Result' ,
-   CASE WHEN COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') <> 'COMPLETED' THEN DATEDIFF( day , CAST(T1.[event_time] AS DATE)  , GETDATE() ) ELSE NULL  END AS 'Days Old',
-
-   '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+  [job_id] =  T1.[job_id],
+  [Requesting User] = dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT  +' (' +T1.[username] +')'  , --T1.[username] 
+  [Date Requested] = T1.[event_time],
+  [Comment] = T1.[comment],
+  [Processing User] = ProUser.name COLLATE DATABASE_DEFAULT  + ' (' + T2.[username] + ')' , -- T2.[username] 
+  [Date Processed] =  T2.[event_time] , 
+  [Result]= COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') ,
+  [Days Old] = CASE WHEN COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') <> 'COMPLETED' THEN DATEDIFF( day , CAST(T1.[event_time] AS DATE)  , GETDATE() ) ELSE NULL  END,
+  [scan_datetime] = T1.scan_datetime,
+  [document_link] = '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
 		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
-		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
-		,COALESCE(NULLIF(T2.[filter2],''), 'done') AS [OriginalStatus]
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' ,		
+  [OriginalStatus] = COALESCE(NULLIF(T2.[filter2],''), 'done') 
+
 	 FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T1 WITH(NOLOCK)
 
 LEFT JOIN [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]  T2 WITH(NOLOCK)
@@ -98,18 +112,19 @@ AND T1.event_time < @End
 UNION 
 
 SELECT DISTINCT 
-   T3.[job_id],
-   dim_fed_hierarchy_history.name  AS 'Requesting User', --  T3.[username]
-   T3.[event_time] AS 'Date Requested',
-   T3.[comment],'' AS 'Processing User',
-   '' AS 'Date Processed',
-   'PENDING' AS 'Result' 
-   ,DATEDIFF( day , CAST(T3.[event_time] AS DATE)  , GETDATE() ) AS 'Days Old'
-
-, '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+  [job_id] = T3.[job_id],
+  [Requesting User] = dim_fed_hierarchy_history.name, --  T3.[username]
+  [Date Requested]= T3.[event_time] ,
+  [Comment] = T3.[comment],
+  [Processing User]=  '' ,
+  [Date Processed] =  '' ,
+  [Result] = 'PENDING' ,
+  [Days Old] = DATEDIFF( day , CAST(T3.[event_time] AS DATE)  , GETDATE() ) ,
+  [scan_datetime] = T3.scan_datetime,
+  [document_link] = '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
 		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
-		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
-		,'PENDING'
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 	,	
+  [OriginalStatus] ='PENDING'
 FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T3 WITH(NOLOCK)
 
 LEFT JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] AS j
@@ -135,28 +150,29 @@ AND T3.event_time < @End
  UNION 
 
 SELECT 
-	 wo.WORKORDERID	AS "Request ID", 
-	 aau.FIRST_NAME	AS "Requester", 
-	 CAST(Dateadd(second, Cast(wo.CREATEDTIME AS BIGINT) / 1000,  '1-1-1970 00:00:00')  AS DATETIME)  AS "Created Time",
-	 wo.TITLE			AS "Subject"  
-	,aau2.FIRST_NAME	AS AssignedTo
-	,CASE WHEN wo.RESOLVEDTIME =0 THEN NULL ELSE CAST(Dateadd(second, Cast(wo.RESOLVEDTIME  AS BIGINT) / 1000, '1-1-1970 00:00:00')  AS DATETIME) END AS DateResolved
-    ,CASE WHEN sta.STATUSDESCRIPTION = 'Request Pending' THEN 'PENDING'
+	 [job_id] =  wo.WORKORDERID	, 
+	 [Requesting User] = aau.FIRST_NAME, 
+	 [Date Requested] = CAST(Dateadd(second, Cast(wo.CREATEDTIME AS BIGINT) / 1000,  '1-1-1970 00:00:00')  AS DATETIME) ,
+	 [Comment] = wo.TITLE	,		 
+	 [Processing User]=  aau2.FIRST_NAME,	
+	 [Date Processed] = CASE WHEN wo.RESOLVEDTIME =0 THEN NULL ELSE CAST(Dateadd(second, Cast(wo.RESOLVEDTIME  AS BIGINT) / 1000, '1-1-1970 00:00:00')  AS DATETIME) END ,
+     [Result] = CASE WHEN sta.STATUSDESCRIPTION = 'Request Pending' THEN 'PENDING'
         WHEN sta.STATUSDESCRIPTION = 'Request Resolved, waiting for approval by Requester' THEN 'COMPLETED'
 		WHEN sta.STATUSDESCRIPTION = 'Request action in progress' THEN 'PENDING'
 		WHEN sta.STATUSDESCRIPTION = 'Request Completed' THEN 'COMPLETE'
-		ELSE 'ALL' END AS [Status]
-    ,CASE WHEN sta.STATUSDESCRIPTION NOT IN ( 'Request Completed' , 'Request Resolved, waiting for approval by Requester')
+		ELSE 'ALL' END ,
+    [Days Old] = CASE WHEN sta.STATUSDESCRIPTION NOT IN ( 'Request Completed' , 'Request Resolved, waiting for approval by Requester')
 		THEN DATEDIFF( day , CAST( DATEADD(s, convert(bigint, wo.CREATEDTIME) / 1000, convert(datetime, '1-1-1970 00:00:00'))AS DATE)  , GETDATE() ) 
-			ELSE NULL END AS DaysOld
-    ,CASE WHEN sta.STATUSNAME = 'Open' 
+			ELSE NULL END ,
+	[scan_datetime] = NULL,
+    [document_link] = CASE WHEN sta.STATUSNAME = 'Open' 
 			THEN 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID=' + CAST(wo.WORKORDERID AS VARCHAR(20))
 		  WHEN sta.STATUSNAME = 'In Progress' 
 			THEN 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID='+ CAST(wo.WORKORDERID AS VARCHAR(20)) +'&&fromListView=true'
 			ELSE 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID=' + CAST(wo.WORKORDERID AS VARCHAR(20))
-			END 
-     ,'Service Desk'     
-	 ,sta.STATUSDESCRIPTION
+			END ,
+     [SourceSystem] = 'Service Desk' ,    
+	 [OriginalStatus] = sta.STATUSDESCRIPTION
 
 	 FROM [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[WorkOrder] wo 
 
@@ -220,9 +236,10 @@ END
   x.[Date Requested],
   x.Comment,
   x.[Processing User],
-  CASE WHEN x.Result = 'PENDING' THEN NULL ELSE  x.[Date Processed] END [Date Processed],
+  x.[Date Processed],
   CASE WHEN x.Result ='No Original' THEN 'NO ORIGINAL' ELSE x.Result END AS Result,
   x.[Days Old],
+  x.scan_datetime,
   x.document_link,
   'FlowMatrix' AS SourceSystem
   ,x.OriginalStatus AS [OriginalStatus]
@@ -233,19 +250,19 @@ END
  ( 
 
  SELECT DISTINCT 
-   T1.[job_id],
-   dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT  +' (' +T1.[username] +')'  AS 'Requesting User', --T1.[username] 
-   T1.[event_time] AS 'Date Requested',
-   T1.[comment]    AS 'Comment',
-   ProUser.name COLLATE DATABASE_DEFAULT  + ' (' + T2.[username] + ')'  AS 'Processing User', -- T2.[username] 
-   T2.[event_time] AS 'Date Processed', 
-   COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') AS 'Result' ,
-   CASE WHEN COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') <> 'COMPLETED' THEN DATEDIFF( day , CAST(T1.[event_time] AS DATE)  , GETDATE() ) ELSE NULL  END AS 'Days Old',
-
-   '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+   [job_id] = T1.[job_id],
+   [Requesting User] = dim_fed_hierarchy_history.name COLLATE DATABASE_DEFAULT  +' (' +T1.[username] +')'  , --T1.[username] 
+   [Date Requested] = T1.[event_time] ,
+   [Comment] = T1.[comment]    ,
+   [Processing User] = ProUser.name COLLATE DATABASE_DEFAULT  + ' (' + T2.[username] + ')'  , -- T2.[username] 
+   [Date Processed] = T2.[event_time] , 
+   [Result] = COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED')  ,
+   [Days Old] = CASE WHEN COALESCE(NULLIF(T2.[filter2],''), 'COMPLETED') <> 'COMPLETED' THEN DATEDIFF( day , CAST(T1.[event_time] AS DATE)  , GETDATE() ) ELSE NULL  END ,
+   [scan_datetime] = T1.scan_datetime,
+   [document_link] = '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
 		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
-		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
-		,COALESCE(NULLIF(T2.[filter2],''), 'done') AS [OriginalStatus]
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' ,		 
+   [OriginalStatus] = COALESCE(NULLIF(T2.[filter2],''), 'done')  
 	 FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T1 WITH(NOLOCK)
 
 LEFT JOIN [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog]  T2 WITH(NOLOCK)
@@ -270,18 +287,19 @@ AND T1.event_time < @End
 UNION 
 
 SELECT DISTINCT 
-   T3.[job_id],
-   dim_fed_hierarchy_history.name  AS 'Requesting User', --  T3.[username]
-   T3.[event_time] AS 'Date Requested',
-   T3.[comment],'' AS 'Processing User',
-   '' AS 'Date Processed',
-   'PENDING' AS 'Result' 
-   ,DATEDIFF( day , CAST(T3.[event_time] AS DATE)  , GETDATE() ) AS 'Days Old'
-
-, '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
+   [job_id] = T3.[job_id],
+   [Requesting User] = dim_fed_hierarchy_history.name , --  T3.[username]
+   [Date Requested] = T3.[event_time] ,
+   [Comment] = T3.[comment], 
+   [Processing User] = '',
+   [Date Processed] = '',
+   [Result] = 'PENDING'  ,
+   [Days Old] = DATEDIFF( day , CAST(T3.[event_time] AS DATE)  , GETDATE() ),
+   [scan_datetime] = T3.scan_datetime,
+   [document_link] = '\\SVR-LIV-FMTX-01\workspace$' + '\' + LEFT(j.guid, 2) 
 		+ '\' + RIGHT(LEFT(j.guid, 4), 2) + '\' + RIGHT(LEFT(j.guid, 6), 2) 
-		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' 		AS [document_link]
-		,'PENDING'
+		+ '\' + RIGHT(j.guid, LEN(j.guid)-6) + '\' + j.label + '.TIF' ,		
+   [OriginalStatus] = 'PENDING'
 FROM [SVR-LIV-3PTY-01].[PaperRiverAudit].[dbo].[RecentAuditLog] T3 WITH(NOLOCK)
 
 LEFT JOIN [SVR-LIV-3PTY-01].[FlowMatrix].[dbo].[Jobs] AS j
@@ -307,28 +325,29 @@ AND T3.event_time < @End
  UNION 
 
 SELECT 
-	 wo.WORKORDERID	AS "Request ID", 
-	 aau.FIRST_NAME	AS "Requester", 
-	 CAST(Dateadd(second, Cast(wo.CREATEDTIME AS BIGINT) / 1000,  '1-1-1970 00:00:00')  AS DATETIME)  AS "Created Time",
-	 wo.TITLE			AS "Subject"  
-	,aau2.FIRST_NAME	AS AssignedTo
-	,CASE WHEN wo.RESOLVEDTIME =0 THEN NULL ELSE CAST(Dateadd(second, Cast(wo.RESOLVEDTIME  AS BIGINT) / 1000, '1-1-1970 00:00:00')  AS DATETIME) END AS DateResolved
-    ,CASE WHEN sta.STATUSDESCRIPTION = 'Request Pending' THEN 'PENDING'
+	 [job_id] = wo.WORKORDERID, 
+	 [Requesting User] = aau.FIRST_NAME	, 
+	 [Date Requested] = CAST(Dateadd(second, Cast(wo.CREATEDTIME AS BIGINT) / 1000,  '1-1-1970 00:00:00')  AS DATETIME)  ,
+	 [Comment] = wo.TITLE,  
+	 [Processing User] = aau2.FIRST_NAME	,
+	 [Date Processed] = CASE WHEN wo.RESOLVEDTIME =0 THEN NULL ELSE CAST(Dateadd(second, Cast(wo.RESOLVEDTIME  AS BIGINT) / 1000, '1-1-1970 00:00:00')  AS DATETIME) END ,
+     [Result] = CASE WHEN sta.STATUSDESCRIPTION = 'Request Pending' THEN 'PENDING'
         WHEN sta.STATUSDESCRIPTION = 'Request Resolved, waiting for approval by Requester' THEN 'COMPLETED'
 		WHEN sta.STATUSDESCRIPTION = 'Request action in progress' THEN 'PENDING'
 		WHEN sta.STATUSDESCRIPTION = 'Request Completed' THEN 'COMPLETE'
-		ELSE 'ALL' END AS [Status]
-    ,CASE WHEN sta.STATUSDESCRIPTION NOT IN ( 'Request Completed' , 'Request Resolved, waiting for approval by Requester')
+		ELSE 'ALL' END,
+     [Days Old] = CASE WHEN sta.STATUSDESCRIPTION NOT IN ( 'Request Completed' , 'Request Resolved, waiting for approval by Requester')
 		THEN DATEDIFF( day , CAST( DATEADD(s, convert(bigint, wo.CREATEDTIME) / 1000, convert(datetime, '1-1-1970 00:00:00'))AS DATE)  , GETDATE() ) 
-			ELSE NULL END AS DaysOld
-    ,CASE WHEN sta.STATUSNAME = 'Open' 
+			ELSE NULL END, 
+	 [scan_datetime] = NULL,
+     [document_link] = CASE WHEN sta.STATUSNAME = 'Open' 
 			THEN 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID=' + CAST(wo.WORKORDERID AS VARCHAR(20))
 		  WHEN sta.STATUSNAME = 'In Progress' 
 			THEN 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID='+ CAST(wo.WORKORDERID AS VARCHAR(20)) +'&&fromListView=true'
 			ELSE 'https://sdp.weightmans.com/WorkOrder.do?woMode=viewWO&woID=' + CAST(wo.WORKORDERID AS VARCHAR(20))
-			END 
-     ,'Service Desk'     
-	 ,sta.STATUSDESCRIPTION
+			END ,
+     [SourceSystem] =  'Service Desk'   ,   
+	 [OriginalStatus] = sta.STATUSDESCRIPTION
 
 	 FROM [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].[WorkOrder] wo 
 

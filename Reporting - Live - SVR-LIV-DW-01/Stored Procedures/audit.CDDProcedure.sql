@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [audit].[CDDProcedure] --'Real Estate','Real Estate Liverpool','5709:Alan Woodward'
 (
 	@Department AS NVARCHAR(MAX),
@@ -65,7 +66,8 @@ BEGIN
                hierarchylevel2hist AS [Division],
                hierarchylevel3hist AS [Department],
                hierarchylevel4hist AS [Team],
-			   ft.filemilestonecode,
+			   ft.cddesc AS filemilestonecode,
+			  
                CASE
                    WHEN udextfile.FEDCode IS NULL THEN
                (CASE
@@ -102,7 +104,7 @@ BEGIN
                 ON filePrincipleID = dbUser.usrID
             LEFT OUTER JOIN MS_Prod.dbo.udExtFile
                 ON dbFile.fileID = udextfile.fileID
-			LEFT OUTER JOIN MS_PROD.dbo.dbFileType ft  WITH(NOLOCK) on ft.typeCode = dbfile.fileType
+			LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS ft ON fileType=cdCode AND cdType='FILETYPE'
 			
             LEFT OUTER JOIN
             (
