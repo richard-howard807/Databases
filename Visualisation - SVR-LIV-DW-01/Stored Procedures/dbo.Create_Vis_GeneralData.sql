@@ -21,6 +21,7 @@ Current Version:	Initial Create
 -- JL 08-12-2020 Its been advised that the face_dimention_main key for history needs to be fixed by Richard. Have removed the join and replaced untill its fixed. v 1.2
 -- ES 11/02/2021 #88316, added dim_detail_core_details.[do_clients_require_an_initial_report]
 -- ES 18/06/2021 added dim_detail_core_details[will_total_gross_reserve_on_the_claim_exceed_500000] for EJ
+-- ES 25/06/2021 added no locks as it was causing blocks
 ====================================================
 
 */
@@ -614,14 +615,18 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		,[Revenue 2017/2018]
 		,[Revenue 2018/2019]
 		,[Revenue 2019/2020]
+		,[Revenue 2020/2021]
+		,[Revenue 2021/2022]
 		,[Hours Billed 2016/2017]
 		,[Hours Billed 2017/2018]
 		,[Hours Billed 2018/2019]
 		,[Hours Billed 2019/2020]
+		,[Hours Billed 2020/2021]
+		,[Hours Billed 2021/2022]
 		,[Hours Posted 2016/2017]
 		,[Hours Posted 2017/2018]
 		,[Hours Posted 2018/2019]
-		,[Hours Posted 2019/2020]
+		,[Hours Posted 2019/2020]		
 		,PartnerHours
         ,NonPartnerHours
         ,[Partner/ConsultantTime]
@@ -654,53 +659,53 @@ INTO dbo.Vis_GeneralData
 
 
 
-FROM red_dw.dbo.fact_dimension_main
-LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key 
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK) ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key 
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK) ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 --JL 08-12-2020  - This has been moved temporarily untill fact_dimention_main has been fixed. Added join not useing the key
 --LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key=fact_dimension_main.dim_fed_hierarchy_history_key --AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND getdate() BETWEEN dss_start_date AND dss_end_date 
 --v 1.2 added...
-LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON dim_fed_hierarchy_history.fed_code = red_dw.dbo.dim_matter_header_current.fee_earner_code
               AND red_dw.dbo.dim_fed_hierarchy_history.dss_current_flag = 'Y'
               AND GETDATE()
               BETWEEN dss_start_date AND dss_end_date
-LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
-LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
-LEFT OUTER JOIN red_dw.dbo.dim_client_involvement ON red_dw.dbo.dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-LEFT OUTER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
-LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.[dbo].[dim_instruction_type] ON [dim_instruction_type].[dim_instruction_type_key]=dim_matter_header_current.dim_instruction_type_key
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
-LEFT OUTER JOIN red_dw.dbo.dim_department ON red_dw.dbo.dim_department.dim_department_key = dim_matter_header_current.dim_department_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_claim ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days ON fact_detail_elapsed_days.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_property ON fact_detail_property.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_plot_details ON dim_detail_plot_details.dim_detail_plot_detail_key = fact_dimension_main.dim_detail_plot_detail_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting ON fact_detail_cost_budgeting.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_advice ON dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
-LEFT OUTER JOIN Visualisation.[dbo].[TGIPostcodes] ON RTRIM([TGIPostcodes].Branch)=REPLACE(dim_detail_advice.[site],'Do not use - ','') COLLATE DATABASE_DEFAULT
-LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi ON dim_detail_critical_mi.dim_detail_critical_mi_key=fact_dimension_main.dim_detail_critical_mi_key 
-LEFT OUTER JOIN red_dw.dbo.dim_site_address ON dim_site_address.client_code=dim_detail_client.client_code AND dim_site_address.matter_number=dim_detail_client.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_hire_details ON dim_detail_hire_details.dim_detail_hire_detail_key = fact_dimension_main.dim_detail_hire_detail_key
-LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud ON dim_detail_fraud.dim_detail_fraud_key=fact_dimension_main.dim_detail_fraud_key
-LEFT OUTER JOIN red_dw.dbo.fact_bill_matter ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_experts_involvement ON dim_experts_involvement.dim_experts_involvemen_key = fact_dimension_main.dim_experts_involvemen_key /*1.1*/
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype WITH(NOLOCK) ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.dim_client WITH(NOLOCK) ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement WITH(NOLOCK) ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK) ON red_dw.dbo.dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_claim WITH(NOLOCK) ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+LEFT OUTER JOIN red_dw.dbo.dim_employee WITH(NOLOCK) ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current WITH(NOLOCK) ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.[dbo].[dim_instruction_type] WITH(NOLOCK) ON [dim_instruction_type].[dim_instruction_type_key]=dim_matter_header_current.dim_instruction_type_key
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary WITH(NOLOCK) ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance WITH(NOLOCK) ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
+LEFT OUTER JOIN red_dw.dbo.dim_department WITH(NOLOCK) ON red_dw.dbo.dim_department.dim_department_key = dim_matter_header_current.dim_department_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_claim WITH(NOLOCK) ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days WITH(NOLOCK) ON fact_detail_elapsed_days.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail WITH(NOLOCK) ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_property WITH(NOLOCK) ON fact_detail_property.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_property WITH(NOLOCK) ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_plot_details WITH(NOLOCK) ON dim_detail_plot_details.dim_detail_plot_detail_key = fact_dimension_main.dim_detail_plot_detail_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_cost_budgeting WITH(NOLOCK) ON fact_detail_cost_budgeting.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_advice WITH(NOLOCK) ON dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
+LEFT OUTER JOIN Visualisation.[dbo].[TGIPostcodes] WITH(NOLOCK) ON RTRIM([TGIPostcodes].Branch)=REPLACE(dim_detail_advice.[site],'Do not use - ','') COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area WITH(NOLOCK) ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client WITH(NOLOCK) ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK) ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH(NOLOCK) ON dim_detail_critical_mi.dim_detail_critical_mi_key=fact_dimension_main.dim_detail_critical_mi_key 
+LEFT OUTER JOIN red_dw.dbo.dim_site_address WITH(NOLOCK) ON dim_site_address.client_code=dim_detail_client.client_code AND dim_site_address.matter_number=dim_detail_client.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_detail_hire_details WITH(NOLOCK) ON dim_detail_hire_details.dim_detail_hire_detail_key = fact_dimension_main.dim_detail_hire_detail_key
+LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement WITH(NOLOCK) ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud WITH(NOLOCK) ON dim_detail_fraud.dim_detail_fraud_key=fact_dimension_main.dim_detail_fraud_key
+LEFT OUTER JOIN red_dw.dbo.fact_bill_matter WITH(NOLOCK) ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail WITH(NOLOCK) ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_experts_involvement WITH(NOLOCK) ON dim_experts_involvement.dim_experts_involvemen_key = fact_dimension_main.dim_experts_involvemen_key /*1.1*/
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 				  ,SUM(minutes_recorded)/60 AS [HoursRecorded]
-				  FROM red_dw.dbo.fact_chargeable_time_activity
-				  INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_chargeable_time_activity.dim_matter_header_curr_key
+				  FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+				  INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_chargeable_time_activity.dim_matter_header_curr_key
 				  WHERE  minutes_recorded<>0
 				  AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE())  OR dim_matter_header_current.date_closed_case_management IS NULL)
 				  GROUP BY client_code,matter_number,fact_chargeable_time_activity.master_fact_key
@@ -746,12 +751,12 @@ LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 														AND Partners.jobtitle NOT LIKE '%Trainee%' 
 														OR  jobtitle IS NULL THEN SUM(minutes_recorded)
                                                               ELSE 0 END )  AS OtherTime
-                                              FROM      red_dw.dbo.fact_chargeable_time_activity
+                                              FROM      red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
                                               LEFT OUTER JOIN ( SELECT DISTINCT dim_fed_hierarchy_history_key
 																			 , jobtitle
-																FROM red_dw.dbo.dim_fed_hierarchy_history 
+																FROM red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 														) AS Partners ON Partners.dim_fed_hierarchy_history_key = fact_chargeable_time_activity.dim_fed_hierarchy_history_key
-											  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_chargeable_time_activity.dim_matter_header_curr_key        
+											  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_chargeable_time_activity.dim_matter_header_curr_key        
                                               WHERE     minutes_recorded<>0
 														AND (dim_matter_header_current.date_closed_case_management >='20120101' OR dim_matter_header_current.date_closed_case_management IS NULL)
                                               GROUP BY  client_code, matter_number, master_fact_key, Partners.jobtitle
@@ -772,24 +777,24 @@ LEFT OUTER JOIN (SELECT fact_dimension_main.master_fact_key,
 						INNER JOIN red_dw.dbo.dim_client WITH (NOLOCK) ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
 						WHERE dim_client.dim_client_key != 0) AS [Claimant Address] ON [Claimant Address].master_fact_key=fact_dimension_main.master_fact_key
 
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [Property_Postcode] ON [Property_Postcode].Postcode=dim_detail_property.postcode
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] ON [Claimant_Postcode].Postcode=[Claimant Address].[claimant1_postcode]
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [Incident_Postcode] ON [Incident_Postcode].Postcode=dim_detail_core_details.incident_location_postcode
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [Insured_Department_Depot_Postcode] ON [Insured_Department_Depot_Postcode].Postcode=dim_detail_core_details.insured_departmentdepot_postcode
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [TGIF_Postcode] ON [TGIF_Postcode].Postcode=LTRIM([TGIPostcodes].Postcode) COLLATE DATABASE_DEFAULT
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] ON [DVPO_Victim_Postcode].Postcode=dim_detail_advice.dvpo_victim_postcode
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [CHO_Postcode] ON [CHO_Postcode].Postcode=dim_detail_hire_details.[cho_postcode]
-LEFT OUTER JOIN red_dw.dbo.Doogal AS [TP_Postcode] ON [TP_Postcode].Postcode=[Claimant Address].[claimant1_postcode]
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [Property_Postcode] WITH(NOLOCK) ON [Property_Postcode].Postcode=dim_detail_property.postcode
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] WITH(NOLOCK) ON [Claimant_Postcode].Postcode=[Claimant Address].[claimant1_postcode]
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [Incident_Postcode] WITH(NOLOCK) ON [Incident_Postcode].Postcode=dim_detail_core_details.incident_location_postcode
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [Insured_Department_Depot_Postcode] WITH(NOLOCK) ON [Insured_Department_Depot_Postcode].Postcode=dim_detail_core_details.insured_departmentdepot_postcode
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [TGIF_Postcode] WITH(NOLOCK) ON [TGIF_Postcode].Postcode=LTRIM([TGIPostcodes].Postcode) COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] WITH(NOLOCK) ON [DVPO_Victim_Postcode].Postcode=dim_detail_advice.dvpo_victim_postcode
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [CHO_Postcode] WITH(NOLOCK) ON [CHO_Postcode].Postcode=dim_detail_hire_details.[cho_postcode]
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [TP_Postcode] WITH(NOLOCK) ON [TP_Postcode].Postcode=[Claimant Address].[claimant1_postcode]
 -- 20180921 LD Added
-LEFT OUTER JOIN red_dw.dbo.dim_court_involvement ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key=fact_dimension_main.dim_detail_health_key
-LEFT OUTER JOIN red_dw.dbo.dim_file_notes ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key 
+LEFT OUTER JOIN red_dw.dbo.dim_court_involvement WITH(NOLOCK) ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_health WITH(NOLOCK) ON dim_detail_health.dim_detail_health_key=fact_dimension_main.dim_detail_health_key
+LEFT OUTER JOIN red_dw.dbo.dim_file_notes WITH(NOLOCK) ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key 
 AND dim_file_notes.client_code IN ('00787558','00787559','00787560','00787561')
 
 LEFT OUTER JOIN (SELECT fileID
 					, tskDesc
 					, Created AS [DateTaskCreated]
-				 FROM MS_Prod.dbo.dbTasks
+				 FROM MS_Prod.dbo.dbTasks WITH(NOLOCK)
 				WHERE tskDesc='Is the lease agreed'
 				AND fileID IN (SELECT ms_fileid FROM red_dw.dbo.dim_matter_header_current
 					WHERE client_code IN ('00787558','00787559','00787560','00787561'))) AS [LeaseAgreedTasks] ON [LeaseAgreedTasks].fileID=dim_matter_header_current.ms_fileid
@@ -797,8 +802,8 @@ LEFT OUTER JOIN (SELECT fileID
 --45432
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 		,SUM(minutes_recorded)/60 AS [Hours Posted 2016/2017]
-FROM red_dw.dbo.fact_chargeable_time_activity
-LEFT OUTER JOIN red_dw.dbo.dim_date
+FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
 ON dim_date_key=dim_transaction_date_key
 WHERE calendar_date BETWEEN '2016-05-01' AND '2017-04-30'
 AND minutes_recorded<>0
@@ -807,8 +812,8 @@ ON [HoursPosted2016/2017].master_fact_key = fact_dimension_main.master_fact_key
 
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 		,SUM(minutes_recorded)/60 AS [Hours Posted 2017/2018]
-FROM red_dw.dbo.fact_chargeable_time_activity
-LEFT OUTER JOIN red_dw.dbo.dim_date
+FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
 ON dim_date_key=dim_transaction_date_key
 WHERE calendar_date BETWEEN '2017-05-01' AND '2018-04-30'
 AND minutes_recorded<>0
@@ -817,8 +822,8 @@ ON [HoursPosted2017/2018].master_fact_key = fact_dimension_main.master_fact_key
 
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 		,SUM(minutes_recorded)/60 AS [Hours Posted 2018/2019]
-FROM red_dw.dbo.fact_chargeable_time_activity
-LEFT OUTER JOIN red_dw.dbo.dim_date
+FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
 ON dim_date_key=dim_transaction_date_key
 WHERE calendar_date BETWEEN '2018-05-01' AND '2019-04-30'
 AND minutes_recorded<>0
@@ -827,8 +832,8 @@ ON [HoursPosted2018/2019].master_fact_key = fact_dimension_main.master_fact_key
 
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 		,SUM(minutes_recorded)/60 AS [Hours Posted 2019/2020]
-FROM red_dw.dbo.fact_chargeable_time_activity
-LEFT OUTER JOIN red_dw.dbo.dim_date
+FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
 ON dim_date_key=dim_transaction_date_key
 WHERE calendar_date BETWEEN '2019-05-01' AND '2020-04-30'
 AND minutes_recorded<>0
@@ -841,10 +846,10 @@ SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
 ,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
 ,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
 ,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
-FROM red_dw.dbo.fact_bill_detail
-INNER JOIN red_dw.dbo.dim_bill_date
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
  WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
 AND charge_type='time'
 GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
@@ -859,10 +864,10 @@ SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
 ,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
 ,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
 ,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
-FROM red_dw.dbo.fact_bill_detail
-INNER JOIN red_dw.dbo.dim_bill_date
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
  WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
 AND charge_type='time'
 GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
@@ -877,10 +882,10 @@ SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
 ,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
 ,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
 ,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
-FROM red_dw.dbo.fact_bill_detail
-INNER JOIN red_dw.dbo.dim_bill_date
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
  WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
 AND charge_type='time'
 GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
@@ -895,10 +900,10 @@ SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
 ,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
 ,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
 ,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
-FROM red_dw.dbo.fact_bill_detail
-INNER JOIN red_dw.dbo.dim_bill_date
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
  WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
 AND charge_type='time'
 GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
@@ -906,7 +911,39 @@ GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
  ON dim_matter_header_current.client_code=Revenue2019.client_code
 AND dim_matter_header_current.matter_number=Revenue2019.matter_number
 
+LEFT OUTER JOIN 
+(
+SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
+,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
+,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+ ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+ WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
+AND charge_type='time'
+GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+) AS Revenue2020
+ ON dim_matter_header_current.client_code=Revenue2020.client_code
+AND dim_matter_header_current.matter_number=Revenue2020.matter_number
 
+LEFT OUTER JOIN 
+(
+SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2021/2022]
+,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2021/2022]
+,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2021/2022]
+FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+ ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+ WHERE dim_bill_date.bill_date BETWEEN '2021-05-01' AND '2022-04-30'
+AND charge_type='time'
+GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+) AS Revenue2021
+ ON dim_matter_header_current.client_code=Revenue2021.client_code
+AND dim_matter_header_current.matter_number=Revenue2021.matter_number
 
 WHERE 
 LOWER(ISNULL(dim_detail_outcome.outcome_of_case,'')) <> 'exclude from reports'
