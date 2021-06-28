@@ -202,6 +202,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
 		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
+			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Slip/Trip/Fall on Same Level%' THEN 'EL - Slip/Trip/Fall on Same Level'
 			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Hways%' THEN 'PL - Hways'
 			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'

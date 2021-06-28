@@ -15,7 +15,7 @@ Current Version:	Initial Create
 ====================================================
 
 */
-	CREATE PROCEDURE [dbo].[HSD_Summary_Objectives]	--'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-09 (Jan-2021)]','[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+	CREATE PROCEDURE [dbo].[HSD_Summary_Objectives]	--'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2022-01 (May-2022)]','[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
  
 	( 
 	@Month AS VARCHAR(max) ,
@@ -25,17 +25,57 @@ Current Version:	Initial Create
 	BEGIN
 
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
+Declare
+	@FinMonthPrev AS INT = (SELECT fin_month FROM red_dw.dbo.dim_date
+	WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(mm,-1,DATEADD(MONTH,-1,GETDATE())),103)) ,
+	@FinMonth AS int=(SELECT fin_month FROM red_dw.dbo.dim_date
+	WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(MONTH,-1,GETDATE()),103)) 
 	 
 	IF OBJECT_ID('tempdb..#WriteOff') IS NOT NULL DROP TABLE #WriteOff
 	IF OBJECT_ID('tempdb..#TotalExceptions') IS NOT NULL DROP TABLE #TotalExceptions
 	IF OBJECT_ID('tempdb..#MIexceptionsreducedfrom2to1') IS NOT NULL DROP TABLE #MIexceptionsreducedfrom2to1  
 	IF OBJECT_ID('tempdb..#FraudIndicatorchecklist') IS NOT NULL DROP TABLE #FraudIndicatorchecklist
+	IF OBJECT_ID('tempdb..#CMDebt180Days') IS NOT NULL DROP TABLE #CMDebt180Days
+
+------------------------------------------------------------------------------------------------------------------
+---Current Month Debt >180 days------------------------------------------------------------------------------------------
+--DECLARE  @FinMonth AS int=(SELECT fin_month FROM red_dw.dbo.dim_date
+--WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(MONTH,-1,GETDATE()),103)) ,
+ --@Department AS VARCHAR(MAX)= '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+
+SELECT 
+master_fact_key
+,financial_date
+,SUM(outstanding_total_bill) AS [Debt Over 180 Days]
+,dim_fed_hierarchy_history.hierarchylevel3hist
+
+INTO #CMDebt180Days
+
+FROM red_dw.dbo.fact_debt_monthly
+LEFT OUTER JOIN red_dw.dbo.dim_days_banding ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
+INNER JOIN red_dw.dbo.dim_date ON dim_transaction_date_key=dim_date_key
+AND fact_debt_monthly.debt_month=@FinMonth ---this is current Month Debt >180 days
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = FACT_DEBT_MONTHLY.dim_fed_matter_owner_key
+
+WHERE  daysbanding='Greater than 180 Days'
+AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+dim_fed_hierarchy_history.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
+
+GROUP BY 
+master_fact_key
+,financial_date
+,dim_fed_hierarchy_history.hierarchylevel3hist
+ 
+HAVING SUM(outstanding_total_bill) >0
+				--) AS [Debt] ON Debt.client_group_name = dim_client.client_group_name
 
 ------------Testing-----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
 -- DECLARE 
 -- @Month AS VARCHAR(max)='[Dim Bill Date].[Hierarchy].[Bill Fin Period].&[2021-09 (Jan-2021)] ',
 --@Department AS VARCHAR(max) ='[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&[Motor]&[Legal Ops - Claims]&[Weightmans LLP]'
+
+----------------------------------------------------------------------------------------------------------------------------------
 
  -----------------------------------------------------------------------------------------------------------------------------------
  --------Write offs--------------------------------------------------------------------------------------------------------------------
@@ -58,6 +98,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  feeearner
 INNER JOIN red_dw.dbo.dim_matter_header_current ON fact_write_off.dim_matter_header_curr_key
        = dim_matter_header_current.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+
 WHERE
 dim_write_off_date_key>=20180501
 AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' <=@Month
@@ -214,6 +255,7 @@ left  JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcom
 LEFT OUTER JOIN #WriteOff ON #WriteOff.dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
 LEFT JOIN #MIexceptionsreducedfrom2to1 ON hist.hierarchylevel3hist  = #MIexceptionsreducedfrom2to1.Department
 LEFT JOIN #FraudIndicatorchecklist ON hist.hierarchylevel3hist  = #MIexceptionsreducedfrom2to1.Department
+LEFT JOIN #CMDebt180Days ON #CMDebt180Days.master_fact_key = fact_dimension_main.master_fact_key
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----1 get the days between Date Opened and Last Bill Date for the current FY
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -343,6 +385,36 @@ LEFT OUTER JOIN
 
 		GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number 	 ) AS CYRevenueBilled 
 ON CYRevenueBilled.client_code = dim_matter_header_current.client_code AND CYRevenueBilled.matter_number = dim_matter_header_current.matter_number
+
+
+
+----------------------------------------------------------------------------------------------------------------------
+--------------------Prior Month Debt >180 days----------------------------------------------------------------------------------------------------
+LEFT OUTER JOIN (
+   
+SELECT 
+master_fact_key
+,financial_date
+,SUM(outstanding_total_bill) AS [Debt Over 180 Days]
+,dim_fed_hierarchy_history.hierarchylevel3hist
+
+FROM red_dw.dbo.fact_debt_monthly
+LEFT OUTER JOIN red_dw.dbo.dim_days_banding ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
+INNER JOIN red_dw.dbo.dim_date ON dim_transaction_date_key=dim_date_key
+AND fact_debt_monthly.debt_month=@FinMonthPrev ---this is previous Month Debt >180 days
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = FACT_DEBT_MONTHLY.dim_fed_matter_owner_key
+
+WHERE  daysbanding='Greater than 180 Days'
+AND dim_fed_hierarchy_history.hierarchylevel2hist='Legal Ops - Claims'
+AND '[Dim Fed Hierarchy History].[Hierarchy].[Practice Area].&['+dim_fed_hierarchy_history.hierarchylevel3hist+']&[Legal Ops - Claims]&[Weightmans LLP]'=@Department
+--AND'[Dim Bill Date].[Hierarchy].[Bill Fin Period].&['+fin_period+']' =@Month
+GROUP BY 
+master_fact_key
+,financial_date
+,dim_fed_hierarchy_history.hierarchylevel3hist
+ 
+HAVING SUM(outstanding_total_bill) >0
+				) AS [Debt] ON Debt.master_fact_key = fact_dimension_main.master_fact_key
 
 
 
