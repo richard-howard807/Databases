@@ -17,6 +17,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -243,7 +245,7 @@ FROM
 
 LEFT OUTER JOIN 
 (
-SELECT fact_budget_activity.dim_fed_hierarchy_history_key
+SELECT employeeid
 ,SUM(fed_level_contribution_value) AS YTDContribution
 ,SUM(CASE WHEN financial_budget_month=@FinMonth THEN fed_level_contribution_value ELSE 0 END) AS MTDContribution
 FROM red_dw.dbo.fact_budget_activity
@@ -251,9 +253,9 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
 WHERE financial_budget_year=@FinYear
 AND fed_level_contribution_value IS NOT NULL
-GROUP BY fact_budget_activity.dim_fed_hierarchy_history_key
+GROUP BY employeeid
 ) AS Contrib
-ON  Contrib.dim_fed_hierarchy_history_key = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+ON  Contrib.employeeid = dim_employee.employeeid    
 LEFT OUTER JOIN 
 (
 SELECT hierarchylevel4hist AS Team

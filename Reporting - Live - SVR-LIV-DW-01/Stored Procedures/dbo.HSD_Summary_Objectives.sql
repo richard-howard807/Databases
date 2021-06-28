@@ -46,7 +46,7 @@ Declare
 SELECT 
 master_fact_key
 ,financial_date
-,SUM(outstanding_total_bill) AS [Debt Over 180 Days]
+,SUM(outstanding_total_bill) AS [Month Debt Over 180 Days]
 ,dim_fed_hierarchy_history.hierarchylevel3hist
 
 INTO #CMDebt180Days
@@ -244,6 +244,8 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 ,[Fraud Checklist Complete %]
 , SUBSTRING(@Month, LEN(LEFT(@Month, CHARINDEX ('(', @Month))) + 1, LEN(@Month) - LEN(LEFT(@Month, 
     CHARINDEX ('(', @Month))) - LEN(RIGHT(@Month, LEN(@Month) - CHARINDEX (')', @Month))) - 1) AS [Month] 
+ ,[Prior Month Debt Over 180 Days]
+ ,[Month Debt Over 180 Days]
   
 FROM
 red_dw.dbo.fact_dimension_main
@@ -395,7 +397,7 @@ LEFT OUTER JOIN (
 SELECT 
 master_fact_key
 ,financial_date
-,SUM(outstanding_total_bill) AS [Debt Over 180 Days]
+,SUM(outstanding_total_bill) AS [Prior Month Debt Over 180 Days]
 ,dim_fed_hierarchy_history.hierarchylevel3hist
 
 FROM red_dw.dbo.fact_debt_monthly
