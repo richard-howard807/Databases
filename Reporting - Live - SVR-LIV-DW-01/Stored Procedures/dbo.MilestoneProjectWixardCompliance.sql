@@ -12,6 +12,7 @@ GO
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
 --MT 15-06-2021 - #102676 - excluded clients as per ticket 
 --JL 21-06-2012 - #103411 - excluded client and referral reason as per ticket 
+--OK 29-06-2021 - #104483 - excluded client and linked file 
 
 
 
@@ -138,6 +139,8 @@ AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_t
 AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
 ('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
 AND ISNULL(fee_arrangement,'') NOT IN ('Internal / No charge','Secondment') --Request 88266
+AND dim_detail_core_details.is_this_a_linked_file <> 'Yes'
+AND dim_matter_header_current.master_client_code <> 'W15347'
 
 END
 
