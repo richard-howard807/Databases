@@ -26,8 +26,6 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 
 
-
-
 SELECT 
 fact_dimension_main.client_code [Client Code]
 , fact_dimension_main.matter_number [Matter Number]
@@ -87,7 +85,8 @@ ELSE work_type_name END AS [Work Type]
 , dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
 , dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
 , dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
-
+,[ClientOrder] = CASE WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END 
 --into dbo.PoliceExtract
 FROM red_dw..fact_dimension_main
 LEFT JOIN red_dw..dim_matter_header_current ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -276,6 +275,8 @@ GROUP BY CASE
          dim_detail_advice.dvpo_legal_costs_sought,
          dim_detail_advice.dvpo_court_fee_awarded,
          dim_detail_advice.dvpo_own_fees_awarded
+		 ,CASE WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END 
 
 END
 

@@ -7,6 +7,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -71,7 +72,7 @@ AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Fi
 AND ISNULL(referral_reason,'')<>'Advice only'
 AND ISNULL(referral_reason,'')<> 'In House'
 AND leaver =0
-AND not  (dim_matter_header_current.client_code = '00752920' AND referral_reason ='Recovery')
+AND NOT  (dim_matter_header_current.client_code = '00752920' AND referral_reason ='Recovery')
 AND master_client_code <> '30645'
 AND   RTRIM(dim_matter_header_current.client_code)+'/'+dim_matter_header_current.matter_number 
 NOT IN  
@@ -139,8 +140,8 @@ AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_t
 AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
 ('In-house: CN','In-house: COP','In-house: EL/PL','In-house: General','In-house: INQ','In-house: Secondment') -- Per #87516
 AND ISNULL(fee_arrangement,'') NOT IN ('Internal / No charge','Secondment') --Request 88266
-AND dim_detail_core_details.is_this_a_linked_file <> 'Yes'
-AND dim_matter_header_current.master_client_code <> 'W15347'
+AND ISNULL(dim_detail_core_details.is_this_a_linked_file,'') <> 'Yes'
+AND ISNULL(dim_matter_header_current.master_client_code,'') <> 'W15347'
 
 END
 
