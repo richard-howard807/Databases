@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[IAPatronClient]
 
 AS 
@@ -36,9 +37,15 @@ SET @PreFinYear=@FinYear-1
 PRINT @PreFinYear
 
 
-SELECT ISNULL(dim_client.client_group_name,dim_client.client_name) AS [Client]
+SELECT CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END AS [Client]
 ,SUM(ClientRevenueYTD) AS YTDRevenue
 ,SUM(ClientRevenuePrevYTD) AS LastYTDRevenue
+,SUM(RevenueFull.ClientRevenueFull) AS RevenueFull
+,SUM(RevenueFullPrev.ClientRevenuePrevFull) AS RevenueFullPrev
+,SUM(RevenueHalf.ClientRevenueHalf) AS RevenueHalf
+,SUM(RevenuePrevHalf.ClientRevenuePrevHalf) AS RevenueHalfPrevious
+
+
 ,SUM(CurrentWIP.WIPCurrent) AS CurrentWIP
 ,SUM(WIPLast) AS LastYRWIP
 ,SUM(DebtCurrent) AS CurrentDebt
@@ -72,6 +79,57 @@ AND bill_fin_month_no<=@FinMonth
 GROUP BY dim_client.dim_client_key
 ) AS RevenuePrev
  ON RevenuePrev.dim_client_key = dim_client.dim_client_key
+
+LEFT OUTER JOIN
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientRevenueFull
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @FinYear
+GROUP BY dim_client.dim_client_key
+) AS RevenueFull
+ ON RevenueFull.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientRevenuePrevFull
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @PreFinYear
+GROUP BY dim_client.dim_client_key
+) AS RevenueFullPrev
+ ON RevenueFullPrev.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientRevenueHalf
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @FinYear
+AND bill_fin_month_no<=6
+GROUP BY dim_client.dim_client_key
+) AS RevenueHalf
+ ON RevenueHalf.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN
+(
+SELECT dim_client.dim_client_key,SUM(bill_amount) AS ClientRevenuePrevHalf
+FROM red_dw.dbo.fact_bill_activity
+INNER JOIN red_dw.dbo.dim_bill_date
+ ON dim_bill_date.bill_date = fact_bill_activity.bill_date
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
+WHERE bill_fin_year= @PreFinYear
+AND bill_fin_month_no<=6
+GROUP BY dim_client.dim_client_key
+) AS RevenuePrevHalf
+ ON RevenuePrevHalf.dim_client_key = dim_client.dim_client_key
 LEFT OUTER JOIN 
 (
 SELECT dim_client_key,SUM(wip_value) AS WIPCurrent FROM red_dw.dbo.fact_wip_daily
@@ -129,8 +187,8 @@ WHERE dim_client.client_group_code IN
                    AND list_name = 'Patron'
                    AND client_group_code IS NULL
          )
-GROUP BY ISNULL(dim_client.client_group_name,dim_client.client_name)
-ORDER BY ISNULL(dim_client.client_group_name,dim_client.client_name)
+GROUP BY CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END
+ORDER BY CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END
 
 END 
 GO

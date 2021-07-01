@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[ROI]
 [reftypeno] [int] NOT NULL,
 [update_time] [datetime] NULL,
 [altnumber] [varchar] (200) COLLATE Latin1_General_CI_AS NULL,
-[percentage] [numeric] (16, 4) NULL
+[percentage] [numeric] (16, 4) NULL,
+[billamt_v2] [numeric] (16, 2) NULL
 ) ON [PRIMARY]
 GO

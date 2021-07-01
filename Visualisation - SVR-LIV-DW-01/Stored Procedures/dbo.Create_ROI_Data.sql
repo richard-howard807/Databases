@@ -21,6 +21,10 @@ RH 20200204 - Excluded two clients from hard cutoff date after request from Laur
 
 ES 20210610 - added legal directors and martin vincent, requested by greg
 
+RH 20210630 - Greg requested change in logic to how personal billings are deducated from client/matter total
+						old logic (billamt)		= (Total - Personal Billings) * Percent split
+						new logic (billamt_v2)  = (total * percent split) - personal billings
+
 exec [dbo].[Create_ROI_Data] '20190101'
 */
 
@@ -73,8 +77,7 @@ AS
     INNER JOIN red_dw.dbo.ds_sh_3e_mattprlftkpr	AS mattprlftkpr ON mattprlftkpr.mattdate = mattdate.mattdateid
 
 
---SELECT * FROM @timekeepers
-
+--SELECT * FROM @timekeepers 
     TRUNCATE TABLE ROI;
 
     INSERT INTO ROI
@@ -90,6 +93,7 @@ AS
        ROI.mattindex,
        postdate,
        billamt,
+	   billamt_v2,
        billhrs,
        workamt,
        workhrs,
@@ -110,6 +114,7 @@ SELECT [entity number],
        ROI.mattindex,
        postdate,
        billamt,
+	   billamt_v2,
        billhrs,
        workamt,
        workhrs,
@@ -122,24 +127,7 @@ FROM   (
 
 /* Billings on the Introducers Clients that are not their own personal billings*/
 
-SELECT x.[entity number],
-       x.[client number],
-       x.clientindex,
-       x.[client name],
-       x.[client status],
-       x.[client open date],
-       x.[Client Introducer],
-       x.timekeeper,
-       x.mattindex,
-       x.postdate,
-       x.billamt  billamt,
-       x.billhrs,
-       x.workamt,
-       x.workhrs,
-       x.ref_type,
-       x.reftypeno
-	   ,x.percentage
-FROM (
+
 
 	SELECT c.entity AS 'entity number' ,
 		c.number AS 'client number' ,
@@ -153,8 +141,9 @@ FROM (
 		matter.mattindex ,
 	   -- timecard.postdate ,
 		armaster.invdate postdate,
-		IIF(timecard.timekeeper <> co.timekeeper, 0, billamt) personalbillings,
-		(billamt - IIF(timecard.timekeeper <> co.timekeeper, 0, billamt))  * (co.percentage / 100) billamt, 
+	--	IIF(timecard.timekeeper <> co.timekeeper, 0, billamt) personalbillings,
+		(billamt - IIF(timecard.timekeeper <> co.timekeeper, 0, billamt))  * (co.percentage / 100) billamt,
+		(billamt * (co.percentage / 100)) - iif(timecard.timekeeper <> co.timekeeper, 0, billamt) billamt_v2,
 		timebill.billhrs ,
 		timebill.workamt ,
 		timebill.workhrs ,
@@ -174,11 +163,13 @@ FROM (
 		 INNER JOIN red_dw.dbo.ds_sh_3e_armaster     AS armaster ON timebill.armaster = armaster.armindex
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
-		AND armaster.invdate >= @processdate
+		--and c.number = 'W21295'
+	
+
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
 		OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna
-																
+			AND armaster.invdate >= @processdate														
 	   --  AND timecard.timekeeper NOT IN (SELECT timekeeper FROM @timekeepers  ) -- Exclues any timecard transactions by client introducer
 	 --  AND timecard.timekeeper <> co.timekeeper
 	 
@@ -198,8 +189,9 @@ FROM (
 		matter.mattindex ,
 	   -- timecard.postdate ,
 		armaster.invdate postdate,
-		IIF(timecard.timekeeper <> co.timekeeper, 0, billamt) personalbillings,
+		--iif(timecard.timekeeper <> co.timekeeper, 0, billamt) personalbillings,
 		(billamt - IIF(timecard.timekeeper <> co.timekeeper, 0, billamt))  * (co.percentage / 100) billamt, 
+		(billamt * (co.percentage / 100)) - iif(timecard.timekeeper <> co.timekeeper, 0, billamt) billamt_v2,
 		0 ,
 		0 ,
 		0 ,
@@ -219,13 +211,13 @@ FROM (
 		 INNER JOIN red_dw.dbo.ds_sh_3e_armaster     AS armaster ON timebill.armaster = armaster.armindex
 	WHERE  ( co.timekeeper IS NOT NULL )
 		-- AND matter.mattindex = 2999097
+		--and c.number = 'W21295'
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
 		OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna
 														
 		AND armaster.invdate >= @processdate
 
-) x
 
 /* Revenue or Personal Billings */
                         
@@ -244,6 +236,7 @@ SELECT NULL AS [entity number] ,
         matter_2.mattindex ,
         armaster.invdate ,
         timebill_2.billamt ,
+		timebill_2.billamt billamt_v2 ,
         timebill_2.billhrs ,
         timebill_2.workamt ,
         timebill_2.workhrs ,
@@ -276,6 +269,7 @@ SELECT NULL AS [entity number] ,
         matter_2.mattindex ,
         armaster.invdate ,
         timebill_2.billamt ,
+		timebill_2.billamt billamt_v2 ,
         0 ,
         0 ,
         0 ,
@@ -311,6 +305,7 @@ SELECT x.[entity number],
        x.invdate,  
        --x.billamt - x.personalbillings billamt,
 	   x.billamt billamt,
+	    x.billamt billamt_v2,
 	   x.billhrs,
        x.workamt,
        x.workhrs,
@@ -333,6 +328,7 @@ FROM (
 		armaster.invdate,
 		IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt) personalbillings,
 		(billamt - IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt))  * (mattprlftkpr.percentage / 100) billamt, 
+		(billamt * (mattprlftkpr.percentage / 100)) - IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt)   billamt_v2, 
 		--timebill_1.billamt * (mattprlftkpr.percentage / 100) billamt,
 		timebill_1.billhrs ,
 		timebill_1.workamt ,
@@ -374,6 +370,8 @@ FROM (
 		armaster.invdate,
 		IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt) personalbillings,
 		(billamt - IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt)) * (mattprlftkpr.percentage / 100) billamt, 
+		
+		(billamt * (mattprlftkpr.percentage / 100)) - IIF(timecard_1.timekeeper <> mattprlftkpr.timekeeper, 0, billamt)   billamt_v2, 
 		--timebill_1.billamt * (mattprlftkpr.percentage / 100) billamt,
 		0 ,
 		0 ,
@@ -421,6 +419,7 @@ SELECT c.entity AS 'entity number' ,
    -- timecard.postdate ,
     armaster.invdate postdate,
     timebill.billamt  * (co.percentage / 100) billamt,
+	timebill.billamt  * (co.percentage / 100) billamt_v2,
     timebill.billhrs ,
     timebill.workamt ,
     timebill.workhrs ,
@@ -455,6 +454,7 @@ SELECT NULL AS [entity number] ,
         matter_2.mattindex ,
         armaster.invdate ,
         timebill_2.billamt ,
+		timebill_2.billamt billamt_v2 ,
         timebill_2.billhrs ,
         timebill_2.workamt ,
         timebill_2.workhrs ,
@@ -488,6 +488,7 @@ SELECT NULL AS [entity number] ,
    -- timecard_1.postdate ,
     armaster.invdate postdate,
 	timebill_1.billamt * (mattprlftkpr.percentage / 100) billamt,
+	timebill_1.billamt * (mattprlftkpr.percentage / 100) billamt_2v,
     timebill_1.billhrs ,
     timebill_1.workamt ,
     timebill_1.workhrs ,
