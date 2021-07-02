@@ -6,7 +6,10 @@ GO
 
 
 
-CREATE PROCEDURE [marketing].[CampaignDataBrexit]
+
+
+
+CREATE PROCEDURE [marketing].[CampaignDataBrexit] --EXEC [marketing].[CampaignDataBrexit] '2020-04-01','2021-07-02'
 (
 @DateFrom AS DATE
 ,@DateTo AS DATE
@@ -112,12 +115,12 @@ AND dim_matter_header_current.reporting_exclusions = 0
 AND 
 (
 is_this_part_of_a_campaign='Brexit'
-OR LOWER(matter_description) LIKE 'brexit'
-OR LOWER(matter_description) LIKE 'sponsor lic'
-OR LOWER(matter_description) LIKE 'immigration'
-OR LOWER(matter_description) LIKE 'settled status'
-OR LOWER(matter_description) LIKE 'business immigration'
-OR LOWER(matter_description) LIKE 'right to work'
+OR LOWER(matter_description) LIKE '%brexit%'
+OR LOWER(matter_description) LIKE '%sponsor lic%'
+OR LOWER(matter_description) LIKE '%immigration%'
+OR LOWER(matter_description) LIKE '%settled status%'
+OR LOWER(matter_description) LIKE '%business immigration%'
+OR LOWER(matter_description) LIKE '%right to work%'
 )
 
 UNION
@@ -234,12 +237,12 @@ AND LOWER(dim_client.client_name) NOT LIKE '%test%'
 AND 
 (
 is_this_part_of_a_campaign='Brexit'
-OR LOWER(matter_description) LIKE 'brexit'
-OR LOWER(matter_description) LIKE 'sponsor lic'
-OR LOWER(matter_description) LIKE 'immigration'
-OR LOWER(matter_description) LIKE 'settled status'
-OR LOWER(matter_description) LIKE 'business immigration'
-OR LOWER(matter_description) LIKE 'right to work'
+OR LOWER(matter_description) LIKE '%brexit%'
+OR LOWER(matter_description) LIKE '%sponsor lic%'
+OR LOWER(matter_description) LIKE '%immigration%'
+OR LOWER(matter_description) LIKE '%settled status%'
+OR LOWER(matter_description) LIKE '%business immigration%'
+OR LOWER(matter_description) LIKE '%right to work%'
 )
 
 END

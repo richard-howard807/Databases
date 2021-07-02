@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [marketing].[CampaignSummaryDataBrexit]
 
 AS
@@ -39,12 +41,12 @@ AND LOWER(dim_client.client_name) NOT LIKE '%test%'
 AND 
 (
 is_this_part_of_a_campaign='Brexit'
-OR LOWER(matter_description) LIKE 'brexit'
-OR LOWER(matter_description) LIKE 'sponsor lic'
-OR LOWER(matter_description) LIKE 'immigration'
-OR LOWER(matter_description) LIKE 'settled status'
-OR LOWER(matter_description) LIKE 'business immigration'
-OR LOWER(matter_description) LIKE 'right to work'
+OR LOWER(matter_description) LIKE '%brexit%'
+OR LOWER(matter_description) LIKE '%sponsor lic%'
+OR LOWER(matter_description) LIKE '%immigration%'
+OR LOWER(matter_description) LIKE '%settled status%'
+OR LOWER(matter_description) LIKE '%business immigration%'
+OR LOWER(matter_description) LIKE '%right to work%'
 )
 GROUP BY  is_this_part_of_a_campaign
          ,
@@ -86,12 +88,12 @@ AND LOWER(dim_client.client_name) NOT LIKE '%test%'
 AND 
 (
 is_this_part_of_a_campaign='Brexit'
-OR LOWER(matter_description) LIKE 'brexit'
-OR LOWER(matter_description) LIKE 'sponsor lic'
-OR LOWER(matter_description) LIKE 'immigration'
-OR LOWER(matter_description) LIKE 'settled status'
-OR LOWER(matter_description) LIKE 'business immigration'
-OR LOWER(matter_description) LIKE 'right to work'
+OR LOWER(matter_description) LIKE '%brexit%'
+OR LOWER(matter_description) LIKE '%sponsor lic%'
+OR LOWER(matter_description) LIKE '%immigration%'
+OR LOWER(matter_description) LIKE '%settled status%'
+OR LOWER(matter_description) LIKE '%business immigration%'
+OR LOWER(matter_description) LIKE '%right to work%'
 )
 GROUP BY          is_this_part_of_a_campaign
          ,
