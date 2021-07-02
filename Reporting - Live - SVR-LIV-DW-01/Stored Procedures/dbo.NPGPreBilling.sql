@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -155,6 +156,7 @@ WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB
 AND fileNo<>'0'
 AND fileClosed IS NULL
 AND ISNULL(cboNPGFileType,'')<>'COMLIT'
+AND (dteCompletionD IS NOT NULL OR Fees.[Legal Costs]>=700)
 END 
 
 ELSE 
@@ -293,6 +295,7 @@ WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB
 AND fileNo<>'0'
 AND fileClosed IS NULL
 AND cboNPGFileType=@Team
+AND (dteCompletionD IS NOT NULL OR Fees.[Legal Costs]>=700)
 
 END 
 
