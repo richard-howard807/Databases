@@ -7,7 +7,7 @@ GO
 -- Create date: 20210602
 -- Description:	#99328, data for new rolling 12 months summary tab
 -- ================================================
--- 
+-- ES 2021-07-01 Removed some campaigns requested by HF
 -- ================================================
 CREATE PROCEDURE [marketing].[CampaignSummaryData]
 
@@ -126,7 +126,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction')
+         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass') 
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
@@ -277,7 +277,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction')
+         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass')
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
