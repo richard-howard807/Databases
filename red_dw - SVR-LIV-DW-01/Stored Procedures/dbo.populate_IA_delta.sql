@@ -885,17 +885,18 @@ INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_DEPARTMENT$1]
 
 		   SELECT  RTRIM(LTRIM(department_code)), RTRIM(LTRIM(department_name))  FROM dbo.dim_department
 
-	   SELECT DISTINCT
+
+
+SELECT DISTINCT
        RTRIM(LTRIM([branch_code])) AS branch_code,
        RTRIM(LTRIM([branch_name])) AS [branch_name]
-	   INTO #offices
-FROM [dbo].[dim_matter_header_current] AS [mat]
+			into #offices
+FROM [dbo].[dim_matter_header_current] (nolock) AS [mat]
 INNER JOIN  [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PROJECT$1] AS [ia]
 ON [mat].[branch_code] = CAST([LOCATION_CD] COLLATE Latin1_General_BIN AS VARCHAR)
 WHERE [branch_code] IS NOT null
 and mat.client_code not in (select client_code from dbo.dim_client where push_to_ia = 1)
 
-ORDER BY [branch_code]
 
 INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_OFFICE$1]
            ([CODE]
