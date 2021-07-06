@@ -87,8 +87,7 @@ WHERE 1 = 1
  AND dim_matter_header_current.master_client_code = 'Z1001'  
  AND dim_matter_header_current.reporting_exclusions = 0  
  AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Large Loss'  
- AND (LTRIM(RTRIM(LOWER(dim_detail_core_details.present_position))) = 'claim and costs outstanding' OR  
-  LTRIM(RTRIM(LOWER(dim_detail_core_details.present_position))) = 'claim concluded but costs outstanding')  
+ AND LTRIM(RTRIM(LOWER(dim_detail_core_details.present_position))) = 'claim and costs outstanding'
  AND fact_detail_reserve_detail.large_loss_hundred_perc_current_dam_res_total >= 3000000  
 
   
