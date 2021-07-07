@@ -19,6 +19,7 @@ BEGIN
 
 	 SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Client/Matter Number]
 		, dim_matter_header_current.matter_description AS [Matter Description]
+		,dim_detail_core_details.present_position [Present Position]
 		, dim_matter_header_current.matter_owner_full_name AS [Matter Owner]
 		, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 		, dim_matter_header_current.date_closed_case_management AS [Date Closed]
@@ -63,6 +64,7 @@ BEGIN
 	AND dim_matter_header_current.master_client_code='W15381'
 	AND dim_matter_header_current.date_opened_case_management>='2017-01-01'
 	AND ISNULL(dim_detail_core_details.referral_reason,'')<>'Recovery'
+	AND dim_matter_header_current.date_closed_case_management IS NULL 
 
 END
 GO

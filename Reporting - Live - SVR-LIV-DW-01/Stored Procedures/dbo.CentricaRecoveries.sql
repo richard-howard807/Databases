@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -59,6 +60,7 @@ dim_detail_outcome.[recovery_claimants_our_client_damages] [Damages sent to clie
 fact_detail_recovery_detail.[recovery_claimants_our_client_costs] [Costs sent to client ],
     fact_finance_summary.[defence_costs_billed][Amount PC billed from recovery],
 fact_bill_detail_summary.disbursements_billed_exc_vat + fact_finance_summary.vat_billed  [Amount billed for VAT & disbs from recovery],
+fact_bill_detail_summary.disbursements_billed_exc_vat   [Amount billed for disbs from recovery],
 fact_bill_detail_summary.disbursements_billed_exc_vat + fact_finance_summary.vat_billed +   fact_finance_summary.[defence_costs_billed] [Total PC billed inc recovery],
 --dim_detail_claim.[notes_on_recovery] 
 ISNULL(recovery_notes,'')  AS Notes1,

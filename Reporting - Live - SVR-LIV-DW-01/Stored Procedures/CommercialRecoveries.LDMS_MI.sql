@@ -19,14 +19,15 @@ BEGIN
 SELECT 
 
 
-[Weightmans Ref] = dim_matter_header_current.master_client_code + '-' + master_matter_number 
+ [Weightmans Ref] = dim_matter_header_current.master_client_code + '-' + master_matter_number 
 ,[Defendant name] = COALESCE(defendant.contName,  matter_description COLLATE DATABASE_DEFAULT) 
 ,[Matter Description] = matter_description
 ,dim_matter_header_current.client_name
 ,[Agreement Number] =  dim_client_involvement.client_reference 
-,[Date the wizard was run] = ''
-,[Wizard Text] = ''
+,[Date the wizard was run] = Wizard.dteInserted
+,[Wizard Text] = Wizard.txtDescription
 ,ms_fileid
+,Wizard.[bitUpdateLDMS]
 
 FROM 
 
@@ -51,6 +52,13 @@ LEFT JOIN  ( SELECT DISTINCT ROW_NUMBER () OVER (PARTITION BY fileID ORDER BY as
 						AND contIsClient = 0) 
 						defendant ON defendant.fileID = dbFile.fileID AND defendant.RN = 1 
 
+	LEFT JOIN (
+						
+						SELECT DISTINCT fileID, dteInserted, txtDescription, [bitUpdateLDMS] FROM MS_Prod.dbo.udCRHistoryNotesSL 
+						
+						WHERE [bitUpdateLDMS] = 1  ) Wizard ON Wizard.fileID = dbFile.fileID
+
+					
 
 WHERE 1 =1 
 

@@ -74,6 +74,7 @@ SELECT
 	END	AS [date_subsequent_report_due]
 	,date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 
+
 INTO #ClientReportDates
 
 FROM red_dw.dbo.fact_dimension_main
@@ -200,6 +201,9 @@ SELECT
 	,dim_detail_outcome.repudiation_outcome
 	, ISNULL(damages_paid,0) + ISNULL(claimants_costs_paid,0)	+ ISNULL(total_amount_billed,0) -ISNULL(vat_billed,0)   AS [Indemnity Spend]
 	,vat_billed
+	, dim_detail_finance.[damages_banding] AS [Damages Banding]
+	,dim_detail_core_details.[injury_type] [Injury Type]
+	
 
 INTO #MainData
 FROM red_dw.dbo.fact_dimension_main
@@ -220,6 +224,7 @@ LEFT OUTER JOIN red_dw.dbo.ds_sh_ms_udficcommon ON 	 ds_sh_ms_udficmotor.fileid 
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key 
 
 
 
@@ -288,7 +293,9 @@ SELECT
 , FILTER AS [Filter Date of Last Bill]
 , repudiation_outcome
 , [Indemnity Spend]
-,vat_billed
+, vat_billed
+, [Damages Banding]
+, [Injury Type]
 
 FROM #MainData
 

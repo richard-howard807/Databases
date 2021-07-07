@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -110,15 +111,21 @@ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS MatStat WITH(NOLOCK)
 ON cboMatterStat=MatStat.cdCode AND MatStat.cdType='STATUSNPG'
 LEFT OUTER JOIN 
 (
-SELECT  ms_fileid
-,SUM(CASE WHEN total_unbilled_disbursements_vat=0 THEN total_unbilled_disbursements ELSE 0 END) AS NotVatDisbs
-,SUM(CASE WHEN total_unbilled_disbursements_vat<>0 THEN total_unbilled_disbursements ELSE 0 END) AS DisbsWithVat
-,SUM(total_unbilled_disbursements_vat) AS VatDisbursements
-FROM red_dw.dbo.fact_disbursements_detail WITH(NOLOCK)
+SELECT ms_fileid
+,SUM(CASE WHEN TaxCode='UKZO' THEN WorkAmt ELSE 0 END) AS NotVatDisbs
+,SUM(CASE WHEN TaxCode<>'UKZO' THEN WorkAmt ELSE 0 END) AS DisbsWithVat
+,NULL AS VatDisbursements
+FROM TE_3E_Prod.dbo.CostCard WITH(NOLOCK)
+INNER JOIN TE_3E_Prod.dbo.Matter WITH(NOLOCK)
+ ON TE_3E_Prod.dbo.CostCard.Matter=MattIndex
+INNER JOIN ms_prod.config.dbFile WITH(NOLOCK)
+ ON fileExtLinkID=MattIndex
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
- ON dim_matter_header_current.dim_matter_header_curr_key = fact_disbursements_detail.dim_matter_header_curr_key
+ ON fileID=ms_fileid
 WHERE master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
-AND ISNULL(total_unbilled_disbursements,0) <>0
+--AND Number='W22559-116'
+AND IsActive=1
+AND InvMaster IS NULL
 GROUP BY ms_fileid
 ) AS UnbilledDisbs
  ON UnbilledDisbs.ms_fileid=dbfile.fileid
@@ -249,15 +256,21 @@ LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup   AS MatStat WITH(NOLOCK)
 ON cboMatterStat=MatStat.cdCode AND MatStat.cdType='STATUSNPG'
 LEFT OUTER JOIN 
 (
-SELECT  ms_fileid
-,SUM(CASE WHEN total_unbilled_disbursements_vat=0 THEN total_unbilled_disbursements ELSE 0 END) AS NotVatDisbs
-,SUM(CASE WHEN total_unbilled_disbursements_vat<>0 THEN total_unbilled_disbursements ELSE 0 END) AS DisbsWithVat
-,SUM(total_unbilled_disbursements_vat) AS VatDisbursements
-FROM red_dw.dbo.fact_disbursements_detail WITH(NOLOCK)
+SELECT ms_fileid
+,SUM(CASE WHEN TaxCode='UKZO' THEN WorkAmt ELSE 0 END) AS NotVatDisbs
+,SUM(CASE WHEN TaxCode<>'UKZO' THEN WorkAmt ELSE 0 END) AS DisbsWithVat
+,NULL AS VatDisbursements
+FROM TE_3E_Prod.dbo.CostCard WITH(NOLOCK)
+INNER JOIN TE_3E_Prod.dbo.Matter WITH(NOLOCK)
+ ON TE_3E_Prod.dbo.CostCard.Matter=MattIndex
+INNER JOIN ms_prod.config.dbFile WITH(NOLOCK)
+ ON fileExtLinkID=MattIndex
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
- ON dim_matter_header_current.dim_matter_header_curr_key = fact_disbursements_detail.dim_matter_header_curr_key
+ ON fileID=ms_fileid
 WHERE master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
-AND ISNULL(total_unbilled_disbursements,0) <>0
+--AND Number='W22559-116'
+AND IsActive=1
+AND InvMaster IS NULL
 GROUP BY ms_fileid
 ) AS UnbilledDisbs
  ON UnbilledDisbs.ms_fileid=dbfile.fileid

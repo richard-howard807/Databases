@@ -4,18 +4,44 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[NewMattersAfter3Years] --EXEC [dbo].[NewMattersAfter3Years] '2017-08-23','2017-08-23'
-(	@StartDate	date
-,	@EndDate	date
+(	@StartDate	DATE
+,	@EndDate	DATE
 )
 
 
-As
+AS
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 SET NOCOUNT ON
-SELECT * FROM 
+SELECT AllData.Client,
+       AllData.ClientName,
+       AllData.Matter,
+       AllData.FeeEarner,
+       AllData.DateMatterOpened,
+       AllData.PreviousFeeEarner,
+       AllData.PreviousDateMatterOpened,
+       AllData.NoYears
+  
+	---------- Extra Data Request 105668
+
+,dim_client.[branch]
+,dim_client.[client_type]
+,dim_client.[client_group_name]
+,dim_client.[client_partner_name]
+,dim_client.[open_date]
+,dim_client.[email]
+,dim_client.[sector]
+,dim_client.[segment]
+,dim_client.[sub_sector]
+,dim_client.[created_by]
+,dim_client.[business_source_name]
+,dim_client.[postcode]
+,dim_client.[referrer_type]
+,dim_client.[business_source]
+FROM 
 (
-Select	MostRecent.mg_client	AS Client
+SELECT	MostRecent.mg_client	AS Client
 	,	caclient.cl_clname		AS ClientName
 	,	MostRecent.mg_matter	AS Matter
 	,	MostRecent.mg_feearn	AS FeeEarner
@@ -23,7 +49,7 @@ Select	MostRecent.mg_client	AS Client
 	,	Previous.mg_feearn		AS	PreviousFeeEarner
 	,	Previous.mg_datopn		AS	PreviousDateMatterOpened
 	,	DATEDIFF(YEAR,Previous.mg_datopn,MostRecent.mg_datopn) AS NoYears
-from
+FROM
 	(
 	SELECT	client_code AS mg_client
 			,matter_number AS mg_matter
@@ -34,7 +60,7 @@ from
 			WHERE matter_number <>'ML'
 	)	MostRecent
 
-inner join 
+INNER JOIN 
 	(
 			SELECT	client_code AS mg_client
 			,matter_number AS mg_matter
@@ -46,7 +72,7 @@ inner join
 	)	Previous
 	
 	ON	MostRecent.mg_client = Previous.mg_client
-inner join	axxia01.dbo.caclient
+INNER JOIN	axxia01.dbo.caclient
 	ON	MostRecent.mg_client = caclient.cl_accode
 
 WHERE	MostRecent.OrderID = 1
@@ -56,5 +82,7 @@ WHERE	MostRecent.OrderID = 1
 	
 
 ) AS AllData
-WHERE DATEDIFF(month,PreviousDateMatterOpened,DateMatterOpened)/12>=3
+LEFT OUTER JOIN red_dw.dbo.dim_client
+ ON AllData.Client=client_code
+WHERE DATEDIFF(MONTH,PreviousDateMatterOpened,DateMatterOpened)/12>=3
 GO

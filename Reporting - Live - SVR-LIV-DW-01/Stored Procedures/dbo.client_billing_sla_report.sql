@@ -24,7 +24,7 @@ CREATE PROCEDURE [dbo].[client_billing_sla_report]
 AS
 
 BEGIN
-
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
 SET NOCOUNT ON;
 
 -- For testing

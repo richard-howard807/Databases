@@ -11,7 +11,7 @@ SELECT
 
  [Date Case Opened] = date_opened_case_management
 ,[Client Code] = dim_matter_header_current.master_client_code
-,[Matter Number] = dim_matter_header_current.master_matter_number 
+,[Matter Number] = cast(dim_matter_header_current.master_matter_number as int)
 ,[Matter Description] = matter_description
 ,[Case Manager] = dim_fed_hierarchy_history.name
 ,[Covea Reference] = COALESCE(dim_client_involvement.[insurerclient_reference], client_reference)
