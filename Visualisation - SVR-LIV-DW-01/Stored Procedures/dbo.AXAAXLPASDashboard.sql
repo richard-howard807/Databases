@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[AXAAXLPASDashboard]
 
 AS
@@ -17,7 +18,7 @@ SELECT [Date Case Opened]
 ,[Mattersphere Client Code]
 ,[Mattersphere Matter Number]
 ,[Mattersphere Weightmans Reference]
-,CASE WHEN [Client Group Name]='AXA XL' AND [Date Case Opened]>='2020-07-01' THEN 'PAS' END AS [AXA PAS?]
+,[axa_instruction_type] AS [AXA PAS?]
 ,[Matter Description]
 ,[Case Manager]
 ,[Matter Owner Full Name]
@@ -252,6 +253,10 @@ WHEN [Client Group Name] IN ('Sabre','Zurich','Ageas') THEN 'Market'END AS [mark
 ,[LL Damages £350k+]
 ,[reporting_exclusions]
 FROM Reporting.dbo.selfservice
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client 
+ON [Client Code]=client_code
+AND [Matter Number]=matter_number
+
 WHERE Department='Motor'
 AND [Date Claim Concluded]>='2019-01-01'
 
