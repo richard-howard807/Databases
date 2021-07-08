@@ -297,6 +297,7 @@ LEFT OUTER JOIN #outsource_mmi_claim_refs
 WHERE 
 InvPayor.BalAmt <> 0
 --and InvPayor.InvNumber = '01659941'
+and InvMaster.IsReversed <> 1
 
 
 ORDER BY ISNULL(LEFT(Matter.loadnumber,(CHARINDEX('-',Matter.loadnumber)-1)),Client.altnumber), 
