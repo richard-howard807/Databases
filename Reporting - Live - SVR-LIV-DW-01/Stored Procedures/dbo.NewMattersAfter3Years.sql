@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NewMattersAfter3Years] --EXEC [dbo].[NewMattersAfter3Years] '2017-08-23','2017-08-23'
 (	@StartDate	DATE
 ,	@EndDate	DATE
@@ -39,6 +40,9 @@ SELECT AllData.Client,
 ,dim_client.[postcode]
 ,dim_client.[referrer_type]
 ,dim_client.[business_source]
+,firm_contact_name
+,TotalMatters.TotalMatters
+,TotalMatters.Revenue
 FROM 
 (
 SELECT	MostRecent.mg_client	AS Client
@@ -84,5 +88,15 @@ WHERE	MostRecent.OrderID = 1
 ) AS AllData
 LEFT OUTER JOIN red_dw.dbo.dim_client
  ON AllData.Client=client_code
+LEFT OUTER JOIN (
+SELECT dim_client.client_code,COUNT(1) AS TotalMatters ,SUM(defence_costs_billed) AS Revenue
+FROM red_dw.dbo.dim_client
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.client_code = dim_client.client_code
+INNER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.client_code = dim_matter_header_current.client_code
+ AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+GROUP BY dim_client.client_code) AS TotalMatters
+ ON TotalMatters.client_code = dim_client.client_code
 WHERE DATEDIFF(MONTH,PreviousDateMatterOpened,DateMatterOpened)/12>=3
 GO

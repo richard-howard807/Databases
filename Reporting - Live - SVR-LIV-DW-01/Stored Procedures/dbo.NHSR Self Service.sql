@@ -596,7 +596,9 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            fact_detail_recovery_detail.monies_received AS [Outsource Recovery Paid],
            fact_bill_detail_summary.bill_total AS [Total Bill Amount - Composite (IncVAT )],
            fact_finance_summary.[defence_costs_billed] AS [Revenue Costs Billed],
-           fact_bill_detail_summary.disbursements_billed_exc_vat AS [Disbursements Billed ],
+		   
+           fact_bill_detail_summary.disbursements_billed_exc_vat AS [Disbursements Billed ExVAT],
+		   fact_finance_summary.disbursements_billed [Disbursements Billed],
            fact_finance_summary.vat_billed AS [VAT Billed],
            fact_finance_summary.wip AS [WIP],
                                 --    fact_finance_summary.[unpaid_disbursements] AS [Unpaid Disbursements],
