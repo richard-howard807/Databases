@@ -16,7 +16,6 @@ BEGIN
 	SET NOCOUNT ON;
 
 
-
 SELECT 
 	dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number		AS [MS Client/Matter Reference]
 	, dim_matter_header_current.matter_description			AS [Matter Description]
@@ -67,12 +66,13 @@ SELECT
 	, dim_file_notes.external_file_notes	
 	, Doogal.Latitude
 	, Doogal.Longitude
-	, CASE
-        WHEN ISNULL(fact_matter_summary_current.last_bill_date, '1753-01-01') = '1753-01-01' THEN 'Not yet billed'
+	--, CASE
+ --       WHEN ISNULL(fact_matter_summary_current.last_bill_date, '1753-01-01') = '1753-01-01' THEN 'Not yet billed'
 
-        ELSE
-            CAST(CAST(fact_matter_summary_current.last_bill_date AS DATE) AS NVARCHAR(20))
-    END AS [Last Bill Date]
+ --       ELSE
+ --           CAST(FORMAT(fact_matter_summary_current.last_bill_date, 'd', 'en-gb') AS VARCHAR(10))
+ --   END AS [Last Bill Date]
+	, CAST(fact_matter_summary_current.last_bill_date AS DATE)		AS [Last Bill Date v2]
 	,dim_employee.locationidud AS [Office]
 
 	,[Tab Filter] = CASE WHEN dim_employee.locationidud = 'Glasgow' THEN 'Scotland'
@@ -120,6 +120,7 @@ WHERE 1 =1
 	AND dim_matter_header_current.matter_category = 'Real Estate'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case, '')) <> 'exclude from reports'
+
 
 
 END
