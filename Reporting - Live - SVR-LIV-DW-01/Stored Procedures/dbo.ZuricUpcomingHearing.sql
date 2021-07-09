@@ -90,6 +90,12 @@ ELSE  'Deleted/Completed' END AS [Tab Filter]
 ,zurich_data_admin_closure_date
 ,zurich_data_admin_exclude_from_reports
 ,injury_type_code
+, CASE 
+	WHEN dim_matter_header_current.date_closed_practice_management IS NULL AND dim_detail_client.zurich_data_admin_closure_date IS NULL THEN
+		'Open'
+	ELSE
+		'Closed'
+  END					AS [Status]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -116,7 +122,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
  ON dim_detail_claim.client_code = dim_matter_header_current.client_code
  AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number 
 WHERE (client_group_code='00000001' OR dim_matter_header_current.client_code='M00001')
-AND date_closed_practice_management IS NULL
+--AND date_closed_practice_management IS NULL
 AND RTRIM(tskDesc) IN 
 (
 'REM: Appeal hearing today [CASE MAN]'
@@ -155,6 +161,6 @@ AND RTRIM(tskDesc) IN
 )
 AND CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskDue),103) BETWEEN @StartDate AND @EndDate
 AND ISNULL(zurich_data_admin_exclude_from_reports,'No')='No'
-AND zurich_data_admin_closure_date IS NULL
+--AND zurich_data_admin_closure_date IS NULL
  END 
 GO
