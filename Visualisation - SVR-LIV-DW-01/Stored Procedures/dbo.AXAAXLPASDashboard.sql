@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[AXAAXLPASDashboard]
 
 AS
@@ -18,7 +19,7 @@ SELECT [Date Case Opened]
 ,[Mattersphere Client Code]
 ,[Mattersphere Matter Number]
 ,[Mattersphere Weightmans Reference]
-,[axa_instruction_type] AS [AXA PAS?]
+,CASE WHEN [axa_instruction_type]='PAS' THEN 'PAS' END  AS [AXA PAS?]
 ,[Matter Description]
 ,[Case Manager]
 ,[Matter Owner Full Name]
@@ -40,7 +41,7 @@ SELECT [Date Case Opened]
 ,CASE WHEN [Client Group Name]='AXA XL' THEN 'AXA XL'
 WHEN [Client Group Name]='Sabre' THEN 'Benchmark' END   [Client Like for Like]
 ,CASE WHEN [Client Group Name]='AXA XL' THEN 'AXA XL' 
-WHEN [Client Group Name] IN ('Sabre','Zurich','Ageas') THEN 'Market'END AS [market]
+ELSE'Market'END AS [market]
 ,[Client Group Name]
 ,[Client Sector]
 ,[Client Sub-Sector]
@@ -251,14 +252,17 @@ WHEN [Client Group Name] IN ('Sabre','Zurich','Ageas') THEN 'Market'END AS [mark
 ,[tier_1_3_case]
 ,[International elements]
 ,[LL Damages £350k+]
-,[reporting_exclusions]
+
 FROM Reporting.dbo.selfservice
 LEFT OUTER JOIN red_dw.dbo.dim_detail_client 
 ON [Client Code]=client_code
 AND [Matter Number]=matter_number
 
 WHERE Department='Motor'
-AND [Date Claim Concluded]>='2019-01-01'
+AND [Date Claim Concluded]>='2020-07-01'
+AND ISNULL([Suspicion of Fraud?],'') <>'Yes'
+AND ISNULL([Outcome of Case],'') NOT IN ('Exclude from reports','Returned to Client')
+AND  ISNULL([Damages Paid by Client ],0)<=50000
 
 END
 GO
