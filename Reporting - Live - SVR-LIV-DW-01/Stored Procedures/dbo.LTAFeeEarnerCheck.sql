@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[LTAFeeEarnerCheck]
 (
 @Filter AS NVARCHAR(MAX)
@@ -65,6 +66,7 @@ AND tskFilter IN ('tsk014','tsk_01_2110_FeeEarnerCheck')
 AND tskComplete=0
 AND tskActive=1
 AND red_dw.dbo.datetimelocal(tskDue)>='2021-05-25'
+AND red_dw.dbo.datetimelocal(tskDue)<CONVERT(DATE,GETDATE(),103)
 AND date_closed_case_management IS NULL
 
 END 
@@ -122,6 +124,7 @@ AND tskComplete=0
 AND tskActive=1
 AND workemail=@Filter
 AND red_dw.dbo.datetimelocal(tskDue)>='2021-05-25'
+AND red_dw.dbo.datetimelocal(tskDue)<CONVERT(DATE,GETDATE(),103)
 AND date_closed_case_management IS NULL
 
 END 
