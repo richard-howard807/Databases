@@ -372,7 +372,7 @@ SELECT
 		WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 
 			NULL 
 		WHEN #ClientReportDates.inverted_initial_rule = 'Yes' THEN 
-			#ClientReportDates.days_to_first_report_lifecycle 
+			#ClientReportDates.inverted_days_to_first_report_lifecycle 
 		ELSE 
 			NULL
 	  END AS inverted_avglifecycle 

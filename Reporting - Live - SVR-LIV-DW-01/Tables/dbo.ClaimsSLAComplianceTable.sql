@@ -31,7 +31,7 @@ CREATE TABLE [dbo].[ClaimsSLAComplianceTable]
 [Days without Subsequent Report] [decimal] (20, 2) NULL,
 [Number of Files] [int] NOT NULL,
 [avglifecycle] [numeric] (13, 2) NULL,
-[inverted_avglifecycle] [numeric] (13, 2) NULL,
+[inverted_avglifecycle] [int] NULL,
 [days_to_first_report_lifecycle] [numeric] (13, 2) NULL,
 [inverted_days_to_first_report_lifecycle] [int] NULL,
 [Suspicion of Fraud?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
