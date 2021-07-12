@@ -494,7 +494,7 @@ SELECT
 																	) THEN
 			0
 		WHEN date_initial_report_sent IS NULL AND 
-				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS  DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
+				dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS  DATE), COALESCE(#ClientReportDates.initial_report_due, #ClientReportDates.inverted_initial_report_due)) BETWEEN 0 AND 5 THEN
 			1
 		ELSE 
 			0
@@ -508,7 +508,7 @@ SELECT
 																	) THEN 
 			0
 		WHEN dim_detail_core_details.date_initial_report_sent IS NULL 
-			AND #ClientReportDates.initial_report_due < CAST(GETDATE() AS DATE) THEN
+			AND COALESCE(#ClientReportDates.initial_report_due, #ClientReportDates.inverted_initial_report_due) < CAST(GETDATE() AS DATE) THEN
 			1
 		ELSE 
 			0
