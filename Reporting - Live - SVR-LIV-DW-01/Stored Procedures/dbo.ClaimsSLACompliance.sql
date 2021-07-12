@@ -162,6 +162,10 @@ SELECT
 	, CASE
 		WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
 			#nhs_first_report_lifecycle.nhs_days_to_lor_schedule5
+	  END			AS inverted_days_to_first_report_lifecycle
+	, CASE
+		WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
+			NULL
 		WHEN ClientSLAsNHSR.nhs_instruction_type IS NOT NULL THEN
 			#nhs_first_report_lifecycle.nhs_days_to_first_report_lifecycle
 		ELSE 
@@ -205,7 +209,7 @@ SELECT
 				WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
 					NULL
 				WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
-					DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, #nhs_key_dates.key_date)					
+					NULL --DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, #nhs_key_dates.key_date)					
 				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
 					DATEADD(DAY, ClientSLAsNHSR.initial_report_sla_days, CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE))
 				WHEN date_initial_report_due IS NULL THEN
@@ -225,6 +229,10 @@ SELECT
 					date_initial_report_due 
 				END
 	  END						AS [initial_report_due]
+	, CASE
+		WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
+			DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, #nhs_key_dates.key_date)
+	  END				AS [inverted_initial_report_due]
 	/*
 	Subsequent report due date
 	*/
@@ -331,6 +339,7 @@ SELECT
 	, dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [Date Receipt of File Papers]
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, #ClientReportDates.initial_report_due				AS [Date Initial Report Due (if extended)]
+	, #ClientReportDates.inverted_initial_report_due	AS [Inverted Date Initial Report Due]
 	, #ClientReportDates.initial_report_rules			AS [Initial Report Rules]
 	, #ClientReportDates.inverted_initial_rule
 	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
@@ -359,7 +368,16 @@ SELECT
 	  END				AS [Days without Subsequent Report]
 	, 1					AS [Number of Files]
 	,CASE WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN NULL ELSE #ClientReportDates.days_to_first_report_lifecycle END AS avglifecycle 
+	, CASE 
+		WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 
+			NULL 
+		WHEN #ClientReportDates.inverted_initial_rule = 'Yes' THEN 
+			#ClientReportDates.days_to_first_report_lifecycle 
+		ELSE 
+			NULL
+	  END AS inverted_avglifecycle 
 	, #ClientReportDates.days_to_first_report_lifecycle
+	, #ClientReportDates.inverted_days_to_first_report_lifecycle
 	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
 	,FICProcess.tskDue
 	,FICProcess.tskCompleted
@@ -400,19 +418,7 @@ SELECT
 	, #ClientReportDates.nhs_sla_instruction_type
 	, CASE 
 			WHEN #ClientReportDates.inverted_initial_rule = 'Yes' THEN 
-				CASE
-					WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN
-						'Transparent'
-					WHEN dim_detail_core_details.date_initial_report_sent IS NULL 
-					AND #ClientReportDates.days_to_first_report_lifecycle BETWEEN #ClientReportDates.initial_report_days AND #ClientReportDates.initial_report_days + 5 THEN  -- 5 days before report is due and the report hasn't been sent yet
-						'Orange'
-					WHEN #ClientReportDates.days_to_first_report_lifecycle < #ClientReportDates.initial_report_days THEN
-						'Red'
-					WHEN #ClientReportDates.days_to_first_report_lifecycle >= #ClientReportDates.initial_report_days THEN
-						'LimeGreen'
-					ELSE
-						'Transparent'
-				END
+				'Transparent'
 			WHEN date_initial_report_sent IS NULL THEN	
 				CASE	
 					WHEN #ClientReportDates.nhs_sla_instruction_type IS NOT NULL 
@@ -433,6 +439,22 @@ SELECT
 			ELSE 
 				'Transparent' 
 		END					AS [NEW Initial Report RAG]
+	, CASE 
+			WHEN #ClientReportDates.inverted_initial_rule = 'Yes' THEN 
+				CASE
+					WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN
+						'Transparent'
+					WHEN dim_detail_core_details.date_initial_report_sent IS NULL 
+					AND #ClientReportDates.inverted_days_to_first_report_lifecycle BETWEEN #ClientReportDates.initial_report_days AND #ClientReportDates.initial_report_days + 5 THEN  -- 5 days before report is due and the report hasn't been sent yet
+						'Orange'
+					WHEN #ClientReportDates.inverted_days_to_first_report_lifecycle < #ClientReportDates.initial_report_days THEN
+						'Red'
+					WHEN #ClientReportDates.inverted_days_to_first_report_lifecycle >= #ClientReportDates.initial_report_days THEN
+						'LimeGreen'
+					ELSE
+						'Transparent'
+				END
+	  END							AS [Inverted Initial Report RAG]
 	, CASE 
 		WHEN (CASE 
 					WHEN ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No' OR

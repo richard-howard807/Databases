@@ -30,7 +30,7 @@ AS
 
 BEGIN
 
-SELECT 
+SELECT DISTINCT 
 
 dim_matter_header_current.[case_id],
 dim_client.[client_code],
@@ -93,6 +93,9 @@ fact_finance_summary.[total_paid],
 fact_detail_paid_detail.[total_incurred],
 [Weightmans_Ref] = dim_client.[client_code] + '/' + dim_matter_header_current.[matter_number],
 
+
+
+
 /*Applicable Deductible
       IF(dim_detail_core_details[incident_date] <= value("2014-03-31"), 150000,
 	--if(dim_detail_core_details[incident_date] <= value("2015-03-31"), 343355,
@@ -141,6 +144,33 @@ Show “Other” for all other Work Type Groups
  /* Reason for Descision */
 , [Reason for Descision] = ''
 
+/* Added New 20210709 MT*/
+
+,[Insured Name] = dim_client_involvement.[insuredclient_name]
+,[Insurer Name] = dim_client_involvement.[insurerclient_name]
+,[Weightmans Reference] = dim_client.[client_code] + '/' + dim_matter_header_current.[matter_number]
+,[Matter Description] = dim_matter_header_current.matter_description
+,[Date Case Opened]   = dim_matter_header_current.date_opened_case_management
+,[Date Case Closed]   = dim_matter_header_current.date_closed_case_management
+,[Case Manager]       = dim_fed_hierarchy_history.name
+,[Team]       =dim_fed_hierarchy_history.hierarchylevel4hist
+,[Work Type] = dim_matter_worktype.work_type_name
+,[Present Position] = dim_detail_core_details.present_position
+,[Defence Costs Reserve (Current)] = fact_detail_reserve_detail.defence_costs_reserve
+,[Revenue Billed from 1st Jan 20 to 31st Dec 20] = RevenueBilled1Jan31Dec20.Revenue
+,[Revenue Billed from 1st Jan to Date] = RevenueBilled1JantoDate.Revenue
+,[WIP] = fact_finance_summary.wip
+,[Unbilled Disbursements] = total_unbilled_disbursements_vat
+,[Total Billed (throughout life of matter – inc. Disbs & VAT)] = fact_finance_summary.total_amount_billed
+,[Total Revenue Billed] = TotalRevenue
+,[Disbursements Billed] = fact_finance_summary.disbursements_billed
+,[VAT Billed] = fact_finance_summary.vat_billed
+,[Last Bill Date] = LastBillDate.LastBillDate
+--,[Date of Last Time Posting]  = LastTimePosting.LastTimePosting
+
+
+
+
 
 FROM red_dw.dbo.fact_dimension_main fdm
 
@@ -164,6 +194,8 @@ FROM red_dw.dbo.fact_dimension_main fdm
 
 	LEFT JOIN red_dw.dbo.dim_client
 		ON dim_client.dim_client_key = fdm.dim_client_key
+
+	
 
 	LEFT JOIN red_dw.dbo.dim_client_involvement 
 		ON dim_client_involvement.dim_client_involvement_key = fdm.dim_client_involvement_key
@@ -197,6 +229,48 @@ FROM red_dw.dbo.fact_dimension_main fdm
 
 	LEFT JOIN red_dw.dbo.dim_detail_court
 		ON dim_detail_court.dim_detail_court_key = fdm.dim_detail_court_key
+/* Added New 20210709*/
+	LEFT  JOIN (
+	SELECT DISTINCT dim_matter_header_curr_key, MAX(bill_date) OVER (PARTITION BY dim_matter_header_curr_key) AS LastBillDate   FROM 
+	red_dw.dbo.fact_bill_activity
+	WHERE bill_date > '2020-01-01' --1st Jan 2020 
+	) LastBillDate ON LastBillDate.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+	/*Revenue Billed 1 Jan - 31 Dec 2020*/
+	LEFT JOIN (SELECT DISTINCT dim_matter_header_curr_key,  SUM(fact_bill_activity.bill_amount)  Revenue			
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)			
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)			
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key			
+			WHERE red_dw.dbo.dim_bill_date.bill_date BETWEEN '2020-01-01' AND '2020-12-31'	
+			GROUP BY  dim_matter_header_curr_key
+				
+    ) RevenueBilled1Jan31Dec20 ON RevenueBilled1Jan31Dec20.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+	/*Revenue Billed 1 Jan to date (9 Jul) 2021*/
+	LEFT JOIN (SELECT distinct dim_matter_header_curr_key,  SUM(fact_bill_activity.bill_amount)   Revenue			
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)			
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)			
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key			
+			WHERE red_dw.dbo.dim_bill_date.bill_date BETWEEN '2020-01-01' AND GETDATE()	
+			GROUP BY  dim_matter_header_curr_key
+				
+    ) RevenueBilled1JantoDate ON RevenueBilled1JantoDate.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+	/*Total Revenue Billed*/
+	LEFT JOIN (SELECT DISTINCT  dim_matter_header_curr_key,  SUM(fact_bill_activity.bill_amount)   TotalRevenue			
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)			
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)			
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key			
+			WHERE 1 =1 
+			GROUP BY  dim_matter_header_curr_key
+				
+    ) TotalRevenue ON TotalRevenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+	--LEFT JOIN (SELECT distinct  client_code, matter_number, MAX(dss_create_time)  AS LastTimePosting
+	--	FROM  red_dw.dbo.dim_all_time_activity
+	--	GROUP BY client_code, matter_number
+	--	) LastTimePosting ON LastTimePosting.client_code = dim_client.client_code AND dim_matter_header_current.matter_number = LastTimePosting.matter_number
+	 
 
 			WHERE 1 = 1 
 			
@@ -243,6 +317,8 @@ FROM red_dw.dbo.fact_dimension_main fdm
 				OR dim_matter_header_current.matter_description LIKE '%E%Fletcher Builders%'
 
 				)
+
+
 
 END
 --		dim_date_matter_opened_case_management[matter_opened_caseLIKE '%E%Fletcher Builders%'_management_calendar_date] >= value("2015-12-01") &&
