@@ -14,6 +14,7 @@ GO
 --MT 15-06-2021 - #102676 - excluded clients as per ticket 
 --JL 21-06-2012 - #103411 - excluded client and referral reason as per ticket 
 --OK 29-06-2021 - #104483 - excluded client and linked file 
+--MT 14-07-2021 - #106648 - excluded a number of matters
 
 
 
@@ -127,7 +128,7 @@ NOT IN
 'POW025/00000423'
 
 ) 
---AND fed_code='5900'
+
 AND  ms_fileid NOT IN 
 (5090820,5090832,5090835,5090842,5090848,5090853,5091073,5091288,5091677
 ,5096365,5097171,5097193,5097355,5097677,5097684,5097751,5098182,5098201
@@ -135,6 +136,15 @@ AND  ms_fileid NOT IN
 ,5098521,5098530,5098898,5099062,5099250,
 5097691,5097677,5098182,5098222,5098228
 ,4353408, 4930309
+/*Added MT 14-07-2021 - #106648 - excluded a number of matters */
+,4880088
+,4915319
+,4991042
+,5200772
+,4908444
+,4908433
+,4093238
+,4698921
 ) --Old Remedy Cases to exclude per request from Bob H
 AND CASE WHEN work_type_name='PL - Pol - CHIS'  AND dim_detail_core_details.is_this_the_lead_file='No' THEN 1 ELSE 0 END=0 -- Filter per #87593
 AND ISNULL(dim_detail_core_details.trust_type_of_instruction,'') NOT IN
