@@ -336,25 +336,30 @@ SELECT
 	--, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
 	--, dim_detail_health.nhs_scheme		AS [Scheme]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
-		,CASE WHEN nhs_instruction_type IN 
-	('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
-,'EL/PL - old delegated matters','EL/PL DA','NCFF 25'
-	) THEN 'Delegated authority'
-WHEN nhs_instruction_type IN 
-	('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
-,'CFF 250 (Non-PA)','CFF 250 (PA)','Clinical - Non DA','Clinical - Non DA (ENS)','Derbyshire Healthcare Group Action'
-,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
-,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
-,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
-,'Worcester Group Action','WWL - Data Breach group action') THEN 'Direct instruction'
-WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 'Inquest'
-WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
-,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
-,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
-,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
-,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 'Limited instructions'
-WHEN nhs_instruction_type IN ('Other') THEN 'Other'
-END AS NewInstructionType
+	,CASE 
+		WHEN nhs_instruction_type IN 
+		('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
+		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25') THEN 
+			'Delegated authority'
+		WHEN nhs_instruction_type IN 
+		('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
+		,'CFF 250 (Non-PA)','CFF 250 (PA)','Clinical - Non DA','Clinical - Non DA (ENS)','Derbyshire Healthcare Group Action'
+		,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
+		,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
+		,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
+		,'Worcester Group Action','WWL - Data Breach group action') THEN 
+			'Direct instruction'
+		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 
+			'Inquest'
+		WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
+		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
+		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
+		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
+		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
+			'Limited instructions'
+		WHEN nhs_instruction_type IN ('Other') THEN 
+			'Other'
+	  END			AS NewInstructionType
 	, dim_claimant_thirdparty_involvement.claimant_name			AS [Claimant Name]
 	, dim_detail_core_details.injury_type		AS [Injury Type]
 	, CAST(dim_detail_core_details.incident_date AS DATE)		AS [Incident Date]
@@ -380,6 +385,7 @@ END AS NewInstructionType
 	--, dim_detail_core_details.referral_reason			AS [Referral Reason]
 	, dim_detail_core_details.present_position		AS [Present Position]
 	, fact_finance_summary.damages_reserve		AS [Damages Reserve]
+	, fact_finance_summary.total_reserve		AS [Total Reserve]
 	--, ''		AS [Offers]
 	--, COALESCE(dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name)		AS [Claimant Solicitors]
 	, #key_date_list_table.key_date_list			AS [Key Dates Approaching]
@@ -431,6 +437,57 @@ END AS NewInstructionType
 					'7 - cl'
 			END
 	END							AS [Damages Tranche Order]
+	, CASE
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'£0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 5000 THEN
+					'£1 - £5,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 5001 AND 10000 THEN
+					'£5,001 - £10,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 10001 AND 25000 THEN
+					'£10,001 - £25,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 25001 AND 50000 THEN
+					'£25,001 - £50000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 50000 THEN
+					'£50,001+'
+				ELSE
+					'Non-clinical N/A'
+			END 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN	--clinical
+			CASE 
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) = 0 THEN
+					'£0'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 0.01 AND 50000 THEN
+					'£1 - £50,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN
+					'£50,001 - £250,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN
+					'£250,001 - £500,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN
+					'£500,001 - £1,000,000'
+				WHEN COALESCE(fact_finance_summary.damages_paid, fact_finance_summary.damages_reserve) > 1000000 THEN
+					'£1,000,001+'
+				ELSE 
+					'Clinical N/A'
+			END
+	END							AS [Damages Tranche]
+	, CASE
+		--non-clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND dim_detail_core_details.present_position = 'Claim and costs outstanding' THEN 
+			1
+		ELSE
+			0
+	  END							AS [Non-Clinical]
+	, CASE
+		--clinical
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') 
+		AND dim_detail_core_details.present_position = 'Claim and costs outstanding' THEN
+			1
+		ELSE	
+			0
+	  END							AS [Clinical]
 
 	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
