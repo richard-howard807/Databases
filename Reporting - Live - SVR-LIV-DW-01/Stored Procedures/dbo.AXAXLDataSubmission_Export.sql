@@ -466,7 +466,7 @@ SELECT DISTINCT
 /* Check for Existing */
 UPDATE #AXAXLDataSubmission  
 
-SET #AXAXLDataSubmission.Status = 'Exisitng'
+SET #AXAXLDataSubmission.Status = 'Existing'
 FROM #AXAXLDataSubmission 
 
 JOIN #MainAPI
