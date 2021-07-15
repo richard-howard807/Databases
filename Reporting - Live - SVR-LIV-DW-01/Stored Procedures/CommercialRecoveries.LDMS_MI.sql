@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		<Max Taylor>
 -- Create date: <20210519,>
@@ -28,6 +29,7 @@ SELECT
 ,[Wizard Text] = Wizard.txtDescription
 ,ms_fileid
 ,Wizard.[bitUpdateLDMS]
+,Wizard.usrFullName
 
 FROM 
 
@@ -54,9 +56,12 @@ LEFT JOIN  ( SELECT DISTINCT ROW_NUMBER () OVER (PARTITION BY fileID ORDER BY as
 
 	LEFT JOIN (
 						
-						SELECT DISTINCT fileID, dteInserted, txtDescription, [bitUpdateLDMS] FROM MS_Prod.dbo.udCRHistoryNotesSL 
+						SELECT DISTINCT fileID, dteInserted, ISNULL(txtDescription,'') +' ' + ISNULL(txtExtraTxt,'') AS txtDescription, [bitUpdateLDMS], usrFullName FROM MS_Prod.dbo.udCRHistoryNotesSL 
+						LEFT JOIN ms_prod.dbo.dbUser ON dbUser.usrID = udCRHistoryNotesSL.userID
 						
 						WHERE [bitUpdateLDMS] = 1  ) Wizard ON Wizard.fileID = dbFile.fileID
+
+						
 
 					
 
