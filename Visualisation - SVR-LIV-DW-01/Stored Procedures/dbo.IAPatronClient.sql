@@ -5,6 +5,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[IAPatronClient]
 
 AS 
@@ -37,6 +39,8 @@ SET @PreFinYear=@FinYear-1
 PRINT @PreFinYear
 
 
+
+
 SELECT CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END AS [Client]
 ,SUM(ClientRevenueYTD) AS YTDRevenue
 ,SUM(ClientRevenuePrevYTD) AS LastYTDRevenue
@@ -50,7 +54,8 @@ SELECT CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN
 ,SUM(WIPLast) AS LastYRWIP
 ,SUM(DebtCurrent) AS CurrentDebt
 ,SUM(LastYRDebt) AS LastYRDebt
-
+,SUM(Opportunities.Numb) AS CurrentOpportunities
+,SUM(PrevOpportunities.Numb) AS LastOpportunities
 FROM red_dw.dbo.dim_client
 
 LEFT OUTER JOIN
@@ -158,6 +163,42 @@ WHERE CONVERT(DATE,debt_date,103)=CONVERT(DATE,DATEADD(YEAR,-1,GETDATE()-1),103)
 GROUP BY dim_client_key
 ) AS LastYRDebt
  ON LastYRDebt.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN (SELECT  dim_client_key,COUNT(1) AS Numb FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
+       MS_Prod.dbo.udSubSegment.description AS [sectorname] 
+FROM MS_Prod.dbo.udSubSegment
+INNER JOIN MS_Prod.dbo.udSegment
+ ON segment=udsegment.code
+WHERE udSegment.active=1
+AND udSubSegment.active=1
+) AS Segments
+LEFT OUTER JOIN dbo.IA_Client_Data
+ ON UPPER(Segment)=UPPER(Segments.segmentname) COLLATE DATABASE_DEFAULT
+ AND UPPER(Sector)=UPPER(Segments.sectorname) COLLATE DATABASE_DEFAULT
+INNER JOIN red_dw.dbo.dim_date
+ ON CONVERT(DATE,[Expected Close Date],103)=CONVERT(DATE,calendar_date,103)
+WHERE fin_year=@FinYear
+AND ActualClosedDate IS NULL
+GROUP BY dim_client_key) AS Opportunities
+ ON Opportunities.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN (SELECT  dim_client_key,COUNT(1) AS Numb FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
+       MS_Prod.dbo.udSubSegment.description AS [sectorname] 
+FROM MS_Prod.dbo.udSubSegment
+INNER JOIN MS_Prod.dbo.udSegment
+ ON segment=udsegment.code
+WHERE udSegment.active=1
+AND udSubSegment.active=1
+) AS Segments
+LEFT OUTER JOIN dbo.IA_Client_Data
+ ON UPPER(Segment)=UPPER(Segments.segmentname) COLLATE DATABASE_DEFAULT
+ AND UPPER(Sector)=UPPER(Segments.sectorname) COLLATE DATABASE_DEFAULT
+INNER JOIN red_dw.dbo.dim_date
+ ON CONVERT(DATE,[Expected Close Date],103)=CONVERT(DATE,calendar_date,103)
+WHERE fin_year=@PreFinYear
+AND ActualClosedDate IS NOT NULL
+GROUP BY dim_client_key) AS PrevOpportunities
+ ON PrevOpportunities.dim_client_key = dim_client.dim_client_key
+
+
 WHERE dim_client.client_group_code IN
       (
           SELECT DISTINCT
@@ -187,6 +228,10 @@ WHERE dim_client.client_group_code IN
                    AND list_name = 'Patron'
                    AND client_group_code IS NULL
          )
+		 AND CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END NOT IN 
+		 (
+		 'Barratt Developments Plc                '
+		 )
 GROUP BY CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END
 ORDER BY CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN ('Sussex Police','Surrey Police','Sussex Police & Crime Commissioner') THEN 'Surrey and Sussex Police' ELSE ISNULL(dim_client.client_group_name,dim_client.client_name) END
 
