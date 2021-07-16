@@ -2,7 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE PROCEDURE [dbo].[NHSBTCommentsReport1]	-- 'Real Estate', 'Real Estate Manchester and Leeds','Jack Rayson','Open'
+CREATE PROCEDURE [dbo].[NHSBTCommentsReport1_test]	-- 'Corp-Comm', 'Commercial National','Edwina Farrell','Open'
 (
 @Department AS NVARCHAR(MAX)
 ,@Team AS NVARCHAR(MAX)
@@ -24,22 +24,33 @@ SELECT DISTINCT clNo +'-' + fileNo AS [MS Reference]
 ,dim_matter_header_current.matter_description [Matter Description]
 ,dim_matter_worktype.work_type_name [Matter Type]
 ,dim_matter_header_current.fee_arrangement AS [Fee Arrangement]
-,SUM(fact_finance_summary.fixed_fee_amount) [Fixed Fee Amount]
-,SUM(fact_finance_summary.wip) [WIP]
-,SUM(fact_finance_summary.disbursement_balance) AS [Unbilled Disbursements]
+,fact_finance_summary.fixed_fee_amount [Fixed Fee Amount]
+,fact_finance_summary.wip [WIP]
+,fact_finance_summary.disbursement_balance AS [Unbilled Disbursements]
 , udMICoreGeneral.txtNHSBTPO AS [Purchase Order Number]
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
 ,dim_fed_hierarchy_history.hierarchylevel4hist [Team]
 
-FROM 
-red_dw.dbo.fact_dimension_main
-LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
-left JOIN MS_Prod.config.dbFile ON ms_fileid=dbFile.fileID
-left JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+--,dim_detail_client.[fee_arrangement] [Fee Arrangement other ]
+--,fact_detail_paid_detail.[output_wip_contingent_wip] [WIP Contingent]
+--,fact_detail_paid_detail.[output_wip_hourly_rate] [WIP Hourly Rate]
+--,fact_detail_paid_detail.[output_wip_other_tbc_wip] [WIP TBC ]
+--,fact_detail_paid_detail.[output_wip_fixed_fee_value] [WIP FF Value]
+--,fact_detail_paid_detail.[output_wip_balance] [WIP Balance]
+--,fact_detail_paid_detail.[output_wip_total_output_wip][WIP Total Output]
+--,dim_detail_finance.[output_wip_fee_arrangement] [WIP Fee Arrangment]
+
+
+FROM MS_Prod.config.dbFile 
+INNER JOIN red_dw.dbo.dim_matter_header_current ON ms_fileid=dbFile.fileID
+  INNER JOIN red_dw.dbo.fact_dimension_main   WITH (NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-left JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key 
+
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary WITH (NOLOCK) ON dim_matter_header_current.client_code=fact_finance_summary.client_code
+ AND dim_matter_header_current.matter_number=fact_finance_summary.matter_number
+--inner JOIN red_Dw.dbo.fact_finance_summary ON fact_finance_summary.client_code = dim_matter_header_current.client_code AND fact_finance_summary.client_code = dim_matter_header_current.client_code
+inner JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 --inner JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 --inner JOIN red_dw.dbo.dim_detail_client ON dim_detail_client.dim_matter_header_curr_key = dim_detail_finance.dim_matter_header_curr_key
 INNER JOIN #Department AS Department ON Department.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel3hist COLLATE DATABASE_DEFAULT
@@ -53,24 +64,28 @@ INNER JOIN MS_Prod.dbo.dbUser
 ON filePrincipleID=usrID
 LEFT OUTER JOIN MS_Prod.dbo.udMICoreGeneral
 ON udMICoreGeneral.fileID = dbFile.fileID
+
 WHERE hierarchylevel2hist='Legal Ops - LTA'
 AND CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END = ISNULL(@Status,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END)
  
- GROUP BY 
-clNo +'-' + fileNo 
---SELECT clNo +'-' + fileNo AS [MS Reference]
-,dim_fed_hierarchy_history.name 
-,dim_matter_header_current.matter_description 
-,dim_matter_worktype.work_type_name 
-,dim_matter_header_current.fee_arrangement
---,fact_finance_summary.fixed_fee_amount
---,SUM(fact_finance_summary.wip) [WIP]
---,SUM(fact_finance_summary.disbursement_balance) AS [Unbilled Disbursements]
-, udMICoreGeneral.txtNHSBTPO 
-,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END 
-,dim_fed_hierarchy_history.hierarchylevel4hist 
+--and
+ --dim_matter_header_current.client_code = '00707938' AND dim_matter_header_current.matter_number = '00001390'
+
+
+-- GROUP BY
+--clNo +'-' + fileNo 
+----SELECT clNo +'-' + fileNo AS [MS Reference]
+--,dim_fed_hierarchy_history.name 
+--,dim_matter_header_current.matter_description 
+--,dim_matter_worktype.work_type_name 
+--,dim_matter_header_current.fee_arrangement
+----,fact_finance_summary.fixed_fee_amount
+----,SUM(fact_finance_summary.wip) [WIP]
+----,SUM(fact_finance_summary.disbursement_balance) AS [Unbilled Disbursements]
+--, udMICoreGeneral.txtNHSBTPO 
+--,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END 
+--,dim_fed_hierarchy_history.hierarchylevel4hist 
  
 ORDER BY  [MS Reference]
 END
-
 GO

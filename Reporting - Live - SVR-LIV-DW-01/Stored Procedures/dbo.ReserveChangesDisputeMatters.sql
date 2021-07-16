@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[ReserveChangesDisputeMatters]
 
 AS 
@@ -20,6 +21,7 @@ SELECT ms_fileid
 ,hierarchylevel4hist AS [Team]
 ,hierarchylevel3hist AS [Department]
 ,work_type_name AS [Matter type]
+,work_type_group AS [Matter type group]
 ,referral_reason AS [Referral reason]
 ,[dim_detail_core_details].[present_position] AS [Present position]
 ,fact_finance_summary.[damages_reserve] AS [Current Damages Reserve (Latest)]

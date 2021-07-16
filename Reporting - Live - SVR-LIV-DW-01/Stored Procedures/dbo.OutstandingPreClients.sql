@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingPreClients] -- EXEC [dbo].[OutstandingPreClients]'Corp-Comm'	,'Wills, Trusts and Estates '
 (
 @Department AS NVARCHAR(MAX)
@@ -42,13 +43,13 @@ ELSE 'Green' END AS Colour
 ,MatterOne.matter_owner_full_name AS [fee_earner_name]
 ,CASE WHEN Exclude. client_code IS NULL THEN 'Kev' ELSE NULL END AS Test
 ,WIP
-
+,WIP.LatestOpened
  FROM red_dw.dbo.dim_client
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history ON dim_client.client_partner_code=dim_fed_hierarchy_history.fed_code COLLATE DATABASE_DEFAULT AND dim_fed_hierarchy_history.dss_current_flag='Y'
-LEFT OUTER JOIN (SELECT dim_matter_header_current.client_code,SUM(wip) AS WIP 
+LEFT OUTER JOIN (SELECT dim_matter_header_current.client_code,SUM(wip) AS WIP ,MAX(date_opened_case_management) AS LatestOpened
 
 FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN red_dw.dbo.fact_finance_summary
+LEFT JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
  GROUP BY dim_matter_header_current.client_code) AS WIP

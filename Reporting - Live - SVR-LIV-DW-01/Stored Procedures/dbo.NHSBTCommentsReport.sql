@@ -39,12 +39,23 @@ SELECT clNo +'-' + fileNo AS [MS Reference]
 ,hierarchylevel3hist AS Department
 ,hierarchylevel4hist AS Team
 ,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
+,dim_instruction_type.[instruction_type] [Instruction Type]
+,dim_detail_health.[completion_date] [Completion Date]
+,dim_detail_health.[contacts_initials] [Contact Initials]
+, CASE WHEN 	DATEDIFF(DAY, dim_detail_health.completion_date, GETDATE()) > 90 THEN 1 WHEN 
+
+DATEDIFF(DAY, dim_matter_header_current.date_closed_case_management, GETDATE()) > 90 THEN 1 ELSE 0 end
+[elapsed]
+
 
 FROM MS_Prod.config.dbFile
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON ms_fileid=dbFile.fileID
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+
+ LEFT JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN #Department AS Department  ON Department.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel3hist COLLATE DATABASE_DEFAULT
