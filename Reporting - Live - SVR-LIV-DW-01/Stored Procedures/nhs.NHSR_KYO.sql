@@ -21,16 +21,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 		, matter_description AS [Matter Description]
 		, matter_owner_full_name AS [Case Manager]
-		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
-			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
-			ELSE hierarchylevel3hist END AS [Department]
+		, hierarchylevel3hist AS [Department]
 		, dim_matter_worktype.work_type_group AS [Matter Type Group]
-		, 'All' AS [Client]
+		, 'NHSR' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
-		, zurich_referral_reason AS [Zurich Referral Reason]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
@@ -60,42 +57,25 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
-		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
-			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
-			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN fact_finance_summary.damages_reserve=0 AND dim_detail_core_details.track='Fast Track' THEN '0-25,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
-			END AS [Damages Banding]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid = 0 THEN '£0'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 1 AND 5000 THEN '£1-£5,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid >= 50001  THEN '£50,000+'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND dim_detail_health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid = 0 THEN '£0'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 1 AND 50000 THEN '£1-£50,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid >= 1000001 THEN '£1,000,000+'
+        END AS [Damages Banding]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
-		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
-			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
-			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Slip/Trip/Fall on Same Level%' THEN 'EL - Slip/Trip/Fall on Same Level'
-			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Hways%' THEN 'PL - Hways'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Education%' THEN 'PL - Education'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - OL%' THEN 'PL - OL'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Housing%' THEN 'PL - Housing'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - %' THEN 'PL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PPO Administration%' THEN 'PL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
-			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
-			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
-			ELSE 'Other' END AS [Claim Type]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-02-01' AND '2020-01-31' 
-			THEN 1 ELSE NULL END AS [Matters opened 1 March 2019 to 28 February 2020]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND '2021-01-31' 
-			THEN 1 ELSE NULL END AS [Matters opened 1 March 2020 to date]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-02-01' AND '2020-01-31' 
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) <='2020-01-31' THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND  '2021-01-31'
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
+	     END AS [Scheme]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
 
 FROM red_dw.dbo.fact_dimension_main
@@ -144,21 +124,19 @@ AND dim_detail_core_details.referral_reason LIKE 'Dispute%'
 
 UNION
 
+
 SELECT date_opened_case_management AS [Date Case Opened]
 		, date_closed_case_management AS [Date Case Closed]
 		, RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Mattersphere Weightmans Reference]
 		, matter_description AS [Matter Description]
 		, matter_owner_full_name AS [Case Manager]
-		, CASE WHEN hierarchylevel3hist='Casualty' AND work_type_name LIKE 'PL - Pol% ' OR work_type_name LIKE '%Police%' THEN 'Police'
-			WHEN hierarchylevel3hist='Casualty' THEN 'Casualty and Local Gov'
-			ELSE hierarchylevel3hist END AS [Department]
+		, hierarchylevel3hist AS [Department]
 		, dim_matter_worktype.work_type_group AS [Matter Type Group]
-		, 'Zurich' AS [Client]
+		, 'All' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
 		, suspicion_of_fraud AS [Suspicion of Fraud]
-		, zurich_referral_reason AS [Zurich Referral Reason]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
 		, incident_date AS [Incident Date]
@@ -188,42 +166,27 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
-		, CASE WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='Yes' THEN 'Y'
-			 WHEN dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination]='No' THEN 'N' 
-			 ELSE dim_detail_core_details.[zurich_is_the_instruction_a_customer_nomination] END AS [Nomination]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN fact_finance_summary.damages_reserve=0 AND dim_detail_core_details.track='Fast Track' THEN '0-25,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 0 AND 25000 THEN '0-25,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 25000 AND 50000 THEN '25,000-50,000'
-			WHEN fact_finance_summary.damages_reserve BETWEEN 50000 AND 100000 THEN '50,000-100,000'
-			WHEN fact_finance_summary.damages_reserve > 100000 THEN '100,000+'
-			END AS [Damages Banding]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid = 0 THEN '£0'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 1 AND 5000 THEN '£1-£5,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
+              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid >= 50001  THEN '£50,000+'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND dim_detail_health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid = 0 THEN '£0'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 1 AND 50000 THEN '£1-£50,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
+              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid >= 1000001 THEN '£1,000,000+'
+        END AS [Damages Banding]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
-		, CASE WHEN dim_matter_worktype.work_type_name LIKE 'EL - Manual Handling%' THEN 'EL - Manual Handling'
-			WHEN dim_matter_worktype.work_type_name LIKE 'EL - Assault%' THEN 'EL - Assault'
-			WHEN dim_matter_worktype.work_type_name LIKE 'EL -%' THEN 'EL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Hways%' THEN 'PL - Hways'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - SS%' THEN 'PL - SS'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - School%' THEN 'PL - School'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Care Homes%' THEN 'PL - Care Homes'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Education%' THEN 'PL - Education'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - OL%' THEN 'PL - OL'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Housing%' THEN 'PL - Housing'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - %' THEN 'PL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PPO Administration%' THEN 'PL - Other'
-			WHEN dim_matter_worktype.work_type_name LIKE 'PL - Prop Damage%' THEN 'PL - Prop Damage'
-			WHEN dim_matter_worktype.work_type_name LIKE 'OI -%' THEN 'OI'
-			WHEN dim_matter_worktype.work_type_name LIKE 'Motor - %' THEN 'Motor'
-			ELSE 'Other' END AS [Claim Type]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-02-01' AND '2020-01-31' 
-			THEN 1 ELSE NULL END AS [Matters opened 1 March 2019 to 28 February 2020]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND '2021-01-31' 
-			THEN 1 ELSE NULL END AS [Matters opened 1 March 2020 to date]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2019-02-01' AND '2020-01-31' 
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) <='2020-01-31' THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2019 to 28 February 2020]
-		, CASE WHEN dim_matter_header_current.date_opened_case_management BETWEEN '2020-02-01' AND  '2021-01-31'
-			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+                WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
+	     END AS [Scheme]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
+
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
