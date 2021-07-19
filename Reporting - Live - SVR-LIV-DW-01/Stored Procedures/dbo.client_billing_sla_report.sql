@@ -11,6 +11,7 @@ Ticket:			#79133
 Description:	New report to replace billing macro Motor currently use, shows when matters can be billed
 =======================================================================
 Ticket #79133 - Added fee_arrangement filter
+Ticket #105716 - made changes to make this run as wasn't working 
 =======================================================================
 */
 
