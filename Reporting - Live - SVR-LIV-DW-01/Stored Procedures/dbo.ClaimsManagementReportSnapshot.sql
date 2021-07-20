@@ -19,6 +19,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -88,6 +90,7 @@ employeeid
 	,fed_code
 	,MaternityDays
 	,MaternityYTD
+	,display_name
 )
 
 
@@ -101,7 +104,7 @@ SELECT dim_employee.employeeid
 	, remaining_fte_working_days_year - 1 AS [Annual Working Days]
 	, durationholidaydays AS [Holidays Taken to Date]
 	, ISNULL(totalentitlementdays,0)-ISNULL(durationholidaydays,0) AS [Holidays yet to Take]
-	, [Trading Days] * red_dw.dbo.fact_employee_days_fte.fte AS [Working Days to Date]
+	, [Trading Days] * fact_employee_days_fte.fte AS [Working Days to Date]
 
 	, [ChargeableHours] AS [Chargeable Hours]
 	, [AVGChargeableHours]
@@ -123,6 +126,7 @@ SELECT dim_employee.employeeid
 	,dim_fed_hierarchy_history.fed_code
 	,Maternity.MaternityDays
 	,MaternityYTD
+	,display_name
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -158,11 +162,24 @@ LEFT OUTER JOIN (SELECT
 					ds_sh_employee_attendance_dates.employeeid) AS [HolidaysTaken]
 ON [HolidaysTaken].employeeid = dim_employee.employeeid
 
-LEFT OUTER JOIN red_dw.dbo.fact_employee_days_fte  WITH(NOLOCK)
-ON fact_employee_days_fte.employeeid = dim_employee.employeeid
-AND fin_month=(SELECT MIN(fin_month)
+--LEFT OUTER JOIN red_dw.dbo.fact_employee_days_fte  WITH(NOLOCK)
+--ON fact_employee_days_fte.employeeid = dim_employee.employeeid
+--AND fin_month=(SELECT MIN(fin_month)
+--				FROM red_dw.dbo.dim_date
+--				WHERE current_fin_year='Current')
+LEFT OUTER JOIN 
+(
+SELECT * FROM (SELECT employeeid,fin_month,remaining_fte_working_days_year,fte 
+,ROW_NUMBER() OVER (PARTITION BY employeeid ORDER BY fin_month ASC) AS xorder
+FROM red_dw.dbo.fact_employee_days_fte  WITH(NOLOCK)
+
+WHERE fin_month>=(SELECT MIN(fin_month)
 				FROM red_dw.dbo.dim_date
 				WHERE current_fin_year='Current')
+) AS AllData WHERE AllData.xorder=1
+			
+) AS fact_employee_days_fte
+ ON fact_employee_days_fte.employeeid = dim_employee.employeeid
 
 LEFT OUTER JOIN (SELECT employeeid, SUM(minutes_recorded)/60 AS [ChargeableHours]
 , AVG(minutes_recorded)/60 AS [AVGChargeableHours]

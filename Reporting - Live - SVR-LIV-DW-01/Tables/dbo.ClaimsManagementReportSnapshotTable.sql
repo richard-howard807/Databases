@@ -30,6 +30,7 @@ CREATE TABLE [dbo].[ClaimsManagementReportSnapshotTable]
 [Period] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [fed_code] [nvarchar] (50) COLLATE Latin1_General_CI_AS NULL,
 [MaternityDays] [numeric] (38, 2) NULL,
-[MaternityYTD] [numeric] (38, 2) NULL
+[MaternityYTD] [numeric] (38, 2) NULL,
+[display_name] [nchar] (100) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

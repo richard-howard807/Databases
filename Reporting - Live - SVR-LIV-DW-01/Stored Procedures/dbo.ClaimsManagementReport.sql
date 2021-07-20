@@ -10,6 +10,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -52,7 +54,7 @@ BEGIN
 
 
 SELECT ClaimsManagementReportSnapshotTable.employeeid,
-       Name,
+       RTRIM(ISNULL(display_name,Name)) AS Name,
        Division,
        Department,
        Team,
@@ -81,6 +83,7 @@ SELECT ClaimsManagementReportSnapshotTable.employeeid,
        Period,
        classification,ISNULL(MaternityDays,0) AS MaternityDays
 	   ,ISNULL(MaternityYTD,0) AS MaternityYTD
+	   ,displayemployeeid
 	   FROM dbo.ClaimsManagementReportSnapshotTable
 	   LEFT OUTER JOIN red_dw.dbo.dim_employee
 	    ON dim_employee.employeeid = ClaimsManagementReportSnapshotTable.employeeid
@@ -94,4 +97,5 @@ WHERE [Period]=@Period
 
 ORDER BY name
 END
+
 GO
