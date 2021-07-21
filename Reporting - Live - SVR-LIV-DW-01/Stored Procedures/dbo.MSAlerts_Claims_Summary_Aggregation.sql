@@ -226,6 +226,7 @@ SELECT
 	, #claims_report.Department															AS [Department]
 	, #claims_report.Team																AS [Team]
 	, #claims_report.[Matter Owner]														AS [Matter Owner]
+	, #claims_report.[Windows Username]
 	, COUNT(*)																			AS [Number of Cases]
 	, SUM(#claims_report.[Missing FF or Defence Costs Reserve])							AS [Missing FF or Defence Costs Reserve]
 	, SUM(CASE
@@ -271,6 +272,7 @@ GROUP BY
 	, #claims_report.Department		
 	, #claims_report.Team			
 	, #claims_report.[Matter Owner]
+	, #claims_report.[Windows Username]
 ORDER BY
 	#claims_report.[Business Line]
 	, #claims_report.Department
