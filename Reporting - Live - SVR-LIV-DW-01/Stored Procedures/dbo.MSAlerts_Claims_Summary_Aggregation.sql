@@ -28,35 +28,17 @@ DROP TABLE IF EXISTS #FedCodeList
 CREATE TABLE #FedCodeList  (
 ListValue  NVARCHAR(MAX)
 )
-IF @Level  <> 'Individual'
-	BEGIN
-	PRINT ('not Individual')
-DECLARE @sql NVARCHAR(MAX)
-
-SET @sql = '
-	use red_dw;
-	DECLARE @nDate AS DATE = GETDATE()
-	
-	SELECT DISTINCT
-		dim_fed_hierarchy_history_key
-	FROM red_Dw.dbo.dim_fed_hierarchy_history 
-	WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
 
 
-INSERT into #FedCodeList 
-exec sp_executesql @sql
-	end
-	
-	
-	IF  @Level  = 'Individual'
-    BEGIN
-	PRINT ('Individual')
-    INSERT into #FedCodeList 
-	SELECT ListValue
-   -- INTO #FedCodeList
-    FROM dbo.udt_TallySplit(',', @FedCode)
-	
-	END
+IF @Level = 'Firm' BEGIN
+	INSERT INTO #FedCodeList
+	SELECT dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS ListValue
+	FROM red_dw.dbo.dim_fed_hierarchy_history
+END ELSE BEGIN
+	INSERT INTO #FedCodeList
+	SELECT udt_TallySplit.ListValue
+	FROM dbo.udt_TallySplit(',', @FedCode)
+END 
 
 --=========================================================================================================================================================================
 --	Created a table to deal with the calculated columns for readability with the length of them and the amount of times some are used
@@ -200,7 +182,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history																			
 		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key 
-			AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.activeud = 1
+	INNER JOIN #FedCodeList
+		ON #FedCodeList.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype																					
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details																				
@@ -282,41 +265,6 @@ SELECT
 				0
 		  END)																			AS [Defence Costs Reserve Red]		  
 FROM #claims_report
-	INNER JOIN red_dw.dbo.fact_dimension_main
-		ON fact_dimension_main.dim_matter_header_curr_key = #claims_report.[Matter Header Current Key]
-	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
-		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-WHERE 
-	dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
-              (
-                  SELECT (CASE
-                              WHEN @Level = 'Firm' THEN
-                                  dim_fed_hierarchy_history_key
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM red_dw.dbo.dim_fed_hierarchy_history
-                  UNION
-                  SELECT  (CASE
-                              WHEN @Level IN ( 'Individual' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-                  UNION
-                  SELECT (CASE
-                              WHEN @Level IN ( 'Area Managed' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-              )
-
 GROUP BY 
 	#claims_report.[Matter Header Current Key]
 	, #claims_report.[Business Line]	
