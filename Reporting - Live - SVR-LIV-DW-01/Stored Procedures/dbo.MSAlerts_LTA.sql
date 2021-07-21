@@ -22,8 +22,8 @@ BEGIN
 	SET NOCOUNT ON;
 
 -- For testing
---DECLARE @FedCode AS VARCHAR(MAX) = '138467,137680,135873,128142,128096,128035,128012'
---		, @Level AS VARCHAR(10) = 'Individual'
+--DECLARE @FedCode AS VARCHAR(MAX) = '131370,131424,131484,131557,131608,131683,132058,132149,132394,132696,133629,133643,133757,134333,136884,136939,139394,140273'
+--		, @Level AS VARCHAR(10) = 'Firm'
 
 DROP TABLE IF EXISTS #finacial_calcs
 DROP TABLE IF EXISTS #FedCodeList
@@ -31,35 +31,18 @@ DROP TABLE IF EXISTS #FedCodeList
 CREATE TABLE #FedCodeList  (
 ListValue  NVARCHAR(MAX)
 )
-IF @Level  <> 'Individual'
-	BEGIN
-	PRINT ('not Individual')
-DECLARE @sql NVARCHAR(MAX)
-
-SET @sql = '
-	use red_dw;
-	DECLARE @nDate AS DATE = GETDATE()
-	
-	SELECT DISTINCT
-		dim_fed_hierarchy_history_key
-	FROM red_Dw.dbo.dim_fed_hierarchy_history 
-	WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
 
 
-INSERT INTO #FedCodeList 
-EXEC sp_executesql @sql
-	END
-	
-	
-	IF  @Level  = 'Individual'
-    BEGIN
-	PRINT ('Individual')
-    INSERT INTO #FedCodeList 
-	SELECT ListValue
-   -- INTO #FedCodeList
-    FROM dbo.udt_TallySplit(',', @FedCode)
-	
-	END
+IF @Level = 'Firm' BEGIN
+	INSERT INTO #FedCodeList
+	SELECT dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS ListValue
+	FROM red_dw.dbo.dim_fed_hierarchy_history
+END ELSE BEGIN
+	INSERT INTO #FedCodeList
+	SELECT udt_TallySplit.ListValue
+	FROM dbo.udt_TallySplit(',', @FedCode)
+END 
+
 
 /*
 	Created a table to deal with the calculated columns
@@ -252,7 +235,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history																			
 		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key 
-			AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.activeud = 1
+	INNER JOIN #FedCodeList
+		ON #FedCodeList.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype																					
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details																				
@@ -277,41 +261,20 @@ WHERE
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(dim_detail_outcome.outcome_of_case) <> 'Exclude from reports')
 	AND RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) IN ('fixed fee/fee quote/capped fee', 'hourly rate')
 	--AND (h_current.present_position IS NULL OR RTRIM(h_current.present_position) NOT IN ('Final bill sent - unpaid', 'To be closed/minor balances to be clear'))
+	AND (CASE 
+			WHEN RTRIM(LOWER(dim_matter_header_current.fee_arrangement)) = 'hourly rate' AND dim_matter_worktype.work_type_group IN ('LMT', 'Prof Risk') THEN 
+				1 
+			ELSE 
+				0 
+		 END) = 0 -- to match rules for MS LTA Alerts exclusions 
+	AND dim_matter_worktype.dim_matter_worktype_key NOT BETWEEN 628 AND 630 --removing debt recovery work types
 	AND (RTRIM(dim_matter_worktype.work_type_name) NOT IN (
 													'Property View', 'Debt Recovery', 'Employment Advice Line', 'Holidays (including holiday pay)'
 													, 'Early Conciliation', 'Claims Handling', 'Plot Sales'
 												  )
 	--OR (RTRIM(dim_matter_worktype.work_type_name) = 'Plot Sales' AND RTRIM(dim_detail_property.commercial_bl_status) <> 'Pending')		--removed until Mandy's team can set up on MS
 		)
-	AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
-              (
-                  SELECT (CASE
-                              WHEN @Level = 'Firm' THEN
-                                  dim_fed_hierarchy_history_key
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM red_dw.dbo.dim_fed_hierarchy_history
-                  UNION
-                  SELECT  (CASE
-                              WHEN @Level IN ( 'Individual' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-                  UNION
-                  SELECT (CASE
-                              WHEN @Level IN ( 'Area Managed' ) THEN
-                                  ListValue
-                              ELSE
-                                  0
-                          END
-                         )
-                  FROM #FedCodeList
-              )
+	
 ORDER BY
 	[Business Line]
 	, Department
