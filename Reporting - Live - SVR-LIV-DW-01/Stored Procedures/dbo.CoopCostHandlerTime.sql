@@ -43,7 +43,7 @@ AS
 		, ISNULL(SUM(cost_time.brian_collins), 0)											AS [brian_collins_wip]
 		, ISNULL(SUM(cost_time.chloe_higham), 0)											AS [chloe_higham_wip]
 		, ISNULL(SUM(cost_time.chris_simpson), 0)											AS [chris_simpson_wip]
-		, ISNULL(SUM(cost_time.david_bailey_vella), 0)										AS [david_bailey_vella_wip]
+		--, ISNULL(SUM(cost_time.david_bailey_vella), 0)										AS [david_bailey_vella_wip]
 		, ISNULL(SUM(cost_time.emma_jeffries), 0)											AS [emma_jeffries_wip]
 		, ISNULL(SUM(cost_time.gwen_mensah), 0)												AS [gwen_mensah_wip]
 		, ISNULL(SUM(cost_time.iain_stark), 0)												AS [iain_stark_wip]
@@ -61,6 +61,7 @@ AS
 		, ISNULL(SUM(cost_time.stuart_naylor), 0)											AS [stuart_naylor_wip]
 		,ISNULL(SUM(cost_time.Jon_Lord), 0)  AS [Jon_Lord_wip]
 		,ISNULL(SUM(cost_time.Cathal_Reynolds), 0) AS [Cathal_Reynolds_wip]
+		,ISNULL(SUM(cost_time.Sarah_MacDonald),0) AS [Sarah_MacDonal_wip]
 
 		, ISNULL(SUM(cost_time.ella_collett), 0) +
 			ISNULL(SUM(cost_time.andrew_currah), 0) +
@@ -68,7 +69,7 @@ AS
 			ISNULL(SUM(cost_time.brian_collins), 0) +
 			ISNULL(SUM(cost_time.chloe_higham), 0) +
 			ISNULL(SUM(cost_time.chris_simpson), 0) +
-			ISNULL(SUM(cost_time.david_bailey_vella), 0) +
+			--ISNULL(SUM(cost_time.david_bailey_vella), 0) +
 			ISNULL(SUM(cost_time.emma_jeffries), 0) +
 			ISNULL(SUM(cost_time.gwen_mensah), 0) +
 			ISNULL(SUM(cost_time.iain_stark), 0) +
@@ -85,7 +86,8 @@ AS
 			ISNULL(SUM(cost_time.stephanie_mcbride), 0) +
 			ISNULL(SUM(cost_time.stuart_naylor), 0)+ 
 			ISNULL(SUM(cost_time.Jon_Lord), 0)+ 
-			ISNULL(SUM(cost_time.Cathal_Reynolds), 0)
+			ISNULL(SUM(cost_time.Cathal_Reynolds), 0) +
+			ISNULL(SUM(cost_time.Sarah_MacDonald), 0)
 			AS [total_costs_wip]
 	INTO #costhandlers
 	FROM (
@@ -128,12 +130,12 @@ AS
 					ELSE
 						0
 				  END																	AS [chris_simpson]														
-				, CASE	
-					WHEN cost_handlers.fed_code = '6172' THEN 
-						SUM(wip_value)
-					ELSE
-						0
-				  END																	AS [david_bailey_vella]
+				--, CASE	
+				--	WHEN cost_handlers.fed_code = '6172' THEN 
+				--		SUM(wip_value)
+				--	ELSE
+				--		0
+				--  END																	AS [david_bailey_vella]
 				, CASE	
 					WHEN cost_handlers.fed_code IN ('4234', 'EPO', 'EPO1', 'EPO2') THEN 
 						SUM(wip_value)
@@ -232,6 +234,10 @@ AS
 					ELSE
 						0
 				  END AS [Jon_Lord]
+			,CASE WHEN cost_handlers.fed_code IN ('6623') THEN SUM(wip_value)
+					ELSE
+						0
+				  END AS [Sarah_MacDonald]
 
 				  
 			FROM red_dw.dbo.fact_wip
@@ -240,12 +246,13 @@ AS
 										dim_fed_hierarchy_history_key
 										, fed_code
 									FROM red_dw.dbo.dim_fed_hierarchy_history
+									
 									WHERE fed_code IN ('5518','6195','ECE','3691','ANC','6180','SMB','4941','SHC1','SHC','3401','4846',
 													'MCB1','MCB','4270','5607','MMB','1924','6114',
 													'2033','4410','LOH','LFO1','LFO','3662','KFI',
 													'4878','5386','WIJ','5522','IST','5113','GME',
 													'3113','EPO2','EPO1','EPO','4234','6172','CHS1',
-													'CHS','4348','COI','4877','BCO','CRE','4493','5644'
+													'CHS','4348','COI','4877','BCO','CRE','4493','5644','6623'
 												   )
 								) AS cost_handlers
 					ON cost_handlers.dim_fed_hierarchy_history_key = red_dw.dbo.fact_wip.dim_fed_hierarchy_history_key
@@ -290,7 +297,7 @@ AS
 		, ISNULL(brian_collins_wip, 0)																AS [Brian Collins WIP]
 		, ISNULL(chloe_higham_wip, 0)																AS [Chloe Higham WIP]
 		, ISNULL(chris_simpson_wip, 0)																AS [Chris Simpson WIP]
-		, ISNULL(david_bailey_vella_wip, 0)															AS [David Bailey Vella WIP]
+		--, ISNULL(david_bailey_vella_wip, 0)															AS [David Bailey Vella WIP]
 		, ISNULL(emma_jeffries_wip, 0)																AS [Emma Jeffries WIP]
 		, ISNULL(gwen_mensah_wip, 0)																AS [Gwen Mensah WIP]
 		, ISNULL(iain_stark_wip, 0)																	AS [Iain Stark WIP]
@@ -308,8 +315,7 @@ AS
 		, ISNULL(stuart_naylor_wip, 0)																AS [Stuart Naylor WIP]
 		, ISNULL(Jon_Lord_wip, 0)																	AS [Jon Lord WIP]
 		, ISNULL(Cathal_Reynolds_wip, 0)														    AS [Cathal Reynolds WIP]
-
-
+		, ISNULL(Sarah_MacDonal_wip, 0)															AS [Sarah MacDonald WIP]
 		, ISNULL(total_costs_wip, 0)																AS [Total Costs WIP]
 		,instruction_type
 	FROM 
@@ -332,5 +338,5 @@ AS
 	
 	
 END
-
+  SELECT * FROM #costhandlers
 GO

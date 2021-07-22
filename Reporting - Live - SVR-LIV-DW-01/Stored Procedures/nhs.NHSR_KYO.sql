@@ -23,7 +23,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, matter_owner_full_name AS [Case Manager]
 		, hierarchylevel3hist AS [Department]
 		, dim_matter_worktype.work_type_group AS [Matter Type Group]
-		, 'NHSR' AS [Client]
+		, 'All' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
@@ -58,22 +58,15 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid = 0 THEN '£0'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 1 AND 5000 THEN '£1-£5,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid >= 50001  THEN '£50,000+'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND dim_detail_health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid = 0 THEN '£0'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 1 AND 50000 THEN '£1-£50,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid >= 1000001 THEN '£1,000,000+'
-        END AS [Damages Banding]
+		, CASE WHEN fact_finance_summary.damages_paid = 0 THEN '£0'
+			WHEN fact_finance_summary.damages_paid BETWEEN 1 AND 5001 THEN '£1-£5,001'
+			WHEN fact_finance_summary.damages_paid BETWEEN 5001 AND 10000 THEN '£5,001-£10,000'
+			WHEN fact_finance_summary.damages_paid BETWEEN 10001 AND 25000 THEN '£10,0001-£25,0001'
+			WHEN fact_finance_summary.damages_paid BETWEEN 25001 AND 50001 THEN '£25,001-£50,001'
+			WHEN fact_finance_summary.damages_paid > 50001 THEN '£50,0001+'
+			END AS [Damages Banding]
 		, dim_matter_worktype.work_type_name AS [Matter Type]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNSGP','CNST','DH CL','ELS','ELSGP','ELSGP (MDDUS)','ELSGP (MPS)','Inquest Funding                                             ','Inquest funding') THEN 'Clinical'
                 WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
 	     END AS [Scheme]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
@@ -132,7 +125,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, matter_owner_full_name AS [Case Manager]
 		, hierarchylevel3hist AS [Department]
 		, dim_matter_worktype.work_type_group AS [Matter Type Group]
-		, 'All' AS [Client]
+		, 'NHSR' AS [Client]
 		, dim_detail_previous_details.proceedings_issued AS [Proceedings Issued]
 		, dim_detail_court.date_proceedings_issued AS [Date Proceedings Issued]
 		, dim_detail_core_details.track AS [Track]
@@ -167,22 +160,155 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			ELSE 1 END AS [Date Filter]
 		, dim_detail_core_details.covid_reason_desc AS [Covid Reason]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid = 0 THEN '£0'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 1 AND 5000 THEN '£1-£5,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 5001 AND 10000 THEN '£5,000-£10,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 10001 AND 25000 THEN '£10,000-£25,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid BETWEEN 25001 AND 50000 THEN '£25,000-£50,000'
-              WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') AND fact_finance_summary.damages_paid >= 50001  THEN '£50,000+'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND dim_detail_health.[nhs_claim_status] = 'Periodical payments' THEN 'PPOs'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid = 0 THEN '£0'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 1 AND 50000 THEN '£1-£50,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 50001 AND 250000 THEN '£50,000-£250,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 250001 AND 500000 THEN '£250,000-£500,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid BETWEEN 500001 AND 1000000 THEN '£500,000-£1,000,000'
-              WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') AND fact_finance_summary.damages_paid >= 1000001 THEN '£1,000,000+'
-        END AS [Damages Banding]
+
+, CASE WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
+
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,001-£250,000'
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,001-£1,000,000'
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) > 1000000 THEN '£1,000,001+'
+
+
+
+
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+
+
+
+ 
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 1 AND 5001 THEN '£1-£5,001'
+
+
+  
+
+WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 5001 AND 10000 THEN '£5,001-£10,000'
+
+ WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 10001 AND 25000 THEN '£10,0001-£25,0001'
+
+  WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 25001 AND 50001 THEN '£25,001-£50,001'
+
+   WHEN 
+
+dim_detail_health.nhs_scheme IN
+(
+'DH Liab',
+'LTPS',
+'PES'
+)
+ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)> 50001 THEN '£50,0001+'
+
+
+ END AS [Damages Banding]
+
 		, dim_matter_worktype.work_type_name AS [Matter Type]
-		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNST','ELS','DH CL') THEN 'Clinical'
+		, CASE WHEN dim_detail_health.nhs_scheme IN ('CNSGP','CNST','DH CL','ELS','ELSGP','ELSGP (MDDUS)','ELSGP (MPS)','Inquest Funding                                             ','Inquest funding') THEN 'Clinical'
                 WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
 	     END AS [Scheme]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
@@ -217,10 +343,12 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
 ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 --AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
-AND work_type_group IN ('PL All','EL')
+AND work_type_group IN ('PL All','EL','NHSLA')
 AND CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
 			WHEN date_claim_concluded<'2018-01-01'  THEN 0
 			ELSE 1 END=1

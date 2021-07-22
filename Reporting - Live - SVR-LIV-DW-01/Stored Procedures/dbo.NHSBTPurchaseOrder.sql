@@ -64,7 +64,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
  LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
- LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.client_code = dim_matter_header_current.client_code AND fact_finance_summary.matter_number = dim_detail_finance.matter_number
+LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.client_code = dim_matter_header_current.client_code 
+AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
  LEFT JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.dim_matter_header_curr_key = dim_detail_finance.dim_matter_header_curr_key
