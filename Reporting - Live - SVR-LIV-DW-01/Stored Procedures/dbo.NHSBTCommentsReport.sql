@@ -49,9 +49,9 @@ DATEDIFF(DAY, dim_matter_header_current.date_closed_case_management, GETDATE()) 
 
 
 FROM MS_Prod.config.dbFile
-INNER JOIN red_dw.dbo.dim_matter_header_current
+LEFT  JOIN red_dw.dbo.dim_matter_header_current
  ON ms_fileid=dbFile.fileID
-INNER JOIN red_dw.dbo.dim_matter_worktype
+left JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
  LEFT JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
