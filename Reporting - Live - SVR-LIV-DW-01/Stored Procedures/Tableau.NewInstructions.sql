@@ -18,6 +18,7 @@ BEGIN
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
 		, dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team]
 		, dim_client.client_group_name AS [Client Group Name]
+		, dim_date.calendar_date	
 		, dim_date.fin_month_name AS [Month Name]
 		, dim_date.fin_month_no AS [Month]
 		, dim_date.fin_month
@@ -37,6 +38,94 @@ BEGIN
 				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=1000000 THEN '£250,000-£1m'
 				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=3000000 THEN '£1m-£3m'
 				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)>3000000 THEN '>£3m' ELSE '£0' END AS [Damages Banding]
+		
+		, CASE 
+			WHEN (
+					CASE 
+						WHEN LOWER(work_type_name)='claims handling' THEN 
+							COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve])  
+						WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+							fact_finance_summary.[damages_reserve]
+						WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+							fact_detail_reserve_detail.initial_damages_reserve
+						ELSE
+							fact_finance_summary.damages_paid
+						END) <= 25000 THEN 
+				'Fast Track'
+			WHEN (
+					CASE 
+						WHEN LOWER(work_type_name)='claims handling' THEN 
+							COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+						WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+							fact_finance_summary.[damages_reserve]
+						WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+							fact_detail_reserve_detail.initial_damages_reserve
+						ELSE
+							fact_finance_summary.damages_paid
+					END) <= 100000 THEN 
+				'£25,000-£100,000'
+			WHEN (
+					CASE 
+						WHEN LOWER(work_type_name)='claims handling' THEN 
+							COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+						WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+							fact_finance_summary.[damages_reserve]
+						WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+							fact_detail_reserve_detail.initial_damages_reserve
+						ELSE
+							fact_finance_summary.damages_paid
+					END) <= 500000 THEN 
+				'£100,001-£500,000'
+			WHEN (
+					CASE
+						WHEN LOWER(work_type_name)='claims handling' THEN 
+							COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+						WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+							fact_finance_summary.[damages_reserve]
+						WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+							fact_detail_reserve_detail.initial_damages_reserve
+						ELSE
+							fact_finance_summary.damages_paid 
+					END) <= 1000000 THEN 
+				'£500,001-£1m'
+			WHEN (
+					CASE 
+						WHEN LOWER(work_type_name)='claims handling' THEN 
+							COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+						WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+							fact_finance_summary.[damages_reserve]
+						WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+							fact_detail_reserve_detail.initial_damages_reserve
+						ELSE
+							fact_finance_summary.damages_paid 
+					END) <= 3000000 THEN 
+				'£1m-£3m'
+			ELSE
+				'No Reserve' 
+		  END			AS [Damages Banding - Extended Version]
+		
+		, CASE
+			WHEN dim_client.client_group_code='00000067' THEN 
+				dim_client.client_group_name --Ageas
+			WHEN dim_client.client_group_code='00000013' THEN 
+				dim_client.client_group_name --AIG
+			WHEN dim_client.client_group_code='00000007' THEN 
+				dim_client.client_group_name --Axa XL
+			WHEN dim_client.client_group_code='00000004' THEN 
+				dim_client.client_group_name --Co-operative Group
+			WHEN dim_client.client_group_code='00000002' THEN 
+				dim_client.client_group_name --MIB
+			WHEN dim_client.client_group_code='00000003' THEN 
+				dim_client.client_group_name --NHS Resolution
+			WHEN dim_client.client_group_code='00000142' AND dim_detail_core_details.injury_type_code LIKE 'D%' THEN 
+				dim_client.client_group_name --PWC
+			WHEN dim_client.client_group_code='00000001' THEN 
+				dim_client.client_group_name --Zurich
+			ELSE
+				'Other Clients'
+		  END						AS [Patron Clients - Extended Version]
+		, IIF(ISNULL(dim_detail_core_details.referral_reason, 0) LIKE 'Dispute%', 'Dispute', 'Other')		AS [Referral Reason Filter - Extended Version]
+
 		, CASE WHEN dim_client.client_group_code='00000067' THEN dim_client.client_group_name --Ageas
 			WHEN dim_client.client_group_code='00000013' THEN dim_client.client_group_name --AIG
 			WHEN dim_client.client_group_code='00000131' THEN dim_client.client_group_name --Aviva
@@ -75,7 +164,7 @@ BEGIN
 			WHEN dim_client.client_name='TCS Claims t/a Endsleigh Insurance Services Limited' THEN dim_client.client_name --TCS Claims t/a Endsleigh Insurance Services Limited
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
-			ELSE 'Other' END AS [Key Clients],
+			ELSE 'Other' END						AS [Key Clients],
 			CASE WHEN current_fin_year IN (
 'Current'
 ,'Previous'
@@ -113,4 +202,5 @@ THEN 1 ELSE 0 END AS showit
  AND current_cal_month<>'Current'  
     
 END
+
 GO

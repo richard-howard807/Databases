@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [audit].[OFACSanctionsListings]
 AS
 BEGIN
@@ -187,7 +188,8 @@ WHERE AllData.[Weightmans Ref] + AllData.[Systems] NOT IN
 ,'00093688.00000056FED'
 ,'A00002.00006729FED'
 ,'W15624.00000251FED'
-)-- Asked remove as it is included in the MS record - requested by Angela Shepard 24.05.21
+,'GRP001.00001089FED'
+)-- Asked remove as it is included in the MS record - requested by Angela Shepard 24.05.21 & 27.07.21
 
 END
 GO

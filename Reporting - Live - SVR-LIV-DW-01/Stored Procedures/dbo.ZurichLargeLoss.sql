@@ -202,7 +202,22 @@ SELECT
 	, ISNULL(damages_paid,0) + ISNULL(claimants_costs_paid,0)	+ ISNULL(total_amount_billed,0) -ISNULL(vat_billed,0)   AS [Indemnity Spend]
 	,vat_billed
 	, dim_detail_finance.[damages_banding] AS [Damages Banding]
+	, CASE 
+			WHEN fact_finance_summary.damages_reserve < 500000 THEN 'Below 500k'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 500000 AND 1000000 THEN '500k to £1m'
+			WHEN fact_finance_summary.damages_reserve BETWEEN 1000001 AND 3000000 THEN '£1m to £3m'
+			WHEN fact_finance_summary.damages_reserve > 3000000 THEN '£3m+'
+			END AS [Damages Banding_test]
+
+
 	,dim_detail_core_details.[injury_type] [Injury Type]
+	,CASE WHEN tskCompleted IS NOT NULL AND tskActive=1 THEN 1 ELSE 0 END AS [ProcessCompleted]
+	,CASE WHEN cboCLNotInd IS NULL  AND cboIssDrCov IS NULL AND cboIssVehCov IS NULL
+		AND cboIssInsVeh IS NULL AND cboSugBrePol IS NULL AND cboAccPrivLand IS NULL
+		AND cboAnOthIns IS NULL AND cboAnoInsParty IS NULL AND cboEleSubLoss IS NULL
+		AND cboInsSpecAdvDi IS NULL AND cboInsSpecAdvIn IS NULL AND cboInsRelTech IS NULL
+		AND cboPolCanAv IS NULL THEN 1 ELSE 0 END  AS ScoreISBlank
+	,1 AS [Number]
 	
 
 INTO #MainData
@@ -225,7 +240,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_f
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key 
-
+LEFT OUTER JOIN ms_prod.dbo.dbTasks  ON  ms_fileid=dbTasks.fileid AND tskFilter='tsk_01_02_010_TechCheckMot '
+LEFT OUTER JOIN ms_prod.dbo.udTechMotor ON ms_fileid=udTechMotor.fileID
 
 
 
@@ -296,7 +312,10 @@ SELECT
 , vat_billed
 , [Damages Banding]
 , [Injury Type]
-
+, [ProcessCompleted]
+, ScoreISBlank
+, [Number]
+, [Damages Banding_test]
 FROM #MainData
 
    END

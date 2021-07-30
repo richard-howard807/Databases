@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [audit].[OFACSanctions] 
 
 AS
@@ -204,13 +205,13 @@ SELECT DISTINCT SanctionNam
 ,CaseID
 ,COALESCE(NMI418.case_text,NMI418_b.case_text) AS [Is this a Linked File]
 ,COALESCE(NMI419.case_text,NMI419_b.case_text) AS [Linked Case]
-,COALESCE(AUD211.case_date,AUD211_b.case_date,dteDateofBirth)  AS [Date of birth]
-,COALESCE(AUD212.case_text,AUD212_b.case_text,cboDoBObtain ) collate database_default AS [Was DoB obtained?]
-,COALESCE(AUD213.case_text,AUD213_b.case_text,cboRevFileSanLi )collate database_default  AS [Reviewed file against Sanctions list]
-,COALESCE(AUD214.case_date,AUD214_b.case_date,dteDateSanRev  ) AS [Date Sanctions list reviewed]
-,CASE WHEN DateClosed IS NULL AND COALESCE(dteDateSanRev,AUD214.case_date,AUD214_b.case_date ) IS NULL OR CONVERT(Date,[Last Updated],103) > CONVERT(Date,COALESCE(dteDateSanRev,AUD214.case_date,AUD214_b.case_date ),103) THEN 1 ELSE 0 END [Re-Check Needed]
-,CASE WHEN DateClosed IS NULL AND COALESCE(AUD213.case_text,AUD213_b.case_text,cboRevFileSanLi) collate database_default LIKE '%temporary reviewed%' THEN 1 ELSE 0 END  AS AmberCheck
-,CASE WHEN DateClosed IS NOT NULL AND  CONVERT(Date,[Last Updated],103) BETWEEN DATEADD(M,-3,GETDATE()) AND GETDATE() THEN 1 ELSE 0 END ExtraRed
+,COALESCE(dteDateofBirth,AUD211.case_date,AUD211_b.case_date)  AS [Date of birth]
+,COALESCE(cboDoBObtain,AUD212.case_text,AUD212_b.case_text ) COLLATE DATABASE_DEFAULT AS [Was DoB obtained?]
+,COALESCE(cboRevFileSanLi,AUD213.case_text,AUD213_b.case_text )COLLATE DATABASE_DEFAULT  AS [Reviewed file against Sanctions list]
+,COALESCE(dteDateSanRev,AUD214.case_date,AUD214_b.case_date ) AS [Date Sanctions list reviewed]
+,CASE WHEN DateClosed IS NULL AND COALESCE(dteDateSanRev,AUD214.case_date,AUD214_b.case_date ) IS NULL OR CONVERT(DATE,[Last Updated],103) > CONVERT(DATE,COALESCE(dteDateSanRev,AUD214.case_date,AUD214_b.case_date ),103) THEN 1 ELSE 0 END [Re-Check Needed]
+,CASE WHEN DateClosed IS NULL AND COALESCE(cboRevFileSanLi,AUD213.case_text,AUD213_b.case_text) COLLATE DATABASE_DEFAULT LIKE '%temporary reviewed%' THEN 1 ELSE 0 END  AS AmberCheck
+,CASE WHEN DateClosed IS NOT NULL AND  CONVERT(DATE,[Last Updated],103) BETWEEN DATEADD(M,-3,GETDATE()) AND GETDATE() THEN 1 ELSE 0 END ExtraRed
 ,ListName AS [Sanction Name]
 ,OFACDOB
 ,[SDN DOB]
@@ -266,13 +267,13 @@ INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown W
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK)  
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WITH (NOLOCK)    WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses  WITH (NOLOCK) 
  WHERE Type='Address') AS Addresses
@@ -327,13 +328,13 @@ INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown W
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK) 
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WITH (NOLOCK)   WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses  WITH (NOLOCK) 
  WHERE Type='Address') AS Addresses
@@ -383,18 +384,18 @@ SELECT Sanctions.Name
 ,[SDN DOB]
 FROM dbo.OFACSanctionsIndi AS Sanctions  WITH (NOLOCK) 
 INNER JOIN ConflictSearch.dbo.ConflictSearch WITH (NOLOCK) 
-on LOWER(Sanctions.Lastname)= LOWER(CleanName) 
+ON LOWER(Sanctions.Lastname)= LOWER(CleanName) 
 INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown WITH (NOLOCK)
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK) 
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WITH (NOLOCK)   WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses  WITH (NOLOCK) 
  WHERE Type='Address') AS Addresses
@@ -453,13 +454,13 @@ INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown W
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK)  
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile   WITH (NOLOCK)   WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current  WITH (NOLOCK)  ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses  WITH (NOLOCK) 
  WHERE Type='Address') AS Addresses
@@ -514,13 +515,13 @@ INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown W
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK)  
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WITH (NOLOCK)   WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current WITH (NOLOCK)  ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses  WITH (NOLOCK) 
  WHERE Type='Address') AS Addresses
@@ -570,18 +571,18 @@ SELECT Sanctions.Name
 ,[SDN DOB]
 FROM dbo.OFACSanctionsIndi AS Sanctions  WITH (NOLOCK)  
 INNER JOIN ConflictSearch.dbo.ConflictSearch WITH (NOLOCK) 
-on LOWER(Sanctions.AliasLastname)= LOWER(CleanName) 
+ON LOWER(Sanctions.AliasLastname)= LOWER(CleanName) 
 INNER JOIN ConflictSearch.dbo.ConflictSearchDrillDownDetailsTable AS Drilldown WITH (NOLOCK)
   ON ConflictSearch.EntityCode=Drilldown.code AND ConflictSearch.SourceID=Drilldown.SourceID
 LEFT OUTER  JOIN (SELECT client_code,matter_number,client_account_balance_of_matter FROM red_dw.dbo.fact_finance_summary  WITH (NOLOCK) 
 WHERE client_account_balance_of_matter <> 0) AS ClientBalance 
- ON Drilldown.client=ClientBalance.client_code collate database_default  AND Drilldown.matter=matter_number collate database_default
+ ON Drilldown.client=ClientBalance.client_code COLLATE DATABASE_DEFAULT  AND Drilldown.matter=matter_number COLLATE DATABASE_DEFAULT
 WHERE ConflictSearch.[Type] NOT IN ('Matter','Address')
 ) AS MainData
 LEFT OUTER JOIN (SELECT fileID,fileClosed AS DateClosed FROM MS_Prod.config.dbFile  WITH (NOLOCK)    WHERE fileClosed IS NOT NULL) AS MSClosure
  ON MainData.CaseID=MSClosure.fileID 
 LEFT OUTER JOIN (SELECT client_code AS mg_client,matter_number AS mg_matter, date_closed_practice_management AS mg_datcls, 1 AS SourceID FROM red_dw.dbo.dim_matter_header_current WITH (NOLOCK)  ) AS FEDClosures
- ON MainData.Client=FEDClosures.mg_client collate database_default AND MainData.Matter=FEDClosures.mg_matter collate database_default
+ ON MainData.Client=FEDClosures.mg_client COLLATE DATABASE_DEFAULT AND MainData.Matter=FEDClosures.mg_matter COLLATE DATABASE_DEFAULT
  
 LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,SourceID FROM ConflictSearch.dbo.ConflictSearch AS Addresses
  WHERE Type='Address') AS Addresses
@@ -590,7 +591,7 @@ LEFT OUTER JOIN (SELECT EntityCode,Address1,Address2,Address3,Address4,Postcode,
  ) AS AllData
 LEFT OUTER JOIN(SELECT fileID,case_id AS FEDCaseID FROM MS_Prod.dbo.udExtFile  WITH (NOLOCK)  
 INNER JOIN axxia01.dbo.cashdr  WITH (NOLOCK)  
- ON udExtFile.FEDCode=RTRIM(client) + '-'+ RTRIM(matter) collate database_default
+ ON udExtFile.FEDCode=RTRIM(client) + '-'+ RTRIM(matter) COLLATE DATABASE_DEFAULT
 WHERE FEDCode IS NOT NULL) AS MSToFED
  ON AllData.CaseID=MSToFED.fileID
 
