@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 /*
 	20190418 LD  ##16242 Added a left outer join to dim_client using the contactid to return the Interaction UCI field (which is the dimClient key.
 
@@ -163,7 +165,7 @@ FROM   MS_Prod.config.dbContact WITH ( NOLOCK )
 INNER JOIN TE_3E_Prod.dbo.Relate 
   ON EntIndex=Relate.SbjEntity
 INNER JOIN TE_3E_Prod.dbo.Site
- ON TE_3E_Prod.dbo.Relate.RelIndex=Site.Relate
+ ON TE_3E_Prod.dbo.Relate.RelIndex=SITE.Relate
 INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrIndex
 WHERE site.IsDefault=1
 AND  contid=@contid
@@ -195,15 +197,28 @@ AND  contid=@contid
        --                    FROM   TE_3E_Prod.dbo.Site s WITH ( NOLOCK )
        --                           INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON s.Address = a.AddrIndex
        --                    WHERE  IsDefault = 1 ) AS def_site ON Entity.EntIndex = def_site.Relate
-       LEFT OUTER JOIN (   SELECT   Relate ,
-                                    COUNT(*) sites_count
-                           FROM     TE_3E_Prod.dbo.Site WITH ( NOLOCK )
-                           GROUP BY Relate ) AS sites_count ON Entity.EntIndex = sites_count.Relate
-       LEFT OUTER JOIN (   SELECT   Relate ,
-                                    COUNT(DISTINCT Country) ctr_count
-                           FROM     TE_3E_Prod.dbo.Site s WITH ( NOLOCK )
-                                    INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON s.Address = a.AddrIndex
-                           GROUP BY Relate ) ctr_count ON Entity.EntIndex = ctr_count.Relate
+       LEFT OUTER JOIN (   SELECT Entity.EntIndex AS EntNo , COUNT(1) AS sites_count
+				 FROM TE_3E_Prod.dbo.Entity  
+				 INNER JOIN MS_Prod.config.dbContact WITH ( NOLOCK )
+				ON dbcontact.contExtID = EntIndex
+				INNER JOIN TE_3E_Prod.dbo.Relate 
+				  ON EntIndex=Relate.SbjEntity
+				INNER JOIN TE_3E_Prod.dbo.Site
+				ON TE_3E_Prod.dbo.Relate.RelIndex=Site.Relate
+				INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrIndex
+				GROUP BY Entity.EntIndex
+) AS sites_count ON Entity.EntIndex = sites_count.EntNo
+       LEFT OUTER JOIN (   SELECT Entity.EntIndex AS EntNo , COUNT(DISTINCT Country) ctr_count
+	
+				 FROM TE_3E_Prod.dbo.Entity  
+				 INNER JOIN MS_Prod.config.dbContact WITH ( NOLOCK )
+				ON dbcontact.contExtID = EntIndex
+				INNER JOIN TE_3E_Prod.dbo.Relate 
+				  ON EntIndex=Relate.SbjEntity
+				INNER JOIN TE_3E_Prod.dbo.Site
+				ON TE_3E_Prod.dbo.Relate.RelIndex=Site.Relate
+				INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrIndex
+GROUP BY EntIndex ) ctr_count ON Entity.EntIndex = ctr_count.EntNo
        LEFT OUTER JOIN (   SELECT   Entity ,
                                     COUNT(*) mat_count
                            FROM     TE_3E_Prod.dbo.Client c WITH ( NOLOCK )
@@ -215,7 +230,7 @@ AND  contid=@contid
                             LEFT JOIN MS_Prod.config.dbContact WITH ( NOLOCK ) ON dbcontact.contID = dbContactLinks.contLinkID
                      WHERE  contLinkCode = 'EMPR' ) contactlinks ON dbcontact.contID = contactlinks.contID
 	  LEFT OUTER JOIN (SELECT dim_client.contactid,dim_client.dim_client_key,Interaction.existinInteraction FROM red_dw.dbo.dim_client
-					   LEFT OUTER JOIN (select DISTINCT UCI as dim_client_key 
+					   LEFT OUTER JOIN (SELECT DISTINCT TRY_CAST(UCI AS BIGINT) AS dim_client_key 
 ,1 AS existinInteraction
 FROM [svr-liv-iasq-01].InterAction.weightmans.vwContacts  
 --WHERE UCI IS NOT NULL

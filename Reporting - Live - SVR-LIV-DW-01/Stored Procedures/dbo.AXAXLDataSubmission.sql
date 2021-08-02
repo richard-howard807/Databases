@@ -35,7 +35,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 		
 , COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name) AS [Insured Name] 
 
-, COALESCE(udMICoreAXA.pctLineShare, 1) AS [AXA XL Percentage line share of loss / expenses / recovery] -- udMICoreAXA
+, CASE WHEN udMICoreAXA.pctLineShare > 1 THEN udMICoreAXA.pctLineShare/100 ELSE COALESCE(udMICoreAXA.pctLineShare, 1) END AS [AXA XL Percentage line share of loss / expenses / recovery] -- udMICoreAXA
 , dim_detail_core_details.[clients_claims_handler_surname_forename]                                        AS [AXA XL Claims Handler]
 , NULL [Third Party Administrator] 
 , COALESCE(cboCovDef.cdDesc, API.[cboCovDef_CaseText])  AS  [Coverage / defence?]  -- udMICoreAXA
