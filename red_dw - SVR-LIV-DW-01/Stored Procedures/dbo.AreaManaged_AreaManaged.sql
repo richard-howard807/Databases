@@ -33,13 +33,39 @@ begin
 --Team Manager
 if not exists (select management_role_one from @UsernameTbl where management_role_one in ('HoSD', 'Director')) begin
 
-declare @TMCodeTbl table (empcode varchar(max)) 
+
+
+declare @TMCodeTbl table (empcode varchar(max),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100)) 
 insert into @TMCodeTbl
-select dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
+select dim_fed_hierarchy_history_key as 'empcode', 
+	dim_fed_hierarchy_history.hierarchylevel4hist team, 
+	dim_fed_hierarchy_history.hierarchylevel3hist department,
+	dim_fed_hierarchy_history.hierarchylevel2hist division, 
+	dim_fed_hierarchy_history.hierarchylevel1hist firm
+from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.team = dim_fed_hierarchy_history.hierarchylevel4hist
 						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
 						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
+
+union all
+
+select dim_fed_hierarchy_history_key as 'empcode', 
+	dim_fed_hierarchy_history.hierarchylevel4hist team, 
+	dim_fed_hierarchy_history.hierarchylevel3hist department,
+	dim_fed_hierarchy_history.hierarchylevel2hist division, 
+	dim_fed_hierarchy_history.hierarchylevel1hist firm
+from dim_fed_hierarchy_history 
+inner join @UsernameTbl u on u.employeeid = dim_fed_hierarchy_history.worksforemployeeid
+						 and u.team <> dim_fed_hierarchy_history.hierarchylevel4hist
+						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
+						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
+						 and activeud = 1
+						 and dim_fed_hierarchy_history.dss_current_flag = 'Y'
+						 and dim_fed_hierarchy_history.leaver = 0
+
+
+
 
 declare @TMSqlString varchar(max)
 set @TMSqlString = (
@@ -97,14 +123,22 @@ end
 begin
 --Team Manager
 if not exists (select management_role_one from @UsernameTbl where management_role_one in ('HoSD', 'Director')) begin
-select distinct
-'descendants([Dim Fed Hierarchy History].[Hierarchy].[Team].&['+
-													            team + ']&[' +
-																department + ']&[' +
-																division   + ']&[' +
-																firm + '],  [Dim Fed Hierarchy History].[Hierarchy].[Display Name])'  as mdx,
-@TMSqlString as [sql]
-from @UsernameTbl end
+
+	select distinct
+	'descendants( {' 
+		+ string_agg('[Dim Fed Hierarchy History].[Hierarchy].[Team].&['+
+																	cast(team as varchar(max)) + ']&[' +
+																	cast(department as varchar(max)) + ']&[' +
+																	cast(division as varchar(max))   + ']&[' +
+																	cast(firm as varchar(max)) + ']', ', ')
+	+ ' } ,  [Dim Fed Hierarchy History].[Hierarchy].[Display Name])'  as mdx,
+	@TMSqlString as [sql]
+	
+	from (	select distinct team, department, division, firm
+			from @TMCodeTbl ) TMCodeTbl 
+	group by firm
+
+ end
 
 --HSD
 if exists (select management_role_one from @UsernameTbl where management_role_one = 'HoSD') begin
