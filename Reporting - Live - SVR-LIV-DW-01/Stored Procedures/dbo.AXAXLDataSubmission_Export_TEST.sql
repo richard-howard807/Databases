@@ -9,7 +9,7 @@ GO
   --A1001-7739                                                               
 */
 --EXEC [dbo].[AXAXLDataSubmission_Export]
-CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export]
+CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export_TEST]
 
 AS 
 
