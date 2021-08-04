@@ -117,6 +117,7 @@ select distinct
        isnull(WPS340, 0) [WPS340 Fee Billed by Panel],
        isnull(WPS341, 0) [WPS341 Own Disbursements],
        rtrim(dim_detail_client.[old_zurich_reporting_category]) [old_zurich_reporting_category],
+	   ClaimDetails.catalina_claim_number		AS [Is this a Catalina Claim Number],
        rtrim(WPS332) [WPS332 Old Zurich Reporting Category],
 	   (isnull(WPS278,0) + isnull(WPS279,0) +isnull(WPS280,0) + isnull(WPS281,0) 
 	   + isnull(WPS340,0)+ isnull(WPS341,0) - isnull(WPS282,0) ) as [Total Paid to Date ] ,
@@ -274,7 +275,8 @@ from red_dw.dbo.fact_dimension_main
 			   [Defence Cost Reserve],
 			   [Claimants Cost Reserve],
 			   dim_child.date_policy_start,
-			   dim_child.date_policy_end
+			   dim_child.date_policy_end,
+			   dim_child.catalina_claim_number
 			   -- select *
 
         from
@@ -303,6 +305,7 @@ from red_dw.dbo.fact_dimension_main
                        claim_status as WPS387
 					   , dim_child_detail.date_policy_start
 					   , dim_child_detail.date_policy_end
+					   , dim_child_detail.catalina_claim_number
                 from red_dw.dbo.dim_child_detail
             ) as dim_child
               on Parent.dim_parent_key = dim_child.dim_parent_key
