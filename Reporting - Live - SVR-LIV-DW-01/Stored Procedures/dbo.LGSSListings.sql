@@ -5,6 +5,7 @@ GO
 
 --============================================
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
+-- JB 04-08-2021 #109308, added external_filter and font_colour columns
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -66,7 +67,8 @@ ELSE 'Closed' END AS Tab
 , [WitEvidence].key_date AS [Witness evidence]
 , [TrialWindow].key_date AS [Trial window]
 , [Trial].key_date AS [Trial Date]
-
+, IIF(ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.unpaid_bill_balance, 0) = 0, 'Exclude', 'Ok')		AS [external_filter]
+, IIF(dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding', 'Red', 'Black')			AS [font_colour]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
