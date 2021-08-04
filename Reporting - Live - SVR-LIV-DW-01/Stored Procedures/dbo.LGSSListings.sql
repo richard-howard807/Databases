@@ -5,7 +5,7 @@ GO
 
 --============================================
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
--- JB 04-08-2021 #109308, added external_filter and font_colour columns
+-- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -69,6 +69,14 @@ ELSE 'Closed' END AS Tab
 , [Trial].key_date AS [Trial Date]
 , IIF(ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.unpaid_bill_balance, 0) = 0, 'Exclude', 'Ok')		AS [external_filter]
 , IIF(dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding', 'Red', 'Black')			AS [font_colour]
+, fact_detail_reserve_detail.damages_reserve		AS [Damages Reserve]
+, fact_detail_reserve_detail.claimant_costs_reserve_current			AS [TP Costs Reserve]
+, fact_detail_reserve_detail.defence_costs_reserve				AS [Own Costs Reserve]
+, dim_detail_outcome.date_claim_concluded				AS [Date Claim Concluded]
+, dim_detail_outcome.date_costs_settled				AS [Date Costs Concluded]
+, fact_detail_claim.damages_paid_by_client			AS [Damages Paid]
+, fact_finance_summary.total_tp_costs_paid			AS [TP Costs Paid]
+, fact_finance_summary.defence_costs_billed				AS [Revenue(total)]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -147,6 +155,13 @@ AND is_active=1
 GROUP BY dim_matter_header_curr_key, client_code, matter_number, type, description) AS [Trial]
 ON [Trial].dim_matter_header_curr_key=dim_matter_header_current.dim_matter_header_curr_key
   
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+	ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+	ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
+	ON fact_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
 WHERE
 (
 LOWER(matter_description) LIKE '%cambridgeshire county council%' OR 
