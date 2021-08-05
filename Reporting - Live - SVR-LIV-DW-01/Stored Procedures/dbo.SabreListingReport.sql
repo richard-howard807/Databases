@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 -- =============================================
 -- Author:		<Orlagh Kelly>
 -- Create date: <31st August 2018,>
@@ -31,21 +33,21 @@ REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.client_code),'0',' ') ),' ','0')
 
 
 
-, case when dim_employee.locationidud = 'Glasgow' then 'Scottish Claim' 
+, CASE WHEN dim_employee.locationidud = 'Glasgow' THEN 'Scottish Claim' 
 
-when dim_detail_core_details.suspicion_of_fraud = 'Yes' then Ltrim(rtrim(dim_detail_core_details.track)) + '/'+  'Fraud '
+WHEN dim_detail_core_details.suspicion_of_fraud = 'Yes' THEN LTRIM(RTRIM(dim_detail_core_details.track)) + '/'+  'Fraud '
 
-when dim_detail_core_details.suspicion_of_fraud = 'No' and dim_detail_hire_details.[claim_for_hire] = 'Yes' then rtrim(ltrim(dim_detail_core_details.track))  + '/'+ 'C Hire'
+WHEN dim_detail_core_details.suspicion_of_fraud = 'No' AND dim_detail_hire_details.[claim_for_hire] = 'Yes' THEN RTRIM(LTRIM(dim_detail_core_details.track))  + '/'+ 'C Hire'
 
 --when Andew Sutton, Amy o Connor, Michelle pearsall , Emma Jevons, Juliet wood 
-when dim_fed_hierarchy_history.fed_code  IN ('642' , '1580' ,  '1687', '1590', '1785') then  rtrim(ltrim(dim_detail_core_details.track ))+ '/'+  'Technical  '
-when dim_detail_core_details.referral_reason= 'Nomination only                                             ' then 'Nomination'
-else   LTRIM(RTRIM(dim_detail_core_details.track)) + '/'+ 'Motor'
-end as [Reason For Instruction]
+WHEN dim_fed_hierarchy_history.fed_code  IN ('642' , '1580' ,  '1687', '1590', '1785') THEN  RTRIM(LTRIM(dim_detail_core_details.track ))+ '/'+  'Technical  '
+WHEN dim_detail_core_details.referral_reason= 'Nomination only                                             ' THEN 'Nomination'
+ELSE   LTRIM(RTRIM(dim_detail_core_details.track)) + '/'+ 'Motor'
+END AS [Reason For Instruction]
 
 ,dim_detail_client.sabre_coop_fraudrmgendsleigh_complaints [Complaint Recieved]
 ,  dim_matter_header_current.final_bill_date 
-,case when dim_detail_core_details.[present_position] in ('Final bill due - claim and costs concluded                  ','To be closed/minor balances to be clear                     ','Final bill sent - unpaid                                    ') then 'Closed' else 'Open' end as 'Status'
+,CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded                  ','To be closed/minor balances to be clear                     ','Final bill sent - unpaid                                    ') THEN 'Closed' ELSE 'Open' END AS 'Status'
 
 , dim_detail_core_details.incident_date  [Date of Incident]
 ,dim_client_involvement.insuredclient_name [Name of Insured ]
@@ -64,13 +66,13 @@ end as [Reason For Instruction]
 ,dim_detail_core_details.[brief_description_of_injury] 
 
 , dim_detail_incident.[description_of_injury_v] 
-, case when dim_detail_hire_details.[claim_for_hire] = 'No                                                          ' then 'No'
-when dim_detail_hire_details.[claim_for_hire] =  'Yes                                                         ' then 'Yes' else 'No' end as [claim_for_hire]
+, CASE WHEN dim_detail_hire_details.[claim_for_hire] = 'No                                                          ' THEN 'No'
+WHEN dim_detail_hire_details.[claim_for_hire] =  'Yes                                                         ' THEN 'Yes' ELSE 'No' END AS [claim_for_hire]
 , fact_finance_summary.[damages_reserve]
 , fact_detail_reserve_detail.[claimant_costs_reserve_current]  [TP Costs Reserve ]
 , dim_detail_outcome.[outcome_of_case]  [Outcome of Case]
 , dim_detail_outcome.date_claim_concluded  [Date Claim Concluded]
-, datediff(dd,dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_claim_concluded)  as [Elapsed Days]
+, DATEDIFF(dd,dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_claim_concluded)  AS [Elapsed Days]
 , fact_finance_summary.[damages_paid_to_date] [Damages Paid to Date]
 , fact_finance_summary.[total_tp_costs_paid] [TP Costs Paid ]
 , fact_finance_summary.[tp_total_costs_claimed] [TP Costs Claimed]
@@ -83,41 +85,41 @@ when dim_detail_hire_details.[claim_for_hire] =  'Yes                           
 , Doogal.Longitude AS [Accident Location Longitude]
 
 
-from red_dw.dbo.fact_dimension_main 
-inner join red_dw.dbo.dim_fed_hierarchy_history  on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-inner join red_dw.dbo.dim_client  on dim_client.client_code = fact_dimension_main.client_code
-left outer join red_dw.dbo.dim_detail_client on fact_dimension_main.client_code = dim_detail_client.client_code and dim_detail_client.matter_number = fact_dimension_main.matter_number
-inner join red_dw.dbo.dim_matter_header_current on dim_matter_header_current.client_code = fact_dimension_main.client_code and dim_matter_header_current.matter_number = fact_dimension_main.matter_number 
-inner join red_dw.dbo.fact_detail_client  on fact_dimension_main.master_fact_key = fact_detail_client.master_fact_key
-Left outer join  red_dw.dbo.dim_client_involvement  on dim_client_involvement.dim_client_involvement_key =fact_dimension_main.dim_client_involvement_key 
-Left outer join  red_dw.dbo.dim_claimant_thirdparty_involvement  on dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key =fact_dimension_main.dim_claimant_thirdpart_key
-inner join red_dw.dbo.fact_finance_summary on fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-Left outer join  red_dw.dbo.dim_detail_outcome  on dim_detail_outcome.client_code = dim_matter_header_current.client_code and dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
-Left outer join red_dw.dbo.dim_detail_core_details  on dim_detail_core_details.client_code = dim_matter_header_current.client_code and dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
-left outer join red_dw.dbo.dim_detail_hire_details  on dim_detail_hire_details.dim_detail_hire_detail_key = fact_dimension_main.dim_detail_hire_detail_key
-left outer join  red_dw.dbo.fact_detail_recovery_detail  on fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
-left outer join red_dw.dbo.fact_matter_summary_current  on fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+FROM red_dw.dbo.fact_dimension_main 
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+INNER JOIN red_dw.dbo.dim_client  ON dim_client.client_code = fact_dimension_main.client_code
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client ON fact_dimension_main.client_code = dim_detail_client.client_code AND dim_detail_client.matter_number = fact_dimension_main.matter_number
+INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.client_code = fact_dimension_main.client_code AND dim_matter_header_current.matter_number = fact_dimension_main.matter_number 
+INNER JOIN red_dw.dbo.fact_detail_client  ON fact_dimension_main.master_fact_key = fact_detail_client.master_fact_key
+LEFT OUTER JOIN  red_dw.dbo.dim_client_involvement  ON dim_client_involvement.dim_client_involvement_key =fact_dimension_main.dim_client_involvement_key 
+LEFT OUTER JOIN  red_dw.dbo.dim_claimant_thirdparty_involvement  ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key =fact_dimension_main.dim_claimant_thirdpart_key
+INNER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN  red_dw.dbo.dim_detail_outcome  ON dim_detail_outcome.client_code = dim_matter_header_current.client_code AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details  ON dim_detail_core_details.client_code = dim_matter_header_current.client_code AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_detail_hire_details  ON dim_detail_hire_details.dim_detail_hire_detail_key = fact_dimension_main.dim_detail_hire_detail_key
+LEFT OUTER JOIN  red_dw.dbo.fact_detail_recovery_detail  ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current  ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_incident ON dim_detail_incident.dim_detail_incident_key = fact_dimension_main.dim_detail_incident_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_compliance ON dim_detail_compliance.dim_detail_compliance_key = fact_dimension_main.dim_detail_compliance_key
-left join red_dw.dbo.dim_detail_practice_area on dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
-left join red_dw.dbo.dim_employee on dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
-left join red_dw.dbo.dim_detail_health on dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
-LEFT JOIN red_dw.dbo.dim_detail_court on dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
-left join red_dw.dbo.fact_detail_reserve_detail on fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN red_dw.dbo.dim_detail_practice_area ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
+LEFT JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+LEFT JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+LEFT JOIN red_dw.dbo.dim_detail_court ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
+LEFT JOIN red_dw.dbo.fact_detail_reserve_detail ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.Doogal ON Doogal.Postcode = dim_detail_core_details.incident_location_postcode
 
  
-where dim_client.client_group_code = '00000070'
+WHERE dim_client.client_group_code = '00000070'
 
 --and (dim_matter_header_current.date_closed_case_management >= '2017-01-01' or dim_matter_header_current.date_closed_case_management is null)
 --and( dim_detail_core_details.date_instructions_received <'2017-01-01' ) 
- and( dim_detail_outcome.date_claim_concluded   >= '2017-01-01'  or dim_detail_outcome.date_claim_concluded is null )
+ AND( dim_detail_outcome.date_claim_concluded   >= '2017-01-01'  OR dim_detail_outcome.date_claim_concluded IS NULL )
 
 
-and fact_dimension_main.matter_number <> 'ML'
+AND fact_dimension_main.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions <> 1
-and dim_detail_outcome.[outcome_of_case]  <> 'Exclude from reports                                        '
+AND ISNULL(dim_detail_outcome.[outcome_of_case],'')  <> 'Exclude from reports                                        '
 
 
 

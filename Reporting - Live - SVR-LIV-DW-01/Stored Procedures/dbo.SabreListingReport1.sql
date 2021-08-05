@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 -- =============================================
 -- Author:		<Orlagh kelly>
 -- Create date: <03/12/2018,,>
@@ -297,9 +300,11 @@ AND
                    'Declaration'
                WHEN dim_detail_core_details.referral_reason = 'Recovery                                                    ' THEN
                    'Recovery'
-               WHEN dim_detail_core_details.sabre_reason_for_instructions = 'Fraud'
-                    OR dim_detail_core_details.sabre_reason_for_instructions = 'F                                                           '
-                       AND ISNULL(grpageas_motor_moj_stage, '') <> 'Stage 3                                                     ' THEN
+               WHEN (dim_detail_core_details.sabre_reason_for_instructions = 'Fraud'
+                    OR suspicion_of_fraud='Yes'
+					OR dim_detail_core_details.sabre_reason_for_instructions = 'F'
+					)
+                       AND ISNULL(grpageas_motor_moj_stage, '') <> 'Stage 3' THEN
                    'Fraud'
                WHEN ISNULL(dim_detail_core_details.sabre_reason_for_instructions, '') <> 'NO                                                          '
                     AND dim_detail_core_details.[grpageas_motor_moj_stage] = 'Stage 3                                                     ' THEN
@@ -423,8 +428,11 @@ AND
           AND reporting_exclusions = 0
           AND fact_dimension_main.dim_open_case_management_date_key > '20170101'
 		  --AND dim_detail_core_details.sabre_reason_for_instructions IS null 
-		  
-		  ;
+--		  		  AND RTRIM(dim_matter_header_current.master_client_code) + '-' + RTRIM(master_matter_number) IN 
+--		  (
+--'W15564-6196','W15564-6248','W15564-6234'
+--		  )
+--		  ;
 
 
 

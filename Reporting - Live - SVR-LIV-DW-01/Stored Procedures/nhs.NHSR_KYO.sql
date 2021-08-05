@@ -7,7 +7,7 @@ GO
 -- Create date: 2020-12-09
 -- Description:	NHSR insights dashboard, claimant behaviour
 -- =============================================
-
+-- changed elapsed days damages to years
 -- =============================================
 CREATE PROCEDURE [nhs].[NHSR_KYO]
 	
@@ -50,7 +50,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, ISNULL(fact_finance_summary.damages_paid,0) + ISNULL(fact_finance_summary.total_tp_costs_paid,0) + ISNULL(fact_finance_summary.total_amount_billed,0) AS [Total Claim Spend]
 		, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
-		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
+		, DATEDIFF(YEAR, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
 		, DATEDIFF(DAY, dim_detail_core_details.incident_date, dim_detail_core_details.date_instructions_received) AS [Elapsed Days to Instructions]
 		, 1 AS [Number of Records]
 		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
@@ -152,7 +152,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, ISNULL(fact_finance_summary.damages_paid,0) + ISNULL(fact_finance_summary.total_tp_costs_paid,0) + ISNULL(fact_finance_summary.total_amount_billed,0) AS [Total Claim Spend]
 		, CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 		, DATEDIFF(DAY, incident_date, dim_detail_court.date_proceedings_issued) AS [Days to Issue]
-		, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
+		, DATEDIFF(YEAR, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded) AS [Elapsed Days (Damages)]
 		, DATEDIFF(DAY, dim_detail_core_details.incident_date, dim_detail_core_details.date_instructions_received) AS [Elapsed Days to Instructions]
 		, 1 AS [Number of Records]
 		, CASE WHEN date_claim_concluded IS NULL AND date_closed_case_management<'2018-01-01' THEN 0
