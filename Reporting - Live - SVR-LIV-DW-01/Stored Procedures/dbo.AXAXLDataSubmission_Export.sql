@@ -41,12 +41,11 @@ SELECT  DISTINCT
         WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %') THEN 'Employer’s Liability and Public Liability'
         WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Motor%' THEN 'Motor'
 		WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Recovery%' THEN 'Other'
-		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Accident'
+		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Other'
 		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' THEN 'Other'
 		ELSE  work_type_name END  AS  [Product Type New]
 		
 , COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name) AS [Insured Name] 
-
 , CASE WHEN udMICoreAXA.pctLineShare > 1 THEN udMICoreAXA.pctLineShare/100 ELSE COALESCE(udMICoreAXA.pctLineShare, 1) END AS [AXA XL Percentage line share of loss / expenses / recovery] -- udMICoreAXA
 , dim_detail_core_details.[clients_claims_handler_surname_forename]                                        AS [AXA XL Claims Handler]
 , NULL [Third Party Administrator] 
@@ -361,8 +360,8 @@ WHERE 1 =1
 
 AND client_group_name='AXA XL'
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)>='2021-03-29')
-AND date_costs_settled  IS NULL 
-AND date_claim_concluded IS NULL
+AND (date_costs_settled  IS NULL OR CONVERT(DATE,date_costs_settled,103)>='2021-03-29')
+AND (date_claim_concluded IS NULL OR CONVERT(DATE,date_claim_concluded,103)>='2021-03-29')
 --just a quick one on this for the time being - can you restrict it to show files that are "live" - 
 --so this will be where date claim concluded or date costs settled are null
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'

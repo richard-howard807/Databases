@@ -29,7 +29,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
         WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %') THEN 'Employer’s Liability and Public Liability'
         WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Motor%' THEN 'Motor'
 		WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Recovery%' THEN 'Other'
-		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Accident'
+		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Other'
 		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' THEN 'Other'
 		ELSE  work_type_name END  AS  [Product Type New]
 		
@@ -359,8 +359,9 @@ WHERE 1 =1
 
 AND client_group_name='AXA XL'
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR CONVERT(DATE,dim_matter_header_current.date_closed_case_management,103)>='2021-03-29')
-AND date_costs_settled  IS NULL 
-AND date_claim_concluded IS NULL
+AND (date_costs_settled  IS NULL OR CONVERT(DATE,date_costs_settled,103)>='2021-03-29')
+AND (date_claim_concluded IS NULL OR CONVERT(DATE,date_claim_concluded ,103)>='2021-03-29')
+
 --just a quick one on this for the time being - can you restrict it to show files that are "live" - 
 --so this will be where date claim concluded or date costs settled are null
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'

@@ -10,6 +10,9 @@ GO
 
 
 
+
+
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -32,6 +35,8 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,Interest.Interest
 ,RecoverableCosts.[Recoverable Costs]
 ,RecoverableDisbursements.[Recoverable Disbursements]
+,unrecoverableCosts.unrecoverableCosts
+,defence_costs_billed_composite
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -73,11 +78,29 @@ FROM [MS_PROD].dbo.udCRLedgerSL
 WHERE   cboCatDesc='1'
 GROUP BY fileID) AS RecoverableDisbursements
  ON RecoverableDisbursements.fileID = dbFile.fileID
+LEFT OUTER JOIN (SELECT fileID,SUM(curOffice) AS unrecoverableCosts
+FROM [MS_PROD].dbo.udCRLedgerSL
+WHERE   cboCatDesc='7'
+GROUP BY fileID) AS unrecoverableCosts
+ ON unrecoverableCosts.fileID = dbFile.fileID
 
 LEFT OUTER JOIN (SELECT fileID,assocRef AS ClientRef FROM ms_prod.config.dbAssociates
 WHERE assocType='CLIENT'
 AND assocRef IS NOT NULL) AS ClientRef
  ON ClientRef.fileID = dbFile.fileID
+LEFT OUTER JOIN 
+(
+SELECT ms_fileid,defence_costs_billed_composite FROM red_dw.dbo.dim_matter_header_current
+INNER JOIN red_dw.dbo.fact_finance_summary
+ ON fact_finance_summary.client_code = dim_matter_header_current.client_code
+ AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+WHERE master_client_code IN 
+(
+'FW30085','FW22135','341077','FW22352' ,'FW22135','FW22135','FW22613' ,'W15335' ,'W20110','FW23557'
+) 
+) AS Bills
+ ON dbFile.fileID=Bills.ms_fileid
+
 WHERE (CASE WHEN clNo IN ('FW30085','FW22135') THEN 'BMW' 
 WHEN clNo='341077' THEN 'Land Rover'
 WHEN clNo='FW22352' THEN 'Rover'
