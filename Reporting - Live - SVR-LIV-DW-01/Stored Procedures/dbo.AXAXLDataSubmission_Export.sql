@@ -17,12 +17,16 @@ BEGIN
 
 DROP TABLE IF EXISTS #AXAXLDataSubmission
 
+SELECT x.*, 
+RN = ROW_NUMBER() OVER (PARTITION BY x.ms_fileid ORDER BY x.ms_fileid) 
+INTO #AXAXLDataSubmission
 
---2298
---2162
+FROM 
+
+(
+
 SELECT  DISTINCT
 [Status] = CAST('' AS NVARCHAR(20))
-,ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
 ,dim_matter_header_current.ms_fileid
 ,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT) AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
@@ -98,42 +102,19 @@ SELECT  DISTINCT
 ,dim_detail_core_details.[proceedings_issued] 
 ,[Counsel Paid / Other disbursements] = Disbursements.[Disbs - Counsel fees]
 ,[Disbursements] = Disbursements.DisbAmount
-
 ,dim_detail_core_details.[present_position] AS [status_present_postition]
 ,dim_matter_header_current.date_closed_case_management 
 ,matter_description
-
 ,dim_client_involvement.insuredbroker_name
 ,dim_client_involvement.broker_name
 ,fact_finance_summary.disbursements_billed
-
 , [Quantified Damages] = udMICoreAXA.curQuanDam -- udMICoreAXA NEW***
-
-
-/*Panel Fees
-
-=Fields!fact_finance_summary_defence_costs_billed_.Value 
-+Fields!fact_finance_summary_disbursements_billed_.Value 
-+ Fields!Damages.Value 
-+Fields!Costs.Value
-+(IIF(ISNOTHING(LOOKUP(TRIM(Fields!dim_client_client_code_.Value)&TRIM(Fields!dim_matter_header_current_matter_number_.Value)
-,TRIM(Fields!client_code.Value)&TRIM(Fields!matter_number.Value)
-,Fields!Total_VAT_Billed_to_Markel_In_Period.Value, "MarkelTax")),0,LOOKUP(TRIM(Fields!dim_client_client_code_.Value)&TRIM(Fields!dim_matter_header_current_matter_number_.Value)
-,TRIM(Fields!client_code.Value)&TRIM(Fields!matter_number.Value)
-,Fields!Total_VAT_Billed_to_Markel_In_Period.Value, "MarkelTax")))
-
-
-Fields!Damages.Value  =IIF(ISNOTHING(Fields!fact_finance_summary_damages_paid_.Value),Fields!fact_finance_summary_damages_interims_.Value,Fields!fact_finance_summary_damages_paid_.Value)
-Fields!Costs.Value=IIF(ISNOTHING(Fields!fact_finance_summary_claimants_costs_paid_.Value),Fields!fact_detail_paid_detail_interim_costs_payments_.Value,Fields!fact_finance_summary_claimants_costs_paid_.Value)
-*/
 ,[PanelFeesTest] = ISNULL(fact_finance_summary.disbursements_billed, 0) + 
 ISNULL(defence_costs_billed, 0) +
 COALESCE(ISNULL(fact_finance_summary.damages_paid, 0), ISNULL(fact_finance_summary.damages_interims, 0)) +
 COALESCE(ISNULL(fact_finance_summary.claimants_costs_paid, 0), ISNULL(fact_detail_paid_detail.interim_costs_payments, 0)) +
 ISNULL(PanelFees.[Total VAT Billed to AXA In Period], 0)
 
-
-INTO #AXAXLDataSubmission
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main
@@ -185,7 +166,7 @@ GROUP BY ms_fileid
 
 LEFT OUTER JOIN 
 (
-SELECT 
+SELECT DISTINCT 
  dim_matter_header_current.dim_matter_header_curr_key
 , dim_employee.surname +', ' + dim_employee.forename AS [Name]
 , dim_employee.forename AS [First name]
@@ -389,7 +370,8 @@ AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
 ( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272'
 )
-
+--AND dim_matter_header_current.master_client_code + '-' + master_matter_number = 'A1001-10819'
+) x 
 
 /* Main Lookup */
 
@@ -456,7 +438,7 @@ SELECT DISTINCT
       Last_name,
       [Unique timekeeper ID per timekeeper],
       [Level solicitor partner ],
-      PQE,
+      PQE, 
       [Hours spent on case]
      
       INTO #TimeKeepersAPI
@@ -597,7 +579,8 @@ FROM #AXAXLDataSubmission
 WHERE ISNULL(Status, '') = ''
 
 
-SELECT * FROM #AXAXLDataSubmission
+SELECT *
+FROM #AXAXLDataSubmission
 ORDER BY ms_fileid
 
 --A1001-12012 = 2021-05-19 00:00:00.000

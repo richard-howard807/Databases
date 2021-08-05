@@ -7,6 +7,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -33,6 +34,7 @@ GO
 -- JL 20210520 Adding in FIC Score #99701
 -- JB 20210524 Updated Fraud Type logic #100041
 --OK 20210526 removed matter zero BH
+--KH 109184 Changes to rule for Worktype Group in self serve
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -333,7 +335,9 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_matter_worktype.[work_type_name] AS [Work Type]
        ,dim_matter_worktype.[work_type_code] AS [Work Type Code]
        ,CASE
-           WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
+           WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
+				'PL All'
+		   WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
                'NHSLA'
            WHEN dim_matter_worktype.[work_type_name] LIKE 'PL%' THEN
                'PL All'

@@ -15,6 +15,8 @@ BEGIN
 IF OBJECT_ID('tempdb..#Partner') IS NOT NULL   DROP TABLE #Partner;
 SELECT ListValue  INTO #Partner FROM 	dbo.udt_TallySplit('|', @Partner);
 
+
+
 SELECT dim_client.client_name AS [Client Name],
        master_client_code + '-' + master_matter_number AS [Matter ID],
        hierarchylevel4hist AS [Matter Owner Team],
@@ -33,6 +35,8 @@ SELECT dim_client.client_name AS [Client Name],
        fact_debt.fees_balance outstanding_fees,
        fact_bill.vat_amount,
        fact_debt.costs_balanace
+	   , hyperlink
+	   -- select *
 FROM red_dw.dbo.fact_payor_debt_detail fact_debt
     INNER JOIN red_dw.dbo.dim_bill
         ON dim_bill.dim_bill_key = fact_debt.dim_bill_key
@@ -61,10 +65,20 @@ FROM red_dw.dbo.fact_payor_debt_detail fact_debt
         ON dim_payor.dim_payor_key = fact_debt.dim_payor_key
     INNER JOIN #Partner AS [Partner]
         ON [Partner].ListValue COLLATE DATABASE_DEFAULT = ISNULL(client_partner_code, 'Unknown') COLLATE DATABASE_DEFAULT
+
+	left outer join (
+					select ds_sh_3e_invmaster.invnumber, 'http://3elive/te_3e_prod/Attachment/InvMaster/' + cast(ds_sh_3e_invmaster.invmasterid as varchar(50))
+							+ '/' + NxAttachment.FileName hyperlink
+						from red_dw.dbo.ds_sh_3e_invmaster
+						left outer join TE_3E_PROD.dbo.NxAttachment on NxAttachment.ParentItemID = ds_sh_3e_invmaster.invmasterid
+					) hyperlink on hyperlink.invnumber = dim_bill.bill_number
+
+
 WHERE bill_reversed = 0
       AND dim_matter_header_current.client_code <> '00030645'
 	  AND dim_matter_header_current.master_client_code NOT IN ('Z1001','A2002','W15373')
 	  AND fact_debt.total_balance <> 0
 
 END; 
+
 GO

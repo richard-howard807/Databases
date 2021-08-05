@@ -16,6 +16,7 @@ GO
 --OK 29-06-2021 - #104483 - excluded client and linked file 
 --MT 14-07-2021 - #106648 - excluded a number of matters
 --ES 03-08-2021 - #109055 - excluded LTA matter types
+--MT 04-08-2021 - #109183  - added worktype and referral reason
 
 
 
@@ -47,7 +48,10 @@ SELECT hierarchylevel2hist AS Division
 ,DATEDIFF(DAY,'2020-09-28','2021-07-31') AS Day3
 ,date_closed_practice_management
 ,date_closed_case_management
-
+,date_opened_case_management
+,work_type_name
+,work_type_group
+,referral_reason
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON  dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key

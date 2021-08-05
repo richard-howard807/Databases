@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -186,7 +187,9 @@ BEGIN
            dim_matter_worktype.[work_type_name] AS [Work Type],
            dim_matter_worktype.[work_type_code] AS [Work Type Code],
            CASE
-               WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
+               WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
+				'PL All'
+			   WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
                    'NHSLA'
                WHEN dim_matter_worktype.[work_type_name] LIKE 'PL%' THEN
                    'PL All'
@@ -266,7 +269,7 @@ CASE WHEN dim_detail_health.nhs_scheme IN
 'Inquest Funding                                             ',
 'Inquest funding'
 )
-AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
 
 
  WHEN dim_detail_health.nhs_scheme IN
@@ -281,7 +284,7 @@ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_rese
 'Inquest Funding                                             ',
 'Inquest funding'
 )
-AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 1 AND 50000 THEN '£1-£50,000'
 
 
  WHEN dim_detail_health.nhs_scheme IN
@@ -296,7 +299,7 @@ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_rese
 'Inquest Funding                                             ',
 'Inquest funding'
 )
-AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,001-£250,000'
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,001-£250,000'
 
  WHEN dim_detail_health.nhs_scheme IN
 (
@@ -310,7 +313,7 @@ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_rese
 'Inquest Funding                                             ',
 'Inquest funding'
 )
-AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,001-£1,000,000'
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 500001 AND 1000000 THEN '£500,001-£1,000,000'
 
  WHEN dim_detail_health.nhs_scheme IN
 (
@@ -324,7 +327,7 @@ AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_rese
 'Inquest Funding                                             ',
 'Inquest funding'
 )
-AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) > 1000000 THEN '£1,000,001+'
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) > 1000000 THEN '£1,000,001+'
 
 
 
@@ -338,7 +341,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) = 0 THEN '£0'
 
 
 
@@ -352,7 +355,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 1 AND 5001 THEN '£1-£5,001'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 1 AND 5001 THEN '£1-£5,001'
 
 
   
@@ -365,7 +368,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 5001 AND 10000 THEN '£5,001-£10,000'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 5001 AND 10000 THEN '£5,001-£10,000'
 
  WHEN 
 
@@ -375,7 +378,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 10001 AND 25000 THEN '£10,0001-£25,0001'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 10001 AND 25000 THEN '£10,0001-£25,0001'
 
   WHEN 
 
@@ -385,7 +388,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 25001 AND 50001 THEN '£25,001-£50,001'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)BETWEEN 25001 AND 50001 THEN '£25,001-£50,001'
 
    WHEN 
 
@@ -395,7 +398,7 @@ dim_detail_health.nhs_scheme IN
 'LTPS',
 'PES'
 )
- AND coalesce(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)> 50001 THEN '£50,0001+'
+ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve)> 50001 THEN '£50,0001+'
 
 
  END AS [NHSR Tranche],
@@ -457,7 +460,7 @@ dim_detail_health.nhs_scheme IN
           -- dim_agents_involvement.cho_name AS [Credit Hire Organisation],
            --dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
-		   CASE WHEN ClaimantsAddress.litigant_in_person=1 THEN 'Yes' else NULL end AS [Is the claimant a litigant in person (LIP)?],
+		   CASE WHEN ClaimantsAddress.litigant_in_person=1 THEN 'Yes' ELSE NULL END AS [Is the claimant a litigant in person (LIP)?],
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
            fact_detail_client.number_of_defendants AS [Number of Defendants ],
            dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Does the Claimant have a PI Claim? ],
