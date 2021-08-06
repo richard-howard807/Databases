@@ -13,6 +13,7 @@ GO
 
 
 
+
 CREATE trigger [ddl_trigger_table_index_create]
 on database
 for create_index, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, create_table
@@ -49,7 +50,7 @@ begin
 			
 						exec [msdb].[dbo].[sp_send_dbmail] 
 							@profile_name = 'DBMail',
-							@recipients = 'Kevin.Hansen@weightmans.com;Richard.Howard@weightmans.com;Emily.Smith@weightmans.com;jamie.bonner@weightmans.com;DBAAlerts@weightmans.com',
+							@recipients = 'Richard.Howard@weightmans.com;Emily.Smith@weightmans.com;jamie.bonner@weightmans.com',
 							@body = @body,
 							@subject = @subject;
 			
