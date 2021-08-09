@@ -16,7 +16,7 @@ SELECT  DISTINCT
 
 ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
 ,dim_matter_header_current.ms_fileid
-,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT) AS [AXA XL Claim Number]
+,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA') AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
 , CASE  
@@ -44,14 +44,16 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) AS [Date Instructed]
 , COALESCE(dim_detail_claim.[dst_claimant_solicitor_firm], red_dw.dbo.dim_claimant_thirdparty_involvement.claimantsols_name) AS  [Opposing Side's Solicitor Firm Name]
 , COALESCE(cboReaIns.cdDesc,API.[cboReaIns_CaseText] ) AS [Reason For instruction]  -- udMICoreAXA
-, dim_detail_finance.[output_wip_fee_arrangement] [Fee Scale]
+, CASE WHEN dim_detail_finance.[output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' THEN 'fixed_fee' ELSE dim_detail_finance.[output_wip_fee_arrangement] END [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
 , COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103), udMICoreAXA.[dteFirstAck])  AS [First acknowledgement Date]
 , ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) [Report Date]
 , COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) AS  [Date Proceedings Issued]
 , COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
-, COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) [Reason for proceedings]  -- udMICoreAXA
+, CASE WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Quantum dispute' THEN 'Quantum disputes' 
+  WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
+ELSE COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) END [Reason for proceedings]  -- udMICoreAXA
 , CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END AS [Proceeding Track]
 , ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
 , fact_finance_summary.damages_reserve AS [Damages Reserve]
