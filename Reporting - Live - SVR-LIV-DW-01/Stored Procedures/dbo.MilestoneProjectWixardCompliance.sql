@@ -17,6 +17,7 @@ GO
 --MT 14-07-2021 - #106648 - excluded a number of matters
 --ES 03-08-2021 - #109055 - excluded LTA matter types
 --MT 04-08-2021 - #109183  - added worktype and referral reason
+--JL 06-08-2021 - #109392 - add in present position
 
 
 
@@ -52,6 +53,7 @@ SELECT hierarchylevel2hist AS Division
 ,work_type_name
 ,work_type_group
 ,referral_reason
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON  dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key

@@ -45,10 +45,11 @@ SELECT  DISTINCT
 		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' THEN 'Other'
 		ELSE  work_type_name END  AS  [Product Type New]
 		
-, COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name) AS [Insured Name] 
+, CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name
+    ELSE dim_detail_claim.[dst_insured_client_name] END  AS [Insured Name] 
 , CASE WHEN udMICoreAXA.pctLineShare > 1 THEN udMICoreAXA.pctLineShare/100 ELSE COALESCE(udMICoreAXA.pctLineShare, 1) END AS [AXA XL Percentage line share of loss / expenses / recovery] -- udMICoreAXA
 , dim_detail_core_details.[clients_claims_handler_surname_forename]                                        AS [AXA XL Claims Handler]
-, NULL [Third Party Administrator] 
+, Brokername [Third Party Administrator] 
 , COALESCE(cboCovDef.cdDesc, API.[cboCovDef_CaseText])  AS  [Coverage / defence?]  -- udMICoreAXA
 , branch_name AS [Law firm handling office (city)]
 , COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) AS [Date Instructed]
@@ -349,6 +350,16 @@ AND assocType = 'CLIENT'
 --/* Staging table for status collumn*/
 
 
+LEFT JOIN 
+ (
+ SELECT distinct fileID,MAX(contName) Brokername   FROM ms_prod.[config].[dbAssociates]
+ JOIN ms_prod.config.dbContact ON dbContact.contID = dbAssociates.contID
+WHERE 1 = 1 
+AND assocType = 'BROKER'
+GROUP BY fileID
+) Brokername ON CAST(Brokername.fileID AS NVARCHAR(20)) = CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
+
+
 
 --AND AXAXLDataSubmissionAPIStage.dss_current_flag = 'Y'
 --AND AXAXLDataSubmissionAPIStage.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT = BilledTime.[Unique timekeeper ID per timekeeper] 
@@ -369,6 +380,8 @@ AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
 ( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272'
 )
+
+AND dim_matter_header_current.date_opened_case_management <= DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1)
 --AND dim_matter_header_current.master_client_code + '-' + master_matter_number = 'A1001-10819'
 ) x 
 

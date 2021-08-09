@@ -52,9 +52,11 @@ AND dim_fed_hierarchy_history.hierarchylevel3hist IN ('Casualty')
 AND dim_matter_header_current.ms_only = 1
 AND dim_matter_header_current.reporting_exclusions = 0 
 AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
+AND ISNULL(TRIM(work_type_name), '') <> 'Secondments'
+AND (LOWER(matter_description) NOT LIKE '%secondment%' AND LOWER(matter_description) NOT LIKE '%error%' )
 
 
-ORDER BY dim_matter_header_current.date_opened_case_management asc
+ORDER BY dim_matter_header_current.date_opened_case_management ASC
 
 
 

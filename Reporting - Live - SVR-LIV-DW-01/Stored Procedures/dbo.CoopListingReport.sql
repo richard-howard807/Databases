@@ -21,6 +21,7 @@ GO
 -- ld 15/01/2019 - added future loss of earnings
 -- ES 24/02/2021 - #89228 added client code W24438--
 -- JL 17/03/2021 - #91487 added in Proceedings issued years/quarter split for dashboard chart
+-- JL 06/08/2021 - #107763 added in msg_instruction_type
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopListingReport]
@@ -226,7 +227,7 @@ SELECT
 	--		 END AS LitigatedType
 	--	,dim_detail_outcome.[date_claim_concluded]
 	, CASE WHEN dim_client.client_group_code = '00000004' OR (dim_matter_header_current.client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op back book', 'Co-op forward book')) THEN 1 ELSE 0 END AS [Co-op back/foward book]
-
+	 ,red_dw.dbo.dim_detail_claim.msg_instruction_type
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code =dim_matter_header_current.fee_earner_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND GETDATE() BETWEEN dss_start_date AND dss_end_date 
