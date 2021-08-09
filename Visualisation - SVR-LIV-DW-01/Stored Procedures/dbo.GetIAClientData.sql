@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[GetIAClientData]
 
 AS 
@@ -76,6 +77,8 @@ SELECT [Opportunity Number]
 	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientRevenueYTD END AS ClientRevenueYTD
 	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientPrevRevenueYTD END AS ClientPrevRevenueYTD
 	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientPrevYear END ClientPrevYear
+	,AnnualTartget.AnnualTargetRevenue
+	,SegmentSectorWIP.SegmentSectorWip
 FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
        MS_Prod.dbo.udSubSegment.description AS [sectorname] 
 FROM MS_Prod.dbo.udSubSegment
@@ -163,6 +166,26 @@ WHERE bill_fin_year= @PreFinYear
 GROUP BY  dim_client.dim_client_key
 ) AS ClientPrevRevenueYear
  ON ClientPrevRevenueYear.dim_client_key = IA_Client_Data.dim_client_key
+
+LEFT OUTER JOIN 
+(
+SELECT segmentname,sectorname,SUM(target_value) AS AnnualTargetRevenue
+FROM red_dw.dbo.fact_segment_target_upload
+WHERE [year]=@FinYear
+GROUP BY segmentname,sectorname
+) AS AnnualTartget
+ ON AnnualTartget.sectorname = Segments.sectorname COLLATE DATABASE_DEFAULT
+ AND AnnualTartget.segmentname = Segments.segmentname COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN 
+(
+SELECT segment,sector,SUM(wip_value) AS SegmentSectorWip
+FROM  red_dw.dbo.fact_wip
+INNER JOIN red_dw.dbo.dim_client
+ ON dim_client.dim_client_key = fact_wip.dim_client_key
+GROUP BY segment,sector
+) AS SegmentSectorWIP
+ ON SegmentSectorWIP.sector = Segments.sectorname COLLATE DATABASE_DEFAULT
+ AND SegmentSectorWIP.segment = Segments.segmentname COLLATE DATABASE_DEFAULT
 
 --SELECT [Opportunity Number]
 --	,dim_client_key
