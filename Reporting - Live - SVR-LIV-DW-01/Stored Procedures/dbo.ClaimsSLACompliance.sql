@@ -12,7 +12,7 @@ GO
 -- Changed SP to populate Reporting.dbo.ClaimsSLAComplianceTable instead, to speed up the report rather than running it live
 -- ===========================================================================================================================
 
-CREATE PROCEDURE [dbo].[ClaimsSLACompliance]
+CREATE PROCEDURE [dbo].[ClaimsSLACompliance] --EXEC [dbo].[ClaimsSLACompliance]
 
 AS
 BEGIN
@@ -340,7 +340,12 @@ SELECT
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, #ClientReportDates.initial_report_due				AS [Date Initial Report Due (if extended)]
 	, #ClientReportDates.inverted_initial_report_due	AS [Inverted Date Initial Report Due]
-	, #ClientReportDates.initial_report_rules			AS [Initial Report Rules]
+	, CASE 
+		WHEN ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No' THEN
+			'Initial report not needed'
+		ELSE
+			#ClientReportDates.initial_report_rules			
+	  END													AS [Initial Report Rules]
 	, #ClientReportDates.inverted_initial_rule
 	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
 	--, CASE WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN NULL
@@ -376,7 +381,7 @@ SELECT
 		ELSE 
 			NULL
 	  END AS inverted_avglifecycle 
-	, #ClientReportDates.days_to_first_report_lifecycle
+	, IIF(ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') ='No', NULL, #ClientReportDates.days_to_first_report_lifecycle)		AS days_to_first_report_lifecycle
 	, #ClientReportDates.inverted_days_to_first_report_lifecycle
 	,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
 	,FICProcess.tskDue
@@ -417,7 +422,9 @@ SELECT
 	  END					AS [File Opening RAG]
 	, #ClientReportDates.nhs_sla_instruction_type
 	, CASE 
-			WHEN #ClientReportDates.inverted_initial_rule = 'Yes' THEN 
+			WHEN ISNULL(#ClientReportDates.inverted_initial_rule, '') = 'Yes' THEN 
+				'Transparent'
+			WHEN ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No' THEN	
 				'Transparent'
 			WHEN date_initial_report_sent IS NULL THEN	
 				CASE	
@@ -425,10 +432,12 @@ SELECT
 					AND DATEDIFF(DAY, CAST(GETDATE() AS DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
 						'Orange'
 					WHEN #ClientReportDates.nhs_sla_instruction_type IS NULL 
-					AND dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS  DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
+					AND dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.initial_report_due) BETWEEN 0 AND 5 THEN
 						'Orange'
 					WHEN (#ClientReportDates.days_to_first_report_lifecycle) > ISNULL(#ClientReportDates.initial_report_days, 10) THEN 
 						'Red'
+					WHEN CAST(GETDATE() AS DATE) < #ClientReportDates.initial_report_due THEN
+						'LimeGreen'
 				END 
 			WHEN (#ClientReportDates.days_to_first_report_lifecycle) < 0 THEN 
 				'Transparent'
@@ -558,6 +567,7 @@ WHERE
 	AND (dim_detail_core_details.referral_reason IS NULL OR RTRIM(LOWER(dim_detail_core_details.referral_reason)) <> 'in house')
 	AND dim_matter_header_current.dim_matter_worktype_key <> 609 --Secondments worktype key
 	AND LOWER(dim_matter_header_current.matter_description) NOT LIKE '%secondment%'
+	AND dim_matter_header_current.ms_only = 1
 	-- clause to exclude "General File" matters
 	AND dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number NOT IN (
 		'10015-3', 'M1001-7699', '94212-1', 'N12105-238', 'TR00023-61', 'A1001-6044', 'M1001-24582', '2443L-9', 'W15531-506', 'N1001-12300', 

@@ -42,7 +42,12 @@ SELECT fact_bill_receipts_detail.client_code
 ,bill_date
 ,bill_number
 ,revenue
+, fact_bill_receipts_detail.hard_disbursements
+, fact_bill_receipts_detail.soft_disbursements
+, fact_bill_receipts_detail.vat
+, fact_bill_receipts_detail.other
 ,CASE WHEN receipt_fin_month_no=@FinMonth THEN 1  ELSE 0 END AS [MTD],
+
 
 dim_receipt_date.receipt_date
 

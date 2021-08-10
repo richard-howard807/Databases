@@ -72,8 +72,17 @@ SELECT hierarchylevel2hist AS [Business Line]
 ,display_name AS [Display Name]
 ,dim_fed_hierarchy_history.fed_code
 ,receipt_fin_year AS FinYear
-,SUM(CASE WHEN receipt_fin_month_no=@FinMonth THEN revenue ELSE 0 END) AS [MTDRevenue]
-,SUM(revenue) AS YTDRevene
+, sum(CASE WHEN receipt_fin_month_no=@FinMonth THEN revenue ELSE 0 END) AS [MTDRevenue]
+, sum(revenue) AS YTDRevene
+
+, sum(CASE WHEN receipt_fin_month_no=@FinMonth THEN isnull(fact_bill_receipts_detail.soft_disbursements,0) + isnull(fact_bill_receipts_detail.hard_disbursements,0) ELSE 0 END) AS [MTDDisb]
+, sum(isnull(fact_bill_receipts_detail.soft_disbursements,0) + isnull(fact_bill_receipts_detail.hard_disbursements,0)) YTDDisb
+
+, sum(CASE WHEN receipt_fin_month_no=@FinMonth then fact_bill_receipts_detail.vat else 0 end) AS [MTDVAT]
+, sum(fact_bill_receipts_detail.vat) YTDVAT
+
+
+-- select top 10 *
 FROM red_dw.dbo.fact_bill_receipts_detail 
 INNER JOIN red_dw.dbo.dim_receipt_date
  ON dim_receipt_date.dim_receipt_date_key = fact_bill_receipts_detail.dim_receipt_date_key
