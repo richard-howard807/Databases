@@ -38,10 +38,10 @@ if not exists (select management_role_one from @UsernameTbl where management_rol
 declare @TMCodeTbl table (empcode varchar(max),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100)) 
 insert into @TMCodeTbl
 select dim_fed_hierarchy_history_key as 'empcode', 
-	dim_fed_hierarchy_history.hierarchylevel4hist team, 
-	dim_fed_hierarchy_history.hierarchylevel3hist department,
-	dim_fed_hierarchy_history.hierarchylevel2hist division, 
-	dim_fed_hierarchy_history.hierarchylevel1hist firm
+	rtrim(dim_fed_hierarchy_history.hierarchylevel4hist) team, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel3hist) department,
+	rtrim(dim_fed_hierarchy_history.hierarchylevel2hist) division, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel1hist) firm
 from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.team = dim_fed_hierarchy_history.hierarchylevel4hist
 						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
@@ -51,10 +51,10 @@ inner join @UsernameTbl u on u.team = dim_fed_hierarchy_history.hierarchylevel4h
 union all
 
 select dim_fed_hierarchy_history_key as 'empcode', 
-	dim_fed_hierarchy_history.hierarchylevel4hist team, 
-	dim_fed_hierarchy_history.hierarchylevel3hist department,
-	dim_fed_hierarchy_history.hierarchylevel2hist division, 
-	dim_fed_hierarchy_history.hierarchylevel1hist firm
+	rtrim(dim_fed_hierarchy_history.hierarchylevel4hist) team, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel3hist) department,
+	rtrim(dim_fed_hierarchy_history.hierarchylevel2hist) division, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel1hist) firm
 from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.employeeid = dim_fed_hierarchy_history.worksforemployeeid
 						 and u.team <> dim_fed_hierarchy_history.hierarchylevel4hist
