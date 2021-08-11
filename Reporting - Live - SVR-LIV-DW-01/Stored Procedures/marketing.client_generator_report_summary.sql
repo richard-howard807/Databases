@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20/11/2017
@@ -79,39 +80,110 @@ AS
 	
 	IF EXISTS (SELECT * FROM tempdb..sysobjects WHERE id=OBJECT_ID('tempdb..#GeneratorStatus')) 
 					DROP TABLE #GeneratorStatus
-	SELECT  
-			DISTINCT[cboGenClientStatus]
-			,ISNULL(NULLIF(udClientGroup.[description],''), dbClient.clName)[client_group_name]
-			,matter_header.client_code
-	INTO #GeneratorStatus
-	FROM [MS_Prod].[dbo].[udExtClient] udExtClient
-	INNER JOIN MS_Prod.config.dbClient dbClient ON dbClient.clID = udExtClient.clID
-	LEFT JOIN MS_Prod.dbo.dbUser dbUser ON dbUser.usrID = udExtClient.cboPartner
-	LEFT JOIN MS_Prod.dbo.udClientGroup udClientGroup ON udClientGroup.code = udExtClient.cboClientGroup
-	LEFT JOIN (SELECT DISTINCT client_code,master_client_code FROM red_dw.dbo.dim_matter_header_current ) matter_header ON dbClient.clNo = matter_header.master_client_code COLLATE DATABASE_DEFAULT
-	--WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
-	--AND cboGenClientStatus NOT IN ('0004','0005')
-	--AND dbClient.clID <> '69873' -- a collegiate management limited file that should be excluded  (has a markel client group)
-	WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
-	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) <>'AXA Insurance UK Plc'
-	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) 
-IN (
-N'Zurich',N'Zurich',N'NHS Resolution',N'Ageas',
-N'AXA XL',N'AXA Insurance UK Plc',N'AXA Insurance UK Plc',
-N'AIG',N'Royal Mail',N'Markel',N'Markel',N'BARRATT PLC',
-N'Surrey Police',N'Sussex Police',N'Sabre',N'pwc',N'Bibby Group',
-N'Clarion Housing Group Limited',
-N'Metropolitan Police',
-N'Sovini Group', 
-N'Business Energy Solutions Ltd' ,                                                
-N'BES Utilities Holding Ltd',                                                    
-N'BES Metering Services Limited',  
-N'BES Group',
-N'Northern Powergrid'
-)
+SELECT  
+			DISTINCT cboGenClientStatus AS[cboGenClientStatus]
+			,ISNULL(NULLIF(client_data.group_name,''), client_data.client_name)[client_group_name]
+			,client_code
+INTO #GeneratorStatus
+FROM (
+	SELECT DISTINCT
+		CASE 
+				WHEN (RTRIM(dim_client.client_code) = 'T3003' 
+					OR ISNULL(dim_detail_claim.name_of_instructing_insurer, '') = 'Tesco Underwriting (TU)') AND dim_client.client_group_name = 'Ageas' THEN 
+					'Tesco'
+				WHEN dim_client.client_group_name = 'Ageas' THEN 
+					CASE 
+						WHEN RTRIM(dim_client.client_code) <> 'T3003' AND ISNULL(dim_detail_claim.name_of_instructing_insurer, '') <> 'Tesco Underwriting (TU)' 
+							AND dim_client.client_group_name = 'Ageas' THEN 
+							'Ageas'
+					END 
+				ELSE 
+					dim_client.client_group_name
+		END										AS [group_name]
+		, CASE	
+			WHEN ISNULL(dim_client.client_group_name, '') = '' THEN
+				dim_client.client_name
+		  END			AS [client_name]
+		  ,dim_client.client_code
+	FROM red_dw.dbo.dim_client
+			INNER JOIN red_dw.dbo.dim_matter_header_current
+				ON dim_matter_header_current.client_code = dim_client.client_code
+			LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+				ON dim_detail_claim.client_code = dim_matter_header_current.client_code
+					AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number
+	WHERE  dim_matter_header_current.master_client_code <> '69873'-- Collegiate Management Ltd issue (file switched client)
+	)		AS client_data
+	LEFT OUTER JOIN ms_prod.config.dbClient
+	 ON client_data.client_code=clNo COLLATE DATABASE_DEFAULT 
+	LEFT OUTER JOIN ms_prod.dbo.udExtClient
+	 ON udExtClient.clID = dbClient.clID
+WHERE 1 = 1
+	AND ISNULL(NULLIF(client_data.group_name, ''), client_data.client_name) <> 'AXA Insurance UK Plc'
+	AND ISNULL(NULLIF(client_data.group_name, ''), client_data.client_name) IN (
+		N'Zurich',
+		N'Zurich',
+		N'NHS Resolution',
+		N'Ageas',
+		N'AXA XL',
+		N'AXA Insurance UK Plc',
+		N'AXA Insurance UK Plc',
+		N'AIG',
+		N'Royal Mail',
+		N'Markel',
+		N'Markel',
+		N'BARRATT PLC',
+		N'Surrey Police',
+		N'Sussex Police',
+		N'Sabre',
+		N'pwc',
+		N'Bibby Group',
+		N'Clarion Housing Group Limited',
+		N'Metropolitan Police',
+		N'Sovini Group',
+		N'Business Energy Solutions Ltd' ,                                                
+		N'BES Utilities Holding Ltd',                                                    
+		N'BES Metering Services Limited',  
+		N'BES Group',
+		N'Northern Powergrid',
+		N'Tesco',
+		N'Co-op/Markerstudy'
+	)
+	OR ISNULL(NULLIF(client_data.group_name, ''), client_data.client_name) LIKE '%Northern Electric%'
+	--	SELECT  
+--			DISTINCT[cboGenClientStatus]
+--			,ISNULL(NULLIF(udClientGroup.[description],''), dbClient.clName)[client_group_name]
+--			,matter_header.client_code
+--	INTO #GeneratorStatus
+--	FROM [MS_Prod].[dbo].[udExtClient] udExtClient
+--	INNER JOIN MS_Prod.config.dbClient dbClient ON dbClient.clID = udExtClient.clID
+--	LEFT JOIN MS_Prod.dbo.dbUser dbUser ON dbUser.usrID = udExtClient.cboPartner
+--	LEFT JOIN MS_Prod.dbo.udClientGroup udClientGroup ON udClientGroup.code = udExtClient.cboClientGroup
+--	LEFT JOIN (SELECT DISTINCT client_code,master_client_code FROM red_dw.dbo.dim_matter_header_current ) matter_header ON dbClient.clNo = matter_header.master_client_code COLLATE DATABASE_DEFAULT
+--	--WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
+--	--AND cboGenClientStatus NOT IN ('0004','0005')
+--	--AND dbClient.clID <> '69873' -- a collegiate management limited file that should be excluded  (has a markel client group)
+--	WHERE cboGenClientStatus IS NOT NULL -- only those clients that have a status
+--	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) <>'AXA Insurance UK Plc'
+--	AND ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) 
+--IN (
+--N'Zurich',N'Zurich',N'NHS Resolution',N'Ageas',
+--N'AXA XL',N'AXA Insurance UK Plc',N'AXA Insurance UK Plc',
+--N'AIG',N'Royal Mail',N'Markel',N'Markel',N'BARRATT PLC',
+--N'Surrey Police',N'Sussex Police',N'Sabre',N'pwc',N'Bibby Group',
+--N'Clarion Housing Group Limited',
+--N'Metropolitan Police',
+--N'Sovini Group', 
+--N'Business Energy Solutions Ltd' ,                                                
+--N'BES Utilities Holding Ltd',                                                    
+--N'BES Metering Services Limited',  
+--N'BES Group',
+--N'Northern Powergrid'
+--)
 
-OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited')
-		 
+--OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),dbClient.clName) LIKE '% : Northern Electrical Facilities Limited')
+	
+	
+
 		 ------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -127,7 +199,7 @@ OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),
 				--WHEN [cboGenClientStatus] = '0005' THEN 'Pipeline'
 
 				--END [generator_category]
-		,'Patron'  AS [generator_category] -- Sarah Gerrad asked for them all to show as Parton
+		,CASE WHEN dim_client.client_group_name IN ('BES Group','Bibby Group') THEN 'Star' ELSE 'Patron' END  AS [generator_category] -- Sarah Gerrad asked for them all to show as Parton
 		,[cboGenClientStatus] [category_code]
 		,SUM(CASE WHEN fin_year = @PrevFinancialYearMinus1 THEN [fact_bill_activity].[bill_amount] ELSE 0 END) [fin_year_minus_2]
 		,SUM(CASE WHEN fin_year = @PreviousFinancialYear THEN [fact_bill_activity].[bill_amount] ELSE 0 END) [fin_year_minus_1]
@@ -147,6 +219,7 @@ OR (dbClient.clNo = 'W21402') OR (ISNULL(NULLIF(udClientGroup.[description],''),
 		,dim_client.sector
 		,dim_client.segment
 		,[cboGenClientStatus]
+		,CASE WHEN dim_client.client_group_name IN ('BES Group','Bibby Group') THEN 'Star' ELSE 'Patron' END
 	ORDER BY category_code
 	
 	

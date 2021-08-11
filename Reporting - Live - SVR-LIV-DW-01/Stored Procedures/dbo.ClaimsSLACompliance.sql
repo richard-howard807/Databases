@@ -15,7 +15,11 @@ GO
 CREATE PROCEDURE [dbo].[ClaimsSLACompliance] --EXEC [dbo].[ClaimsSLACompliance]
 
 AS
+
 BEGIN
+
+DECLARE @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
+
 
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
@@ -209,7 +213,9 @@ SELECT
 				WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
 					NULL
 				WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
-					NULL --DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, #nhs_key_dates.key_date)					
+					NULL --DATEADD(DAY, -ClientSLAsNHSR.initial_report_sla_days, #nhs_key_dates.key_date)		
+				WHEN dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report = 'Yes' THEN 
+					dim_detail_core_details.date_initial_report_due
 				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
 					DATEADD(DAY, ClientSLAsNHSR.initial_report_sla_days, CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE))
 				WHEN date_initial_report_due IS NULL THEN
@@ -221,6 +227,8 @@ SELECT
 			END	
 		ELSE
 			CASE
+				WHEN dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report = 'Yes' THEN
+					date_initial_report_due
 				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
 					[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
 				WHEN date_initial_report_due IS NULL THEN 
@@ -323,6 +331,7 @@ SELECT
 	, dim_matter_header_current.matter_number AS [Matter Number]
 	, matter_description AS [Matter Description]
 	, name AS [Matter Owner]
+	, dim_fed_hierarchy_history.employeeid
 	, dim_matter_header_current.fee_earner_code
 	, hierarchylevel4hist AS [Team]
 	, hierarchylevel3hist AS [Department]
@@ -340,12 +349,7 @@ SELECT
 	, [ll00_have_we_had_an_extension_for_the_initial_report] AS [Have we had an Extension?]
 	, #ClientReportDates.initial_report_due				AS [Date Initial Report Due (if extended)]
 	, #ClientReportDates.inverted_initial_report_due	AS [Inverted Date Initial Report Due]
-	, CASE 
-		WHEN ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No' THEN
-			'Initial report not needed'
-		ELSE
-			#ClientReportDates.initial_report_rules			
-	  END													AS [Initial Report Rules]
+	, #ClientReportDates.initial_report_rules							AS [Initial Report Rules]
 	, #ClientReportDates.inverted_initial_rule
 	--, dbo.ReturnElapsedDaysExcludingBankHolidays(date_opened_case_management, date_initial_report_sent) AS [Days to Send Intial Report]
 	--, CASE WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' THEN NULL
@@ -563,7 +567,7 @@ WHERE
 	reporting_exclusions=0
 	AND hierarchylevel2hist='Legal Ops - Claims'
 	AND (date_closed_case_management IS NULL 
-		OR date_closed_case_management>='2017-01-01')
+		OR date_closed_case_management>=@nDate)
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
 	AND (dim_detail_core_details.referral_reason IS NULL OR RTRIM(LOWER(dim_detail_core_details.referral_reason)) <> 'in house')

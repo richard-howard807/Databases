@@ -21,6 +21,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -44,6 +46,9 @@ WHERE bill_fin_period=@Period)
 PRINT @FinYear
 PRINT @FinMonth
 
+DECLARE @FinQTR AS NVARCHAR(MAX)
+SET @FinQTR=(SELECT bill_fin_quarter FROM red_dw.dbo.dim_bill_date
+WHERE bill_date =DATEADD(MONTH,0,CONVERT(DATE,GETDATE(),103)))
 
 DECLARE @StartDate AS DATE
 DECLARE @EndDate AS DATE
@@ -91,6 +96,8 @@ employeeid
 	,MaternityDays
 	,MaternityYTD
 	,display_name
+	,QTRContribution
+	,QTRChargeableHrs
 )
 
 
@@ -127,6 +134,8 @@ SELECT dim_employee.employeeid
 	,Maternity.MaternityDays
 	,MaternityYTD
 	,display_name
+	,QTRContribution AS QTRContribution
+	,ChargeableHours.ChargeableHoursQTR AS QTRChargeableHrs
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -184,6 +193,7 @@ WHERE fin_month>=(SELECT MIN(fin_month)
 LEFT OUTER JOIN (SELECT employeeid, SUM(minutes_recorded)/60 AS [ChargeableHours]
 , AVG(minutes_recorded)/60 AS [AVGChargeableHours]
 ,SUM(CASE WHEN fin_month_no=@FinMonth THEN minutes_recorded ELSE 0 END)/60 AS [ChargeableHoursMTD]
+,SUM(CASE WHEN fin_quarter=@FinQTR THEN minutes_recorded ELSE 0 END)/60 AS [ChargeableHoursQTR]
 				FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
 				INNER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
 				ON dim_date_key=dim_orig_posting_date_key
@@ -265,12 +275,24 @@ LEFT OUTER JOIN
 SELECT employeeid
 ,SUM(fed_level_contribution_value) AS YTDContribution
 ,SUM(CASE WHEN financial_budget_month=@FinMonth THEN fed_level_contribution_value ELSE 0 END) AS MTDContribution
+,SUM(CASE WHEN fin_quarter=@FinQTR THEN fed_level_contribution_value ELSE 0 END) AS QTRContribution
 FROM red_dw.dbo.fact_budget_activity
+INNER JOIN red_dw.dbo.dim_date
+ ON calendar_date=budget_date
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
 WHERE financial_budget_year=@FinYear
 AND fed_level_contribution_value IS NOT NULL
 GROUP BY employeeid
+--SELECT employeeid
+--,SUM(fed_level_contribution_value) AS YTDContribution
+--,SUM(CASE WHEN financial_budget_month=@FinMonth THEN fed_level_contribution_value ELSE 0 END) AS MTDContribution
+--FROM red_dw.dbo.fact_budget_activity
+--INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+-- ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
+--WHERE financial_budget_year=@FinYear
+--AND fed_level_contribution_value IS NOT NULL
+--GROUP BY employeeid
 ) AS Contrib
 ON  Contrib.employeeid = dim_employee.employeeid    
 LEFT OUTER JOIN 
