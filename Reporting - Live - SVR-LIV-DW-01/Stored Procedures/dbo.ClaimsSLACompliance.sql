@@ -426,6 +426,8 @@ SELECT
 				'Transparent'
 			WHEN ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No' THEN	
 				'Transparent'
+			WHEN ISNULL(dim_detail_core_details.referral_reason, '') = 'Nomination only' AND dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NULL THEN
+				'Transparent'
 			WHEN date_initial_report_sent IS NULL THEN	
 				CASE	
 					WHEN #ClientReportDates.nhs_sla_instruction_type IS NOT NULL 
