@@ -44,7 +44,7 @@ SELECT
 					NULL
 			END
 		ELSE	
-			dim_detail_outcome.date_claim_concluded
+			dim_detail_outcome.date_costs_settled
 	  END																									AS [date_claim_and_costs_finalised]
 INTO #revenue
 FROM red_dw.dbo.fact_bill_activity
@@ -75,7 +75,7 @@ WHERE
 						NULL
 				END
 			ELSE	
-				dim_detail_outcome.date_claim_concluded
+				dim_detail_outcome.date_costs_settled
 	END BETWEEN @StartDate AND @EndDate
 	AND RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes'
 	AND (dim_detail_core_details.brief_description_of_injury IS NULL OR dim_detail_core_details.brief_description_of_injury NOT LIKE 'D%')
@@ -98,7 +98,7 @@ GROUP BY
 					NULL
 			END
 		ELSE	
-			dim_detail_outcome.date_claim_concluded
+			dim_detail_outcome.date_costs_settled
 	  END	
 
 --=====================================================================================================================================================================================
@@ -257,6 +257,7 @@ SELECT
       END - COALESCE(fact_finance_summary.personal_injury_paid, fact_detail_paid_detail.general_damages_paid), 0)		AS [Special Damages]
 	, ISNULL(fact_detail_paid_detail.total_tp_costs_paid, 0)															AS [Claimants Costs Paid]
 	, ISNULL(#revenue.Revenue, 0)																						AS [Own Costs]
+	, ISNULL(fact_finance_summary.disbursements_billed, 0)																AS [Own Disbursements]
 	, ISNULL(CASE
         WHEN fact_finance_summary.[damages_paid] IS NULL
             AND fact_detail_paid_detail.[general_damages_paid] IS NULL
@@ -274,7 +275,7 @@ SELECT
 					fact_finance_summary.[damages_paid]
 				END
 			)
-      END + fact_detail_paid_detail.total_tp_costs_paid + #revenue.Revenue, 0)					AS [Total Case Costs]
+      END, 0) + ISNULL(fact_detail_paid_detail.total_tp_costs_paid, 0) + ISNULL(#revenue.Revenue, 0) + 	ISNULL(fact_finance_summary.disbursements_billed, 0)				AS [Total Case Costs]
 	, CASE
 		WHEN ISNULL(CASE
 						WHEN fact_finance_summary.[damages_paid] IS NULL
@@ -293,7 +294,7 @@ SELECT
 									fact_finance_summary.[damages_paid]
 								END
 							)
-					  END + fact_detail_paid_detail.total_tp_costs_paid, 0) = 0 THEN
+					  END, 0) + fact_detail_paid_detail.total_tp_costs_paid = 0 THEN
 			1
 		ELSE
 			0
