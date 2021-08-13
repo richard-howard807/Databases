@@ -3,17 +3,6 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
-
-
-
-
-
 --================================================
 --ES 20200713 #64332
 --ES 20201006 #74606 added curSetSumAgreed
@@ -26,6 +15,7 @@ BEGIN
 SELECT clNo +'-'+ fileNo AS [CaseCode] 
 ,fileDesc AS [CaseDesc]
 ,InsuredREf.Reference AS [AlternativeRef]
+, CostcutterStatus.txtRetailNum		AS [Retailer No.]
 ,curOriginalBal AS [PrincipalDebt]
 ,CostcutterStatus.Termination AS [TerminationFees]
 ,ISNULL(curOriginalBal,0)+ISNULL(CostcutterStatus.Termination,0) AS [Total Debt]
@@ -75,6 +65,8 @@ END AS [Insolvency proceedings]
 -ISNULL(defence_costs_billed,0)<=0 THEN 0 ELSE defence_costs_billed END AS DCB
 ,fileNotes
 ,fileExternalNotes
+
+
 FROM [MS_PROD].config.dbFile WITH(NOLOCK)
 INNER JOIN [MS_PROD].config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -162,6 +154,7 @@ SELECT fileID
 ,curCostRecOS AS [CostsRecovered]
 ,red_dw.dbo.datetimelocal(dteSettled) AS dteSettled
 ,curSetSumAgreed
+,udCRCostcutterDetails.txtRetailNum
 FROM ms_prod.dbo.udCRCostcutterDetails  WITH(NOLOCK)
 LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup AS CCStatus  WITH(NOLOCK)
  ON cboCstCutStatus=CCStatus.cdCode AND CCStatus.cdType='COSTCUTRSTATUS'
