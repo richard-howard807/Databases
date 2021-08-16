@@ -25,7 +25,11 @@ BEGIN
             dim_detail_finance.[output_wip_fee_arrangement] AS [Fee Arrangement],
             dim_detail_claim.[ageas_original_fee_handling_basis] AS [Ageas Original Fee Handling Basis],
             dim_detail_claim.[original_fee_handling_basis] AS [Original Fee Handling Basis],
-            dim_detail_claim.[manner_of_dispute_resolution] AS [Manner of Dispute Resolution],
+            CASE WHEN dim_matter_header_current.[master_client_code]+'-'+dim_matter_header_current.[master_matter_number]='A3003-5113' THEN 'Trial Loss'
+			WHEN dim_matter_header_current.[master_client_code]+'-'+dim_matter_header_current.[master_matter_number]='A3003-982' THEN 'Claim struck out'
+			WHEN dim_matter_header_current.[master_client_code]+'-'+dim_matter_header_current.[master_matter_number]='A3003-8786' THEN 'Paid - Concerns resolved'
+			WHEN dim_matter_header_current.[master_client_code]+'-'+dim_matter_header_current.[master_matter_number] IN ('A3003-9818','A3003-10073','A3003-10074','A3003-10294') THEN 'Concerns remain - economic decision to pay'
+			ELSE dim_detail_claim.[manner_of_dispute_resolution] END AS [Manner of Dispute Resolution],
             dim_detail_claim.[name_of_instructing_insurer] AS [Name of Instructing Insurer],
             dim_client_involvement.[client_reference] AS [Client Reference],
             dim_client_involvement.[insurerclient_reference] AS [Insurer Client Reference],
