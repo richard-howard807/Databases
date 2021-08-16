@@ -522,9 +522,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, dim_detail_critical_mi.[claim_status] AS [Claim Status]
 		, dim_detail_critical_mi.[policy_type] AS [Policy Type]
 		, dim_detail_claim.[stw_status_on_instruction] AS [STW Status On Instruction]
-		, CASE WHEN dim_detail_client.[effect_description] IS NOT NULL THEN dim_detail_client.[effect_description]  
-				 WHEN dim_detail_client.[effect_description] IS NULL THEN dim_detail_client.[effect_description_additional]
-				 WHEN dim_detail_client.[effect_description_additional] IS NULL AND dim_detail_client.[effect_description_additional] IS NULL THEN 'Unknown' END AS [Effect Description]
+		, dim_detail_client.[effect_description]  AS [Effect Description]
 		, CASE WHEN dim_detail_claim.stw_report='Litigated and Recoveries' THEN fact_finance_summary.damages_paid
 			ELSE ISNULL(fact_detail_paid_detail.damages_paid_stw,0)+ISNULL(fact_detail_paid_detail.damages_paid_lyra,0)
 			END AS [STW Total Damages Paid]
