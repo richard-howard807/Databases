@@ -49,6 +49,7 @@ SELECT
 
 
  [Client Number] = dim_matter_header_current.master_client_code 
+,[Client Name] = client_name
 ,[Matter Number] = master_matter_number
 ,[Matter Description] = matter_description 
 ,[Matter Owner] = name 

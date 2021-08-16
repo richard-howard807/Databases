@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 20/11/2017
@@ -136,14 +137,14 @@ WHERE 1 = 1
 		N'Sussex Police',
 		N'Sabre',
 		N'pwc',
-		N'Bibby Group',
+		--N'Bibby Group',
 		N'Clarion Housing Group Limited',
 		N'Metropolitan Police',
 		N'Sovini Group',
-		N'Business Energy Solutions Ltd' ,                                                
-		N'BES Utilities Holding Ltd',                                                    
-		N'BES Metering Services Limited',  
-		N'BES Group',
+		--N'Business Energy Solutions Ltd' ,                                                
+		--N'BES Utilities Holding Ltd',                                                    
+		--N'BES Metering Services Limited',  
+		--N'BES Group',
 		N'Northern Powergrid',
 		N'Tesco',
 		N'Co-op/Markerstudy'

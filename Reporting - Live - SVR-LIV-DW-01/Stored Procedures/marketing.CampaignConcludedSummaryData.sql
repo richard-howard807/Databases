@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 -- ===============================================
 -- Author:		Emily Smith
 -- Create date: 20210602
@@ -128,7 +129,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END  IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass') 
+         END  IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project') 
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
@@ -279,7 +280,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END  IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass')
+         END  IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project')
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN

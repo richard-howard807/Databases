@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- ===============================================
 -- Author:		Emily Smith
 -- Create date: 20210602
@@ -58,7 +59,7 @@ FROM red_dw.dbo.fact_bill_activity
 INNER JOIN red_dw.dbo.dim_bill_date
 ON dim_bill_date.bill_date = fact_bill_activity.bill_date
 AND dim_bill_date.bill_fin_year>=(SELECT bill_fin_year FROM red_dw.dbo.dim_bill_date
-									WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,DATEADD(Year,-1,GETDATE()),103))
+									WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,DATEADD(YEAR,-1,GETDATE()),103))
 LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
 ON fact_dimension_main.master_fact_key=fact_bill_activity.master_fact_key
 LEFT JOIN red_Dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -126,7 +127,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass') 
+         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project') 
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
@@ -226,7 +227,7 @@ ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.di
 INNER JOIN red_dw.dbo.dim_date
 ON dim_date.calendar_date=CAST(dim_matter_header_current.date_opened_case_management AS DATE)
 AND dim_date.cal_year>=(SELECT cal_year FROM red_dw.dbo.dim_date
-						WHERE CONVERT(DATE,dim_date.calendar_date,103)=CONVERT(DATE,DATEADD(Year,-1,GETDATE()),103))
+						WHERE CONVERT(DATE,dim_date.calendar_date,103)=CONVERT(DATE,DATEADD(YEAR,-1,GETDATE()),103))
 LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT JOIN red_Dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
@@ -277,7 +278,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass')
+         END NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project')
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
