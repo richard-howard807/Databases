@@ -530,12 +530,16 @@ SELECT
 	  END										AS [Count Initial Report Is Overdue]
 	, #ClientReportDates.date_subsequent_report_due			AS [Date Subsequent Report Due]
 	, CASE 
+		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
+			0
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			1
 		ELSE 
 			0
 	  END				AS [Subsequent Report Due in 10 Working Days]
 	, CASE 
+		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
+			0
 		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN
 			1
 		ELSE 
