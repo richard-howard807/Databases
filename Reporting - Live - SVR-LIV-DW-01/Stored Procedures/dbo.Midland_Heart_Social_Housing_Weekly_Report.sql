@@ -22,7 +22,7 @@ SELECT
 	, dim_fed_hierarchy_history.[name] AS [Case Manager]
 	, dim_fed_hierarchy_history.jobtitle
 	, [Instruction Type - Buyback/ Re-sale] = instruction_type
-    , [Property Address] = dim_detail_property.[property_address]
+    , [Property Address] = TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(matter_description),'final staircasing', ''), 'sale of', ''), 'leasehold pack', ''), 'leasehold form', ''), 'sale &', ''), '-', ''), 'lease extension', ''), ':', ''), '()', ''), '–' , ''     ), 'partial staircasing', ''), 'leasehold extension', ''), 'leashold pack', ''), 'right to acquire', '') , 'sale of freehold', '') , 'grant of headlease', ''), 'surrender of', ''), 'resale', '')     )     --dim_detail_property.[property_address]
     , [Purchasers Name/ Leaseholders Name] = 	dim_detail_property.[pspurchaser_1_full_name]
     , [Third Party Solicitor Name] 	= dim_detail_property.[midland_heart_third_party_solicitor_name]
     , [Current Position/Sales Progression Notes] = 		dim_detail_property.[midland_heart_current_position]
