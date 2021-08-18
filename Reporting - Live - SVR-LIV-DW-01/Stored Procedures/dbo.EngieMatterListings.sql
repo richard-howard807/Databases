@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[EngieMatterListings]
 
 AS 
@@ -12,7 +13,7 @@ SELECT master_client_code+ '-'+master_matter_number AS [Matter Number]
 ,date_opened_case_management AS [File open date]
 ,matter_owner_full_name AS [Case handler]
 ,matter_description AS [Matter description]
-,fileNotes AS [Present position]
+,fileExternalNotes AS [Present position]
 ,revenue_and_disb_estimate_net_of_vat AS [Fees estimate]
 ,FeesBilledToDate AS [Fees billed to date]
 ,wip AS [Unbilled WIP]
