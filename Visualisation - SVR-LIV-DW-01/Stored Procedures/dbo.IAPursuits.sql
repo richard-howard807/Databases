@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[IAPursuits]
 
 AS 
@@ -35,7 +36,13 @@ SELECT pursuitsn AS [Pursuit Number],
        originationsource AS [Origination Source]
 	   ,NextEngement.NextEngement
 	   ,LastEngement.LastEngement
+	   ,red_dw.dbo.dim_employee.knownas + ' ' + surname AS [Lead Partner]
+	   ,DATEDIFF(DAY,CASE WHEN LastEngement.LastEngement='1753-01-01 00:00:00.000' THEN NULL ELSE LastEngement.LastEngement END, GETDATE()) AS [Days Since Last Contacted]
+	   ,DATEDIFF(DAY,CASE WHEN open_date='1753-01-01 00:00:00.000' THEN NULL ELSE open_date END, GETDATE()) AS [Days Open]
+	   
 	   FROM red_dw.dbo.dim_be_pursuits
+	   	LEFT OUTER JOIN red_dw.dbo.dim_employee
+	 ON dim_lead_emp_key=dim_employee_key
 	   	   LEFT OUTER JOIN (SELECT DISTINCT ia_contact_id
 ,MIN(activity_date) AS [NextEngement]
 FROM red_dw.dbo.dim_ia_activity
