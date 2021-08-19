@@ -35,6 +35,7 @@ GO
 -- JB 20210524 Updated Fraud Type logic #100041
 --OK 20210526 removed matter zero BH
 --KH 109184 Changes to rule for Worktype Group in self serve
+-- Added as per OK 19/08/2021 - Claimant Costs x 4 - MT
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -289,7 +290,7 @@ DROP TABLE IF EXISTS #Disbursements
 			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022])
 			) AS PVIOT
 			
-			
+	/* Main */		
 			
 			SELECT ms_fileid  
 ,       dim_matter_header_current.date_opened_case_management AS [Date Case Opened]
@@ -597,6 +598,14 @@ DROP TABLE IF EXISTS #Disbursements
            ELSE
                COALESCE(fact_finance_summary.[claimants_costs_paid], fact_detail_paid_detail.[claimants_costs])
        END AS [Claimant's Costs Paid by Client - Disease]
+
+	   ,[Claimant’s Solicitor’s Base Costs Claimed + VAT] =  fact_detail_reserve_detail.[claimant_s_solicitor_s_base_costs_claimed_vat]
+       ,[Claimant’s Solicitor’s Disbursements Claimed] =  fact_detail_paid_detail.[claimants_disbursements_claimed]
+       ,[Claimant’s Solicitor’s Base Costs Paid + VAT] = fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat]
+       ,[Claimant’s Solicitor’s Disbursements paid] = fact_finance_summary.[claimants_solicitors_disbursements_paid]
+       ,[Costs Outcome] =  dim_detail_outcome.[costs_outcome]
+
+
        ,red_dw.dbo.fact_detail_paid_detail.claimants_costs AS [Outsource Claimants Costs]
        ,fact_finance_summary.detailed_assessment_costs_claimed_by_claimant AS [Detailed Assessment Costs Claimed by Claimant]
        ,fact_finance_summary.detailed_assessment_costs_paid AS [Detailed Assessment Costs Paid]
