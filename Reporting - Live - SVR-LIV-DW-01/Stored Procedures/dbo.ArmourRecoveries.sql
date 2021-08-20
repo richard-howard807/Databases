@@ -104,6 +104,12 @@ AS SuccessChance
 
 ,dim_detail_claim.[insured_vehicle_reg]
 
+, CASE	
+	WHEN dim_matter_header_current.date_closed_practice_management IS NULL THEN	
+		'Open'
+	ELSE
+		'Closed'
+  END						AS [status]
 
 
 FROM 
