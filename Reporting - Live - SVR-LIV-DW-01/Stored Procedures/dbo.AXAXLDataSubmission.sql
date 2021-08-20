@@ -19,19 +19,28 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 ,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA') AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , hierarchylevel3hist [Line of Business]
-, CASE  
+, [New Line of Business] = CASE  
         WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc') THEN  'Aviation'
-		WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
-		WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' END [New Line of Business]
+	    WHEN (work_type_name LIKE  'Disuse%'  OR work_type_name LIKE  'EL%' OR  work_type_name LIKE 'PL%' OR work_type_name LIKE 'Motor%') THEN 'Casualty'
+		WHEN hierarchylevel3hist LIKE 'Disease%' THEN 'Casualty'
+		WHEN work_type_name LIKE  'LMT/Insurance Coverage%' then 'Financial Lines' 
+		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'  then 'Financial Lines' 
+		WHEN work_type_name LIKE 'Prof Risk – Construction%' then 'Energy and Construction'
+		WHEN LOWER(work_type_name) LIKE '%property%' then 'Property'
 
- ,work_type_name   AS  [Product Type]
-,  CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
-        WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %') THEN 'Employer’s Liability and Public Liability'
-        WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Motor%' THEN 'Motor'
-		WHEN TRIM(hierarchylevel3hist) = 'Casualty' AND work_type_name LIKE 'Recovery%' THEN 'Other'
-		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' AND (work_type_name LIKE 'Motor%' OR work_type_name LIKE 'EL %' OR  work_type_name LIKE 'PL %') then 'Other'
-		WHEN TRIM(ISNULL(hierarchylevel3hist,'')) <> 'Casualty' THEN 'Other'
-		ELSE  work_type_name END  AS  [Product Type New]
+		--WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
+		--WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' 
+		END 
+
+, [Product Type] = work_type_name   
+, [Product Type New] =  
+   CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
+        WHEN  (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %' OR work_type_name LIKE 'Disease%') THEN 'Employer’s Liability and Public Liability'
+        WHEN  work_type_name LIKE 'Motor%' THEN 'Motor'
+		WHEN  work_type_name LIKE 'LMT/Insurance Coverage%' THEN 'Other'
+		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'   THEN 'Other'
+		WHEN   LOWER(work_type_name) LIKE '%property%' then 'Other'
+		END    
 		
 , CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name
     ELSE dim_detail_claim.[dst_insured_client_name] END  AS [Insured Name] 
@@ -43,7 +52,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , branch_name AS [Law firm handling office (city)]
 , COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) AS [Date Instructed]
 , COALESCE(dim_detail_claim.[dst_claimant_solicitor_firm], red_dw.dbo.dim_claimant_thirdparty_involvement.claimantsols_name) AS  [Opposing Side's Solicitor Firm Name]
-, COALESCE(cboReaIns.cdDesc,API.[cboReaIns_CaseText] ) AS [Reason For instruction]  -- udMICoreAXA
+, [Reason For instruction] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN 'Litigation' ELSE COALESCE(cboReaIns.cdDesc,API.[cboReaIns_CaseText] ) END   -- udMICoreAXA
 , CASE WHEN dim_detail_finance.[output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' THEN 'fixed_fee' ELSE dim_detail_finance.[output_wip_fee_arrangement] END [Fee Scale]
 , damages_reserve AS [Damages Claimed]
 
