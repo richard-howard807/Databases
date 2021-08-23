@@ -14,7 +14,7 @@ CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export]
 AS 
 
 BEGIN 
-
+--select * from #AXAXLDataSubmission
 DROP TABLE IF EXISTS #AXAXLDataSubmission
 
 SELECT x.*, 
@@ -69,12 +69,14 @@ SELECT  DISTINCT
 , [Damages Claimed] = damages_reserve 
 , [First acknowledgement Date] = COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103), udMICoreAXA.[dteFirstAck])  
 , [Report Date] = ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) 
-, [Date Proceedings Issued] = COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) 
-, COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  [AXA XL as defendant] -- udMICoreAXA NEW*** 
-, CASE WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Quantum dispute' THEN 'Quantum disputes' 
-  WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
-ELSE COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) END [Reason for proceedings]  -- udMICoreAXA
-, CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END AS [Proceeding Track]
+, [Date Proceedings Issued] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) END
+, [AXA XL as defendant]  =  CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  END -- udMICoreAXA NEW*** 
+, [Reason for proceedings] = 
+CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
+	(CASE WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Quantum dispute' THEN 'Quantum disputes' 
+		 WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
+		 ELSE COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) END) END  -- udMICoreAXA
+, [Proceeding Track] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END 
 , ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
 , fact_finance_summary.damages_reserve AS [Damages Reserve]
 , COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
