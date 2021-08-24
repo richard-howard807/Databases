@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 -- LD 2019/04/11 Moved the date columns so that they appear first  as per #16076
 
 CREATE PROCEDURE [dbo].[SelfServiceLTAonly]
@@ -18,7 +20,14 @@ BEGIN
     IF OBJECT_ID('Reporting.dbo.selfserviceLTAonlyData') IS NOT NULL
         DROP TABLE dbo.selfserviceLTAonlyData;
         
-        
+     DROP TABLE IF EXISTS #HrsBilled
+SELECT dim_matter_header_curr_key,SUM(invoiced_minutes)/60 AS [Hrs Billed]
+INTO #HrsBilled
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill
+ ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+WHERE bill_reversed=0
+GROUP BY dim_matter_header_curr_key   
         
     SELECT DISTINCT 
            dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
@@ -194,6 +203,7 @@ red_dw.dbo.fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded [
             ) * 115
            ) / 60 AS [Legal Spend exc (VAT)],
            fact_matter_summary_current.time_billed / 60 AS [Time Billed],
+		   HrsBilled AS [Hours Billed to Client],
  [Revenue 2015/2016],
 [Revenue 2016/2017],
 [Revenue 2017/2018],
@@ -327,7 +337,8 @@ INTO dbo.selfserviceLTAonlyData
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
-
+		LEFT OUTER JOIN #HrsBilled AS HrsBilled
+ ON HrsBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key		
 
         LEFT OUTER JOIN
         (

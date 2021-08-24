@@ -8,6 +8,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -45,7 +48,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 IF OBJECT_ID('Reporting.dbo.selfservice') IS NOT NULL
         DROP TABLE dbo.selfservice;
 		
-		
+	
 		
 		DROP TABLE IF EXISTS #PartnerHrs
 
@@ -220,7 +223,7 @@ DROP TABLE IF EXISTS #Billed_hours
 			   INTO #Billed_hours
 		FROM (
 
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hours
 			FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
 			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
@@ -260,6 +263,15 @@ DROP TABLE IF EXISTS #Chargeable_hours
 			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022])
 			) AS PVIOT
 
+
+DROP TABLE IF EXISTS #HrsBilled
+SELECT dim_matter_header_curr_key,SUM(invoiced_minutes)/60 AS [Hrs Billed]
+INTO #HrsBilled
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill
+ ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+WHERE bill_reversed=0
+GROUP BY dim_matter_header_curr_key
 
 DROP TABLE IF EXISTS #Disbursements
 --Added disbursements #61966
@@ -655,7 +667,8 @@ DROP TABLE IF EXISTS #Disbursements
          END
         ) * 115
        ) / 60 AS [Legal Spend exc (VAT)]
-       ,fact_matter_summary_current.time_billed / 60 AS [Time Billed]
+       ,fact_matter_summary_current.time_billed / 60 AS [Time Billed] -- removed as its wrong
+	   ,HrsBilled AS [Hours Billed To Client]
        ,NonPartnerHours AS [Total Non-Partner Hours Recorded]
        ,PartnerHours AS [Total Partner Hours Recorded]
        ,AssociateHours AS [Total Associate Hours Recorded]
@@ -690,13 +703,13 @@ DROP TABLE IF EXISTS #Disbursements
        ,Revenue.[2020] [Revenue 2019/2020]
        ,Revenue.[2021] [Revenue 2020/2021]
        ,Revenue.[2022] [Revenue 2021/2022]
-       ,Billed_hours.[2016] [Hours Billed 2015/2016]
-       ,Billed_hours.[2017] [Hours Billed 2016/2017]
-       ,Billed_hours.[2018] [Hours Billed 2017/2018]
-       ,Billed_hours.[2019] [Hours Billed 2018/2019]
-       ,Billed_hours.[2020] [Hours Billed 2019/2020]
-       ,Billed_hours.[2021] [Hours Billed 2020/2021]
-       ,Billed_hours.[2022] [Hours Billed 2021/2022]
+       ,Billed_hours.[2016] /60 AS [Hours Billed 2015/2016]
+       ,Billed_hours.[2017] /60 AS [Hours Billed 2016/2017]
+       ,Billed_hours.[2018] /60 AS [Hours Billed 2017/2018]
+       ,Billed_hours.[2019] /60 AS [Hours Billed 2018/2019]
+       ,Billed_hours.[2020] /60 AS [Hours Billed 2019/2020]
+       ,Billed_hours.[2021] /60 AS [Hours Billed 2020/2021]
+       ,Billed_hours.[2022] /60 AS [Hours Billed 2021/2022]
        ,Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
        ,Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
        ,Chargeable_hours.[2018] [Chargeable Hours Posted 2017/2018]
@@ -1019,7 +1032,8 @@ LEFT JOIN
 
 	defendant
 	ON dim_matter_header_current.ms_fileid = defendant.fileID
-
+LEFT OUTER JOIN #HrsBilled AS HrsBilled
+ ON HrsBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )

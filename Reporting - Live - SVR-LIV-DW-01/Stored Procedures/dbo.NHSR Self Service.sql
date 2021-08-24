@@ -5,6 +5,9 @@ GO
 
 
 
+
+
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -44,7 +47,16 @@ BEGIN
 	FROM red_dw..dim_bill_date
 	WHERE dim_bill_date.bill_fin_year > 2014
 
-	
+DROP TABLE IF EXISTS #HrsBilled
+SELECT dim_matter_header_curr_key,SUM(invoiced_minutes)/60 AS [Hrs Billed]
+INTO #HrsBilled
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill
+ ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+WHERE bill_reversed=0
+GROUP BY dim_matter_header_curr_key
+
+
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2021],
@@ -81,7 +93,7 @@ BEGIN
 			   INTO #Billed_hours
 		FROM (
 	
-			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_bill_billed_time_activity.minutes_recorded) Billed_hours
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hours
 			FROM red_dw.dbo.fact_bill_billed_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
@@ -626,7 +638,8 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
              END
             ) * 115
            ) / 60 AS [Legal Spend exc (VAT)],
-           fact_matter_summary_current.time_billed / 60 AS [Time Billed],
+           fact_matter_summary_current.time_billed / 60 AS [Time Billed], -- removed as its wrong
+		   HrsBilled AS [Hours Billed to Client],
            NonPartnerHours AS [Total Non-Partner Hours Recorded],
            PartnerHours AS [Total Partner Hours Recorded],
            AssociateHours AS [Total Associate Hours Recorded],
@@ -718,12 +731,12 @@ GETDATE() AS update_time,
 	, Revenue.[2020] [Revenue 2019/2020]
 	, Revenue.[2021] [Revenue 2020/2021]
 
-	 , Billed_hours.[2016] [Hours Billed 2015/2016]
-	 , Billed_hours.[2017] [Hours Billed 2016/2017]
-	 , Billed_hours.[2018] [Hours Billed 2017/2018]
-	 , Billed_hours.[2019] [Hours Billed 2018/2019]
-	 , Billed_hours.[2020] [Hours Billed 2019/2020]
-	 , Billed_hours.[2021] [Hours Billed 2020/2021]
+	 , Billed_hours.[2016] /60 AS [Hours Billed 2015/2016]
+	 , Billed_hours.[2017] /60 AS [Hours Billed 2016/2017]
+	 , Billed_hours.[2018] /60 AS [Hours Billed 2017/2018]
+	 , Billed_hours.[2019] /60 AS [Hours Billed 2018/2019]
+	 , Billed_hours.[2020] /60 AS [Hours Billed 2019/2020]
+	 , Billed_hours.[2021] /60 AS [Hours Billed 2020/2021]
 
 	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
 	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
@@ -835,7 +848,8 @@ GETDATE() AS update_time,
             ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
         LEFT OUTER JOIN red_dw.dbo.fact_bill_matter
             ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
-			
+	LEFT OUTER JOIN #HrsBilled AS HrsBilled
+ ON HrsBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key		
 --------------#77789 added in two history tables below JL-----------------------------------------------------
 LEFT OUTER JOIN (
 	SELECT 
