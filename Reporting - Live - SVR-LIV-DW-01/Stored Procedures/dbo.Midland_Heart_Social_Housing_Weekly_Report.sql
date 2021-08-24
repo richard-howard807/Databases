@@ -21,7 +21,7 @@ SELECT
 	, clientcontact_name AS [Instructing Officer]
 	, dim_fed_hierarchy_history.[name] AS [Case Manager]
 	, dim_fed_hierarchy_history.jobtitle
-	, [Instruction Type - Buyback/ Re-sale] = instruction_type
+	, [Instruction Type - Buyback/ Re-sale] = COALESCE( cboMHInsType.cdDesc, instruction_type COLLATE DATABASE_DEFAULT)
     , [Property Address] = TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(matter_description,'Final Staircasing', ''), 'Sale of', ''), 'Leasehold Pack', ''), 'Leasehold Form', ''), 'Sale &', ''), '-', ''), 'Lease Extension', ''), ':', ''), '()', ''), '–' , ''     ), 'Partial Staircasing', ''), 'Leasehold Extension', ''), 'Leashold Pack', ''), 'Right to Acquire', '') , 'Sale of freehold', '') , 'Grant of Headlease', ''), 'Surrender of', ''), 'Resale', '') , 'SALE OF', ''), 'Leasehold Enquiries', ''), 'FINAL STAIRCASING', ''), 'LEASE EXTENSION', '' ) , 'Freehold', ''), 'LEASEHOLD EXTENSION', ''), 'PARTIAL STAIRCASING', ''), 'LSE ', ''), 'sale of', ''), 'Final staircasing', '')  )     --dim_detail_property.[property_address]
     , [Purchasers Name/ Leaseholders Name] = 	dim_detail_property.[pspurchaser_1_full_name]
     , [Third Party Solicitor Name] 	= dim_detail_property.[midland_heart_third_party_solicitor_name]
@@ -33,7 +33,11 @@ SELECT
     , [Completion Date] = 		dim_detail_property.[completion_date]
     , [Sales Officer Comments] =  		dim_detail_property.[midland_heart_sale_officer_comments]
     , [PO Number] 	=	dim_detail_property.[midland_heart_po_number]
-	
+	, [MH Instruction Type] = cboMHInsType.cdDesc
+
+	,[TabFilter] = 
+	CASE WHEN cboMHInsType.cdDesc IN ('Final Staircasing','Partial Staircasing', 'RTA', 'Lease Extension') THEN 'Tab1'
+	ELSE 'Tab2' END
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
@@ -50,14 +54,27 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
                BETWEEN dss_start_date AND dss_end_date
 LEFT JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
 LEFT JOIN red_dw.dbo.dim_instruction_type ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+
+LEFT JOIN ms_prod.dbo.udRealEstateSH ON fileID = ms_fileid
+LEFT JOIN 
+
+(
+SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboMHInsType' AND txtMSTable = 'udRealEstateSH') cboMHInsType 
+ON cboMHInsType.cdCode = udRealEstateSH.cboMHInsType
+
+
+
 WHERE 
 
 dim_matter_header_current.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions=0
 AND fact_dimension_main.client_code = 'W23552'
-AND dim_matter_worktype.[work_type_name] = 'Social Housing - Property               '
+AND TRIM(dim_matter_worktype.[work_type_name]) = 'Social Housing - Property'
 
 
 
 END
+
 GO
