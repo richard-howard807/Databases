@@ -639,7 +639,7 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
             ) * 115
            ) / 60 AS [Legal Spend exc (VAT)],
            fact_matter_summary_current.time_billed / 60 AS [Time Billed], -- removed as its wrong
-		   HrsBilled AS [Hours Billed to Client],
+		   [Hrs Billed] AS [Hours Billed to Client],
            NonPartnerHours AS [Total Non-Partner Hours Recorded],
            PartnerHours AS [Total Partner Hours Recorded],
            AssociateHours AS [Total Associate Hours Recorded],

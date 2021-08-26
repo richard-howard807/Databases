@@ -56,6 +56,7 @@ CREATE TABLE [dbo].[selfserviceLTAonlyData]
 [Minutes Recorded] [numeric] (38, 2) NULL,
 [Legal Spend exc (VAT)] [numeric] (38, 6) NULL,
 [Time Billed] [numeric] (17, 6) NULL,
+[Hours Billed to Client] [numeric] (38, 6) NULL,
 [Revenue 2015/2016] [numeric] (38, 5) NULL,
 [Revenue 2016/2017] [numeric] (38, 5) NULL,
 [Revenue 2017/2018] [numeric] (38, 5) NULL,

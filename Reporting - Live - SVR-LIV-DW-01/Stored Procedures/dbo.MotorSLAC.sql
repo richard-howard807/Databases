@@ -40,7 +40,6 @@ BEGIN
 	--,@ClosedCases AS VARCHAR (30) = 'Closed'
 
 
-
 	
 	IF OBJECT_ID('tempdb..#FeeEarnerList') IS NOT NULL   DROP TABLE #FeeEarnerList
 	IF OBJECT_ID('tempdb..#Client') IS NOT NULL   DROP TABLE #Client
@@ -113,7 +112,9 @@ SELECT AllData.client_code,
        AllData.Status,
        AllData.[Present Position],
 	   AllData.ll00_have_we_had_an_extension_for_the_initial_report	
-
+	   , AllData.incident_date		AS [Incident Date]
+	   , AllData.claimantsols_reference			AS [Claimant Solicitor Ref]
+	   , AllData.court_reference				AS [Court Ref (Claim Number)]
 	    FROM 
 (
 SELECT  dim_matter_header_current.[client_code]
@@ -128,6 +129,9 @@ SELECT  dim_matter_header_current.[client_code]
 ,date_closed_practice_management AS [matter_closed_practice_management_calendar_date]
 ,date_closed_case_management AS [matter_closed_case_management_calendar_date]
 ,dim_detail_core_details.[referral_reason] AS [referral_reason]
+, dim_detail_core_details.incident_date			
+, dim_claimant_thirdparty_involvement.claimantsols_reference			
+, dim_court_involvement.court_reference						
 ,dim_detail_outcome.[date_claim_concluded] AS [date_claim_concluded]
 ,dim_detail_core_details.[date_instructions_received] AS [date_instructions_received]
 ,dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers] AS [grpageas_motor_date_of_receipt_of_clients_file_of_papers]
@@ -136,12 +140,12 @@ SELECT  dim_matter_header_current.[client_code]
 ,fact_detail_elapsed_days.[days_to_send_report] AS [days_to_send_report]
 --,fact_detail_elapsed_days.[days_to_report_outstanding]  AS [days_to_report_outstanding]
 ,			 CASE  WHEN dim_detail_core_details.[date_initial_report_sent] is null  THEN 
-        	(DATEDIFF(dd, coalesce(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.[date_instructions_received]), GETDATE()))-- + 1)
+			(DATEDIFF(dd, coalesce(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.[date_instructions_received]), GETDATE()))-- + 1)
 			-(DATEDIFF(wk, coalesce(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.[date_instructions_received]), GETDATE()) * 2)
 			-(CASE WHEN DATENAME(dw, coalesce(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.[date_instructions_received])) = 'Sunday' THEN 1 ELSE 0 END)
 			-(CASE WHEN DATENAME(dw, GETDATE()) = 'Saturday' THEN 1 ELSE 0 END)
-			 ELSE NULL END AS [days_to_report_outstanding]
-			 ,fact_detail_elapsed_days.[days_to_file_opened] AS [days_to_file_opened]
+				ELSE NULL END AS [days_to_report_outstanding]
+				,fact_detail_elapsed_days.[days_to_file_opened] AS [days_to_file_opened]
 ,dim_detail_core_details.[present_position] AS [present_position]
 ,CASE WHEN dim_detail_core_details.[motor_status] IS NULL THEN 'Missing' ELSE dim_detail_core_details.[motor_status] END  AS [motor_status]
 ,fact_detail_elapsed_days.[days_to_subsequent_report] AS [days_to_subsequent_reportV2]
@@ -225,7 +229,12 @@ INNER JOIN red_dw.dbo.dim_detail_outcome
 INNER JOIN red_dw.dbo.dim_client_involvement 
  ON dim_client_involvement.client_code = dim_matter_header_current.client_code
  AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
- 
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+	ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
+		AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
+	ON dim_court_involvement.client_code = dim_matter_header_current.client_code
+		AND dim_court_involvement.matter_number = dim_matter_header_current.matter_number
  
 WHERE 1 =1
 AND (CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed'  

@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[ClaimsMilestoneFileOpeningCompletions] -- EXEC  dbo.ClaimsMilestoneFileOpeningCompletions'2021-05-01','2021-05-12'
 (
 @StartDate AS DATE
@@ -16,6 +17,7 @@ SELECT  AllData.[File],
         AllData.[Matter Description],
         AllData.[Fee Earner],
         AllData.Team,
+		AllData.Department,
         AllData.[Completed By],
         AllData.[Date Completed],
         CASE WHEN AllData.Area IN ('Matter Creation','MI Process','Commence CCFA','Commence EML Allocation of New Matter') THEN AllData.CompletedByCorrectPerson
@@ -39,6 +41,7 @@ SELECT master_client_code + '-' + master_matter_number AS [File]
 ,matter_description AS [Matter Description]
 ,matter_owner_full_name AS [Fee Earner]
 ,hierarchylevel4hist AS [Team]
+,hierarchylevel3hist AS [Department]
 ,MS_Prod.dbo.dbUser.usrFullName AS [Completed By]
 ,red_dw.dbo.datetimelocal(tskCompleted) AS [Date Completed]
 ,CASE WHEN MS_Prod.dbo.dbUser.usrAlias IN
@@ -111,6 +114,7 @@ SELECT master_client_code + '-' + master_matter_number AS [File]
 ,matter_description AS [Matter Description]
 ,matter_owner_full_name AS [Fee Earner]
 ,hierarchylevel4hist AS [Team]
+,hierarchylevel3hist AS [Department]
 ,MS_Prod.dbo.dbUser.usrFullName AS [Completed By]
 ,red_dw.dbo.datetimelocal(date_opened_case_management) AS [Date Completed]
 ,CASE WHEN MS_Prod.dbo.dbUser.usrAlias IN

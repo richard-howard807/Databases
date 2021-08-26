@@ -668,7 +668,7 @@ DROP TABLE IF EXISTS #Disbursements
         ) * 115
        ) / 60 AS [Legal Spend exc (VAT)]
        ,fact_matter_summary_current.time_billed / 60 AS [Time Billed] -- removed as its wrong
-	   ,HrsBilled AS [Hours Billed To Client]
+	   ,[Hrs Billed] AS [Hours Billed To Client]
        ,NonPartnerHours AS [Total Non-Partner Hours Recorded]
        ,PartnerHours AS [Total Partner Hours Recorded]
        ,AssociateHours AS [Total Associate Hours Recorded]

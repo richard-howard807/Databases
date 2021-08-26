@@ -2,13 +2,20 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+--USE [Reporting]
+--GO
+--/****** Object:  StoredProcedure [dbo].[SelfServiceLTAonly]    Script Date: 25/08/2021 07:52:30 ******/
+--SET ANSI_NULLS ON
+--GO
+--SET QUOTED_IDENTIFIER ON
+--GO
 
 
 
 
 
 
--- LD 2019/04/11 Moved the date columns so that they appear first  as per #16076
+---- LD 2019/04/11 Moved the date columns so that they appear first  as per #16076
 
 CREATE PROCEDURE [dbo].[SelfServiceLTAonly]
 AS
@@ -203,7 +210,7 @@ red_dw.dbo.fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded [
             ) * 115
            ) / 60 AS [Legal Spend exc (VAT)],
            fact_matter_summary_current.time_billed / 60 AS [Time Billed],
-		   HrsBilled AS [Hours Billed to Client],
+		   [HrsBilled].[Hrs Billed] AS [Hours Billed to Client],
  [Revenue 2015/2016],
 [Revenue 2016/2017],
 [Revenue 2017/2018],

@@ -38,6 +38,9 @@ SELECT
 	,[TabFilter] = 
 	CASE WHEN cboMHInsType.cdDesc IN ('Final Staircasing','Partial Staircasing', 'RTA', 'Lease Extension') THEN 'Tab1'
 	ELSE 'Tab2' END
+
+	,revenue.Revenue
+	,fact_finance_summary.wip AS [WIP]
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key=fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
@@ -65,6 +68,12 @@ WHERE txtMSCode = 'cboMHInsType' AND txtMSTable = 'udRealEstateSH') cboMHInsType
 ON cboMHInsType.cdCode = udRealEstateSH.cboMHInsType
 
 
+LEFT JOIN 	(
+		
+			SELECT dim_matter_header_curr_key, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			GROUP BY dim_matter_header_curr_key
+			) AS revenue ON revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE 
 
