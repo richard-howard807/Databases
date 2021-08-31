@@ -67,16 +67,16 @@ SELECT client_name AS [Client Name]
 
 ,[Completion Date] = COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate, CompletionDateCompleted)
 ,[Completion Flag] = CASE WHEN dim_detail_plot_details.pscompletion_date IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END 
-
-
 ,[Fixed Fee] = fact_finance_summary.[fixed_fee_amount]
 ,[Hours Recorded] = TimeRecorded.HoursRecorded
+,[Fee Earner Hours Recorded] = TimeRecorded.FeeEarners_HoursRecorded
+,[Supporting Fee Earner Hours Recorded] = TimeRecorded.[Supporting Fee Earner_HoursRecorded]
+,[Other Hours Recorded] = TimeRecorded.Other_HoursRecorded
 ,[Value of Hours Recorded] = TimeRecorded.RecordedValue
 ,[Revenue] = revenue.Revenue
 ,[Revnue - fact_bill_activity_bill_amount] = revenue.Revenue
 ,[Profit/ Loss] =  CASE WHEN revenue.Revenue IS NOT NULL THEN ISNULL(revenue.Revenue, 0) - ISNULL(TimeRecorded.RecordedValue, 0) 
-  ELSE fact_finance_summary.[fixed_fee_amount] - ISNULL(TimeRecorded.RecordedValue, 0)
-  END
+  ELSE fact_finance_summary.[fixed_fee_amount] - ISNULL(TimeRecorded.RecordedValue, 0) END
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main 
@@ -118,17 +118,74 @@ ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
                    SUM(minutes_recorded) AS [MinutesRecorded],
                    SUM(fact_chargeable_time_activity.minutes_recorded) / 60 AS [HoursRecorded],
 				   SUM(fact_chargeable_time_activity.actual_time_recorded_value) AS RecordedValue
+				  
+				   ,SUM(CASE WHEN TRIM(jobtitle) 
+				   IN ('Associate'
+                      ,'Chartered Legal Executive'
+                      ,'Consultant'
+                      ,'Conveyancer'
+                      ,'Partner'
+                      ,'Plot Sales Executive'
+                      ,'Plot Sales Manager'
+                      ,'Principal Associate'
+                      ,'Senior Conveyancer'
+                      ,'Solicitor' ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60 AS [FeeEarners_HoursRecorded]
+   , SUM(CASE WHEN ISNULL(TRIM(jobtitle), '') 
+				    IN ('', 'Administration Assistant'
+                        ,'Business Analyst'
+                        ,'Costs Draftsperson'
+                        ,'Credit Management Assistant'
+                        ,'Head of Compliance'
+                        ,'Legal Engineer'
+                        ,'Paralegal'
+                        ,'Trainee'
+                        ,'Trainee Solicitor'
+                        ,'Unknown'
+            ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60  AS [Supporting Fee Earner_HoursRecorded]
+			, SUM(CASE WHEN ISNULL(TRIM(jobtitle), '') 
+				  NOT  IN ('', 'Administration Assistant'
+                        ,'Business Analyst'
+                        ,'Costs Draftsperson'
+                        ,'Credit Management Assistant'
+                        ,'Head of Compliance'
+                        ,'Legal Engineer'
+                        ,'Paralegal'
+                        ,'Trainee'
+                        ,'Trainee Solicitor'
+                        ,'Unknown'
+						,'Associate'
+                         ,'Chartered Legal Executive'
+                         ,'Consultant'
+                         ,'Conveyancer'
+                         ,'Partner'
+                         ,'Plot Sales Executive'
+                         ,'Plot Sales Manager'
+                         ,'Principal Associate'
+                         ,'Senior Conveyancer'
+                         ,'Solicitor'
+            ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60  AS [Other_HoursRecorded]
+
+ 
+
+
+
             FROM red_dw.dbo.fact_chargeable_time_activity
                 INNER JOIN red_dw.dbo.dim_matter_header_current
                     ON dim_matter_header_current.dim_matter_header_curr_key = fact_chargeable_time_activity.dim_matter_header_curr_key
-            WHERE minutes_recorded <> 0
+                JOIN red_dw.dbo.fact_dimension_main
+				ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+				JOIN red_dw.dbo.dim_fed_hierarchy_history
+				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_chargeable_time_activity.dim_fed_hierarchy_history_key
+		   WHERE minutes_recorded <> 0
                   AND
                   (
                       dim_matter_header_current.date_closed_case_management >= '20120101'
                       OR dim_matter_header_current.date_closed_case_management IS NULL
                   )
+				  AND dim_matter_header_current.master_client_code IN ('190593P', '153838M','848629','W15353')
             GROUP BY 
                      fact_chargeable_time_activity.master_fact_key
+				
         ) AS TimeRecorded
             ON TimeRecorded.master_fact_key = red_dw.dbo.fact_dimension_main.master_fact_key
 
