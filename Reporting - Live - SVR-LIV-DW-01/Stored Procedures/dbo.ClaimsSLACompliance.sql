@@ -557,16 +557,15 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
 			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
-	--LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days 
-	--	ON days.master_fact_key = fact_dimension_main.master_fact_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.client_code = dim_matter_header_current.client_code
+			AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN #FICProcess FICProcess 
 		ON FICProcess.fileID = ms_fileid
 	LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
 		ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN #ClientReportDates
 		ON #ClientReportDates.master_client_code = dim_matter_header_current.master_client_code AND #ClientReportDates.master_matter_number = dim_matter_header_current.master_matter_number
-	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
-		ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 WHERE 
 	reporting_exclusions=0
 	AND hierarchylevel2hist='Legal Ops - Claims'
@@ -589,6 +588,12 @@ WHERE
 		'N1001-8667', 'N1001-9879', 'N1001-13752', 'N1001-7817', 'R1001-5933', '739845-99', 'W15572-721', '748359-999', 'W15434-166', '9008076-900999', '1328-227',
 		'TR00010-35', 'N1001-13754', '739845-999', '732022-13', '452904-1021', '113147-3466', 'W19702-17', '195691-1031'
 		)
+	AND (CASE 
+			WHEN dim_matter_header_current.master_client_code IN ('113147', '451638') AND ISNULL(dim_detail_client.billing_group, '') NOT IN ('F', 'A') THEN 
+				1
+			ELSE
+				0
+		END) = 0
 	--AND ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No'
 END
 
