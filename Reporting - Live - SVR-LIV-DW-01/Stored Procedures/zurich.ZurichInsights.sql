@@ -33,6 +33,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, zurich_referral_reason AS [Zurich Referral Reason]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
+		, dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Personal Injury Claim?]
 		, incident_date AS [Incident Date]
 		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
 			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Thompsons%' THEN 'Thompsons LLP'
@@ -162,6 +163,7 @@ SELECT date_opened_case_management AS [Date Case Opened]
 		, zurich_referral_reason AS [Zurich Referral Reason]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, credit_hire AS [Credit Hire]
+		, dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Personal Injury Claim?]
 		, incident_date AS [Incident Date]
 		, CASE WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Irwin Mitchell%' THEN 'Irwin Mitchell LLP'
 			WHEN ISNULL(dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) LIKE 'Thompsons%' THEN 'Thompsons LLP'
