@@ -435,6 +435,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Amount Recovery Sought] [numeric] (13, 2) NULL,
 [Current Fee Scale] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Instructing Office] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[AIG Reference] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [DST Claimant Solicitor Firm] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [DST Insured Client Name] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Date Initial Acknowledgment to Claims Handler] [datetime] NULL,

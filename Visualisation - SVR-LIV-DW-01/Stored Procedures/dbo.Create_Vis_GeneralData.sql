@@ -571,6 +571,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		--AIG
 		, dim_detail_core_details.[aig_current_fee_scale] AS [Current Fee Scale]
 		, dim_detail_core_details.[aig_instructing_office] AS [Instructing Office]
+		, dim_detail_core_details.[aig_reference] AS [AIG Reference]
 		, dim_detail_claim.[dst_claimant_solicitor_firm] AS [DST Claimant Solicitor Firm]
 		, dim_detail_claim.[dst_insured_client_name] AS [DST Insured Client Name]
 		, dim_detail_core_details.[aig_grp_date_initial_acknowledgement_to_claims_handler] AS [Date Initial Acknowledgment to Claims Handler]
