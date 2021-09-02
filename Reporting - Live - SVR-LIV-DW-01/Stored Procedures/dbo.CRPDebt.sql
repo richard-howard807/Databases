@@ -15,13 +15,11 @@ BEGIN
 IF OBJECT_ID('tempdb..#Partner') IS NOT NULL   DROP TABLE #Partner;
 SELECT ListValue  INTO #Partner FROM 	dbo.udt_TallySplit('|', @Partner);
 
-
-
 SELECT dim_client.client_name AS [Client Name],
        master_client_code + '-' + master_matter_number AS [Matter ID],
        hierarchylevel4hist AS [Matter Owner Team],
        dim_client.credit_specialist AS [Credit Specialist],
-       worksforname AS [Team Manager],
+       matter_team_manager AS [Team Manager], -- changed from worksforname
        dim_fed_hierarchy_history.name AS [Mtr Owner name],
        matter_description AS [Matter Description],
        dim_bill.bill_number AS [Inv No.],
@@ -36,7 +34,8 @@ SELECT dim_client.client_name AS [Client Name],
        fact_bill.vat_amount,
        fact_debt.costs_balanace
 	   , hyperlink
-	   -- select *
+	   
+	   --,dim_fed_hierarchy_history.*
 FROM red_dw.dbo.fact_payor_debt_detail fact_debt
     INNER JOIN red_dw.dbo.dim_bill
         ON dim_bill.dim_bill_key = fact_debt.dim_bill_key

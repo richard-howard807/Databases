@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 09/09/2019
@@ -58,8 +59,8 @@ SELECT
 			
 FROM MS_Prod.config.dbClient dbClient
 INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
-INNER JOIN (SELECT DISTINCT client_code,master_client_code FROM red_dw.dbo.dim_matter_header_current WHERE date_opened_case_management >= @StartDate) mc ON dbClient.clNo = mc.master_client_code COLLATE DATABASE_DEFAULT
-INNER JOIN red_dw.dbo.dim_client dim_client ON dim_client.client_code = mc.client_code
+LEFT JOIN (SELECT DISTINCT client_code,master_client_code FROM red_dw.dbo.dim_matter_header_current WHERE date_opened_case_management >= @StartDate) mc ON dbClient.clNo = mc.master_client_code COLLATE DATABASE_DEFAULT
+LEFT JOIN red_dw.dbo.dim_client dim_client ON dim_client.client_code = mc.client_code
 LEFT JOIN MS_Prod.dbo.dbUser dbUser ON dbUser.usrID = udExtClient.cboReferralTypeUser
 LEFT JOIN MS_Prod.config.dbContact dbContact ON udExtClient.cboReferralTypeContact = dbContact.contID
 LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
