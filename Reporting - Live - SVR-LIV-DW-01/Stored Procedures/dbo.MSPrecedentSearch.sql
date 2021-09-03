@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[MSPrecedentSearch]
 (
 @StartDate AS DATE
@@ -25,7 +26,7 @@ SELECT
        FileOwner.usrFullName [Matter Owner]
 		  FROM ms_prod.config.dbDocument WITH(NOLOCK)
   INNER JOIN MS_Prod.dbo.dbPrecedents dbPrec WITH(NOLOCK)
-        ON dbDocument.docprecID = dbPrec.PrecID
+        ON dbDocument.docbaseprecid = dbPrec.PrecID
 	  LEFT JOIN MS_Prod.config.dbFile dbFile
         ON dbFile.fileID = dbDocument.fileID
     LEFT JOIN MS_Prod.config.dbClient dbClient
