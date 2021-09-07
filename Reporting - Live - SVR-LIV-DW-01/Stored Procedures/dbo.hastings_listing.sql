@@ -366,21 +366,21 @@ SELECT
 	, dim_detail_compliance.hastings_report_on_tactics_submitted_to_hastings				AS [SLA.A15 Full Report Tactics 2 Weeks]
 	, dim_detail_compliance.hastings_any_trial_dates_missed					AS [SLA.A16 Trial Dates Missed]
 	, dim_detail_compliance.hastings_reports_and_advice_to_be_provided_to_hastings			AS [SLA.A17 Experts Reports Provided to Hastings]
-	, dim_detail_compliance.hastings_instructions_and_reports_agreed_with_hastings			AS [SLA.A17 Expoerts Reports Agreed with Hastings]
+	, dim_detail_compliance.hastings_instructions_and_reports_agreed_with_hastings			AS [SLA.A17 Experts Reports Agreed with Hastings]
 	, dim_detail_compliance.hastings_accurate_reserves_held_on_file_at_all_times			AS [SLA.A19 Accurate Reserves Held]
 	, CASE 
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Justified complaint made' THEN 
-			'Yes'
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
+		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
+			'Yes'
 		ELSE 
 			NULL
 	  END																	AS [SLA.A20 Justified Complaints Made]
 	, CASE 
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Non-justified complaint made' THEN 
-			'Yes'
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
+		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
+			'Yes'
 		ELSE 
 			NULL
 	  END																	AS [SLA.A20 Non-Justified Complaints Made]
@@ -422,15 +422,31 @@ SELECT
 		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
 			CASE 
 				WHEN dim_detail_outcome.hastings_type_of_settlement = 'Withdrawn' THEN
-					'Achieved Withdrawn'
-				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Calderbank', 'P36', 'Time limited') THEN
-					'Achieved compromised'
-				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Fundamental dishonesty defence', 'Other successful full defence') THEN
-					'Achieved failed'
+					'Achieved'
 			END
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
-	  END										AS [KPI A.2 Fundamental Dishonesty Success]
+	  END										AS [KPI A.2 Fundamental Dishonesty Success - Withdrawn]
+	, CASE
+		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
+		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
+			CASE 
+				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Calderbank', 'P36', 'Time limited') THEN
+					'Achieved'
+			END
+		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
+			'N/A'
+	  END										AS [KPI A.2 Fundamental Dishonesty Success - Compromised]
+	, CASE
+		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
+		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
+			CASE
+				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Fundamental dishonesty defence', 'Other successful full defence') THEN
+					'Achieved'
+			END
+		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
+			'N/A'
+	  END										AS [KPI A.2 Fundamental Dishonesty Success - Failed]
 	, CASE
 		WHEN dim_detail_claim.hastings_contribution_proceedings_issued = 'Yes' AND dim_detail_claim.date_recovery_concluded IS NOT NULL 
 		AND #hastings_financials.recovery_amout >= 1 THEN
@@ -484,7 +500,7 @@ SELECT
 			'N/A'
 		--logic to be added for Achieved/Not Achieved 
 	 END									AS [KPI A.6 PREDICT]
-	, 'TBC'			AS [KPI A.7 Internal Monthly Audits]
+	, 'TBC'			AS [KPI A.7 Internal Monthly Audits]	--logic to be confirmed
 INTO Reporting.dbo.hastings_listing_table
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
