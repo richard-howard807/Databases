@@ -1,0 +1,32 @@
+CREATE TABLE [dbo].[users]
+(
+[client_user_identifier] [nvarchar] (104) COLLATE Latin1_General_CI_AS NULL,
+[login_name] [nvarchar] (104) COLLATE Latin1_General_CI_AS NULL,
+[password] [nvarchar] (20) COLLATE Latin1_General_CI_AS NULL,
+[first_name] [nvarchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[last_name] [nvarchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[title_code] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[title_name] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[profile_code] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[profile_name] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[department_code] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[department_name] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[practice_area_code] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[pratice_area_name] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[location_code] [nvarchar] (64) COLLATE Latin1_General_CI_AS NULL,
+[location_name] [nvarchar] (64) COLLATE Latin1_General_CI_AS NULL,
+[record_status] [nvarchar] (15) COLLATE Latin1_General_CI_AS NULL,
+[telephone_number] [nvarchar] (18) COLLATE Latin1_General_CI_AS NULL,
+[email_address] [nvarchar] (359) COLLATE Latin1_General_CI_AS NULL,
+[start_date] [datetime] NULL,
+[end_date] [datetime] NULL,
+[client_manager_identifier] [nvarchar] (104) COLLATE Latin1_General_CI_AS NULL,
+[street1] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[street2] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[city] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[state] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[zip] [nvarchar] (25) COLLATE Latin1_General_CI_AS NULL,
+[country] [nvarchar] (256) COLLATE Latin1_General_CI_AS NULL,
+[birth_date] [datetime] NULL
+) ON [PRIMARY]
+GO
