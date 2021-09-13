@@ -31,29 +31,30 @@ SELECT  DISTINCT
 ,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA')  AS [AXA XL Claim Number]
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , [Line of Business] = hierarchylevel3hist 
-, [New Line of Business] = CASE  
-        WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc') THEN  'Aviation'
-	    WHEN (work_type_name LIKE  'Disuse%'  OR work_type_name LIKE  'EL%' OR  work_type_name LIKE 'PL%' OR work_type_name LIKE 'Motor%') THEN 'Casualty'
-		WHEN hierarchylevel3hist LIKE 'Disease%' THEN 'Casualty'
-		WHEN work_type_name LIKE  'LMT/Insurance Coverage%' then 'Financial Lines' 
-		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'  then 'Financial Lines' 
-		WHEN work_type_name LIKE 'Prof Risk – Construction%' then 'Energy and Construction'
-		WHEN LOWER(work_type_name) LIKE '%property%' then 'Property'
+, [New Line of Business] = LineofBus.[CaseText] 
+--CASE  
+--        WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc') THEN  'Aviation'
+--	    WHEN (work_type_name LIKE  'Disuse%'  OR work_type_name LIKE  'EL%' OR  work_type_name LIKE 'PL%' OR work_type_name LIKE 'Motor%') THEN 'Casualty'
+--		WHEN hierarchylevel3hist LIKE 'Disease%' THEN 'Casualty'
+--		WHEN work_type_name LIKE  'LMT/Insurance Coverage%' then 'Financial Lines' 
+--		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'  then 'Financial Lines' 
+--		WHEN work_type_name LIKE 'Prof Risk – Construction%' then 'Energy and Construction'
+--		WHEN LOWER(work_type_name) LIKE '%property%' then 'Property'
 
-		--WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
-		--WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' 
-		END 
+--		--WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
+--		--WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' 
+--		END 
 
  ,[Product Type] = work_type_name 
  
-, [Product Type New] =  
-   CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
-        WHEN  (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %' OR work_type_name LIKE 'Disease%') THEN 'Employer’s Liability and Public Liability'
-        WHEN  work_type_name LIKE 'Motor%' THEN 'Motor'
-		WHEN  work_type_name LIKE 'LMT/Insurance Coverage%' THEN 'Other'
-		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'   THEN 'Other'
-		WHEN   LOWER(work_type_name) LIKE '%property%' then 'Other'
-		END   
+, [Product Type New] =  ProdType.[CaseText]
+  -- CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
+  --      WHEN  (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %' OR work_type_name LIKE 'Disease%') THEN 'Employer’s Liability and Public Liability'
+  --      WHEN  work_type_name LIKE 'Motor%' THEN 'Motor'
+		--WHEN  work_type_name LIKE 'LMT/Insurance Coverage%' THEN 'Other'
+		--WHEN work_type_name LIKE  'LMT / Insurance Coverage%'   THEN 'Other'
+		--WHEN   LOWER(work_type_name) LIKE '%property%' then 'Other'
+		--END   
 		
 , [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name
     ELSE dim_detail_claim.[dst_insured_client_name] END  
@@ -101,12 +102,15 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
 , final_bill_date [Date of Final Panel Invoice]
 , date_claim_concluded [Date Damages settled]
-,  fact_detail_paid_detail.[total_damages_paid] AS [Final Damages Amount]
-, CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL THEN 'Yes' ELSE NULL END [Claimants Costs Handled by Panel?]
+, fact_finance_summary.[damages_paid] AS [Final Damages Amount]
+, [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
+('Coverage (declined claim)','Coverage advice given','Discontinued','Not pursued','Successfully defended (no indemnity payment)','Trial (NI won - successful lodgement)','Trial (won - no indemnity payment)','Trial (won - recovery)') THEN 'No'
+      WHEN TRIM(cboOutOfIns.cdDesc) IN ('Settled','Settled - Pursuing recovery','Trial (Lost)','Trial (won - successful part 36 offer)') THEN 'Yes'
+	  END
 , date_costs_settled AS  [Date Claimants costs settled]
 ,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
 , cboMedOutcome.cdDesc AS  [Mediated outcome - Select from list]   -- udMICoreAXA
-, cboOutOfIns.cdDesc [Outcome of Instruction - Select from list]   -- udMICoreAXA
+, CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'discontinued_or_not_pursued' ELSE cboOutOfIns.cdDesc END [Outcome of Instruction - Select from list]   -- udMICoreAXA
 , cboWasLitAv.cdDesc [Was litigation avoidable - Select from list]  -- udMICoreAXA
 ,hierarchylevel3hist
 ,hierarchylevel4hist AS [Team]
@@ -360,6 +364,8 @@ AND assocType = 'CLIENT'
 ) AXAXLClaimNumber ON CAST(AXAXLClaimNumber.fileID AS NVARCHAR(20)) = CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
 
 
+
+
 --/* Staging table for status collumn*/
 
 
@@ -372,6 +378,15 @@ AND assocType = 'BROKER'
 GROUP BY fileID
 ) Brokername ON CAST(Brokername.fileID AS NVARCHAR(20)) = CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
 
+/* MS Fix for Product Type and Business Line*/
+
+LEFT JOIN SQLAdmin.dbo._20210909_AXA_ProductsandBusinessType LineofBus
+ON LineofBus.[ClNo] = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT
+AND LineofBus.[FileNo] = master_matter_number  COLLATE DATABASE_DEFAULT AND LineofBus.[MSCode]  = 'cboLineofBus'
+
+LEFT JOIN  SQLAdmin.dbo._20210909_AXA_ProductsandBusinessType ProdType
+ON ProdType.[ClNo] = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT
+AND ProdType.[FileNo] = master_matter_number COLLATE DATABASE_DEFAULT AND ProdType.[MSCode]  = 'cboPrrodType'
 
 
 --AND AXAXLDataSubmissionAPIStage.dss_current_flag = 'Y'
@@ -391,7 +406,7 @@ AND (date_claim_concluded IS NULL OR CONVERT(DATE,date_claim_concluded,103)>='20
 AND TRIM(dim_matter_header_current.matter_number) <> 'ML'
 AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number NOT IN 
-( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272'
+( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272', '207818-2'
 )
 
 AND dim_matter_header_current.date_opened_case_management <= DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1)

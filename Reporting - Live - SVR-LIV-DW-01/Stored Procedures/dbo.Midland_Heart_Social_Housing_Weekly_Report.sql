@@ -8,6 +8,8 @@ GO
 -- Create date: 29/01/2021
 -- Description:	New report for Midland Heart see ticket 86458
 -- =============================================
+
+--exec [dbo].[MidlandHeartSocialHousingWeeklyReport]
 CREATE PROCEDURE [dbo].[Midland_Heart_Social_Housing_Weekly_Report]
 AS
 BEGIN
@@ -29,10 +31,15 @@ SELECT
     , [Obstacles to Progress. What's holding this matter up?] =	dim_detail_property.[midland_heart_obstacles_to_progress]
     , [Date Initial papers Issued to Solicior]	= 	dim_detail_property.[midland_heart_date_initial_papers_issued_to_solicitors]
     , [Date Engrossments sent to MHL] = 	dim_detail_property.[midland_heart_date_engrossments_sent_to_mhl]
-    , [Exchange Date] 	= 	dim_detail_property.[exchange_date]
+    , [Exchange Date] 	= 	 dim_detail_property.[exchange_date] 
+	, [Date DS1] = udRealEstateSH.dteDS1  
+    , [Date DS3] = udRealEstateSH.dteDS3
+	, [Date Consents Received] = udRealEstateSH.dteConRec
+	, [Valuation Expiry Date] = udRealEstateSH.dteValExp
     , [Completion Date] = 		dim_detail_property.[completion_date]
     , [Sales Officer Comments] =  		dim_detail_property.[midland_heart_sale_officer_comments]
     , [PO Number] 	=	dim_detail_property.[midland_heart_po_number]
+	, [Instructing Officer New] = udRealEstateSH.txtInsOff
 	, [MH Instruction Type] = cboMHInsType.cdDesc
 
 	,[TabFilter] = 
