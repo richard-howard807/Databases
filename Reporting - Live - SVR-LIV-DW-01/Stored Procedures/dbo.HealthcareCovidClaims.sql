@@ -50,6 +50,8 @@ SELECT
 	, dim_detail_core_details.covid_reason_desc													AS [Covid 19 Reason]
 	, dim_detail_core_details.covid_reason														AS [Covid 19 Reason - Other Only]
 	,dim_detail_core_details.covid_reason_code_date_last_changed AS [Covid 19 Date Last Changed]
+	, dim_detail_health.[covid_reason_nhsr] [NHSR CCovid Reason]
+	, dim_detail_health.[furthur_info] [Further Info]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -57,6 +59,7 @@ FROM red_dw.dbo.fact_dimension_main
 	 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+		LEFT JOIN red_dw.dbo.dim_detail_health ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 	INNER JOIN #Team ON #Team.ListValue = dim_fed_hierarchy_history.hierarchylevel4hist
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key

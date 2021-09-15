@@ -82,8 +82,11 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
-, final_bill_date [Date of Final Panel Invoice]
+, [Date closed] = CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) 
+					   WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date ELSE dim_matter_header_current.final_bill_date END 
+, [Date of Final Panel Invoice] = 
+CASE WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date
+ELSE dim_matter_header_current.final_bill_date END
 , date_claim_concluded [Date Damages settled]
 , fact_finance_summary.[damages_paid] AS [Final Damages Amount]
 , [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
@@ -93,8 +96,33 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , date_costs_settled AS  [Date Claimants costs settled]
 ,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
 , cboMedOutcome.cdDesc AS  [Mediated outcome - Select from list]   -- udMICoreAXA
-, CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'discontinued_or_not_pursued' ELSE cboOutOfIns.cdDesc END [Outcome of Instruction - Select from list]   -- udMICoreAXA
-, cboWasLitAv.cdDesc [Was litigation avoidable - Select from list]  -- udMICoreAXA
+, [Outcome of Instruction - Select from list]  =
+CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursued' 
+	 WHEN cboOutOfIns.cdDesc = 'Not pursued'  THEN   'Discontinued or not pursued' 
+	 WHEN cboOutOfIns.cdDesc = 'Trial (Lost)' THEN 'Trial lost'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (won - recovery)' THEN 'Trial won recovery'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (won - no indemnity payment)' THEN 'Trial won no indemnity payment'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (NI won - successful lodgement)' THEN 'Trail north ire won successful lodgement'
+	 WHEN cboOutOfIns.cdDesc = 'Successfully defended (no indemnity payment)' THEN 'Successfully defended no indemnity payment'
+	 WHEN cboOutOfIns.cdDesc = 'Coverage (declined claim)' THEN 'Coverage declined claim'
+	 ELSE cboOutOfIns.cdDesc END   -- udMICoreAXA
+
+
+, [Was litigation avoidable - Select from list] =
+CASE WHEN cboWasLitAv.cdDesc = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
+	 WHEN cboWasLitAv.cdDesc = 'Yes - General delay' THEN 'Yes general delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes - Insured delay' THEN 'Yes insured delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes - Insurer delay' THEN 'Yes insurer delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes – Differing opinions on merits' THEN 'Yes differing opinions on merits'
+	 END
+
+/*•	Yes – other
+•	Yes - General delay = Yes general delay
+•	Yes - Insured delay = Yes insured delay
+•	Yes - Insurer delay = Yes insurer delay
+And they seem to have added a new option which will need to be added to MS.  The mapping for that option will be:
+•	Yes – Differing opinions on merits = Yes differing opinions on merits
+*/
 ,hierarchylevel3hist
 ,hierarchylevel4hist AS [Team]
 ,dim_fed_hierarchy_history.name AS [Weightmans Handler name]

@@ -14,7 +14,7 @@ AS
 SELECT 
 	dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 	, dim_matter_worktype.work_type_name
-	, CAST(dim_client_involvement.client_reference	AS BIGINT)		AS [UPRN]
+	, dim_client_involvement.client_reference		AS [UPRN]
 	, dim_matter_header_current.matter_description			AS [Matter Description]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date Closed]
@@ -38,7 +38,7 @@ SELECT
             CAST(fact_matter_summary_current.last_bill_date AS DATE)
 	  END													AS [Last Bill Date],
 
-	[Expiry of Gas Certificate]  =  dim_detail_claim.[gascomp_expiry_of_gas_certificate] ,
+	[Expiry of Gas Certificate]  =  CAST(dim_detail_claim.[gascomp_expiry_of_gas_certificate] AS DATE),
 	[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained], 
 	[Current Status]  = dim_detail_claim.[gascomp_current_status],
 	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months],
@@ -74,7 +74,7 @@ WHERE 1 = 1
 	AND ISNULL(matter_description, '') <> 'Ignore - opened in error'
 
 
-
+	ORDER BY dim_detail_claim.[gascomp_expiry_of_gas_certificate] asc
 	
 	
 GO

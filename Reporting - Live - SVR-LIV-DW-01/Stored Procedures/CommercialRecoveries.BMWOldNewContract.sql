@@ -12,6 +12,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BMWOldNewContract] --EXEC [CommercialRecoveries].[BMWOldNewContract] '2019-10-01','2019-10-30','Old'
 (@StartDate  AS DATE
 ,@EndDate  AS  DATE
@@ -89,6 +90,7 @@ WHERE (
 OR (CRSystemSourceID  LIKE '22613-%' OR clNo='FW22613')
 OR (CRSystemSourceID  LIKE '28617-%' OR clNo='W15335')
 OR (CRSystemSourceID  LIKE '30010-%' OR clNo='FW22135')
+OR clNo IN ('FW22352','341077')
 )
 AND cboCatDesc  IN ('7','1','0')
 AND fileType='2038'
@@ -158,6 +160,7 @@ WHERE (
 OR (CRSystemSourceID  LIKE '22613-%' OR clNo='FW22613')
 OR (CRSystemSourceID  LIKE '28617-%' OR clNo='W15335')
 OR (CRSystemSourceID  LIKE '30010-%' OR clNo='FW22135')
+OR clNo IN ('FW22352','341077')
 )
 AND cboCatDesc  IN ('7','1','0')
 AND fileType='2038'

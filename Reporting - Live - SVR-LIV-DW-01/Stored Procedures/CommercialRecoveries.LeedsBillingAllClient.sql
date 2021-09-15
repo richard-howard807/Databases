@@ -12,6 +12,7 @@ GO
 
 
 
+
 --EXEC [CommercialRecoveries].[LeedsBillingAllClient] '2020-03-06', '2020-03-06'
 
 CREATE PROCEDURE [CommercialRecoveries].[LeedsBillingAllClient]
@@ -99,6 +100,7 @@ AND clNo NOT IN
 ,'FW13905'--UPS
 ,'FW13509' -- UPS
 ,'W20110','FW23557' --Alphabet
+,'FW22352','341077'-- Rover * Landrover
 )
 ORDER BY CONVERT(DATE,[red_dw].[dbo].[datetimelocal](dtePosted),103) DESC 
 END 

@@ -97,21 +97,50 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , CASE WHEN BilledTime.PQE <0 THEN 0 
        WHEN BilledTime.PQE IS NULL THEN 0
                             ELSE BilledTime.PQE END [PQE]
-, BilledTime.[Hours spent on case] [Hours spent on case]
-, NULL [Upon closing a case add the following information]
-, CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) ELSE NULL END AS [Date closed]
-, final_bill_date [Date of Final Panel Invoice]
-, date_claim_concluded [Date Damages settled]
-, fact_finance_summary.[damages_paid] AS [Final Damages Amount]
+, [Hours spent on case] = BilledTime.[Hours spent on case] 
+, [Upon closing a case add the following information] = NULL
+, [Date closed] = CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) 
+					   WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date ELSE dim_matter_header_current.final_bill_date END 
+, [Date of Final Panel Invoice] = 
+CASE WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date
+ELSE dim_matter_header_current.final_bill_date END
+
+, [Date Damages settled] = dim_detail_outcome.date_claim_concluded 
+, [Final Damages Amount] = fact_finance_summary.[damages_paid] 
 , [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
 ('Coverage (declined claim)','Coverage advice given','Discontinued','Not pursued','Successfully defended (no indemnity payment)','Trial (NI won - successful lodgement)','Trial (won - no indemnity payment)','Trial (won - recovery)') THEN 'No'
       WHEN TRIM(cboOutOfIns.cdDesc) IN ('Settled','Settled - Pursuing recovery','Trial (Lost)','Trial (won - successful part 36 offer)') THEN 'Yes'
 	  END
-, date_costs_settled AS  [Date Claimants costs settled]
-,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
-, cboMedOutcome.cdDesc AS  [Mediated outcome - Select from list]   -- udMICoreAXA
-, CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'discontinued_or_not_pursued' ELSE cboOutOfIns.cdDesc END [Outcome of Instruction - Select from list]   -- udMICoreAXA
-, cboWasLitAv.cdDesc [Was litigation avoidable - Select from list]  -- udMICoreAXA
+, [Date Claimants costs settled] = date_costs_settled 
+, [Final Claimants Costs Amount] =fact_finance_summary.[total_tp_costs_paid_to_date] 
+, [Mediated outcome - Select from list]  = cboMedOutcome.cdDesc   -- udMICoreAXA
+, [Outcome of Instruction - Select from list]  =
+CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursued' 
+	 WHEN cboOutOfIns.cdDesc = 'Not pursued'  THEN   'Discontinued or not pursued' 
+	 WHEN cboOutOfIns.cdDesc = 'Trial (Lost)' THEN 'Trial lost'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (won - recovery)' THEN 'Trial won recovery'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (won - no indemnity payment)' THEN 'Trial won no indemnity payment'
+	 WHEN cboOutOfIns.cdDesc = 'Trial (NI won - successful lodgement)' THEN 'Trail north ire won successful lodgement'
+	 WHEN cboOutOfIns.cdDesc = 'Successfully defended (no indemnity payment)' THEN 'Successfully defended no indemnity payment'
+	 WHEN cboOutOfIns.cdDesc = 'Coverage (declined claim)' THEN 'Coverage declined claim'
+	 ELSE cboOutOfIns.cdDesc END   -- udMICoreAXA
+
+
+, [Was litigation avoidable - Select from list] =
+CASE WHEN cboWasLitAv.cdDesc = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
+	 WHEN cboWasLitAv.cdDesc = 'Yes - General delay' THEN 'Yes general delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes - Insured delay' THEN 'Yes insured delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes - Insurer delay' THEN 'Yes insurer delay'
+	 WHEN cboWasLitAv.cdDesc = 'Yes – Differing opinions on merits' THEN 'Yes differing opinions on merits'
+	 END
+
+/*•	Yes – other
+•	Yes - General delay = Yes general delay
+•	Yes - Insured delay = Yes insured delay
+•	Yes - Insurer delay = Yes insurer delay
+And they seem to have added a new option which will need to be added to MS.  The mapping for that option will be:
+•	Yes – Differing opinions on merits = Yes differing opinions on merits
+*/
 ,hierarchylevel3hist
 ,hierarchylevel4hist AS [Team]
 ,dim_fed_hierarchy_history.name AS [Weightmans Handler name]
@@ -131,7 +160,7 @@ ISNULL(defence_costs_billed, 0) +
 COALESCE(ISNULL(fact_finance_summary.damages_paid, 0), ISNULL(fact_finance_summary.damages_interims, 0)) +
 COALESCE(ISNULL(fact_finance_summary.claimants_costs_paid, 0), ISNULL(fact_detail_paid_detail.interim_costs_payments, 0)) +
 ISNULL(PanelFees.[Total VAT Billed to AXA In Period], 0)
-
+,final_bill_flag
 
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 JOIN red_dw.dbo.fact_dimension_main
@@ -582,16 +611,25 @@ JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #
 WHERE #AXAXLDataSubmission.RN = 1 
 AND 
 (
-ISNULL(#AXAXLDataSubmission.[Date closed],'3999-01-01')  <> ISNULL(#MainAPI.[Date closed], '3999-01-01')
-OR    ISNULL(#AXAXLDataSubmission.[Date of Final Panel Invoice],'3999-01-01') <> ISNULL(#MainAPI.[Date of Final Panel Invoice], '3999-01-01')
-OR    ISNULL(#AXAXLDataSubmission.[Date Damages settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Damages settled], '3999-01-01')
-OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Damages Amount] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Final Damages Amount], '')
-OR    ISNULL(CAST(#AXAXLDataSubmission.[Claimants Costs Handled by Panel?] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Claimants Costs Handled by Panel ], '')
-OR    ISNULL(#AXAXLDataSubmission.[Date Claimants costs settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Claimants costs settled], '3999-01-01')
-OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Claimants Costs Amount] AS NVARCHAR(20)), '') <>  ISNULL(#MainAPI.[Final Claimants Costs Amount], '') 
-OR    ISNULL(#AXAXLDataSubmission.[Mediated outcome - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Mediated outcome Select from list], '')
-OR    ISNULL(#AXAXLDataSubmission.[Outcome of Instruction - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Outcome of Instruction Select from list], '')  
-OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
+
+   date_closed_case_management IS NOT NULL --•	Case is closed in MS
+OR [status_present_postition] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') --•	Present position is “To be closed/minor balances to be clear” or “Final bill sent – unpaid”
+OR [final_bill_flag] = 1
+
+
+
+
+
+--ISNULL(#AXAXLDataSubmission.[Date closed],'3999-01-01')  <> ISNULL(#MainAPI.[Date closed], '3999-01-01')
+--OR    ISNULL(#AXAXLDataSubmission.[Date of Final Panel Invoice],'3999-01-01') <> ISNULL(#MainAPI.[Date of Final Panel Invoice], '3999-01-01')
+--OR    ISNULL(#AXAXLDataSubmission.[Date Damages settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Damages settled], '3999-01-01')
+--OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Damages Amount] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Final Damages Amount], '')
+--OR    ISNULL(CAST(#AXAXLDataSubmission.[Claimants Costs Handled by Panel?] AS NVARCHAR(20)), '') <> ISNULL(#MainAPI.[Claimants Costs Handled by Panel ], '')
+--OR    ISNULL(#AXAXLDataSubmission.[Date Claimants costs settled],'3999-01-01')  <> ISNULL(#MainAPI.[Date Claimants costs settled], '3999-01-01')
+--OR    ISNULL(CAST(#AXAXLDataSubmission.[Final Claimants Costs Amount] AS NVARCHAR(20)), '') <>  ISNULL(#MainAPI.[Final Claimants Costs Amount], '') 
+--OR    ISNULL(#AXAXLDataSubmission.[Mediated outcome - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Mediated outcome Select from list], '')
+--OR    ISNULL(#AXAXLDataSubmission.[Outcome of Instruction - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Outcome of Instruction Select from list], '')  
+--OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
  
 )
 
