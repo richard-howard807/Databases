@@ -13,6 +13,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[BBCClientReport]
 AS
 BEGIN
@@ -95,7 +96,8 @@ OR CRSystemSourceID  LIKE '35215-%'
 OR clNo='W15354'
 )
 AND fileType='2038'
-AND CRSystemSourceID NOT IN ('32469-210','32469-211')
+--AND dbFile.fileID=5211248
+AND ISNULL(CRSystemSourceID,'') NOT IN ('32469-210','32469-211')
 ORDER BY dbFile.Created
 END
 GO

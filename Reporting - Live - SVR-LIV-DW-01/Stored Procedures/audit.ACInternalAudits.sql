@@ -29,8 +29,26 @@ BEGIN
 --SET @Template='Claims Audit'
 --SET @AuditYear='2021/2022'
 
-SELECT auditee.hierarchylevel3hist AS [Department]
-, auditee.hierarchylevel4hist AS [Team]
+SELECT * 
+, CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END AS [Audits Completed]
+, CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 END AS [Audits Passed]
+FROM (
+SELECT dim_employee.dim_employee_key AS [Employee Key]
+, name AS [Name]
+, dim_fed_hierarchy_history.hierarchylevel2hist AS [Division]
+, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
+, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
+FROM red_dw.dbo.dim_employee
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+AND dim_fed_hierarchy_history.dss_current_flag='Y'
+AND dim_fed_hierarchy_history.activeud=1
+WHERE dim_employee.classification='Casehandler'
+AND dim_employee.deleted_from_cascade=0
+AND dim_employee.leftdate IS NULL
+) AS [Users]
+
+LEFT OUTER JOIN (SELECT auditee.dim_employee_key
 , data.*
  
 FROM (
@@ -79,21 +97,23 @@ ON dim_ac_audit_type.dim_ac_audit_type_key = dim_ac_audits.dim_ac_audit_type_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS [auditor]
 ON auditor.dim_fed_hierarchy_history_key=dim_ac_audits.dim_auditor_fed_hierarchy_history_key
 
-INNER JOIN #Template AS Template ON Template.ListValue COLLATE DATABASE_DEFAULT = dim_ac_audit_type.name COLLATE DATABASE_DEFAULT
+INNER JOIN #Template AS Template ON Template.ListValue COLLATE DATABASE_DEFAULT =  dim_ac_audit_type.name COLLATE DATABASE_DEFAULT
 
-WHERE  dim_ac_audits.created_at >='2021-09-01'
+WHERE dim_ac_audits.created_at >='2021-09-01'
 ) src
 
 UNPIVOT (name FOR position IN ([Auditee Name 1], [Auditee Name 2], [Auditee Name 3]))pvt1
 UNPIVOT (auditeekey FOR akey IN ([Auditee Key 1], [Auditee Key 2], [Auditee Key 3]))pvt2
+
 
 WHERE  RIGHT(akey,1)=RIGHT(position,1)
 
 ) AS data
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS auditee
 ON auditee.dim_fed_hierarchy_history_key=data.[Auditee key]
-	
 
+) AS [Audits]
+ON Audits.dim_employee_key=Users.[Employee Key]
 
 
 END
