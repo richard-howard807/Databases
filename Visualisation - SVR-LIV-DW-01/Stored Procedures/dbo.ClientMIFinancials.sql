@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE  PROCEDURE [dbo].[ClientMIFinancials]
 
 AS
@@ -10,7 +11,7 @@ AS
 BEGIN
 
 DECLARE @Period AS NVARCHAR(500)
-SET @Period=(SELECT bill_fin_period FROM red_dw.dbo.dim_bill_date WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,GETDATE(),103))
+SET @Period=(SELECT bill_fin_period FROM red_dw.dbo.dim_bill_date WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,DATEADD(m,-1,DATEADD(mm, DATEDIFF(m,0,GETDATE()), 0)),103))
 
 PRINT @Period
 
@@ -39,6 +40,7 @@ SELECT Targets.segmentname,
 	   ,LastYearFull
 	   ,CurrentMonth.RevenueMTD
 	   ,TargetMonth
+	   ,DATEADD(m,-1,DATEADD(mm, DATEDIFF(m,0,GETDATE()), 0)) AS ReportingPeriod
 	   
 FROM (
  SELECT Segments.segmentname,Segments.sectorname,SUM(target_value) AS TargetRevenue

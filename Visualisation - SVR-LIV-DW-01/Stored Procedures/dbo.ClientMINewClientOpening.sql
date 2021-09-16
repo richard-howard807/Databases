@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[ClientMINewClientOpening] 
 
 AS
@@ -12,12 +13,13 @@ BEGIN
 DECLARE @Year AS INT
 DECLARE @Month AS INT
 
-SET @Year=(SELECT DISTINCT fin_year FROM red_dw.dbo.dim_date WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,GETDATE(),103))
-SET @Month=(SELECT DISTINCT fin_month_no FROM red_dw.dbo.dim_date WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,GETDATE(),103))
+SET @Year=(SELECT DISTINCT fin_year FROM red_dw.dbo.dim_date WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(m,-1,DATEADD(mm, DATEDIFF(m,0,GETDATE()), 0)),103))
+SET @Month=(SELECT DISTINCT fin_month_no FROM red_dw.dbo.dim_date WHERE CONVERT(DATE,calendar_date,103)=CONVERT(DATE,DATEADD(m,-1,DATEADD(mm, DATEDIFF(m,0,GETDATE()), 0)),103))
 
 PRINT @Month
 
-SELECT dim_client.segment  
+SELECT dim_client.segment 
+,DATEADD(m,-1,DATEADD(mm, DATEDIFF(m,0,GETDATE()), 0)) AS [Month]
 ,NULL AS [New/Linked/Re-opened Previous YTD]
 ,NULL AS [New/Linked/Re-opened YTD]
 ,SUM(PreviousYear.NewClientYTD) AS [New Clients Billed Previous YTD]

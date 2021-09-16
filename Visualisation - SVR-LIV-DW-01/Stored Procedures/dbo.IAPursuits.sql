@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[IAPursuits]
 
 AS 
@@ -16,7 +17,7 @@ BEGIN
 
 SELECT pursuitsn AS [Pursuit Number],
        company_name AS [Company],
-	   description AS [Description],
+	   dim_be_pursuits.title AS [Description],
 	   open_date AS [Date Opened],
        priority_rank AS [Priority Rank],
        ISNULL(stage_state,'Unspecified') AS [Stage/State],
