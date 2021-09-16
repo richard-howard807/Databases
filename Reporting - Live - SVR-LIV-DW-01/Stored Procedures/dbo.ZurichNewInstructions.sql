@@ -44,6 +44,7 @@ SELECT
 	, dim_date.fin_year			AS [Financial Year Opened]
 	, dim_date.cal_year			AS [Calendar Year Opened]
 	, dim_date.cal_month_name		AS [Month Opened]
+	, dim_date.cal_month_no				AS month_order
 	, 1					AS count_of_case
 	, CASE
 		WHEN dim_instruction_type.instruction_type LIKE 'Outsource%' THEN
