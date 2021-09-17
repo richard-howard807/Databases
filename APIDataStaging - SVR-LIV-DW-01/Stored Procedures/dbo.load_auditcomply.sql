@@ -58,7 +58,7 @@ select data.name,
 		   when cust.custom_option_id IS NOT null then cust.custom_option_id 
 		   else obs.question_id end as question_id,
 
-	  case when cust.field_label IS NOT NULL and custfields.label is not null then obs.question_text +'' - ''+ custfields.label
+	  case when cust.field_label IS NOT NULL and custfields.label is not null then obs.question_text +'' - ''+ cust.field_label +'' - ''+ custfields.label
 		   when cust.field_label IS NOT NULL then obs.question_text +'' - ''+ cust.field_label 
 		   else obs.question_text end as question_text,	  
 
