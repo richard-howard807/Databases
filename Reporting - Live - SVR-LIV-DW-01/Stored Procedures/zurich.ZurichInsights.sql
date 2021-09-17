@@ -7,7 +7,7 @@ GO
 -- Create date: 2020-12-09
 -- Description:	#81365, Zurich insights dashboard, claimant behaviour
 -- =============================================
-
+-- ES - 2021-09-17 #114438 - added recovery details
 -- =============================================
 CREATE PROCEDURE [zurich].[ZurichInsights]
 	
@@ -99,7 +99,13 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
 		, DATEDIFF(MONTH, dim_detail_claim.notification_to_zurich_date_old, dim_detail_outcome.date_claim_concluded) AS [Notifictation to Concluded]
-		
+		--recoveries
+		, fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery Claimants Damages via Third Party Contribution]
+		, fact_finance_summary.[recovery_defence_costs_from_claimant] AS [Recovery Defence Costs from Claimant]
+		, fact_detail_recovery_detail.[recovery_claimants_costs_via_third_party_contribution] AS [Recovery Claimants Costs via Third Party Contribution]
+		, fact_finance_summary.[recovery_defence_costs_via_third_party_contribution] AS [Recovery Defence Costs via Third Party Contribution]
+
+
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -129,6 +135,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
 ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
+ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 --AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')
@@ -229,7 +237,11 @@ SELECT date_opened_case_management AS [Date Case Opened]
 			AND ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management) IS NOT NULL THEN 1 ELSE NULL END AS [Matters settled that were opened 1 March 2020 to date]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
 		, DATEDIFF(MONTH, dim_detail_claim.notification_to_zurich_date_old, dim_detail_outcome.date_claim_concluded) AS [Notifictation to Concluded]
-
+		--recoveries
+		, fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery Claimants Damages via Third Party Contribution]
+		, fact_finance_summary.[recovery_defence_costs_from_claimant] AS [Recovery Defence Costs from Claimant]
+		, fact_detail_recovery_detail.[recovery_claimants_costs_via_third_party_contribution] AS [Recovery Claimants Costs via Third Party Contribution]
+		, fact_finance_summary.[recovery_defence_costs_via_third_party_contribution] AS [Recovery Defence Costs via Third Party Contribution]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -260,6 +272,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
 ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
+ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE hierarchylevel2hist='Legal Ops - Claims'
 --AND hierarchylevel3hist IN ('Motor','Large Loss','Casualty','Disease')

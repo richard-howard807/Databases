@@ -33,6 +33,7 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_advice.[ec_outcome] AS [EC Outcome]
 ,dim_detail_advice.[ec_status] AS [EC Status]
 ,dim_detail_advice.[et_claim] AS [ET Claim?]
+,dim_detail_core_details.[emp_litigatednonlitigated] AS [Litigated/Non-Litigated]
 ,dim_detail_practice_area.[emp_present_position] AS [Present position]
 ,dim_detail_practice_area.[date_et3_due] AS [Date ET3 due]
 ,dim_detail_practice_area.[emp_prospects_of_success] AS [Prospects of success]
@@ -87,6 +88,8 @@ dim_matter_header_current.client_code AS [Client Number]
 ,fact_finance_summary.disbursement_balance AS [Unbilled disbursements]
 ,last_bill_date AS [Date of last bill]
 ,last_time_transaction_date AS [Date of last time posting]
+,AdvocacyTime.[Hours Recorded] AS [Advocacy Hours Recorded]
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
@@ -121,7 +124,31 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
  LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_matter_header_curr_key = dim_detail_advice.dim_matter_header_curr_key
-WHERE dim_matter_header_current.department_code='0012'
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
+AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+
+LEFT OUTER JOIN (SELECT fact_all_time_activity.client_code
+		, fact_all_time_activity.matter_number
+		, SUM(minutes_recorded)/60 AS [Hours Recorded] 
+FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_all_time_activity
+ON dim_all_time_activity.dim_all_time_activity_key = fact_all_time_activity.dim_all_time_activity_key
+AND dim_all_time_activity.time_activity_code IN ('IC01','IC02','IC03','IC04','IC05','IC06','0021')
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_department
+ON dim_department.dim_department_key = dim_matter_header_current.dim_department_key
+AND dim_department.department_code='0012'
+WHERE (dim_matter_header_current.date_closed_practice_management IS NULL 
+OR dim_matter_header_current.date_closed_practice_management>='2016-01-01')
+GROUP BY fact_all_time_activity.client_code,
+         fact_all_time_activity.matter_number) AS [AdvocacyTime]
+ON AdvocacyTime.client_code = dim_matter_header_current.client_code
+AND AdvocacyTime.matter_number = dim_matter_header_current.matter_number
+
+WHERE dim_matter_header_current.reporting_exclusions=0
+AND dim_matter_header_current.department_code='0012'
 AND (dim_matter_header_current.date_closed_practice_management IS NULL 
 OR dim_matter_header_current.date_closed_practice_management>='2016-01-01')
 END

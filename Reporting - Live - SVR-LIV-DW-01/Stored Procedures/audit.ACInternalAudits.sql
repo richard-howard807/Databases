@@ -46,6 +46,7 @@ AND dim_fed_hierarchy_history.activeud=1
 WHERE dim_employee.classification='Casehandler'
 AND dim_employee.deleted_from_cascade=0
 AND dim_employee.leftdate IS NULL
+AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
 ) AS [Users]
 
 LEFT OUTER JOIN (SELECT auditee.dim_employee_key
