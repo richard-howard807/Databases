@@ -70,6 +70,7 @@ FROM red_dw.dbo.fact_payor_debt_detail fact_debt
 							+ '/' + NxAttachment.FileName hyperlink
 						from red_dw.dbo.ds_sh_3e_invmaster
 						left outer join TE_3E_PROD.dbo.NxAttachment on NxAttachment.ParentItemID = ds_sh_3e_invmaster.invmasterid
+						WHERE  isreversed = 0 
 					) hyperlink on hyperlink.invnumber = dim_bill.bill_number
 
 
