@@ -42,10 +42,9 @@ SELECT clNo +'-' + fileNo AS [MS Reference]
 ,dim_instruction_type.[instruction_type] [Instruction Type]
 ,dim_detail_health.[completion_date] [Completion Date]
 ,dim_detail_health.[contacts_initials] [Contact Initials]
-, CASE WHEN 	DATEDIFF(DAY, dim_detail_health.completion_date, GETDATE()) > 90 THEN 1 WHEN 
-
-DATEDIFF(DAY, dim_matter_header_current.date_closed_case_management, GETDATE()) > 90 THEN 1 ELSE 0 end
-[elapsed]
+, CASE WHEN dim_detail_health.completion_date IS NOT NULL THEN 1  
+WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 1  
+ELSE 0 END [elapsed]
 
 
 FROM MS_Prod.config.dbFile
