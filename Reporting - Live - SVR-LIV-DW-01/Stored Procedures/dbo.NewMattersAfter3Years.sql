@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NewMattersAfter3Years] --EXEC [dbo].[NewMattersAfter3Years] '2017-08-23','2017-08-23'
 (	@StartDate	DATE
 ,	@EndDate	DATE
@@ -16,7 +17,7 @@ AS
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 SET NOCOUNT ON
 SELECT AllData.Client,
-       AllData.ClientName,
+       client_name AS ClientName,
        AllData.Matter,
        AllData.FeeEarner,
        AllData.DateMatterOpened,
@@ -46,7 +47,7 @@ SELECT AllData.Client,
 FROM 
 (
 SELECT	MostRecent.mg_client	AS Client
-	,	caclient.cl_clname		AS ClientName
+	--,	caclient.cl_clname		AS ClientName
 	,	MostRecent.mg_matter	AS Matter
 	,	MostRecent.mg_feearn	AS FeeEarner
 	,	MostRecent.mg_datopn	AS DateMatterOpened
@@ -76,8 +77,8 @@ INNER JOIN
 	)	Previous
 	
 	ON	MostRecent.mg_client = Previous.mg_client
-INNER JOIN	axxia01.dbo.caclient
-	ON	MostRecent.mg_client = caclient.cl_accode
+--INNER JOIN	axxia01.dbo.caclient
+	--ON	MostRecent.mg_client = caclient.cl_accode
 
 WHERE	MostRecent.OrderID = 1
 	AND Previous.OrderID = 2
