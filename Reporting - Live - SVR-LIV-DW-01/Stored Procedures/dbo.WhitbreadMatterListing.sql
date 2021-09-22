@@ -16,6 +16,7 @@ dim_matter_header_current.client_code AS [Client Number]
 ,name AS [Case Manager]
 ,hierarchylevel4hist AS [Team]
 ,work_type_name AS [Work Type]
+,dim_detail_core_details.[emp_litigatednonlitigated] AS [Litigated / Non-Litigated]
 ,dim_matter_header_current.date_opened_case_management AS [Date Opened]
 ,dim_matter_header_current.date_closed_practice_management AS [Date Closed]
 ,client_group_name AS [Client Group]
@@ -121,7 +122,11 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
- LEFT JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_matter_header_curr_key = dim_detail_advice.dim_matter_header_curr_key
+ LEFT JOIN red_dw.dbo.dim_detail_finance 
+ ON dim_detail_finance.dim_matter_header_curr_key = dim_detail_advice.dim_matter_header_curr_key
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+ ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
 WHERE dim_matter_header_current.department_code='0012'
 AND dim_matter_header_current.master_client_code = 'W15630'
 AND (dim_matter_header_current.date_closed_practice_management IS NULL 
