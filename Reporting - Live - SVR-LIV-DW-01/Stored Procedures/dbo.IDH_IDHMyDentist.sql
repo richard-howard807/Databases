@@ -81,7 +81,8 @@ SELECT
 	 
     dim_fed_hierarchy_history.[hierarchylevel4hist] AS [Team],
     dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department],
-    dim_fed_hierarchy_history.[hierarchylevel2hist] [Division]
+    dim_fed_hierarchy_history.[hierarchylevel2hist] [Division],
+	fact_finance_summary.client_account_balance_of_matter		AS [Client Account Balance]
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_property
 		ON dim_detail_property.client_code = dim_matter_header_current.client_code
