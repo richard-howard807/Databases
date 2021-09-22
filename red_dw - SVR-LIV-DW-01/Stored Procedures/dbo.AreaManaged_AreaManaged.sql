@@ -64,6 +64,22 @@ inner join @UsernameTbl u on u.employeeid = dim_fed_hierarchy_history.worksforem
 						 and dim_fed_hierarchy_history.dss_current_flag = 'Y'
 						 and dim_fed_hierarchy_history.leaver = 0
 
+union all
+
+select dim_fed_hierarchy_history_key as 'empcode', 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel4hist) team, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel3hist) department,
+	rtrim(dim_fed_hierarchy_history.hierarchylevel2hist) division, 
+	rtrim(dim_fed_hierarchy_history.hierarchylevel1hist) firm
+from dim_fed_hierarchy_history 
+inner join @UsernameTbl u on u.employeeid = dim_fed_hierarchy_history.reportingbcmidud
+						 and u.team <> dim_fed_hierarchy_history.hierarchylevel4hist
+						 and dim_fed_hierarchy_history.worksforemployeeid <> u.employeeid
+						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
+						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
+						 and activeud = 1
+						 and dim_fed_hierarchy_history.dss_current_flag = 'Y'
+						 and dim_fed_hierarchy_history.leaver = 0
 
 
 
