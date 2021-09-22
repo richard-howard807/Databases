@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[PostMatterSampleOpenDataRange] -- EXEC dbo.PostMatterSampleDataRange '2021-04-01','2021-04-30'
 
 AS
@@ -59,6 +60,11 @@ SELECT
 ,LastBillComposit.BillType
 ,LastBillComposit.LastBillNum
 ,last_time_transaction_date AS [Last Time Transaction Date]
+,ClientAssoc.[Client AssocEmail]
+,ClientAssoc.[Client ContactDefault]
+,InsurerClientAssoc.[Insurer AssocEmail]
+,InsurerClientAssoc.[Insurer ContactDefault]
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -125,6 +131,51 @@ WHERE Bills.LastBill=1
 ) AS LastBillComposit
  ON   LastBillComposit.client_code = dim_matter_header_current.client_code
  AND  LastBillComposit.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN
+(
+SELECT fileID,STRING_AGG(assocEmail,',') AS [Insurer AssocEmail]
+,STRING_AGG(DefaultEmail,',') AS [Insurer ContactDefault]
+FROM ms_prod.config.dbAssociates
+LEFT JOIN(SELECT 
+    Email.contID,
+    Email.Email AS DefaultEmail
+FROM 
+(
+SELECT contID,contEmail AS Email ,ROW_NUMBER() OVER (PARTITION BY contID ORDER BY contDefaultOrder ASC)  AS xorder
+FROM MS_Prod.dbo.dbContactEmails WHERE   contActive=1
+) AS Email
+WHERE Email.xorder=1
+) AS DefaultEmail
+ ON DefaultEmail.contID = dbAssociates.contID
+WHERE assocType='INSURERCLIENT'
+AND dbAssociates.assocActive=1
+AND (DefaultEmail IS NOT NULL OR assocEmail IS NOT NULL)
+GROUP BY fileID
+) AS InsurerClientAssoc
+ ON ms_fileid=InsurerClientAssoc.fileID
+LEFT OUTER JOIN 
+(
+SELECT fileID,STRING_AGG(assocEmail,',') AS [Client AssocEmail]
+,STRING_AGG(DefaultEmail,',') AS [Client ContactDefault]
+FROM ms_prod.config.dbAssociates
+LEFT JOIN(SELECT 
+    Email.contID,
+    Email.Email AS DefaultEmail
+FROM 
+(
+SELECT contID,contEmail AS Email ,ROW_NUMBER() OVER (PARTITION BY contID ORDER BY contDefaultOrder ASC)  AS xorder
+FROM MS_Prod.dbo.dbContactEmails WHERE   contActive=1
+) AS Email
+WHERE Email.xorder=1
+) AS DefaultEmail
+ ON DefaultEmail.contID = dbAssociates.contID
+WHERE assocType='CLIENT'
+AND dbAssociates.assocActive=1
+AND (DefaultEmail IS NOT NULL OR assocEmail IS NOT NULL)
+GROUP BY fileID
+) AS ClientAssoc
+ ON ms_fileid=ClientAssoc.fileID
+
 WHERE reporting_exclusions=0
 AND dim_matter_header_current.date_opened_case_management>='2021-03-01'
 
