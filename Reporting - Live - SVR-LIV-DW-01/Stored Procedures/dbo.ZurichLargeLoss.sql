@@ -25,6 +25,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 	 IF OBJECT_ID('tempdb..#ClientReportDates') IS NOT NULL DROP TABLE #ClientReportDates
 	 IF OBJECT_ID('tempdb..#MainData') IS NOT NULL DROP TABLE #MainData
 
+	 SET NOCOUNT ON 
+
 SELECT 
   dim_matter_header_current.master_client_code
  ,dim_matter_header_current.master_matter_number
@@ -253,9 +255,10 @@ WHERE
 	AND (date_claim_concluded IS NULL 
 	OR date_claim_concluded>='2019-02-01')
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
+	AND dim_matter_worktype.work_type_name <> 'Cross Border'
 	--AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
 	--AND red_dw.dbo.dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'Yes'
-	AND	  fact_finance_summary.damages_reserve >=150000 
+	--AND	  fact_finance_summary.damages_reserve >=150000 
 	--AND dim_matter_header_current.master_client_code = 'Z1001' AND dim_matter_header_current.master_matter_number = '15025'
 
 SELECT 
@@ -291,7 +294,7 @@ SELECT
 , defence_costs_billed
 , [Damages - Costs Paid]
 , final_bill_flag
-, (total_reserve	-Savings)/total_reserve	AS [Total Reserve %]
+, (total_reserve	-Savings)/NULLIF(total_reserve,0)	AS [Total Reserve %]
 , [Total Paid] 
 , total_recovery
 , Savings
@@ -304,7 +307,7 @@ SELECT
 , #MainData.date_opened_case_management
 , CountPhoneCallNotComplete
 , claimants_costs_paid
-, total_amount_billed	- vat_billed  AS [total_amount_billed]
+, NULLIF(total_amount_billed,0)	- NULLIF(vat_billed,0)  AS [total_amount_billed]
 , [Date Closed]
 , FILTER AS [Filter Date of Last Bill]
 , repudiation_outcome
@@ -320,5 +323,4 @@ FROM #MainData
 
    END
 
- 
 GO
