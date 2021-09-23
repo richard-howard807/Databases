@@ -9,9 +9,16 @@ GO
 --2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
 --2021-05-07 OK currently only brings in claims, changed to bring in LTA & Claims 
 --2021-09-03 ES #101252, amended fee arrangment logic to look at dim_detail_finance.[output_wip_fee_arrangement]
+--2021-09-23 JB #115357 added @client_code so sproc can be used for new Gallagher Bassestt Billing Project Report, and any other that are needed in future
 
 CREATE PROCEDURE [dbo].[ZurichBillingProjectReport]
+(
+	@client_code AS NVARCHAR(8)
+)
 AS
+
+--Testing
+--DECLARE @client_code AS NVARCHAR(8) = 'Z1001'
 
 BEGIN
 SELECT dim_matter_header_current.client_code AS [Client]
@@ -72,7 +79,7 @@ INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_bill_key = dim_bill.dim_bill_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-WHERE client_code='Z1001'
+WHERE client_code=@client_code
 AND fees_total <>0
 AND dim_bill.bill_number <>'PURGE'
 AND bill_reversed=0
@@ -83,9 +90,9 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
  LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
  ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE dim_matter_header_current.client_code='Z1001'
+WHERE dim_matter_header_current.client_code=@client_code
 AND date_opened_case_management>='2019-02-01'
-AND dim_matter_header_current.matter_number NOT IN ('00079227')
+--AND dim_matter_header_current.matter_number NOT IN ('00079227')
 AND dim_fed_hierarchy_history.hierarchylevel2hist IN
 (
 N'Legal Ops - Claims',
