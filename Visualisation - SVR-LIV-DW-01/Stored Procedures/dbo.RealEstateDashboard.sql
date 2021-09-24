@@ -36,6 +36,7 @@ SELECT
 	dim_matter_header_current.dim_matter_header_curr_key
 	, SUM(fact_bill_billed_time_activity.invoiced_minutes) / 60		AS hours_billed
 	, SUM(fact_bill_billed_time_activity.time_charge_value)			AS value_hours_billed
+	,SUM(red_dw.dbo.fact_bill_billed_time_activity.minutes_recorded) /60 AS [Reported Billed Hours]
 --SELECT fact_bill_billed_time_activity.*
 INTO #billed_time
 FROM red_dw.dbo.dim_matter_header_current
@@ -94,6 +95,7 @@ SELECT
 	, dim_fed_hierarchy_history.hierarchylevel3hist			AS [Department]
 	, dim_matter_worktype.work_type_name				AS [Matter Type]
 	, dim_detail_finance.output_wip_fee_arrangement			AS [Fee Arrangement]
+	,red_dw.dbo.dim_matter_header_current.fee_arrangement AS [Fee Arrangement v2]
 	, fact_finance_summary.fixed_fee_amount				AS [Fixed Fee Amount]
 	, CAST(fact_bill_matter.last_bill_date AS DATE)				AS [Last Bill Date (Non Comp)]
 	, fact_finance_summary.defence_costs_billed			AS [Revenue Billed (Net of VAT]
@@ -101,7 +103,7 @@ SELECT
 	, #recorded_time.hours_recorded					AS [Hours Recorded]
 	, #recorded_time.value_hours_recorded			AS [Value of Hours Recorded]
 	, #billed_time.value_hours_billed				AS [Value of Billed Hours]
-	, #recorded_time.value_hours_recorded - #billed_time.value_hours_billed  				AS [Write Off Amount]
+	, #billed_time.[Reported Billed Hours] - #billed_time.value_hours_billed  				AS [Write Off Amount]
 	,(
            SELECT fin_year
            FROM red_dw..dim_date WITH(NOLOCK)
@@ -135,25 +137,25 @@ FROM red_dw.dbo.dim_matter_header_current
  INNER JOIN (
     			SELECT 
 			SUM(write_off_amt) AS WriteOfAmount
-			,red_dw.dbo.dim_date.fin_year
+		
 			,dim_matter_header_curr_key
 			
 
 			FROM red_dw.dbo.fact_write_off
 			INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'WB172517'  AND matter_number = '00000002'
+			WHERE client_code = 'W22678'  AND matter_number = '00000002'
 			GROUP BY
-			fin_year
-			,dim_matter_header_curr_key) AS writeoff 
+		
+			dim_matter_header_curr_key) AS writeoff 
 ON writeoff.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE
-	--dim_fed_hierarchy_history.hierarchylevel3hist = 'Real Estate'
-	--AND dim_matter_header_current.date_opened_case_management >= '2019-05-01'
-	--AND (date_claim_concluded IS NULL 
-	--OR date_claim_concluded>='2019-05-01')
+	dim_fed_hierarchy_history.hierarchylevel3hist = 'Real Estate'
+	AND dim_matter_header_current.date_opened_case_management >= '2019-05-01'
+	AND (date_claim_concluded IS NULL 
+	OR date_claim_concluded>='2019-05-01')
 	--AND dim_detail_finance.output_wip_fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee'
-	 dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('WB172517-2')
+	-- dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('WB172517-2')
 
 
    END 
