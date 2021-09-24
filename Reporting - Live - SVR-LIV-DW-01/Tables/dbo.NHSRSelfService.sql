@@ -117,6 +117,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Date Referral to Costs Unit] [datetime] NULL,
 [Date Claimants Costs Received] [datetime] NULL,
 [Date Costs Settled] [datetime] NULL,
+[Stage of Settlement - costs] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Date Settlement form Sent to Zurich WPS386 VE00571] [datetime] NULL,
 [Interim Costs Payments] [numeric] (13, 2) NULL,
 [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)] [numeric] (13, 2) NULL,

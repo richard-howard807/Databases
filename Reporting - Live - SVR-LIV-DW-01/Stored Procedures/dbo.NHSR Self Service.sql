@@ -26,6 +26,7 @@ GO
 -- JL 20201126 Removed history as per above but replaced it with history case statement #77789
 -- ES 20210519 #99395, added is the claimant a litigant in person flag
 -- OK 20210909 #113172 add 2021/2022 years for rev, hours , chrgedhours, disb
+-- JL 20210924 #115469 added in stage of settlement nhsr
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -593,6 +594,7 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            dim_detail_outcome.date_referral_to_costs_unit AS [Date Referral to Costs Unit],
            dim_detail_outcome.[date_claimants_costs_received] AS [Date Claimants Costs Received],
            dim_detail_outcome.date_costs_settled AS [Date Costs Settled],
+		   red_dw.dbo.dim_detail_health.stage_of_settlement_nhsr AS [Stage of Settlement - costs],
            dim_detail_client.date_settlement_form_sent_to_zurich AS [Date Settlement form Sent to Zurich WPS386 VE00571],
            fact_detail_paid_detail.interim_costs_payments AS [Interim Costs Payments],
            fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)],
@@ -761,6 +763,7 @@ GETDATE() AS update_time,
 	, Disbursements.[2021] [Disbursements Billed 2020/2021]
 		, Disbursements.[2022] [Disbursements Billed 2021/2022]
 	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
+	
     ---------------------------------------------------
     INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810
