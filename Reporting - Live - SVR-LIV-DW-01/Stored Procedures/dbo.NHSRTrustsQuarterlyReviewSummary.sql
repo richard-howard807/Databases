@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2020-10-16
@@ -202,7 +204,8 @@ SELECT
 			0
 	  END				AS [Clinical Damages Paid Past 12 Months]
 
-	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
+	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.nhs_risk_management_recommendations IS NOT NULL THEN dim_detail_health.nhs_risk_management_recommendations
+											  WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
@@ -232,6 +235,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON RTRIM(#instruction_type.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN dim_detail_health.nhs_instruction_type = '' THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_instruction_type) END, 'Missing')
 	INNER JOIN #referral_reason
 		ON RTRIM(#referral_reason.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN LOWER(dim_detail_core_details.referral_reason) = '' THEN 'missing' ELSE LOWER(RTRIM(dim_detail_core_details.referral_reason)) END, 'missing')
+
+
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0

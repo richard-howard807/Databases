@@ -525,7 +525,8 @@ SELECT
 			0
 	  END							AS [Clinical]
 
-	,[Risk Management Recommendations] = CASE WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
+	,[Risk Management Recommendations] =CASE WHEN dim_detail_health.nhs_risk_management_recommendations IS NOT NULL THEN dim_detail_health.nhs_risk_management_recommendations
+											WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
