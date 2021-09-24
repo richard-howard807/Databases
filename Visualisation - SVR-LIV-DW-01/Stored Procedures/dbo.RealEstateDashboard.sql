@@ -26,6 +26,11 @@ IF OBJECT_ID('#recorded_time') IS NOT NULL
 
 /*--------------------------------------------------------------------------------------
           get the value (£) of hours billed 
+
+Bill adjustment – where WIP is reduced in value at the point of bill, e.g. on a fixed fee where all the time gets put onto a bill, but the fee value is less than the WIP recorded, so everyone gets pro-rated down. 
+WIP adjustment – this should be where something has been altered mid-matter. So perhaps the file was opened and everyone was set up to record at £500 per hour. Someone reviews the file and realises the mistake, changes it to £150 per hour. The value of WIP has been reduced, but it never really existed because it was a mistake.
+Purged time – this is a true write off in the sense the time will never be billed. It is deleted from the system. Any value was completely lost. Probably most likely on aborted deals, or time recorded post completion. 
+
 -----------------------------------------------------------------------------------*/
 SELECT
 	dim_matter_header_current.dim_matter_header_curr_key
@@ -109,6 +114,7 @@ SELECT
            FROM red_dw..dim_date WITH(NOLOCK)
            WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_closed_case_management AS DATE)
        ) [Fin Year Closed]
+	   ,WriteOfAmount
 
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.fact_dimension_main ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -126,13 +132,28 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN #recorded_time ON #recorded_time.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
 	AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
+ INNER JOIN (
+    			SELECT 
+			SUM(write_off_amt) AS WriteOfAmount
+			,red_dw.dbo.dim_date.fin_year
+			,dim_matter_header_curr_key
+			
+
+			FROM red_dw.dbo.fact_write_off
+			INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+			WHERE client_code = 'WB172517'  AND matter_number = '00000002'
+			GROUP BY
+			fin_year
+			,dim_matter_header_curr_key) AS writeoff 
+ON writeoff.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
 WHERE
-	dim_fed_hierarchy_history.hierarchylevel3hist = 'Real Estate'
-	AND dim_matter_header_current.date_opened_case_management >= '2019-05-01'
-	AND (date_claim_concluded IS NULL 
-	OR date_claim_concluded>='2019-05-01')
+	--dim_fed_hierarchy_history.hierarchylevel3hist = 'Real Estate'
+	--AND dim_matter_header_current.date_opened_case_management >= '2019-05-01'
+	--AND (date_claim_concluded IS NULL 
+	--OR date_claim_concluded>='2019-05-01')
 	--AND dim_detail_finance.output_wip_fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee'
-	--AND dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('W22678-1')
+	 dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('WB172517-2')
 
 
    END 

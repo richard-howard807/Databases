@@ -46,7 +46,9 @@ dim_matter_header_current.master_client_code AS [Client Code]
     [Expiry of Gas Certificate]  =  dim_detail_claim.[gascomp_expiry_of_gas_certificate] ,
 	[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained], 
 	[Current Status]  = dim_detail_claim.[gascomp_current_status],
-	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months]
+	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months],
+	[UPRN] = gascomp_uprn,
+	[Region] = gascomp_region
 
 FROM
 red_dw.dbo.fact_dimension_main
