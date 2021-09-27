@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[LTAFeeEarnerCheck] --EXEC [dbo].[LTAFeeEarnerCheck] 'All'
 (
 @Filter AS NVARCHAR(MAX)
@@ -69,6 +70,7 @@ AND tskActive=1
 AND red_dw.dbo.datetimelocal(tskDue)>='2021-05-25'
 AND red_dw.dbo.datetimelocal(tskDue)<CONVERT(DATE,GETDATE(),103)
 AND date_closed_case_management IS NULL
+AND master_client_code<>'30645'
 
 END 
 
@@ -127,6 +129,7 @@ AND workemail=@Filter
 AND red_dw.dbo.datetimelocal(tskDue)>='2021-05-25'
 AND red_dw.dbo.datetimelocal(tskDue)<CONVERT(DATE,GETDATE(),103)
 AND date_closed_case_management IS NULL
+AND master_client_code<>'30645'
 
 END 
 

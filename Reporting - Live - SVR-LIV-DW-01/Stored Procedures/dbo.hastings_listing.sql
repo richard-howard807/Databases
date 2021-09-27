@@ -192,7 +192,7 @@ GROUP BY
 --==============================================================================================================================================
 SELECT
 	NULL		AS [Exposure Number]
-	, dim_client_involvement.insurerclient_reference		AS [Claim Reference]
+	, COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference)		AS [Claim Reference]
 	, dim_instruction_type.instruction_type					AS [Instruction Type]
 	, dim_detail_core_details.clients_claims_handler_surname_forename		AS [Hastings Handler]
 	, dim_matter_header_current.matter_owner_full_name			AS [Supplier Handler]
@@ -228,20 +228,45 @@ SELECT
 	, dim_detail_core_details.name_of_claimants_solicitor_surname_forename			AS [Claimant Solicitor Handler]
 	, clm_sols_town.town				AS [Claimant Solicitor Branch]
 	, dim_detail_claim.hastings_fundamental_dishonesty			AS [Fundamental Dishonesty]
-	, dim_detail_core_details.proceedings_issued				AS [Litigated]
+	, CASE	
+		WHEN RTRIM(LOWER(dim_detail_core_details.proceedings_issued)) = 'yes' THEN
+			'Y'
+		WHEN RTRIM(LOWER(proceedings_issued)) = 'no' THEN
+			'N'
+	  END													AS [Litigated]
 	, CAST(dim_detail_core_details.date_proceedings_issued AS DATE)		AS [Date Litigated]
 	, dim_detail_claim.hastings_claim_status				AS [Claim Status]
 	, allocated_courts.court_names				AS [Allocated Courts]
-	, dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable			AS [Was Litigation Avoidable?]
+	, CASE
+		WHEN RTRIM(LOWER(dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable)) = 'yes' THEN
+			'Y'
+		WHEN RTRIM(LOWER(dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable)) = 'no' THEN 
+			'N'
+	  END																	AS [Was Litigation Avoidable?]
 	, dim_detail_claim.hastings_reason_for_litigation			AS [Reason for Litigation]
 	, #hastings_financials.amount_recovery_sought		AS [Recovery to be Made?]
 	, dim_detail_client.hastings_recovery_from				AS [Recovery from]
 	, #hastings_financials.damages_reserve				AS [Current Damages Reserve - DELETE BEFORE SENDING]
 	, #hastings_financials.hastings_claimant_schedule_value				AS [Claimant Schedule of Loss Value]
-	, dim_detail_claim.hastings_ppo_claimed					AS [PPO Claimed]
-	, dim_detail_claim.hastings_provisional_damages_claimed			AS [Provisional Damages Claimed]
+	, CASE
+		WHEN dim_detail_claim.hastings_ppo_claimed = 'Yes' THEN
+			'Y'
+		WHEN dim_detail_claim.hastings_ppo_claimed = 'No' THEN 
+			'N'
+	  END						AS [PPO Claimed]
+	, CASE	
+		WHEN dim_detail_claim.hastings_provisional_damages_claimed = 'Yes' THEN
+			'Y'
+		WHEN dim_detail_claim.hastings_provisional_damages_claimed = 'No' THEN
+			'N'
+	  END 								AS [Provisional Damages Claimed]
 	, #hastings_financials.hastings_counter_schedule_of_loss_value			AS [Counter Schedule of Loss Value]
-	, dim_detail_outcome.hastings_settlement_achieved			AS [Settlement Achieved]
+	, CASE
+		WHEN dim_detail_outcome.hastings_settlement_achieved = 'Yes' THEN
+			'Y' 
+		WHEN dim_detail_outcome.hastings_settlement_achieved = 'No' THEN
+			'N'
+	  END										AS [Settlement Achieved]
 	, #hastings_financials.damages_paid						AS [Total Settlement]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)			AS [Date of Settlement]
 	--, #hastings_financials.damages_savings_currency											AS [Damages Settlement Saving (money)]
@@ -561,6 +586,7 @@ FROM red_dw.dbo.dim_matter_header_current
 						WHERE
 							dbClient.clNo = '4908'
 							AND dbAssociates.assocType = 'CLAIMANT'
+							AND dbAssociates.assocActive = 1
 						GROUP BY
 							dbFile.fileID
 					) AS claimant_names
@@ -568,7 +594,7 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN (
 						SELECT 
 							dbFile.fileID
-							, dbAddress.addLine4		AS town	
+							, COALESCE(dbAddress.addLine4, dbAddress.addLine3, dbAddress.addLine2)		AS town	
 						FROM MS_Prod.config.dbAssociates
 							INNER JOIN MS_Prod.config.dbFile
 								ON dbFile.fileID = dbAssociates.fileID
@@ -581,6 +607,8 @@ FROM red_dw.dbo.dim_matter_header_current
 						WHERE
 							dbClient.clNo = '4908'
 							AND dbAssociates.assocType = 'CLAIMANTSOLS'
+							AND dbAssociates.assocActive = 1
+							--AND dbFile.fileNo = '12'
 					) AS clm_sols_town
 		ON clm_sols_town.fileID = dim_matter_header_current.ms_fileid
 	LEFT OUTER JOIN (
