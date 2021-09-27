@@ -227,7 +227,12 @@ SELECT
 	, COALESCE(dim_detail_claim.dst_claimant_solicitor_firm, dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name)		AS [Claimant Solicitor Firm]
 	, dim_detail_core_details.name_of_claimants_solicitor_surname_forename			AS [Claimant Solicitor Handler]
 	, clm_sols_town.town				AS [Claimant Solicitor Branch]
-	, dim_detail_claim.hastings_fundamental_dishonesty			AS [Fundamental Dishonesty]
+	, CASE
+		WHEN dim_detail_claim.hastings_fundamental_dishonesty IN ('Fundamental dishonesty identified and intend to plead', 'Fundamental dishonesty identified and pleaded') THEN
+			'Y'
+		WHEN dim_detail_claim.hastings_fundamental_dishonesty IN ('Fundamental dishonesty identified but do not intend to plead', 'No fundamental dishonesty') THEN
+			'N'
+	  END									AS [Fundamental Dishonesty]
 	, CASE	
 		WHEN RTRIM(LOWER(dim_detail_core_details.proceedings_issued)) = 'yes' THEN
 			'Y'

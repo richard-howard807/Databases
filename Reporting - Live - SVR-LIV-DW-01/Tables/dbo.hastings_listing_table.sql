@@ -31,7 +31,7 @@ CREATE TABLE [dbo].[hastings_listing_table]
 [Claimant Solicitor Firm] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Claimant Solicitor Handler] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Claimant Solicitor Branch] [nvarchar] (50) COLLATE Latin1_General_CI_AS NULL,
-[Fundamental Dishonesty] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Fundamental Dishonesty] [varchar] (1) COLLATE Latin1_General_CI_AS NULL,
 [Litigated] [varchar] (1) COLLATE Latin1_General_CI_AS NULL,
 [Date Litigated] [date] NULL,
 [Claim Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
