@@ -71,9 +71,14 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 
 --LEFT JOIN ms_prod.dbo.udMIGasComp ON fileID = dim_matter_header_current.ms_fileid
 --LEFT JOIN ms_prod.dbo.dbCodeLookup ON dbCodeLookup.cdCode = udMIGasComp.cboCurrStat
-WHERE 
-dim_matter_header_current.master_client_code = 'W15603'
-AND  dim_matter_worktype.[work_type_name] = 'Injunction'
+WHERE 1 = 1
+	AND dim_matter_header_current.reporting_exclusions = 0
+	AND dim_matter_header_current.master_client_code = 'W15603'
+	AND RTRIM(dim_matter_worktype.work_type_name) = 'Injunction'
+	AND reporting_exclusions = 0
+	AND ISNULL(matter_description, '') <> 'Ignore - opened in error'
+	AND dim_detail_claim.[gascomp_date_access_obtained] IS NULL 
+	AND dim_matter_header_current.date_closed_case_management IS NULL
 
 END
 GO
