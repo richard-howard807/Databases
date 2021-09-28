@@ -100,10 +100,11 @@ SELECT
 	, CAST(fact_bill_matter.last_bill_date AS DATE)				AS [Last Bill Date (Non Comp)]
 	, fact_finance_summary.defence_costs_billed			AS [Revenue Billed (Net of VAT]
 	, fact_finance_summary.total_amount_billed			AS [Total Billed]
-	, #recorded_time.hours_recorded					AS [Hours Recorded]
+	
+	--, #recorded_time.hours_recorded					AS [Hours Recorded]
 	, #recorded_time.value_hours_recorded			AS [Value of Hours Recorded]
 	, #billed_time.value_hours_billed				AS [Value of Billed Hours]
-	, #billed_time.[Reported Billed Hours] - #billed_time.value_hours_billed  				AS [Write Off Amount]
+	--, #billed_time.[Reported Billed Hours] - #billed_time.value_hours_billed  				AS [Write Off Amount]
 	,(
            SELECT fin_year
            FROM red_dw..dim_date WITH(NOLOCK)
@@ -116,7 +117,10 @@ SELECT
            FROM red_dw..dim_date WITH(NOLOCK)
            WHERE dim_date.calendar_date = CAST(dim_matter_header_current.date_closed_case_management AS DATE)
        ) [Fin Year Closed]
-	   ,WriteOfAmount
+	   ,[WriteOfAmount (Billing Adjustment)]
+	   ,[WriteOfAmount (Purged Time]
+	   ,[WriteOfAmount (Chargeable Time]
+	   ,[Total WriteOfAmount] 
 
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.fact_dimension_main ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -136,18 +140,62 @@ FROM red_dw.dbo.dim_matter_header_current
 	AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
  INNER JOIN (
     			SELECT 
-			SUM(write_off_amt) AS WriteOfAmount
-		
+			SUM(write_off_amt) AS [WriteOfAmount (Billing Adjustment)]
 			,dim_matter_header_curr_key
 			
 
 			FROM red_dw.dbo.fact_write_off
-			INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'W22678'  AND matter_number = '00000002'
+			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+			WHERE client_code = 'W22678'  AND matter_number = '00000001'
+			AND fact_write_off.write_off_type = 'BA'
 			GROUP BY
 		
 			dim_matter_header_curr_key) AS writeoff 
 ON writeoff.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+ INNER JOIN (
+    			SELECT 
+			SUM(write_off_amt) AS [WriteOfAmount (Purged Time]
+					,dim_matter_header_curr_key
+			
+
+			FROM red_dw.dbo.fact_write_off
+			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+			WHERE client_code = 'W22678'  AND matter_number = '00000001'
+			AND fact_write_off.write_off_type = 'P'
+			GROUP BY
+		
+			dim_matter_header_curr_key) AS writeoff_purg 
+ON writeoff_purg .dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+INNER JOIN (
+    			SELECT 
+			SUM(write_off_amt) AS [Total WriteOfAmount] 
+			,dim_matter_header_curr_key
+			
+
+			FROM red_dw.dbo.fact_write_off
+			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+			WHERE client_code = 'W22678'  AND matter_number = '00000001'
+			--AND fact_write_off.write_off_type = 'BA'
+			GROUP BY
+		
+			dim_matter_header_curr_key) AS writeoff_Total 
+ON writeoff_Total.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ INNER JOIN (
+    			SELECT 
+			SUM(write_off_amt) AS [WriteOfAmount (Chargeable Time]
+			,dim_matter_header_curr_key
+			
+
+			FROM red_dw.dbo.fact_write_off
+			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
+			WHERE client_code = 'W22678'  AND matter_number = '00000001'
+			AND fact_write_off.write_off_type = 'NC'
+			GROUP BY
+		
+			dim_matter_header_curr_key) AS writeoff_CHT 
+ON writeoff_CHT.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE
 	dim_fed_hierarchy_history.hierarchylevel3hist = 'Real Estate'
@@ -155,7 +203,7 @@ WHERE
 	AND (date_claim_concluded IS NULL 
 	OR date_claim_concluded>='2019-05-01')
 	--AND dim_detail_finance.output_wip_fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee'
-	-- dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('WB172517-2')
+	AND  dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('W22678-1')
 
 
    END 
