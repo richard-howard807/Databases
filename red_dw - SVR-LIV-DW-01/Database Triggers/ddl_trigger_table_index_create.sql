@@ -14,10 +14,14 @@ GO
 
 
 
+
 CREATE trigger [ddl_trigger_table_index_create]
+
 on database
+
 for create_index, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, create_table
 as
+
 set nocount on;
 
 declare @ddltriggerxml xml,
@@ -47,13 +51,15 @@ begin
 	begin
 		if @body not like '%SBC\esmith01%'
 			begin
+				if @body not like '%SBC\jbonne%'
+					begin
 			
 						exec [msdb].[dbo].[sp_send_dbmail] 
 							@profile_name = 'DBMail',
 							@recipients = 'Richard.Howard@weightmans.com;Emily.Smith@weightmans.com;jamie.bonner@weightmans.com',
 							@body = @body,
 							@subject = @subject;
-			
+					end;			
 			end;
 	end;
 end;
