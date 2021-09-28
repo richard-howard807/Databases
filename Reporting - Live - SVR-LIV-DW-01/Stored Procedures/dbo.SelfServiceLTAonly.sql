@@ -106,6 +106,8 @@ GROUP BY dim_matter_header_curr_key
            dim_instruction_type.instruction_type AS [Instruction Type],
            dim_client.client_name AS [Client Name],
            dim_client.client_group_name AS [Client Group Name],
+		   
+COALESCE(NULLIF(dim_client.client_group_name,''), dim_client.client_name) [Client Name combined ],
            dim_client.[sector] AS [Client Sector],
 		   dim_client.segment AS  [Client Segment ],
            client_partner_name AS [Client Partner Name],
