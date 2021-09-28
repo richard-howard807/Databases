@@ -112,6 +112,49 @@ COALESCE(NULLIF(dim_client.client_group_name,''), dim_client.client_name) [Clien
 		   dim_client.segment AS  [Client Segment ],
            client_partner_name AS [Client Partner Name],
 		   dim_client.client_type AS [Client Type],
+		   outcome_of_case [Outcome], 
+		   
+
+CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
+(
+'Rejected (MIB untraced only)                                ',
+'struck out                                                  ',
+'won at trial                                                ',
+'Struck Out                                                  ',
+'Struck out                                                  ',
+'Won At Trial                                                ',
+'Won at Trial                                                ',
+'Won at trial                                                '
+)) THEN 'Repudiated'
+
+
+WHEN
+((LOWER(outcome_of_case) LIKE 'settled%' ) OR (outcome_of_case IN
+(
+'Assessment of damages',
+'Assessment of damages (damages exceed claimant''s P36 offer) ',
+'Lost at Trial                                               ',
+'Lost at trial                                               ',
+'Lost at trial (damages exceed claimant''s P36 offer)         ',
+'Settled',
+'Settled  - claimant accepts P36 offer out of time',
+'Settled - Infant Approval                                   ',
+'Settled - Infant approval                                   ',
+'Settled - JSM',
+'Settled - Mediation                                         ',
+'Settled - mediation                                         '
+))) THEN 'Paid'
+ 
+
+ WHEN 
+ outcome_of_case 
+ IN
+(
+'Appeal',
+'Assessment of damages (claimant fails to beat P36 offer)    ',
+'Exclude from reports                                        ',
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Withdrawn', 'Other'
+) THEN 'Other' END AS [Repudiated/Paid ],
 --           dim_client_involvement.[insurerclient_reference] AS [Insurer Client Reference FED],
 --           dim_client_involvement.[insurerclient_name] AS [Insurer Name FED],
 --           dim_detail_core_details.clients_claims_handler_surname_forename AS [Clients Claim Handler ],

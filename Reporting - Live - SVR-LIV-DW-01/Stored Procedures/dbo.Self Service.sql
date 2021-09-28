@@ -538,6 +538,48 @@ DROP TABLE IF EXISTS #Disbursements
        END AS [Other Defendant's Costs Reserve (Net)]
        ,fact_detail_future_care.disease_total_estimated_settlement_value AS [Disease Total Estimated Settlement Value ]
        ,RTRIM(dim_detail_outcome.[outcome_of_case]) AS [Outcome of Case]
+	   ,
+
+CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
+(
+'Rejected (MIB untraced only)                                ',
+'struck out                                                  ',
+'won at trial                                                ',
+'Struck Out                                                  ',
+'Struck out                                                  ',
+'Won At Trial                                                ',
+'Won at Trial                                                ',
+'Won at trial                                                '
+)) THEN 'Repudiated'
+
+
+WHEN
+((LOWER(outcome_of_case) LIKE 'settled%' ) OR (outcome_of_case IN
+(
+'Assessment of damages',
+'Assessment of damages (damages exceed claimant''s P36 offer) ',
+'Lost at Trial                                               ',
+'Lost at trial                                               ',
+'Lost at trial (damages exceed claimant''s P36 offer)         ',
+'Settled',
+'Settled  - claimant accepts P36 offer out of time',
+'Settled - Infant Approval                                   ',
+'Settled - Infant approval                                   ',
+'Settled - JSM',
+'Settled - Mediation                                         ',
+'Settled - mediation                                         '
+))) THEN 'Paid'
+ 
+
+ WHEN 
+ outcome_of_case 
+ IN
+(
+'Appeal',
+'Assessment of damages (claimant fails to beat P36 offer)    ',
+'Exclude from reports                                        ',
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Withdrawn', 'Other'
+) THEN 'Other' END AS [Repudiated/Paid ]
        ,dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis]
        ,dim_detail_court.[date_of_first_day_of_trial_window] AS [Date of first day of trial window]
        ,dim_detail_court.[date_of_trial] AS [Date of Trial]
