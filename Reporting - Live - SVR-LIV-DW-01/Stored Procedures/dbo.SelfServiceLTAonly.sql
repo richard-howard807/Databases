@@ -125,6 +125,7 @@ CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
 'Won At Trial                                                ',
 'Won at Trial                                                ',
 'Won at trial                                                '
+, 'Withdrawn'
 )) THEN 'Repudiated'
 
 
@@ -153,7 +154,7 @@ WHEN
 'Appeal',
 'Assessment of damages (claimant fails to beat P36 offer)    ',
 'Exclude from reports                                        ',
-'Returned to Client', 'Other', 'Exclude from Reports   ', 'Withdrawn', 'Other'
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
 ) THEN 'Other' END AS [Repudiated/Paid ],
 --           dim_client_involvement.[insurerclient_reference] AS [Insurer Client Reference FED],
 --           dim_client_involvement.[insurerclient_name] AS [Insurer Name FED],

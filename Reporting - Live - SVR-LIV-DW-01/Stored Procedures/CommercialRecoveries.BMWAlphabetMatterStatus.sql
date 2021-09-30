@@ -13,10 +13,12 @@ GO
 
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
  @Client AS NVARCHAR(50)
+ ,@FileStatus AS NVARCHAR(50)
 )
 AS
 
@@ -37,6 +39,7 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,RecoverableDisbursements.[Recoverable Disbursements]
 ,unrecoverableCosts.unrecoverableCosts
 ,defence_costs_billed_composite
+,red_dw.dbo.datetimelocal(dteClaimForm) AS [Claim Form Issued]
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -45,7 +48,8 @@ INNER JOIN [MS_PROD].dbo.udExtFile
 LEFT OUTER JOIN [MS_PROD].dbo.udCRCore ON udCRCore.fileID = dbFile.fileID
 LEFT OUTER JOIN ms_prod.dbo.udCRBMWAlphabet
  ON udCRBMWAlphabet.fileID = dbFile.fileID
-
+LEFT OUTER JOIN ms_prod.dbo.udCRIssueDetails
+ ON udCRIssueDetails.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.dbCodeLookup AS InstType
  ON cboInstructType=InstType.cdCode AND InstType.cdType='INSTRUCTTYPE'
  LEFT OUTER JOIN (SELECT fileID,contName AS [Defendant] FROM [MS_PROD].config.dbAssociates
@@ -110,7 +114,7 @@ WHEN clNo='FW22613' THEN 'Mini'
 WHEN clNo='W15335' THEN 'Alphera'
 WHEN clNo IN ('W20110','FW23557') THEN 'Alphabet' 
 END)=@Client
-AND fileClosed IS NULL
+AND (CASE WHEN fileClosed IS NULL THEN 'Open' ELSE 'Closed' END)=@FileStatus
 
 
 END 

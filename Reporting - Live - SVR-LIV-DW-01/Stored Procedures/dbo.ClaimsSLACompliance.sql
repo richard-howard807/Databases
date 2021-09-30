@@ -575,6 +575,7 @@ WHERE
 	AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
 	AND (dim_detail_core_details.referral_reason IS NULL OR RTRIM(LOWER(dim_detail_core_details.referral_reason)) <> 'in house')
 	AND dim_matter_header_current.dim_matter_worktype_key <> 609 --Secondments worktype key
+	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Healthcare Secondments'
 	AND LOWER(dim_matter_header_current.matter_description) NOT LIKE '%secondment%'
 	AND dim_matter_header_current.ms_only = 1
 	-- clause to exclude "General File" matters
@@ -596,5 +597,6 @@ WHERE
 		END) = 0
 	--AND ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No'
 END
+
 
 GO

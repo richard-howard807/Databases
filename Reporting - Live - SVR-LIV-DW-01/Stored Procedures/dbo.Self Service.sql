@@ -550,6 +550,7 @@ CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
 'Won At Trial                                                ',
 'Won at Trial                                                ',
 'Won at trial                                                '
+, 'Withdrawn'
 )) THEN 'Repudiated'
 
 
@@ -578,7 +579,7 @@ WHEN
 'Appeal',
 'Assessment of damages (claimant fails to beat P36 offer)    ',
 'Exclude from reports                                        ',
-'Returned to Client', 'Other', 'Exclude from Reports   ', 'Withdrawn', 'Other'
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
 ) THEN 'Other' END AS [Repudiated/Paid ]
        ,dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis]
        ,dim_detail_court.[date_of_first_day_of_trial_window] AS [Date of first day of trial window]
