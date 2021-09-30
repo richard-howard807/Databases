@@ -29,6 +29,7 @@ CREATE TABLE [dbo].[audit_header]
 [device] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [published] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [auditor_id] [int] NULL,
-[notes] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL
+[notes] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
+[audit_result] [nvarchar] (20) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

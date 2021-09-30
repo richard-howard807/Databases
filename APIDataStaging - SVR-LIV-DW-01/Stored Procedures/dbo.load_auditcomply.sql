@@ -84,7 +84,8 @@ select data.name,
       noncon.created_at AS noncon_created_at,
       noncon.assigned_to,
       noncon.assigned_by,
-      noncon.approved_by
+      noncon.approved_by,
+	  data.audit_result
 
 
 	from OPENJSON (@JSON) 
@@ -121,6 +122,7 @@ WITH (	  name nvarchar(MAX)
 		, observations NVARCHAR(max) as json
 		--, customresponses  nvarchar(max) as JSON
         , nonconformance  nvarchar(max) as json
+		, audit_result nvarchar(20)
 		) data
 
 outer apply openjson( observations, ''$'' ) 

@@ -56,6 +56,7 @@ CREATE TABLE [dbo].[staging_auditcomply]
 [noncon_created_at] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [assigned_to] [int] NULL,
 [assigned_by] [int] NULL,
-[approved_by] [int] NULL
+[approved_by] [int] NULL,
+[audit_result] [nvarchar] (20) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

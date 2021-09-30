@@ -37,7 +37,8 @@ USING (
             staging_auditcomply.device,
             staging_auditcomply.published,
             staging_auditcomply.auditor_id,
-            staging_auditcomply.notes
+            staging_auditcomply.notes,
+			dbo.staging_auditcomply.audit_result
 
 FROM dbo.staging_auditcomply
 ) AS source
@@ -73,7 +74,8 @@ ON (target.id=source.id )
             device,
             published,
             auditor_id,
-            notes			
+            notes,
+			audit_result
 )
  VALUES (name,
             id,
@@ -104,7 +106,8 @@ ON (target.id=source.id )
             device,
             published,
             auditor_id,
-            notes		
+            notes,
+			audit_result
 			)
 			WHEN MATCHED THEN UPDATE SET 
 			name = source.name,
@@ -135,5 +138,7 @@ ON (target.id=source.id )
             device = source.device,
             published = source.published,
             auditor_id = source.auditor_id,
-            notes = source.notes;
+            notes = source.notes,
+			audit_result = source.audit_result
+			;
 GO
