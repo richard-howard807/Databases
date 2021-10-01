@@ -595,8 +595,10 @@ WHERE
 			ELSE
 				0
 		END) = 0
+	AND ISNULL(dim_matter_header_current.dim_matter_worktype_key, '') <> 32 --Claims handling matter types removed as they don't have KPIs like this
 	--AND ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No'
 END
+
 
 
 GO
