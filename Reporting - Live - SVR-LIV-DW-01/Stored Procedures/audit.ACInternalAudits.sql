@@ -7,6 +7,7 @@ GO
 -- Create date: 2021-09-13
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
 -- =============================================
+-- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
 ( @Template AS NVARCHAR(MAX)
@@ -107,6 +108,8 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			     when leftdate < dim_date.calendar_date then 2 
 			end as exclude
 			, dim_date.fin_quarter_no
+			, FIRST_VALUE(dim_date.fin_month_name) OVER (PARTITION BY dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS min_quarter_month
+			, LAST_VALUE(dim_date.fin_month_name) OVER (PARTITION BY dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS max_quarter_month
 		into #EmployeeDates
 	from red_dw.dbo.dim_date
 	cross apply (select distinct dim_employee.employeeid, dim_employee.employeestartdate, dim_employee.leftdate
@@ -130,21 +133,21 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 	and dim_date.calendar_date >= employees.employeestartdate
 	--and dim_date.calendar_date <= isnull(employees.leftdate, '20990101')
 
+	
 
 
-
-select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin_quarter_no,
+select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin_quarter_no, #EmployeeDates.min_quarter_month, #EmployeeDates.max_quarter_month,
 		#EmployeeDates.Division, #EmployeeDates.Department, #EmployeeDates.Team, #EmployeeDates.Name, #EmployeeDates.audit_year,
 		count(#EmployeeDates.calendar_date) days_in_qtr, 
 		sum(fact_employee_attendance.durationdays) days_absent
 		, case  when max(#EmployeeDates.exclude) = 1 then 'Started ' + cast(cast(#EmployeeDates.employeestartdate as date) as varchar(12))
 				when max(#EmployeeDates.exclude) = 2 then 'Left ' +  cast(cast(#EmployeeDates.leftdate as date) as varchar(12))
-				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .8 
+				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 
 				     then (select string_agg(val, ', ') from (select distinct val from dbo.split_delimited_to_rows(string_agg(category, ','),',')) x ) 
 		  end as reason
 
 		, case  when max(#EmployeeDates.exclude) in (1,2) then 1
-				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .8 then 1 
+				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 then 1 
 				
 		  end as exclude_flag
   into #exclude_data
@@ -176,6 +179,8 @@ group by #EmployeeDates.employeeid
 	   , #EmployeeDates.Name
 	   , #EmployeeDates.audit_year
 	   , #EmployeeDates.fin_quarter_no
+	   , #EmployeeDates.min_quarter_month
+	   , #EmployeeDates.max_quarter_month
 
 
 
@@ -194,7 +199,7 @@ select  #exclude_data.employeeid
 		, #Audits.Status
 		, #Audits.Template
 		, #exclude_data.audit_year [Audit Year]
-		, 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) [Audit Quarter]
+		, 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-' + #exclude_data.max_quarter_month [Audit Quarter]
 		, #exclude_data.exclude_flag
 		, #exclude_data.reason
 from #exclude_data
