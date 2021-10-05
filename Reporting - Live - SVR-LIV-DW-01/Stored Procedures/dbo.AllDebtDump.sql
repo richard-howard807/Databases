@@ -16,6 +16,7 @@ CREATE PROC [dbo].[AllDebtDump] AS
 /*
 	Ticket #46913 - altered by Jamie Bonner 11/02/20 
 	Insurer Client Reference column to look at client_reference if insurer_client_reference is blank
+	Ticket #116880 - JB 05/10/2021 - added claim reference on invoice column
 */
 
 BEGIN
@@ -38,31 +39,6 @@ FROM red_dw.dbo.fact_dimension_main
         ON dim_matter_header_current.client_code = fact_dimension_main.client_code
            AND dim_matter_header_current.matter_number = fact_dimension_main.matter_number
     LEFT OUTER JOIN
-    (
-        SELECT client_code,
-               matter_number,
-               Reporting.dbo.Concatenate(ClaimNumber, ',') AS LitigatedRef,
-               SUM(NumberClaimants) AS NoRef
-        FROM
-        (
-            SELECT invol_full.client_code,
-                   invol_full.matter_number,
-                   isnull(rtrim(thisfirm_reference), '') AS ClaimNumber,
-                   1 AS NumberClaimants
-            FROM red_dw.dbo.dim_involvement_full AS invol_full
-                INNER JOIN red_dw.dbo.dim_defendant_involvement invol
-                    ON invol.thisfirm_1_key = invol_full.dim_involvement_full_key
-            WHERE invol_full.capacity_code = 'THISFIRM'
-                  AND invol_full.entity_code is not null
-                  AND invol_full.entity_code <> '        '
-                  AND invol_full.client_code in ( 'Z00004', 'Z00018','Z1001' )
-        ) AS AllData
-        GROUP BY AllData.client_code,
-                 AllData.matter_number
-    ) AS LitigatedRef
-        ON fact_dimension_main.client_code = LitigatedRef.client_code
-           AND fact_dimension_main.matter_number = LitigatedRef.matter_number
-    LEFT OUTER JOIN
      (
         
         SELECT Parent.client_code,
@@ -75,25 +51,7 @@ FROM red_dw.dbo.fact_dimension_main
                                            Parent.dim_parent_key ASC 
                                  ) AS xorder,
                WPS275,
-               WPS276,
-               WPS277,
-               WPS278,
-               WPS279,
-               WPS280,
-               WPS281,
-               WPS282,
-               WPS283,
-               WPS284,
-               WPS340,
-               WPS344,
-               WPS341,
-               WPS332,
-               WPS335,
-               WPS386,
-               WPS387,
-			   [Defence Cost Reserve],
-			   [Claimants Cost Reserve]
-		-- select *
+               WPS332
         FROM
 
          (
@@ -112,40 +70,10 @@ FROM red_dw.dbo.fact_dimension_main
                 SELECT client_code,
                        matter_number,
                        dim_parent_key,
-                       lead_follow AS WPS276,
-                       policy_holder_name_of_insured AS WPS344,
-                       mfu AS WPS335,
-                       wp_type AS WPS332,
-                       date_settlement_form_sent_to_zurich AS WPS386,
-                       claim_status AS WPS387
+                       wp_type AS WPS332
                 FROM red_dw.dbo.dim_child_detail
             ) AS dim_child
               ON Parent.dim_parent_key = dim_child.dim_parent_key
-
-            LEFT OUTER JOIN
-            (
-                SELECT client_code,
-                       matter_number,
-                       dim_parent_key,
-                       max(current_reserve) AS WPS277,
-					   max(nihl_defence_costs_reserve_net) [Defence Cost Reserve],
-					   isnull(max(nihl_damages_reserve_net),0) + isnull(max(nihl_claimants_costs_reserve_net),0) [Claimants Cost Reserve],
-					   max(general_damages_paid) AS WPS278,
-                       max(special_damages_paid) AS WPS279,
-                       max(claimants_costs_paid) AS WPS280,
-                       max(cru_paid) AS WPS281,
-                       max(monies_recovered_if_applicable) AS WPS282,
-                       max(our_proportion_per_of_damages) AS WPS283,
-                       max(our_proportion_per_of_costs) AS WPS284,
-                       max(fee_billed_by_panel) AS WPS340,
-                       max(own_disbursements) AS WPS341
-                FROM  red_dw.dbo.fact_child_detail  
-				GROUP BY client_code,
-                       matter_number,
-                       dim_parent_key
-            ) AS fact_child
-            ON Parent.dim_parent_key = fact_child.dim_parent_key
-				WHERE WPS275 IS NOT NULL 		
     ) AS ClaimDetails
         ON RTRIM(fact_dimension_main.client_code) = RTRIM(ClaimDetails.client_code)
            AND RTRIM(fact_dimension_main.matter_number) = RTRIM(ClaimDetails.matter_number)
@@ -236,6 +164,7 @@ SELECT
 	dim_detail_core_details.zurich_branch AS 'Zurich Branch',
 	dim_detail_core_details.clients_claims_handler_surname_forename AS 'Clients Claims Handler',
 	COALESCE(dim_client_involvement.insurerclient_reference, red_dw.dbo.dim_client_involvement.client_reference)  'Insurer Client Reference',
+	InvPayor.RefNumber		AS [Claim Reference on Invoice],
 	dim_detail_core_details.brief_description_of_injury AS 'Injury Type',
 	dim_detail_core_details.zurich_referral_reason AS 'Zurich Referral Reason',
 	invoice_status_code,
@@ -296,7 +225,7 @@ LEFT OUTER JOIN #outsource_mmi_claim_refs
 	ON #outsource_mmi_claim_refs.mmi_claim_number = LTRIM(RTRIM(COALESCE(dim_client_involvement.insurerclient_reference, red_dw.dbo.dim_client_involvement.client_reference)))
 WHERE 
 InvPayor.BalAmt <> 0
---and InvPayor.InvNumber = '01659941'
+--and InvPayor.InvNumber = '02037226'
 and InvMaster.IsReversed <> 1
 
 
