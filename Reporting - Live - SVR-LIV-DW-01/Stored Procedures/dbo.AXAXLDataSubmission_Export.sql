@@ -128,10 +128,12 @@ CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursue
 
 , [Was litigation avoidable - Select from list] =
 CASE WHEN cboWasLitAv.cdDesc = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
+     WHEN cboWasLitAv.cdDesc = 'Yes - other' THEN 'Yes other'
 	 WHEN cboWasLitAv.cdDesc = 'Yes - General delay' THEN 'Yes general delay'
 	 WHEN cboWasLitAv.cdDesc = 'Yes - Insured delay' THEN 'Yes insured delay'
 	 WHEN cboWasLitAv.cdDesc = 'Yes - Insurer delay' THEN 'Yes insurer delay'
 	 WHEN cboWasLitAv.cdDesc = 'Yes – Differing opinions on merits' THEN 'Yes differing opinions on merits'
+	 ELSE cboWasLitAv.cdDesc
 	 END
 
 /*•	Yes – other

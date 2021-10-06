@@ -14,7 +14,8 @@ AS
 SELECT 
 	dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 	, dim_matter_worktype.work_type_name
-	, dim_client_involvement.client_reference		AS [UPRN]
+	, gascomp_uprn		AS [UPRN]
+	, gascomp_region AS [Region]
 	, dim_matter_header_current.matter_description			AS [Matter Description]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened]
 	, CAST(dim_matter_header_current.date_closed_practice_management AS DATE)		AS [Date Closed]
