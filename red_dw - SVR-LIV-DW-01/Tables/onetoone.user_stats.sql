@@ -67,7 +67,8 @@ CREATE TABLE [onetoone].[user_stats]
 [bill_balance_lta] [int] NULL,
 [client_and_bill_balance_lta] [int] NULL,
 [client_balance_lta] [int] NULL,
-[to_be_closed_lta] [int] NULL
+[to_be_closed_lta] [int] NULL,
+[Utilisatino_Percent] [float] NULL
 ) ON [WRK_TAB]
 GO
 GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL ROLE - DS_MI_ANALYST]

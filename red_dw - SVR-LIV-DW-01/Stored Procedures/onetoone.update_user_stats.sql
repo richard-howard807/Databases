@@ -610,7 +610,8 @@ SELECT
 	Matterscapableofclosurelta.bill_balance bill_balance_lta, 
 	Matterscapableofclosurelta.client_and_bill_balance client_and_bill_balance_lta, 
 	Matterscapableofclosurelta.client_balance client_balance_lta, 
-	Matterscapableofclosurelta.to_be_closed to_be_closed_lta
+	Matterscapableofclosurelta.to_be_closed to_be_closed_lta,
+	main.Utilisation_Percent
 
 FROM (
 
@@ -642,6 +643,7 @@ FROM (
 			/
 			(IIF(SUM(ISNULL(fed_level_tb_budget_value,0)) = 0, null, SUM(fed_level_budget_value) / SUM(fed_level_tb_budget_value)))) Recovery_rate_diff_percent
 	
+		,round(iif(sum(isnull(fact_agg_kpi_monthly_rollup.contracted_hours_in_month,0)) = 0, null, isnull(sum(fact_agg_kpi_monthly_rollup.chargeable_minutes_recorded/60),0) / isnull(sum(fact_agg_kpi_monthly_rollup.contracted_hours_in_month),0) * 100 ) , 1 ) Utilisation_Percent
 	
 		-- select dim_employee.leftdate
 	FROM dbo.fact_agg_kpi_monthly_rollup 
