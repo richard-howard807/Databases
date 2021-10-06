@@ -450,6 +450,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Ageas Instruction Type] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Name of Instructing Insurer] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [MOJ Stage] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Days to First Report Lifecycle] [numeric] (13, 2) NULL,
 [Recovery Claimants Damages Third Party] [numeric] (13, 2) NULL,
 [Recovery Defence Cost Third Party] [numeric] (13, 2) NULL,
 [Recovery Defence Costs from Claimant] [numeric] (13, 2) NULL,

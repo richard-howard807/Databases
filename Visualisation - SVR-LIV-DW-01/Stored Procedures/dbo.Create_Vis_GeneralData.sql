@@ -589,6 +589,7 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 		, dim_detail_claim.ageas_instruction_type AS [Ageas Instruction Type]
 		, dim_detail_claim.[name_of_instructing_insurer] AS [Name of Instructing Insurer]
 		, dim_detail_core_details.[grpageas_motor_moj_stage] AS [MOJ Stage]
+		, fact_detail_elapsed_days.days_to_first_report_lifecycle AS [Days to First Report Lifecycle]
 
 				--Recovery 
 		, fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery Claimants Damages Third Party]

@@ -146,8 +146,9 @@ FROM red_dw.dbo.dim_matter_header_current
 
 			FROM red_dw.dbo.fact_write_off
 			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'W22678'  AND matter_number = '00000001'
-			AND fact_write_off.write_off_type = 'BA'
+			WHERE
+			--client_code = 'W22678'  AND matter_number = '00000001'
+			 fact_write_off.write_off_type = 'BA'
 			GROUP BY
 		
 			dim_matter_header_curr_key) AS writeoff 
@@ -161,8 +162,9 @@ ON writeoff.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_he
 
 			FROM red_dw.dbo.fact_write_off
 			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'W22678'  AND matter_number = '00000001'
-			AND fact_write_off.write_off_type = 'P'
+			WHERE
+			--client_code = 'W22678'  AND matter_number = '00000001'
+			 fact_write_off.write_off_type = 'P'
 			GROUP BY
 		
 			dim_matter_header_curr_key) AS writeoff_purg 
@@ -176,8 +178,9 @@ INNER JOIN (
 
 			FROM red_dw.dbo.fact_write_off
 			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'W22678'  AND matter_number = '00000001'
-			--AND fact_write_off.write_off_type = 'BA'
+			WHERE 
+			--client_code = 'W22678'  AND matter_number = '00000001'
+			 fact_write_off.write_off_type = 'BA'
 			GROUP BY
 		
 			dim_matter_header_curr_key) AS writeoff_Total 
@@ -190,8 +193,9 @@ ON writeoff_Total.dim_matter_header_curr_key = dim_matter_header_current.dim_mat
 
 			FROM red_dw.dbo.fact_write_off
 			--INNER JOIN red_dw.dbo.dim_date on dim_date.dim_date_key=fact_write_off.dim_write_off_date_key
-			WHERE client_code = 'W22678'  AND matter_number = '00000001'
-			AND fact_write_off.write_off_type = 'NC'
+			WHERE 
+			--client_code = 'W22678'  AND matter_number = '00000001'
+			 fact_write_off.write_off_type = 'NC'
 			GROUP BY
 		
 			dim_matter_header_curr_key) AS writeoff_CHT 
@@ -203,7 +207,7 @@ WHERE
 	AND (date_claim_concluded IS NULL 
 	OR date_claim_concluded>='2019-05-01')
 	--AND dim_detail_finance.output_wip_fee_arrangement = 'Fixed Fee/Fee Quote/Capped Fee'
-	AND  dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('W22678-1')
+	--AND  dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number IN ('W22678-1')
 
 
    END 
