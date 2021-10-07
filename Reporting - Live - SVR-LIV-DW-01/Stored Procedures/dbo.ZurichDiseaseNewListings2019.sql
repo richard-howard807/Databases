@@ -12,6 +12,7 @@ GO
 -- JB 2020-10-20 - added date proceedings issued 
 -- JB 2020-12-03 - Ticket #80905 added policy cover dates and ms_only flag
 -- JB 2021-05-11 - Ticket #95135 removed claimant address join, was producing multiple lines if data due to multiple claimant associates. Column no longer needed in report
+-- JB 2021-10-07 - Ticket #117315 added last time transaction date
 -- =============================================
 
 CREATE PROCEDURE [dbo].[ZurichDiseaseNewListings2019]
@@ -148,6 +149,7 @@ select distinct
 	, dim_matter_header_current.ms_only		AS [MS Flag]
 	, dim_detail_claim.national_insurance_number			AS [Claimant's National Insurance No.]
 	, CAST(dim_detail_core_details.claimants_date_of_birth AS  DATE)		AS [Claimant's DOB]
+	, CAST(last_transaction_date.last_transaction_date AS DATE)			AS [Last Time Transaction Date]
 	--, claimants_address.claimant_address				AS [Claimant's Address]
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
@@ -341,7 +343,28 @@ from red_dw.dbo.fact_dimension_main
     ) as ClaimDetails
         on rtrim(fact_dimension_main.client_code) = rtrim(ClaimDetails.client_code)
            and rtrim(fact_dimension_main.matter_number) = rtrim(ClaimDetails.matter_number)
-    
+    LEFT OUTER JOIN (
+						SELECT --TOP 1000
+							fact_all_time_activity.dim_matter_header_curr_key
+							--, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS ref
+							, MAX(dim_date.calendar_date)		AS last_transaction_date
+						FROM red_dw.dbo.fact_all_time_activity
+							INNER JOIN red_dw.dbo.dim_date
+								ON dim_date.dim_date_key = fact_all_time_activity.dim_orig_posting_date_key
+							INNER JOIN red_dw.dbo.dim_matter_header_current
+								ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
+							INNER JOIN red_dw.dbo.dim_detail_client
+								ON dim_detail_client.client_code = dim_matter_header_current.client_code
+									AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
+						WHERE
+							dim_matter_header_current.master_client_code = 'Z1001'
+							AND dim_detail_client.[zurich_instruction_type] like 'Outsource%'
+							AND dim_detail_client.[zurich_instruction_type] <> 'Outsource - Mesothelioma'
+						GROUP BY
+							fact_all_time_activity.dim_matter_header_curr_key
+							--, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number
+					) AS last_transaction_date
+		ON last_transaction_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 where (
 		(
           red_dw.dbo.fact_dimension_main.client_code in ( 'Z1001','Z00002', 'Z00004', 'Z00018', 'Z00014' )
