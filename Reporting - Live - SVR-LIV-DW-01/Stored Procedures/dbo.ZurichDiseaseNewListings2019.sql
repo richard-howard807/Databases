@@ -358,8 +358,6 @@ from red_dw.dbo.fact_dimension_main
 									AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
 						WHERE
 							dim_matter_header_current.master_client_code = 'Z1001'
-							AND dim_detail_client.[zurich_instruction_type] like 'Outsource%'
-							AND dim_detail_client.[zurich_instruction_type] <> 'Outsource - Mesothelioma'
 						GROUP BY
 							fact_all_time_activity.dim_matter_header_curr_key
 							--, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number
