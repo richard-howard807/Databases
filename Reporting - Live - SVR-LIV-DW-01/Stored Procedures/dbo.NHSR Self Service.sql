@@ -542,6 +542,48 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
            END AS [Other Defendant's Costs Reserve (Net)],
            fact_detail_future_care.disease_total_estimated_settlement_value AS [Disease Total Estimated Settlement Value ],
            dim_detail_outcome.[outcome_of_case] AS [Outcome of Case],
+		   
+CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
+(
+'Rejected (MIB untraced only)                                ',
+'struck out                                                  ',
+'won at trial                                                ',
+'Struck Out                                                  ',
+'Struck out                                                  ',
+'Won At Trial                                                ',
+'Won at Trial                                                ',
+'Won at trial                                                '
+, 'Withdrawn'
+)) THEN 'Repudiated'
+
+
+WHEN
+((LOWER(outcome_of_case) LIKE 'settled%' ) OR (outcome_of_case IN
+(
+'Assessment of damages',
+'Assessment of damages (damages exceed claimant''s P36 offer) ',
+'Lost at Trial                                               ',
+'Lost at trial                                               ',
+'Lost at trial (damages exceed claimant''s P36 offer)         ',
+'Settled',
+'Settled  - claimant accepts P36 offer out of time',
+'Settled - Infant Approval                                   ',
+'Settled - Infant approval                                   ',
+'Settled - JSM',
+'Settled - Mediation                                         ',
+'Settled - mediation                                         '
+))) THEN 'Paid'
+ 
+
+ WHEN 
+ outcome_of_case 
+ IN
+(
+'Appeal',
+'Assessment of damages (claimant fails to beat P36 offer)    ',
+'Exclude from reports                                        ',
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
+) THEN 'Other' END AS [Repudiated/Paid ],
 		   fact_detail_client.percent_of_clients_liability_awarded_agreed_post_insts_applied	AS [Percent of Clients Liability Agreed/Awarded],
 		   dim_detail_outcome.settlement_on_litigation_risk_basis		AS [Percent Estimate of Reduction for Litigation Risk],
            dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis],

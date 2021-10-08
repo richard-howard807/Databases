@@ -82,11 +82,10 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , BilledTime.PQE [PQE]
 , BilledTime.[Hours spent on case] [Hours spent on case]
 , NULL [Upon closing a case add the following information]
-, [Date closed] = CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) 
-					   WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date ELSE dim_matter_header_current.final_bill_date END 
+, [Date closed] = 
+CASE WHEN fact_finance_summary.unpaid_bill_balance = 0.00 AND dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN Receipt.receipt_date END
 , [Date of Final Panel Invoice] = 
-CASE WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date
-ELSE dim_matter_header_current.final_bill_date END
+CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date END
 , date_claim_concluded [Date Damages settled]
 , fact_finance_summary.[damages_paid] AS [Final Damages Amount]
 , [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
@@ -94,7 +93,7 @@ ELSE dim_matter_header_current.final_bill_date END
       WHEN TRIM(cboOutOfIns.cdDesc) IN ('Settled','Settled - Pursuing recovery','Trial (Lost)','Trial (won - successful part 36 offer)') THEN 'Yes'
 	   END
 , date_costs_settled AS  [Date Claimants costs settled]
-,  fact_finance_summary.[total_tp_costs_paid_to_date] [Final Claimants Costs Amount]
+, [Final Claimants Costs Amount] =  fact_finance_summary.[claimants_costs_paid]
 , cboMedOutcome.cdDesc AS  [Mediated outcome - Select from list]   -- udMICoreAXA
 , [Outcome of Instruction - Select from list]  =
 CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursued' 
@@ -143,6 +142,13 @@ And they seem to have added a new option which will need to be added to MS.  The
 
 , [Quantified Damages] = udMICoreAXA.curQuanDam -- udMICoreAXA NEW***
 
+,[WIP] =wip
+,[Unbilled disbursements] = fact_finance_summary.disbursement_balance
+,[Unpaid Bill Balance] = fact_finance_summary.unpaid_bill_balance 
+,[Last Bill Date]= CASE WHEN final_bill_flag  = 1 THEN last_bill_date END
+,[Last Time Transaction Date] = last_time_transaction_date
+ ,[Final Bill Flag] =  final_bill_flag 
+ ,Receipt.receipt_date
 
 /*Panel Fees
 
@@ -225,6 +231,7 @@ SELECT dim_matter_header_current.dim_matter_header_curr_key
 , TimeRecordedBy.jobtitle [Level (solicitor, partner)]
 , DATEDIFF(YEAR,admissiondateud,CONVERT(DATE,bill_date,103)) [PQE]
 , SUM(CAST(minutes_recorded AS DECIMAL(10,2)))/60 [Hours spent on case]
+, [Max Time Recorded Date] = MAX(bill_date)
 FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
  ON dim_bill_date.dim_bill_date_key = fact_bill_billed_time_activity.dim_bill_date_key
@@ -416,6 +423,24 @@ LEFT JOIN  SQLAdmin.dbo._20210909_AXA_ProductsandBusinessType ProdType
 ON ProdType.[ClNo] = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT
 AND ProdType.[FileNo] = master_matter_number COLLATE DATABASE_DEFAULT AND ProdType.[MSCode]  = 'cboPrrodType'
 
+
+/* Receipt Date */
+
+LEFT JOIN (SELECT  
+
+dim_matter_header_current.dim_matter_header_curr_key ,
+ MAX(fact_bill_receipts.gldate) [receipt_date]
+ FROM red_dw..fact_bill_receipts
+ JOIN red_dw.dbo.fact_dimension_main
+ ON fact_dimension_main.dim_matter_header_curr_key = fact_bill_receipts.dim_matter_header_curr_key
+ JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+ GROUP BY 
+ dim_matter_header_current.dim_matter_header_curr_key ) Receipt ON Receipt.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+
+
+
+
 WHERE 1 =1 
 
 AND client_group_name='AXA XL'
@@ -499,6 +524,7 @@ SELECT DISTINCT
 --AND CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)) <> ISNULL(#MainAPI.[Panel budget reserve], '0.00')
 
 SELECT DISTINCT * FROM #AXAXLDataSubmission
+WHERE RN = 1
 ORDER BY ms_fileid
 
 

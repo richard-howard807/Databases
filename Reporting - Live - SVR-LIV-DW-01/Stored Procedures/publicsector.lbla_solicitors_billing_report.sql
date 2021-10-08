@@ -48,7 +48,7 @@ AS
 	WHERE (bills.client_code IN ('00185711','00097724','W15488','00086992','W15485','W15489','00189347','W15490','W17150','00366093','00056278','00617471','09009353','00032656'
 	,'00169881','00174073','00451123','09010229','FW22804','FW29031','W15487','W15491','W21170','W23249', 'W25026')
 	OR client.client_name IN ('London Borough of Brent','City of London','London Borough of Hackney','London Borough of Haringey','London Borough of Islington'
-	,'London Fire Brigade','Maidstone Borough Council','Swale Borough Council','Tunbridge Wells Borough Council')
+	,'London Fire Brigade','Maidstone Borough Council','Swale Borough Council','Tunbridge Wells Borough Council','London Borough of Hillingdon')
 	)
 	AND header.date_opened_case_management >= '20171101'
 	AND bills.bill_date BETWEEN @start_date AND @end_date

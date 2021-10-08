@@ -11,7 +11,8 @@ GO
 
 CREATE PROCEDURE [dbo].[EntityMergeReport] -- EXEC [dbo].[EntityMergeReport] 5547751
 (
-@contid AS BIGINT
+@contid AS NVARCHAR(50),
+@name AS NVARCHAR (50)
 )
 AS
 
@@ -238,7 +239,15 @@ FROM [svr-liv-iasq-01].InterAction.weightmans.vwContacts
  ON Interaction.dim_client_key = dim_client.dim_client_key
   ) AS dim_client
 	  ON MS_Prod.config.dbContact.contID = dim_client.contactid
-WHERE  dbcontact.contID = @contid;
+WHERE  dbcontact.contID LIKE '%'+@contid+'%'
+OR dbContact.contName like '%'+@name+'%'
+
+;
 
 END
+
+
+
+
+
 GO

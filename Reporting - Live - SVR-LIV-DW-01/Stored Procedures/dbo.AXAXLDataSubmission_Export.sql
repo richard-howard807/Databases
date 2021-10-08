@@ -99,12 +99,10 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
                             ELSE BilledTime.PQE END [PQE]
 , [Hours spent on case] = BilledTime.[Hours spent on case] 
 , [Upon closing a case add the following information] = NULL
-, [Date closed] = CASE WHEN  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND final_bill_date IS NOT NULL THEN DATEADD(DAY, 28, CAST(final_bill_date AS DATE)) 
-					   WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date ELSE dim_matter_header_current.final_bill_date END 
+, [Date closed] = 
+CASE WHEN fact_finance_summary.unpaid_bill_balance =0.00 AND dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN Receipt.receipt_date END
 , [Date of Final Panel Invoice] = 
-CASE WHEN dim_matter_header_current.final_bill_date  IS NULL AND  dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date
-ELSE dim_matter_header_current.final_bill_date END
-
+CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date END
 , [Date Damages settled] = dim_detail_outcome.date_claim_concluded 
 , [Final Damages Amount] = fact_finance_summary.[damages_paid] 
 , [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
@@ -112,7 +110,7 @@ ELSE dim_matter_header_current.final_bill_date END
       WHEN TRIM(cboOutOfIns.cdDesc) IN ('Settled','Settled - Pursuing recovery','Trial (Lost)','Trial (won - successful part 36 offer)') THEN 'Yes'
 	  END
 , [Date Claimants costs settled] = date_costs_settled 
-, [Final Claimants Costs Amount] =fact_finance_summary.[total_tp_costs_paid_to_date] 
+, [Final Claimants Costs Amount] =fact_finance_summary.[claimants_costs_paid]
 , [Mediated outcome - Select from list]  = cboMedOutcome.cdDesc   -- udMICoreAXA
 , [Outcome of Instruction - Select from list]  =
 CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursued' 
@@ -395,6 +393,19 @@ AND assocType = 'CLIENT'
 ) AXAXLClaimNumber ON CAST(AXAXLClaimNumber.fileID AS NVARCHAR(20)) = CAST(dim_matter_header_current.ms_fileid AS NVARCHAR(20)) COLLATE DATABASE_DEFAULT
 
 
+/* Receipt Date */
+
+LEFT JOIN (SELECT  
+
+dim_matter_header_current.dim_matter_header_curr_key ,
+ MAX(fact_bill_receipts.gldate) [receipt_date]
+ FROM red_dw..fact_bill_receipts
+ JOIN red_dw.dbo.fact_dimension_main
+ ON fact_dimension_main.dim_matter_header_curr_key = fact_bill_receipts.dim_matter_header_curr_key
+ JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+ GROUP BY 
+ dim_matter_header_current.dim_matter_header_curr_key ) Receipt ON Receipt.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 
 
 --/* Staging table for status collumn*/

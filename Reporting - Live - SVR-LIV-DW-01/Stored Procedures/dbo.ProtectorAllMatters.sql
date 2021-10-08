@@ -2,10 +2,16 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[ProtectorAllMatters]
 AS
 BEGIN
 
+IF OBJECT_ID(N'tempdb..#KeyDates') IS NOT NULL
+BEGIN
+DROP TABLE #KeyDates
+END
 SELECT t.dim_matter_header_curr_key,
 MAX(red_dw.dbo.dim_task_due_date.calendar_date) AS [TaskDueDate]
 INTO #KeyDates
@@ -144,6 +150,7 @@ INNER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE master_client_code='W20163'
 AND does_claimant_have_personal_injury_claim='Yes' -- FCC Environmental
+AND incident_date>='2018-01-01'
 UNION
 SELECT dim_matter_header_curr_key FROM red_dw.dbo.dim_matter_header_current WHERE master_client_code='W15366'
 AND master_matter_number IN 
