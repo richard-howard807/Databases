@@ -125,13 +125,13 @@ CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursue
 
 
 , [Was litigation avoidable - Select from list] =
-CASE WHEN cboWasLitAv.cdDesc = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
-     WHEN cboWasLitAv.cdDesc = 'Yes - other' THEN 'Yes other'
-	 WHEN cboWasLitAv.cdDesc = 'Yes - General delay' THEN 'Yes general delay'
-	 WHEN cboWasLitAv.cdDesc = 'Yes - Insured delay' THEN 'Yes insured delay'
-	 WHEN cboWasLitAv.cdDesc = 'Yes - Insurer delay' THEN 'Yes insurer delay'
-	 WHEN cboWasLitAv.cdDesc = 'Yes – Differing opinions on merits' THEN 'Yes differing opinions on merits'
-	 ELSE cboWasLitAv.cdDesc
+CASE WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
+     WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - other' THEN 'Yes other'
+	 WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - General delay' THEN 'Yes general delay'
+	 WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - Insured delay' THEN 'Yes insured delay'
+	 WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - Insurer delay' THEN 'Yes insurer delay'
+	 WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - Differing opinions on merits' THEN 'Yes differing opinions on merits'
+	 ELSE TRIM(cboWasLitAv.cdDesc)
 	 END
 
 /*•	Yes – other
@@ -624,10 +624,10 @@ JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #
 WHERE #AXAXLDataSubmission.RN = 1 
 AND 
 (
-
-   date_closed_case_management IS NOT NULL --•	Case is closed in MS
-OR [status_present_postition] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') --•	Present position is “To be closed/minor balances to be clear” or “Final bill sent – unpaid”
-OR [final_bill_flag] = 1
+#AXAXLDataSubmission.[Date closed] IS NOT NULL 
+--   date_closed_case_management IS NOT NULL --•	Case is closed in MS
+--OR [status_present_postition] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') --•	Present position is “To be closed/minor balances to be clear” or “Final bill sent – unpaid”
+--OR [final_bill_flag] = 1
 
 
 
