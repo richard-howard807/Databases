@@ -8,6 +8,7 @@ GO
 
 
 
+
 --SELECT * FROM dbo.IA_Client_Data
 
 
@@ -61,6 +62,7 @@ SELECT opportunitysn AS [Opportunity Number]
 	,win_or_loss_reason AS [Outcome Reason]
 	,state_outcome
 	,close_date AS ActualClosedDate
+	,product AS [Product]
 
 INTO dbo.IA_Client_Data
 --SELECT *

@@ -33,6 +33,7 @@ CREATE TABLE [dbo].[IA_Client_Data]
 [Outcome] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Outcome Reason] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [state_outcome] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
-[ActualClosedDate] [datetime] NULL
+[ActualClosedDate] [datetime] NULL,
+[Product] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

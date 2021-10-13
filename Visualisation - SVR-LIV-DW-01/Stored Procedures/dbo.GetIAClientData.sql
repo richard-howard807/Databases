@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[GetIAClientData]
 
 AS 
@@ -79,6 +80,7 @@ SELECT [Opportunity Number]
 	,CASE WHEN IA_Client_Data.dim_client_key=0 THEN NULL ELSE ClientPrevYear END ClientPrevYear
 	,AnnualTartget.AnnualTargetRevenue
 	,SegmentSectorWIP.SegmentSectorWip
+	,[Product]
 FROM (SELECT MS_Prod.dbo.udSegment.description AS [segmentname],
        MS_Prod.dbo.udSubSegment.description AS [sectorname] 
 FROM MS_Prod.dbo.udSubSegment

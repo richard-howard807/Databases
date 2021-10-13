@@ -2,20 +2,28 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-
-
-
-
-
-
-
-
-CREATE PROCEDURE [dbo].[IAPursuits]
+CREATE PROCEDURE [dbo].[IAProducts]
 
 AS 
 
 BEGIN 
 
+SELECT Pursuits.[Pursuit Number]
+       ,Pursuits.Company
+       ,Pursuits.Description
+       ,Pursuits.[Date Opened]
+	   ,Segment
+,Sector
+,Pursuits.Type
+,Pursuits.[Days Since Last Contacted]
+,Pursuits.LastEngement
+,Pursuits.NextEngement
+,Pursuits.[Expected Closure Date]
+,Pursuits.Product
+,'Pursuits' [Pursuits/Opportunity]
+,NULL AS [Value]
+,Pursuits.Stage
+FROM (
 SELECT pursuitsn AS [Pursuit Number],
        company_name AS [Company],
 	   dim_be_pursuits.title AS [Description],
@@ -75,7 +83,30 @@ WHERE dim_ia_activity.activity_date<=GETDATE()
  ON LastEngement.ia_contact_id = dim_be_pursuits.ia_client_key
 	   WHERE pursuitsn <>'Unknown'
 	   AND close_date IS NULL
+	   AND product IS NOT NULL
+	   AND ISNULL(product,'')<>'Unknown'
+) AS Pursuits
+UNION
+SELECT [Opportunity Number]
+,[Client Name] AS [Company]
+,[Opportunity Name] AS [Description]
+,[Open Date] AS [Date Opened]
+,Segment
+,Sector
+,[Opportunity Type]
+,[Days Since Last Contacted]
+,[Last Contacted Date]
+,[Next Engagement Date]
+,[Expected Close Date]
+,Product 
+,'Opportunity' [Pursuits/Opportunity]
+,[Opportunity Value] AS [Value]
+,[Sales Stage] AS Stage
+FROM dbo.IA_Client_Data
+WHERE product IS NOT NULL
+AND ISNULL(Product,'')<>'Unknown'
 
 
-END
+
+END 
 GO
