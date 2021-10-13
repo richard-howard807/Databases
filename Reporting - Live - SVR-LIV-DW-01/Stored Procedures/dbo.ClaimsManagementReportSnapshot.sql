@@ -23,6 +23,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -98,6 +99,9 @@ employeeid
 	,display_name
 	,QTRContribution
 	,QTRChargeableHrs
+	,FutureMaternity
+    ,FutureSickness
+    ,FutureOther
 )
 
 
@@ -135,7 +139,10 @@ SELECT dim_employee.employeeid
 	,MaternityYTD
 	,display_name
 	,QTRContribution AS QTRContribution
-	,ChargeableHours.ChargeableHoursQTR AS QTRChargeableHrs
+	,ChargeableHours.ChargeableHoursQTR AS QTRChargeableHrs,
+     FutureAbsences.FutureMaternity,
+     FutureAbsences.FutureSickness,
+     FutureAbsences.FutureOther
 FROM red_dw.dbo.dim_employee WITH(NOLOCK)
 INNER JOIN  red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -365,6 +372,23 @@ AND category='Maternity'
 								 GROUP BY CurrentAbsence.employeeid
 ) AS Maternity 
  ON Maternity.employeeid = dim_employee.employeeid
+LEFT OUTER JOIN
+(
+SELECT employeeid
+,SUM(CASE WHEN category='Maternity' THEN durationdays ELSE 0 END) AS FutureMaternity
+,SUM(CASE WHEN category='Sickness' THEN durationdays ELSE 0 END) AS FutureSickness
+,SUM(CASE WHEN category NOT IN ('Maternity','Sickness') THEN durationdays ELSE 0 END) AS FutureOther
+FROM red_dw.dbo.fact_employee_attendance
+WHERE CONVERT(DATE,startdate,103) > CONVERT(DATE,GETDATE(),103) AND 
+CONVERT(DATE,startdate,103)<=@EndDate
+AND category<>'Holiday'
+AND CONVERT(DATE,startdate,103)  IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' AND dim_date.holiday_flag = 'N')
+
+
+GROUP BY employeeid
+) AS FutureAbsences
+ ON FutureAbsences.employeeid = dim_employee.employeeid
+
 WHERE leaver=0
 AND hierarchylevel2hist='Legal Ops - Claims'
 AND normalworkingday <>0

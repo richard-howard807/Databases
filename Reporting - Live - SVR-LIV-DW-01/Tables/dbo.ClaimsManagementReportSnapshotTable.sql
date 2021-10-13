@@ -33,6 +33,9 @@ CREATE TABLE [dbo].[ClaimsManagementReportSnapshotTable]
 [MaternityYTD] [numeric] (38, 2) NULL,
 [display_name] [nchar] (100) COLLATE Latin1_General_CI_AS NULL,
 [QTRChargeableHrs] [numeric] (38, 2) NULL,
-[QTRContribution] [float] NULL
+[QTRContribution] [float] NULL,
+[FutureMaternity] [numeric] (38, 2) NULL,
+[FutureSickness] [numeric] (38, 2) NULL,
+[FutureOther] [numeric] (38, 2) NULL
 ) ON [PRIMARY]
 GO

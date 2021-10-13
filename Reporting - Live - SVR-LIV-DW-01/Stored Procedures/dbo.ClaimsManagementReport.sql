@@ -13,6 +13,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -87,6 +88,9 @@ SELECT ClaimsManagementReportSnapshotTable.employeeid,
 	   ,displayemployeeid
 	   ,QTRChargeableHrs
 	   ,QTRContribution
+	   ,ISNULL(FutureMaternity,0) AS FutureMaternity
+	   ,ISNULL(FutureSickness,0) AS FutureSickness
+	   ,ISNULL(FutureOther,0) AS FutureOther
 	   FROM dbo.ClaimsManagementReportSnapshotTable
 	   LEFT OUTER JOIN red_dw.dbo.dim_employee
 	    ON dim_employee.employeeid = ClaimsManagementReportSnapshotTable.employeeid

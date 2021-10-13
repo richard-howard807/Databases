@@ -44,7 +44,17 @@ SELECT clNo +'-' + fileNo AS [MS Reference]
 ,dim_detail_health.[contacts_initials] [Contact Initials]
 , CASE WHEN dim_detail_health.completion_date IS NOT NULL THEN 1  
 WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 1  
-ELSE 0 END [elapsed]
+ELSE 0 END [elapsed], 
+
+CASE WHEN contacts_initials IS NULL AND DATEDIFF(DAY, date_opened_case_management, GETDATE()) > 1 tHEN 1 ELSE 0 END AS [Contact Initials Exceptions ], 
+CASE WHEN dim_instruction_type.[instruction_type] IS NULL AND  DATEDIFF(DAY, date_opened_case_management, GETDATE()) > 1 THEN 1 ELSE 0 END AS [Instruction Type Exceptions],
+CASE WHEN completion_date IS NULL AND  DATEDIFF(DAY, date_opened_case_management, GETDATE()) > 1 THEN 1 ELSE 0 END AS [Completion Date Exceptions],
+CASE WHEN udMICoreGeneral.txtNHSBTPO	 IS NULL AND  DATEDIFF(DAY, date_opened_case_management, GETDATE()) > 1 THEN 1 ELSE 0 END AS [Purchase Order Exceptions],
+CASE WHEN dteDateInstRec IS NULL AND  DATEDIFF(DAY, date_opened_case_management, GETDATE()) > 1 THEN 1 ELSE 0 END AS [Instructions Recvieved Exceptions]
+
+
+
+
 
 
 FROM MS_Prod.config.dbFile
@@ -70,6 +80,8 @@ INNER JOIN MS_Prod.dbo.dbUser
 LEFT OUTER JOIN MS_Prod.dbo.udMICoreGeneral
  ON udMICoreGeneral.fileID = dbFile.fileID
 WHERE hierarchylevel2hist='Legal Ops - LTA'
+
+ORDER BY Period desc
 
 END
 
