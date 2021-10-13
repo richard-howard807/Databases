@@ -18,7 +18,7 @@ SELECT CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insu
 ,CASE
 	WHEN name IN ('Rachel Kneale', 'Richard Jolly', 'Deborah Bannister', 'Tony Yemmen', 'Paul Thomson') THEN
 		'Nominated Partner'
-	WHEN AllData.jobtitle IN ('Principal Associate', 'Principal Associate (Costs Lawyer)') THEN
+	WHEN AllData.jobtitle IN ('Principal Associate', 'Associate (Costs Lawyer)') THEN
 		'Associate'
 	WHEN AllData.jobtitle = 'Chartered Legal Executive' THEN
 		'Legal Executive'
