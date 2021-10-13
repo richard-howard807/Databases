@@ -14,6 +14,8 @@ AS
 
 BEGIN
 
+	--DECLARE @StartDate AS DATE = '2021-06-01'
+	--		, @EndDate AS DATE = '2021-07-01'
 
     SELECT CASE
                WHEN insurerclient_reference IS NULL THEN
@@ -26,6 +28,22 @@ BEGIN
            matter_owner_full_name AS [Matter Owner],
            name [Lawyer name],
            jobtitle [Lawyer Grade],
+		   CASE
+			WHEN dim_fed_hierarchy_history.name IN ('Rachel Kneale', 'Richard Jolly', 'Deborah Bannister', 'Tony Yemmen', 'Paul Thomson') THEN
+				'Nominated Partner'
+			WHEN dim_fed_hierarchy_history.jobtitle IN ('Principal Associate', 'Principal Associate (Costs Lawyer)') THEN
+				'Associate'
+			WHEN dim_fed_hierarchy_history.jobtitle = 'Chartered Legal Executive' THEN
+				'Legal Executive'
+			WHEN dim_fed_hierarchy_history.jobtitle IN ('Paralegal', 'Costs Draftsperson') THEN
+				'Paralegal/Other'
+			WHEN dim_fed_hierarchy_history.jobtitle = 'Legal Director' THEN
+				'Partner'
+			WHEN dim_fed_hierarchy_history.jobtitle = 'Trainee Solicitor' THEN
+				'Solicitor'
+			ELSE
+				dim_fed_hierarchy_history.jobtitle
+		  END											AS mapped_lawyer_grade, 
            dim_detail_health.[nhs_type_of_instruction_billing] [Type of instruction],
            fact_bill_billed_time_activity.minutes_recorded / 60 [Hours billed],
            BillHrs AS HrsBilled,
