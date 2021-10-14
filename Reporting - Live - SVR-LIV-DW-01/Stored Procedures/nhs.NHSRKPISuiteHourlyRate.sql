@@ -31,15 +31,17 @@ BEGIN
 		   CASE
 			WHEN dim_fed_hierarchy_history.name IN ('Rachel Kneale', 'Richard Jolly', 'Deborah Bannister', 'Tony Yemmen', 'Paul Thomson') THEN
 				'Nominated Partner'
-			WHEN dim_fed_hierarchy_history.jobtitle IN ('Principal Associate', 'Associate (Costs Lawyer)') THEN
+			WHEN dim_fed_hierarchy_history.jobtitle IN ('Principal Associate', 'Associate (Costs Lawyer)', 'Principal Associate (Costs Lawyer)') THEN
 				'Associate'
 			WHEN dim_fed_hierarchy_history.jobtitle = 'Chartered Legal Executive' THEN
 				'Legal Executive'
-			WHEN dim_fed_hierarchy_history.jobtitle IN ('Paralegal', 'Costs Draftsperson') THEN
+			WHEN dim_fed_hierarchy_history.jobtitle IN ('Paralegal', 'Costs Draftsperson', 'Intelligence Manager') THEN
 				'Paralegal/Other'
 			WHEN dim_fed_hierarchy_history.jobtitle = 'Legal Director' THEN
 				'Partner'
 			WHEN dim_fed_hierarchy_history.jobtitle = 'Trainee Solicitor' THEN
+				'Trainee'
+			WHEN dim_fed_hierarchy_history.jobtitle = 'Consultant' THEN
 				'Solicitor'
 			ELSE
 				dim_fed_hierarchy_history.jobtitle

@@ -18,19 +18,21 @@ SELECT CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insu
 ,CASE
 	WHEN name IN ('Rachel Kneale', 'Richard Jolly', 'Deborah Bannister', 'Tony Yemmen', 'Paul Thomson') THEN
 		'Nominated Partner'
-	WHEN AllData.jobtitle IN ('Principal Associate', 'Associate (Costs Lawyer)') THEN
+	WHEN AllData.jobtitle IN ('Principal Associate', 'Associate (Costs Lawyer)', 'Principal Associate (Costs Lawyer)') THEN
 		'Associate'
 	WHEN AllData.jobtitle = 'Chartered Legal Executive' THEN
 		'Legal Executive'
-	WHEN AllData.jobtitle IN ('Paralegal', 'Costs Draftsperson') THEN
+	WHEN AllData.jobtitle IN ('Paralegal', 'Costs Draftsperson', 'Intelligence Manager') THEN
 		'Paralegal/Other'
 	WHEN AllData.jobtitle = 'Legal Director' THEN
 		'Partner'
 	WHEN AllData.jobtitle = 'Trainee Solicitor' THEN
+		'Trainee'
+	WHEN AllData.jobtitle = 'Consultant' THEN
 		'Solicitor'
 	ELSE
 		AllData.jobtitle
- END											AS mapped_lawyer_grade
+ END										AS mapped_lawyer_grade
 ,dim_detail_health.[nhs_type_of_instruction_billing] AS [Type of instruction]
 ,fact_finance_summary.[fixed_fee_amount] AS [Capped fee]
 ,CASE WHEN [zurichnhs_date_final_bill_sent_to_client]='1900-01-01' THEN 'Interim'
