@@ -13,7 +13,7 @@ GO
 -- Description:	New report for NHSR Trusts Quarterly Review
 -- Update: MT as per 92701 added [Risk Management Recommendations] 
 -- =============================================
-CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
+CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview_TEMP]
 (
 		@def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)
@@ -56,7 +56,8 @@ BEGIN
 --============================================================================================================================================================================================
 
 DECLARE @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
-
+DECLARE @start_date AS DATE = '2021-04-01'
+DECLARE @end_date AS DATE = '2021-09-30'
 
 -- SET NOCOUNT ON added to prevent extra result sets from
 -- interfering with SELECT statements.
@@ -399,8 +400,14 @@ SELECT
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)		AS [Date Claim Concluded]
 	--, dim_detail_outcome.outcome_of_case			AS [Outcome of Case]
 	--, CAST(dim_detail_health.zurichnhs_date_final_bill_sent_to_client AS DATE)		AS [Date Final Bill Sent]
-	--, CAST(dim_matter_header_current.date_opened_practice_management AS date)		AS [Date Opened]
+	, CAST(dim_matter_header_current.date_opened_case_management AS date)		AS [Date Opened]
 	, dim_detail_core_details.associated_matter_numbers			AS [Associated Matter Numbers]
+	, CASE 
+		WHEN CAST(dim_matter_header_current.date_opened_case_management AS DATE) BETWEEN @start_date AND @end_date THEN
+			1
+		ELSE	
+			0
+	  END			AS new_instruction
 	, CASE
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN --non-clinical
 			CASE 
@@ -573,6 +580,7 @@ WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.ms_only = 1
+	AND CAST(dim_matter_header_current.date_opened_case_management AS DATE) <= @end_date
 	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
 ORDER BY	
 	risk_rating_order
