@@ -53,7 +53,7 @@ SELECT
 			'Cross Border'
 		WHEN dim_fed_hierarchy_history.hierarchylevel4hist = 'Niche Costs' THEN	
 			'Niche Costs'
-		WHEN dim_fed_hierarchy_history.hierarchylevel3hist = 'Large Loss' THEN 
+		WHEN ISNULL(dim_detail_claim.cit_claim, '') = 'Yes' THEN 
 			'Large Loss Excluding Cross Border'
 		WHEN dim_fed_hierarchy_history.hierarchylevel3hist = 'Litigation' THEN
 			'Litigation'
@@ -148,6 +148,9 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 		ON dim_detail_client.client_code = dim_matter_header_current.client_code
 			AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+		ON dim_detail_claim.client_code = dim_matter_header_current.client_code
+			AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 		ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
