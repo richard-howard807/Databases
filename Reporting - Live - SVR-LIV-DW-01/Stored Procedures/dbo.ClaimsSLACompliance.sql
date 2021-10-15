@@ -262,6 +262,50 @@ SELECT
 			NULL
 		WHEN dim_detail_core_details.do_clients_require_an_initial_report = 'No' THEN
 			NULL
+		--SELECT ClientSLAsNHSR.subsequent_report_rule FROM dbo.ClientSLAsNHSR WHERE ClientSLAsNHSR.nhs_instruction_type = 'Schedule 5 (ENS)'
+		WHEN ClientSLAsNHSR.nhs_instruction_type = 'Schedule 5 (ENS)' THEN 
+			CASE
+				--Every 3 months, until summit and every 3 months thereafter
+				WHEN dim_detail_core_details.date_subsequent_sla_report_sent >= DATEADD(DAY, 28, ISNULL(#nhs_key_dates.key_date, '1900-01-01')) THEN
+					CASE
+						WHEN DATENAME(wk, DATEADD(MONTH, ClientSLAsNHSR.subsequent_report_months, dim_detail_core_details.date_subsequent_sla_report_sent))= 'Saturday'THEN 
+							DATEADD(MONTH, ClientSLAsNHSR.subsequent_report_months, dim_detail_core_details.date_subsequent_sla_report_sent)+2
+						WHEN DATENAME(wk, DATEADD(MONTH, ClientSLAsNHSR.subsequent_report_months, dim_detail_core_details.date_subsequent_sla_report_sent))= 'Sunday'THEN 
+							DATEADD(MONTH, ClientSLAsNHSR.subsequent_report_months, dim_detail_core_details.date_subsequent_sla_report_sent)+1
+						ELSE 
+							DATEADD(MONTH, ClientSLAsNHSR.subsequent_report_months, dim_detail_core_details.date_subsequent_sla_report_sent)
+					END			
+				--28 days before expert summit
+				WHEN ISNULL(dim_detail_core_details.date_subsequent_sla_report_sent, '1900-01-01') < DATEADD(DAY, -28, #nhs_key_dates.key_date) THEN 
+					CASE
+						WHEN DATENAME(wk, DATEADD(DAY, -28, #nhs_key_dates.key_date))= 'Saturday'THEN 
+							DATEADD(DAY, -28, #nhs_key_dates.key_date)+2
+						WHEN DATENAME(wk, DATEADD(DAY, -28, #nhs_key_dates.key_date))= 'Sunday'THEN 
+							DATEADD(DAY, -28, #nhs_key_dates.key_date)+1
+						ELSE 
+							DATEADD(DAY, -28, #nhs_key_dates.key_date)
+					END	
+				--28 days after expert summit
+				WHEN ISNULL(dim_detail_core_details.date_subsequent_sla_report_sent, '1900-01-01') NOT BETWEEN #nhs_key_dates.key_date AND DATEADD(DAY, 28, #nhs_key_dates.key_date) THEN
+					CASE
+						WHEN DATENAME(wk, DATEADD(DAY, 28, #nhs_key_dates.key_date))= 'Saturday'THEN 
+							DATEADD(DAY, 28, #nhs_key_dates.key_date)+2
+						WHEN DATENAME(wk, DATEADD(DAY, 28, #nhs_key_dates.key_date))= 'Sunday'THEN 
+							DATEADD(DAY, 28, #nhs_key_dates.key_date)+1
+						ELSE 
+							DATEADD(DAY, 28, #nhs_key_dates.key_date)
+					END				
+				--8 weeks from instructions
+				WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NULL THEN
+					CASE
+						WHEN DATENAME(wk, DATEADD(WEEK, 8, dim_matter_header_current.date_opened_case_management))= 'Saturday'THEN 
+							DATEADD(WEEK, 8, dim_matter_header_current.date_opened_case_management)+2
+						WHEN DATENAME(wk, DATEADD(WEEK, 8, dim_matter_header_current.date_opened_case_management))= 'Sunday'THEN 
+							DATEADD(WEEK, 8, dim_matter_header_current.date_opened_case_management)+1
+						ELSE 
+							DATEADD(WEEK, 8, dim_matter_header_current.date_opened_case_management)
+					END	
+			END	
 		WHEN dim_detail_core_details.date_subsequent_sla_report_sent IS NOT NULL THEN 
 			CASE 
 				-- Needing to make sure future date is a weekday
