@@ -513,7 +513,7 @@ SELECT
 				WHEN dim_detail_outcome.outcome_of_case = 'Lost at trial' THEN 
 					'Not Achieved'
 			END
-		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NULL THEN
+		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' OR dim_detail_outcome.date_claim_concluded IS NULL THEN
 			'N/A'
 	  END									AS [KPI A.4 Offers and Outcomes]
 	, CASE
@@ -524,7 +524,7 @@ SELECT
 				WHEN dim_detail_core_details.target_settlement_date <= dim_detail_outcome.date_claim_concluded THEN 
 					'Not Achieved'
 			END
-		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%'AND dim_detail_outcome.date_claim_concluded IS NULL THEN
+		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%'OR dim_detail_outcome.date_claim_concluded IS NULL THEN
 			'N/A'
 	  END											AS [KPI A.5 Lifecycle]
 	, CASE
