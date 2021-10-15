@@ -169,7 +169,13 @@ INNER JOIN TE_3E_Prod.dbo.Site
  ON TE_3E_Prod.dbo.Relate.RelIndex=SITE.Relate
 INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrIndex
 WHERE site.IsDefault=1
-AND  contid=@contid
+--AND  contid=@contid
+AND (dbcontact.contID LIKE '%'+@contid+'%'
+OR dbContact.contName like '%'+@name+'%')
+
+
+
+
 
 ) AS def_site ON Entity.EntIndex = def_site.EntNo  --LEFT OUTER JOIN (   SELECT Relate ,
        --                           FormattedString ,
