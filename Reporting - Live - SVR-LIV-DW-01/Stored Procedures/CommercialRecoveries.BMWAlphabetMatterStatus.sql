@@ -14,7 +14,8 @@ GO
 
 
 
---EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'BMW' 
+
+--EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'Alphabet','Open' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
  @Client AS NVARCHAR(50)
@@ -23,6 +24,27 @@ CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 AS
 
 BEGIN
+
+
+IF OBJECT_ID(N'tempdb..#HistoryNotes') IS NOT NULL BEGIN DROP TABLE #HistoryNotes END
+
+SELECT udCRHistoryNotesSL.fileID,MAX(dteInserted) AS LastHistoryNote
+INTO #HistoryNotes
+FROM ms_prod.dbo.udCRHistoryNotesSL
+GROUP BY udCRHistoryNotesSL.fileID
+
+IF OBJECT_ID(N'tempdb..#LastDoc') IS NOT NULL BEGIN DROP TABLE #LastDoc END
+
+SELECT dbDocument.fileID,MAX(dbDocument.Created) AS LastDoc
+INTO #LastDoc
+FROM ms_prod.config.dbDocument
+INNER JOIN ms_prod.config.dbFile
+ ON  dbFile.fileID = dbDocument.fileID
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+WHERE docDeleted=0
+AND clNo IN('FW30085','FW22135','341077','FW22352' ,'FW22135','FW22135','FW22613' ,'W15335' ,'W20110','FW23557')
+GROUP BY dbDocument.fileID
 
 SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef END  AS [Account Number]
 ,clNo +'-' + fileNo  AS [Weightmans Reference]
@@ -40,6 +62,9 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,unrecoverableCosts.unrecoverableCosts
 ,defence_costs_billed_composite
 ,red_dw.dbo.datetimelocal(dteClaimForm) AS [Claim Form Issued]
+,red_dw.dbo.datetimelocal(LastHistoryNote) AS LastHistoryNote
+,red_dw.dbo.datetimelocal(LastDoc) AS LastDoc
+,CASE WHEN red_dw.dbo.datetimelocal(LastHistoryNote)>red_dw.dbo.datetimelocal(LastDoc) THEN red_dw.dbo.datetimelocal(LastHistoryNote) ELSE red_dw.dbo.datetimelocal(LastDoc) END AS LastAction
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -104,7 +129,8 @@ WHERE master_client_code IN
 ) 
 ) AS Bills
  ON dbFile.fileID=Bills.ms_fileid
-
+LEFT OUTER JOIN #HistoryNotes ON #HistoryNotes.fileID = dbFile.fileID
+LEFT OUTER JOIN #LastDoc ON #LastDoc.fileID = dbFile.fileID
 WHERE (CASE WHEN clNo IN ('FW30085','FW22135') THEN 'BMW' 
 WHEN clNo='341077' THEN 'Land Rover'
 WHEN clNo='FW22352' THEN 'Rover'
