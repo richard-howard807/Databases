@@ -512,6 +512,7 @@ WHERE dim_matter_header_current.date_closed_practice_management IS NULL
       AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
       AND hierarchylevel2 = 'Legal Ops - LTA'
       AND reporting_exclusions = 0
+	  and matter_description <> 'MIBTEST'
       AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106' )
       AND reporting_exclusions = 0
       AND ISNULL(dim_detail_property.[commercial_bl_status], '') <> 'Pending                                                     '
