@@ -11,6 +11,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -425,13 +426,13 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_detail_critical_mi.claim_status AS [Converge Claim Status]
        ,dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
        ,dim_detail_core_details.status_on_instruction AS [Status On Instruction]
-       ,dim_detail_core_details.referral_reason AS [Referral Reason]
-       ,dim_detail_core_details.proceedings_issued AS [Proceedings Issued]
+       ,RTRIM(dim_detail_core_details.referral_reason) AS [Referral Reason]
+       ,RTRIM(dim_detail_core_details.proceedings_issued) AS [Proceedings Issued]
        ,dim_detail_core_details.date_proceedings_issued AS [Date Proceedings Issued]
-       ,dim_detail_litigation.reason_for_litigation AS [Reason For Litigation]
+       ,RTRIM(dim_detail_litigation.reason_for_litigation) AS [Reason For Litigation]
        ,dim_court_involvement.court_reference AS [Court Reference]
        ,dim_court_involvement.court_name AS [Court Name]
-       ,dim_detail_core_details.track AS [Track]
+       ,RTRIM(dim_detail_core_details.track) AS [Track]
        ,dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
        ,COALESCE(
                    dim_detail_fraud.fraud_type_motor,
@@ -659,7 +660,7 @@ WHEN
        ,[Claimant’s Solicitor’s Disbursements Claimed] =  fact_detail_paid_detail.[claimants_disbursements_claimed]
        ,[Claimant’s Solicitor’s Base Costs Paid + VAT] = fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat]
        ,[Claimant’s Solicitor’s Disbursements paid] = fact_finance_summary.[claimants_solicitors_disbursements_paid]
-       ,[Costs Outcome] =  dim_detail_outcome.[costs_outcome]
+       ,[Costs Outcome] =  RTRIM(dim_detail_outcome.[costs_outcome])
 
 
        ,red_dw.dbo.fact_detail_paid_detail.claimants_costs AS [Outsource Claimants Costs]

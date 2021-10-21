@@ -8,6 +8,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -452,18 +453,18 @@ dim_detail_health.nhs_scheme IN
            dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
            dim_matter_header_current.date_closed_case_management AS [Date Case Closed],
           -- dim_detail_critical_mi.date_closed AS [Converge Date Closed],
-           dim_detail_core_details.present_position AS [Present Position],
+           RTRIM(dim_detail_core_details.present_position) AS [Present Position],
             --dim_detail_critical_mi.claim_status AS [Converge Claim Status],
            dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent],
            dim_detail_core_details.date_instructions_received AS [Date Instructions Received],
            dim_detail_core_details.status_on_instruction AS [Status On Instruction],
-           dim_detail_core_details.referral_reason AS [Referral Reason],
-           dim_detail_core_details.proceedings_issued AS [Proceedings Issued],
+           RTRIM(dim_detail_core_details.referral_reason) AS [Referral Reason],
+           RTRIM(dim_detail_core_details.proceedings_issued) AS [Proceedings Issued],
            dim_detail_core_details.date_proceedings_issued AS [Date Proceedings Issued],
            dim_detail_litigation.reason_for_litigation AS [Reason For Litigation],
            dim_court_involvement.court_reference AS [Court Reference],
            dim_court_involvement.court_name AS [Court Name],
-           dim_detail_core_details.track AS [Track],
+           RTRIM(dim_detail_core_details.track) AS [Track],
            dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
            --COALESCE(
            --            dim_detail_fraud.[fraud_initial_fraud_type],
@@ -482,7 +483,7 @@ dim_detail_health.nhs_scheme IN
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
            fact_detail_client.number_of_defendants AS [Number of Defendants ],
            dim_detail_core_details.does_claimant_have_personal_injury_claim AS [Does the Claimant have a PI Claim? ],
-           dim_detail_core_details.[brief_description_of_injury] AS [Description of Injury],
+           RTRIM(dim_detail_core_details.[brief_description_of_injury]) AS [Description of Injury],
            CASE
                WHEN
                (
@@ -541,7 +542,7 @@ fact_finance_summary.[defence_costs_reserve_initial] AS [Defence Cost Reserve (I
                    fact_finance_summary.[other_defendants_costs_reserve]
            END AS [Other Defendant's Costs Reserve (Net)],
            fact_detail_future_care.disease_total_estimated_settlement_value AS [Disease Total Estimated Settlement Value ],
-           dim_detail_outcome.[outcome_of_case] AS [Outcome of Case],
+           RTRIM(dim_detail_outcome.[outcome_of_case]) AS [Outcome of Case],
 		   
 CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
 (
@@ -589,7 +590,7 @@ WHEN
            dim_detail_outcome.[ll00_settlement_basis] AS [Settlement basis],
            dim_detail_court.[date_of_trial] AS [Date of Trial],
            dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded],
-		   dim_detail_outcome.reason_for_settlement	AS [Reason For Settlement],
+		   RTRIM(dim_detail_outcome.reason_for_settlement)	AS [Reason For Settlement],
            fact_finance_summary.damages_interims AS [Interim Damages],
            CASE
                WHEN fact_finance_summary.[damages_paid] IS NULL
