@@ -35,7 +35,7 @@ DROP TABLE dbo.Vis_GeneralData
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 SELECT 
 
-RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
+RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 		, fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
 		, dim_matter_header_current.[matter_description] AS [Matter Description]
@@ -565,8 +565,9 @@ RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS 
 			, stw_initial_checklist_result AS [STW Initial Checklist Result]
 			, fact_detail_recovery_detail.amount_recovery_sought AS [Amount Recovery Sought]
 
-
-
+		--AXA
+		, dim_detail_core_details.[axa_pas_status] as [AXA PAS Status]
+		, dim_detail_claim.[comments] as [Comments]
 
 		--AIG
 		, dim_detail_core_details.[aig_current_fee_scale] AS [Current Fee Scale]

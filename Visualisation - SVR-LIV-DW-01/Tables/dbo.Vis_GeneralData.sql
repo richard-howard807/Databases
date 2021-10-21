@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[Vis_GeneralData]
 (
-[Weightmans Reference] [varchar] (17) COLLATE Latin1_General_BIN NULL,
+[Weightmans Reference] [nvarchar] (33) COLLATE Latin1_General_BIN NULL,
 [Client Code] [char] (8) COLLATE Latin1_General_BIN NULL,
 [Matter Number] [char] (8) COLLATE Latin1_General_BIN NULL,
 [Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
@@ -433,6 +433,8 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [STW Recoveries Instructed By] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [STW Initial Checklist Result] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Amount Recovery Sought] [numeric] (13, 2) NULL,
+[AXA PAS Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Comments] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Current Fee Scale] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Instructing Office] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [AIG Reference] [varchar] (255) COLLATE Latin1_General_BIN NULL,
