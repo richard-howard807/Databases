@@ -10,10 +10,13 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingPreClients] -- EXEC [dbo].[OutstandingPreClients]'Corp-Comm'	,'Wills, Trusts and Estates '
 (
 @Department AS NVARCHAR(MAX)
 ,@Team AS NVARCHAR(MAX)
+,@StartDate AS DATE
+,@EndDate AS DATE
 
 )
 AS 
@@ -33,8 +36,11 @@ SELECT dim_client.[client_code]
 
 ,CASE WHEN file_alert_message LIKE '%Awaiting Grant of Probate%' THEN 1 ELSE 0 END AS Exclusions
 ,DATEDIFF(DAY,dim_client.[open_date],GETDATE()) AS [Days OverDue]
-,CASE WHEN DATEDIFF(DAY,dim_client.[open_date],GETDATE()) >=28 THEN 'Red' 
+,CASE 
+WHEN CONVERT(DATE,open_date,103) <>CONVERT(DATE,WIP.LatestOpened,103) THEN  'Yellow'
+WHEN DATEDIFF(DAY,dim_client.[open_date],GETDATE()) >=28 THEN 'Red' 
 WHEN DATEDIFF(DAY,dim_client.[open_date],GETDATE())>=14 THEN 'Orange'
+
 ELSE 'Green' END AS Colour
 ,Exclude.HideFlag
 ,[division]
@@ -113,7 +119,7 @@ AND dim_client.client_code NOT IN
 )
 AND (CASE WHEN file_alert_message LIKE '%Awaiting Grant of Probate%' THEN 1 ELSE 0 END)=0
 AND ISNULL(CASE WHEN cboBilling='Y' THEN 'Include' WHEN Exclude.client_code IS NULL THEN 'Exclude' ELSE HideFlag END,'Include')='Include'
-
+AND CONVERT(DATE,dim_client.[open_date],103) BETWEEN @StartDate AND @EndDate
 
 --SELECT dim_client.[client_code]
 --,dim_client.[client_name]
