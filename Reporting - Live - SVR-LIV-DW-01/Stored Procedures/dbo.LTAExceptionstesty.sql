@@ -267,6 +267,7 @@ fact_finance_summary.disbursements_estimate_net_of_vat is null
         WHERE dim_matter_header_current.date_closed_practice_management IS NULL
               AND hierarchylevel2 = 'Legal Ops - LTA'
               AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106' )
+			  AND matter_description <> 'MIBTEST'
 			 
               AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
               AND reporting_exclusions = 0
@@ -433,6 +434,7 @@ IN
             ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
     WHERE dim_matter_header_current.date_closed_practice_management IS NULL
           AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
+		  AND matter_description <> 'MIBTEST'
           AND dim_fed_hierarchy_history.dim_fed_hierarchy_history_key IN
               (
                   SELECT (CASE

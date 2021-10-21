@@ -48,6 +48,7 @@ SELECT
 	, fact_finance_summary.disbursements_billed				AS [Disburesments]
 	, fact_finance_summary.vat_billed						AS [VAT]
 	, fact_finance_summary.wip								AS [WIP]
+	, CASE WHEN ISNULL(fact_finance_summary.defence_costs_billed, 0) > ISNULL(fact_detail_cost_budgeting.fees_estimate,0)			THEN 1 ELSE 0 END AS flag
 
 	, CASE
 		WHEN dim_detail_property.completion_date IS NOT NULL THEN 

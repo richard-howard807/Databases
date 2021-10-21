@@ -175,7 +175,7 @@ EXEC sp_executesql @sql
         WHERE dim_matter_header_current.date_closed_practice_management IS NULL
               AND hierarchylevel2 = 'Legal Ops - LTA'
               AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106' )
-			 
+			   AND matter_description <> 'MIBTEST'
               AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
               AND reporting_exclusions = 0
               AND ISNULL(dim_detail_property.[commercial_bl_status], '') <> 'Pending   
@@ -301,6 +301,7 @@ EXEC sp_executesql @sql
           AND reporting_exclusions = 0
           AND ISNULL(dim_detail_property.[commercial_bl_status], '') <> 'Pending   
                                                   '
+												    AND matter_description <> 'MIBTEST'
           AND ISNULL(output_wip_fee_arrangement, '') IN ( NULL,
                                                           'Hourly Rate                                                 ',
                                                           'Hourly rate                                                 ',

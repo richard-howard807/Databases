@@ -88,17 +88,17 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_curren
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days AS days ON days.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN Reporting.dbo.ClientSLAs ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
+	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
 WHERE 
 	reporting_exclusions = 0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	--AND date_opened_case_management >= '2019-01-01'
-	--AND hierarchylevel2hist = 'Legal Ops - Claims'
-	AND (date_claim_concluded IS NULL 
-	OR date_claim_concluded >= '2019-01-01')
-	AND red_dw.dbo.dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'Yes' 
-	--AND dim_client.client_code = 'Z1001' AND dim_matter_header_current.matter_number = '00079750'
+	And ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded] IS NULL))
+	AND dim_matter_worktype.work_type_name <> 'Cross Border'
+	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
+	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability', 'Dispute on liability','Dispute on liability and quantum','Dispute on quantum')  
+
 					
 --=========================================================================================================================================================================================================================================================================
 --=========================================================================================================================================================================================================================================================================
@@ -141,6 +141,7 @@ SELECT
 	  , DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
 	  , red_dw.dbo.dim_detail_core_details.referral_reason AS [Referral Reason]
 	  , red_dw.dbo.dim_date.calendar_date
+	
 	  ,red_dw.dbo.dim_date.current_fin_year
 	,dim_detail_outcome.date_claim_concluded
  ,CASE WHEN CAST(dim_matter_header_current.date_opened_case_management AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
@@ -204,6 +205,7 @@ SELECT
 	, ISNULL(damages_paid,0) + ISNULL(claimants_costs_paid,0)	+ ISNULL(total_amount_billed,0) -ISNULL(vat_billed,0)   AS [Indemnity Spend]
 	,vat_billed
 	, dim_detail_finance.[damages_banding] AS [Damages Banding]
+	,damages_reserve
 	, CASE 
 			WHEN fact_finance_summary.damages_reserve < 500000 THEN 'Below 500k'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 500000 AND 1000000 THEN '500k to £1m'
@@ -220,6 +222,11 @@ SELECT
 		AND cboInsSpecAdvDi IS NULL AND cboInsSpecAdvIn IS NULL AND cboInsRelTech IS NULL
 		AND cboPolCanAv IS NULL THEN 1 ELSE 0 END  AS ScoreISBlank
 	,1 AS [Number]
+	,hierarchylevel3hist
+	,hierarchylevel4hist
+	,fact_finance_summary.[indemnity_spend] AS [Indemnity Spend_dwh]
+	,dim_detail_core_details.referral_reason
+	,dim_matter_header_current.ms_only
 	
 
 INTO #MainData
@@ -251,15 +258,15 @@ WHERE
 	reporting_exclusions=0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	--AND date_opened_case_management >= '2019-02-01'
-	AND (date_claim_concluded IS NULL 
-	OR date_claim_concluded>='2019-02-01')
+	And ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded] IS NULL))
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND dim_matter_worktype.work_type_name <> 'Cross Border'
-	--AND (dim_detail_client.zurich_data_admin_exclude_from_reports IS NULL OR RTRIM(LOWER(dim_detail_client.zurich_data_admin_exclude_from_reports)) <> 'yes')
-	--AND red_dw.dbo.dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'Yes'
-	--AND	  fact_finance_summary.damages_reserve >=150000 
-	--AND dim_matter_header_current.master_client_code = 'Z1001' AND dim_matter_header_current.master_matter_number = '15025'
+	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
+	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability',                                        
+'Dispute on liability',
+'Dispute on liability and quantum',                            
+'Dispute on quantum')                                          
+
 
 SELECT 
 [Client Name]
@@ -319,8 +326,15 @@ SELECT
 , ScoreISBlank
 , [Number]
 , [Damages Banding_test]
+, hierarchylevel3hist
+, hierarchylevel4hist
+, damages_reserve
+, [Indemnity Spend_dwh]
+, referral_reason
+, ms_only
 FROM #MainData
 
    END
 
+	
 GO
