@@ -94,11 +94,11 @@ WHERE
 	reporting_exclusions = 0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	And ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded] IS NULL))
+	AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
 	AND dim_matter_worktype.work_type_name <> 'Cross Border'
 	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
 	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability', 'Dispute on liability','Dispute on liability and quantum','Dispute on quantum')  
-
+	AND dim_matter_header_current.ms_only = '1'
 					
 --=========================================================================================================================================================================================================================================================================
 --=========================================================================================================================================================================================================================================================================
@@ -227,6 +227,7 @@ SELECT
 	,fact_finance_summary.[indemnity_spend] AS [Indemnity Spend_dwh]
 	,dim_detail_core_details.referral_reason
 	,dim_matter_header_current.ms_only
+	,dim_detail_outcome.zurich_result_date
 	
 
 INTO #MainData
@@ -258,14 +259,15 @@ WHERE
 	reporting_exclusions=0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	And ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded] IS NULL))
+	AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND dim_matter_worktype.work_type_name <> 'Cross Border'
 	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
 	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability',                                        
 'Dispute on liability',
 'Dispute on liability and quantum',                            
-'Dispute on quantum')                                          
+'Dispute on quantum')  
+AND dim_matter_header_current.ms_only = '1'
 
 
 SELECT 
@@ -332,6 +334,7 @@ SELECT
 , [Indemnity Spend_dwh]
 , referral_reason
 , ms_only
+, zurich_result_date
 FROM #MainData
 
    END
