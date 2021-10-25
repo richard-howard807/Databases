@@ -15,6 +15,7 @@ GO
 
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'Alphabet','Open' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -65,6 +66,7 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,red_dw.dbo.datetimelocal(LastHistoryNote) AS LastHistoryNote
 ,red_dw.dbo.datetimelocal(LastDoc) AS LastDoc
 ,CASE WHEN red_dw.dbo.datetimelocal(LastHistoryNote)>red_dw.dbo.datetimelocal(LastDoc) THEN red_dw.dbo.datetimelocal(LastHistoryNote) ELSE red_dw.dbo.datetimelocal(LastDoc) END AS LastAction
+,cboStatus
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -129,6 +131,8 @@ WHERE master_client_code IN
 ) 
 ) AS Bills
  ON dbFile.fileID=Bills.ms_fileid
+LEFT OUTER JOIN MS_Prod.dbo.udCRPaymentArrangement
+ ON udCRPaymentArrangement.fileid = dbFile.fileID
 LEFT OUTER JOIN #HistoryNotes ON #HistoryNotes.fileID = dbFile.fileID
 LEFT OUTER JOIN #LastDoc ON #LastDoc.fileID = dbFile.fileID
 WHERE (CASE WHEN clNo IN ('FW30085','FW22135') THEN 'BMW' 
