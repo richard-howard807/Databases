@@ -9,13 +9,14 @@ GO
   --A1001-7739                                                               
 */
 --EXEC [dbo].[AXAXLDataSubmission_Export]
-CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export]
+CREATE PROCEDURE [dbo].[AXAXLDataSubmission_Export_Tabs]
 
 AS 
 
 BEGIN 
 --select * from #AXAXLDataSubmission
 DROP TABLE IF EXISTS #AXAXLDataSubmission
+DROP TABLE IF EXISTS  #Tabs
 
 SELECT x.*, 
 RN = ROW_NUMBER() OVER (PARTITION BY x.ms_fileid ORDER BY x.ms_fileid) 
@@ -32,29 +33,12 @@ SELECT  DISTINCT
 , RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
 , [Line of Business] = hierarchylevel3hist 
 , [New Line of Business] = LineofBus.[CaseText] 
---CASE  
---        WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc') THEN  'Aviation'
---	    WHEN (work_type_name LIKE  'Disuse%'  OR work_type_name LIKE  'EL%' OR  work_type_name LIKE 'PL%' OR work_type_name LIKE 'Motor%') THEN 'Casualty'
---		WHEN hierarchylevel3hist LIKE 'Disease%' THEN 'Casualty'
---		WHEN work_type_name LIKE  'LMT/Insurance Coverage%' then 'Financial Lines' 
---		WHEN work_type_name LIKE  'LMT / Insurance Coverage%'  then 'Financial Lines' 
---		WHEN work_type_name LIKE 'Prof Risk – Construction%' then 'Energy and Construction'
---		WHEN LOWER(work_type_name) LIKE '%property%' then 'Property'
 
---		--WHEN TRIM(dim_detail_core_details.[clients_claims_handler_surname_forename]) IN ('Bokhari, Iram', 'Lockheart, Steven', 'Newton, Samantha', 'Nicolaou, Andy', 'Rogers, Elizabeth', 'Spinks, Stephen', 'Tuer, Robert') THEN 'Casualty'
---		--WHEN TRIM(hierarchylevel3hist) = 'Casualty' then 'Casualty' else 'Accident and Health' 
---		END 
 
  ,[Product Type] = work_type_name 
  
 , [Product Type New] =  ProdType.[CaseText]
-  -- CASE WHEN TRIM(COALESCE(dim_detail_claim.[dst_insured_client_name], dim_client_involvement.insuredclient_name)) IN ('DreamBalloon ApS', 'CFS Aeroproducts Ltd', 'Ballooning Network Ltd', 'Babcock International Group Plc')  then 'Other'
-  --      WHEN  (work_type_name LIKE 'EL %' OR work_type_name LIKE 'PL %' OR work_type_name LIKE 'Disease%') THEN 'Employer’s Liability and Public Liability'
-  --      WHEN  work_type_name LIKE 'Motor%' THEN 'Motor'
-		--WHEN  work_type_name LIKE 'LMT/Insurance Coverage%' THEN 'Other'
-		--WHEN work_type_name LIKE  'LMT / Insurance Coverage%'   THEN 'Other'
-		--WHEN   LOWER(work_type_name) LIKE '%property%' then 'Other'
-		--END   
+ 
 		
 , [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name
     ELSE dim_detail_claim.[dst_insured_client_name] END  
@@ -540,21 +524,22 @@ WHERE #MainAPI.[Law Firm Matter Number] IS NULL
 AND #AXAXLDataSubmission.[Date Instructed] > (SELECT DISTINCT #MainAPI.dss_load_date FROM #MainAPI)
 
 /* New Tables for API 20211025*/
---TRUNCATE TABLE [dbo].[AXAXLDataSubmission_Export_Create]
---INSERT INTO dbo.AXAXLDataSubmission_Export_Create
---SELECT #AXAXLDataSubmission.*
---FROM #AXAXLDataSubmission 
---LEFT JOIN #MainAPI ON #MainAPI.[Law Firm Matter Number] = #AXAXLDataSubmission.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT
---WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
---AND #AXAXLDataSubmission.[Date Instructed] > (SELECT DISTINCT #MainAPI.dss_load_date FROM #MainAPI)
+DROP TABLE IF EXISTS #Tabs
 
---UPDATE AXAXLDataSubmission_Export_Create 
+SELECT #AXAXLDataSubmission.*
+INTO  #Tabs
+FROM #AXAXLDataSubmission 
+LEFT JOIN #MainAPI ON #MainAPI.[Law Firm Matter Number] = #AXAXLDataSubmission.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT
+WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
+AND #AXAXLDataSubmission.[Date Instructed] > (SELECT DISTINCT #MainAPI.dss_load_date FROM #MainAPI)
 
---SET AXAXLDataSubmission_Export_Create.Status = 'Create Case'
+UPDATE  #Tabs
 
---FROM AXAXLDataSubmission_Export_Create 
+SET  #Tabs.Status = 'Create Case'
 
---WHERE AXAXLDataSubmission_Export_Create.Status IS null
+FROM  #Tabs
+
+WHERE  #Tabs.Status IS null
 
 
 
@@ -585,34 +570,34 @@ OR    #MainAPI.[Fee Scale] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Fee
 
 
 /* Edit Tables - 20211025 */
---TRUNCATE TABLE [dbo].[AXAXLDataSubmission_Export_Edit]
---INSERT INTO AXAXLDataSubmission_Export_Edit
---SELECT #AXAXLDataSubmission.* 
---FROM #AXAXLDataSubmission 
---JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
---WHERE 
---      #MainAPI.[AXA XL Claim Number] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[AXA XL Claim Number] 
---OR    #MainAPI.[Line of Business] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[New Line of Business]
---OR    #MainAPI.[Product Type]  COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Product Type New] 
---OR    #MainAPI.[Insured Name] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Insured Name]
---OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> #AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]
---OR    #MainAPI.[AXA XL Claims Handler] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[AXA XL Claims Handler]
---OR    #MainAPI.[Third Party Administrator] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Third Party Administrator]
---OR    #MainAPI.[Coverage defence ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Coverage / defence?]
---OR    #MainAPI.[Law firm handling office city ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Law firm handling office (city)]
---OR    CAST(#MainAPI.[Date Instructed] AS DATE) <> CAST(#AXAXLDataSubmission.[Date Instructed] AS DATE)
---OR    #MainAPI.[Opposing Side's Solicitor Firm Name] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[Opposing Side's Solicitor Firm Name]
---OR    #MainAPI.[Reason For instruction] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Reason For instruction]
---OR    #MainAPI.[Fee Scale] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Fee Scale]
+
+INSERT INTO  #Tabs
+SELECT #AXAXLDataSubmission.* 
+FROM #AXAXLDataSubmission 
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE 
+      #MainAPI.[AXA XL Claim Number] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[AXA XL Claim Number] 
+OR    #MainAPI.[Line of Business] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[New Line of Business]
+OR    #MainAPI.[Product Type]  COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Product Type New] 
+OR    #MainAPI.[Insured Name] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Insured Name]
+OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> #AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]
+OR    #MainAPI.[AXA XL Claims Handler] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[AXA XL Claims Handler]
+OR    #MainAPI.[Third Party Administrator] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Third Party Administrator]
+OR    #MainAPI.[Coverage defence ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Coverage / defence?]
+OR    #MainAPI.[Law firm handling office city ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Law firm handling office (city)]
+OR    CAST(#MainAPI.[Date Instructed] AS DATE) <> CAST(#AXAXLDataSubmission.[Date Instructed] AS DATE)
+OR    #MainAPI.[Opposing Side's Solicitor Firm Name] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[Opposing Side's Solicitor Firm Name]
+OR    #MainAPI.[Reason For instruction] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Reason For instruction]
+OR    #MainAPI.[Fee Scale] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Fee Scale]
 
 
---UPDATE AXAXLDataSubmission_Export_Edit
+UPDATE  #Tabs
 
---SET AXAXLDataSubmission_Export_Edit.Status = 'Edit Case'
+SET  #Tabs.Status = 'Edit Case'
 
---FROM AXAXLDataSubmission_Export_Edit
+FROM  #Tabs
 
---WHERE AXAXLDataSubmission_Export_Edit.Status IS NULL 
+WHERE  #Tabs.Status IS NULL 
  
 /*Update Case - 
 First acknowledgement Date,	Report Date, 	Date Proceedings Issued, AXA XL as defendant,	Reason for proceedings,	Proceeding Track, 
@@ -653,46 +638,46 @@ AND ISNULL(#TimeKeepersAPI.[Hours spent on case], -1) <> ISNULL(#AXAXLDataSubmis
 
 
 /* Update Table for API 20211025*/
---TRUNCATE TABLE [dbo].[AXAXLDataSubmission_Export_Update]
---INSERT INTO AXAXLDataSubmission_Export_Update
---SELECT #AXAXLDataSubmission.* 
---FROM #AXAXLDataSubmission
---JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
---WHERE 
---   ISNULL(#MainAPI.[First acknowledgement Date], '3999-01-01') <> ISNULL(#AXAXLDataSubmission.[First acknowledgement Date], '3999-01-01')
---OR ISNULL(CAST(#MainAPI.[Report Date] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Report Date] AS DATE), '3999-01-01')
---OR ISNULL(CAST(#MainAPI.[Date Proceedings Issued] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Date Proceedings Issued] AS DATE), '3999-01-01')
---OR ISNULL(#MainAPI.[AXA XL as defendant], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[AXA XL as defendant], 1)
---OR ISNULL(#MainAPI.[Reason for proceedings], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[Reason for proceedings], 1)
---OR ISNULL(#MainAPI.[Proceeding Track], 1) COLLATE DATABASE_DEFAULT <>  ISNULL(#AXAXLDataSubmission.[Proceeding Track], 1) 
---OR ISNULL(#MainAPI.[Trial date],'3999-01-01') <> ISNULL(#AXAXLDataSubmission.[Trial date], '3999-01-01')
---OR ISNULL(REPLACE(#MainAPI.[Damages Reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Damages Reserve] AS NVARCHAR(20)), '')
---OR ISNULL(REPLACE(#MainAPI.[Opposing sides costs reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's costs reserve] AS NVARCHAR(20)), '')
---OR ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
---OR ISNULL(#MainAPI.[Reason for panel budget change if occurred], '') <> ISNULL(#AXAXLDataSubmission.[Reason for panel budget change if occurred], '')
---OR  ISNULL(REPLACE(#MainAPI.[Panel Fees Paid], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel Fees Paid]  AS NVARCHAR(20)), '')
---OR  ISNULL(CAST(REPLACE(#MainAPI.[Counsel Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Counsel Paid]  AS DECIMAL(18,2)), 0.00)
---OR  ISNULL(CAST(REPLACE(#MainAPI.[Other Disbursements Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Other Disbursements Paid]  AS DECIMAL(18,2)), 0.00)
---OR  ISNULL(CAST(REPLACE(#MainAPI.[Opposing sides Costs Claimed], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's Costs Claimed]  AS DECIMAL(18,2)), 0.00)
+
+INSERT INTO  #Tabs
+SELECT #AXAXLDataSubmission.* 
+FROM #AXAXLDataSubmission
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE 
+   ISNULL(#MainAPI.[First acknowledgement Date], '3999-01-01') <> ISNULL(#AXAXLDataSubmission.[First acknowledgement Date], '3999-01-01')
+OR ISNULL(CAST(#MainAPI.[Report Date] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Report Date] AS DATE), '3999-01-01')
+OR ISNULL(CAST(#MainAPI.[Date Proceedings Issued] AS DATE), '3999-01-01') <> ISNULL(CAST(#AXAXLDataSubmission.[Date Proceedings Issued] AS DATE), '3999-01-01')
+OR ISNULL(#MainAPI.[AXA XL as defendant], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[AXA XL as defendant], 1)
+OR ISNULL(#MainAPI.[Reason for proceedings], 1) COLLATE DATABASE_DEFAULT <> ISNULL(#AXAXLDataSubmission.[Reason for proceedings], 1)
+OR ISNULL(#MainAPI.[Proceeding Track], 1) COLLATE DATABASE_DEFAULT <>  ISNULL(#AXAXLDataSubmission.[Proceeding Track], 1) 
+OR ISNULL(#MainAPI.[Trial date],'3999-01-01') <> ISNULL(#AXAXLDataSubmission.[Trial date], '3999-01-01')
+OR ISNULL(REPLACE(#MainAPI.[Damages Reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Damages Reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Opposing sides costs reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's costs reserve] AS NVARCHAR(20)), '')
+OR ISNULL(REPLACE(#MainAPI.[Panel budget reserve], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel budget/reserve] AS NVARCHAR(20)), '')
+OR ISNULL(#MainAPI.[Reason for panel budget change if occurred], '') <> ISNULL(#AXAXLDataSubmission.[Reason for panel budget change if occurred], '')
+OR  ISNULL(REPLACE(#MainAPI.[Panel Fees Paid], ',', ''), '') <> ISNULL(CAST(#AXAXLDataSubmission.[Panel Fees Paid]  AS NVARCHAR(20)), '')
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Counsel Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Counsel Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Other Disbursements Paid], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Other Disbursements Paid]  AS DECIMAL(18,2)), 0.00)
+OR  ISNULL(CAST(REPLACE(#MainAPI.[Opposing sides Costs Claimed], ',', '') AS DECIMAL(18,2)), 0.00) <> ISNULL(CAST(#AXAXLDataSubmission.[Opposing side's Costs Claimed]  AS DECIMAL(18,2)), 0.00)
 
 
 
---INSERT INTO AXAXLDataSubmission_Export_Update
---SELECT #AXAXLDataSubmission.* FROM #AXAXLDataSubmission
---JOIN #TimeKeepersAPI ON #TimeKeepersAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT =  #AXAXLDataSubmission.[Law Firm Matter Number]
---AND #AXAXLDataSubmission.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT  =  #TimeKeepersAPI.[Unique timekeeper ID per timekeeper]
-----AND ISNULL(#TimeKeepersAPI.PQE, 100) =  ISNULL(#AXAXLDataSubmission.PQE, 100)
-----AND ISNULL(#TimeKeepersAPI.[Level solicitor partner ], 'N/A') COLLATE DATABASE_DEFAULT = ISNULL(#AXAXLDataSubmission.[Level (solicitor, partner)], 'N/A')
---AND ISNULL(#TimeKeepersAPI.[Hours spent on case], -1) <> ISNULL(#AXAXLDataSubmission.[Hours spent on case], -1)
+INSERT INTO  #Tabs
+SELECT #AXAXLDataSubmission.* FROM #AXAXLDataSubmission
+JOIN #TimeKeepersAPI ON #TimeKeepersAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT =  #AXAXLDataSubmission.[Law Firm Matter Number]
+AND #AXAXLDataSubmission.[Unique timekeeper ID per timekeeper] COLLATE DATABASE_DEFAULT  =  #TimeKeepersAPI.[Unique timekeeper ID per timekeeper]
+--AND ISNULL(#TimeKeepersAPI.PQE, 100) =  ISNULL(#AXAXLDataSubmission.PQE, 100)
+--AND ISNULL(#TimeKeepersAPI.[Level solicitor partner ], 'N/A') COLLATE DATABASE_DEFAULT = ISNULL(#AXAXLDataSubmission.[Level (solicitor, partner)], 'N/A')
+AND ISNULL(#TimeKeepersAPI.[Hours spent on case], -1) <> ISNULL(#AXAXLDataSubmission.[Hours spent on case], -1)
 
 
---UPDATE AXAXLDataSubmission_Export_Update
+UPDATE  #Tabs
 
---SET AXAXLDataSubmission_Export_Update.Status = 'Update Case'
+SET  #Tabs.Status = 'Update Case'
 
---FROM AXAXLDataSubmission_Export_Update
+FROM  #Tabs
 
---WHERE AXAXLDataSubmission_Export_Update.Status IS NULL 
+WHERE  #Tabs.Status IS NULL 
 
 
 
@@ -724,22 +709,22 @@ AND
 --OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
  
 )
---TRUNCATE TABLE [dbo].[AXAXLDataSubmission_Export_Close]
---INSERT INTO AXAXLDataSubmission_Export_Close
---SELECT #AXAXLDataSubmission.*
---FROM #AXAXLDataSubmission
---JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
---WHERE #AXAXLDataSubmission.RN = 1 
---AND 
---(
---#AXAXLDataSubmission.[Date closed] IS NOT NULL )
 
---UPDATE AXAXLDataSubmission_Export_Close
+INSERT INTO  #Tabs
+SELECT #AXAXLDataSubmission.*
+FROM #AXAXLDataSubmission
+JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
+WHERE #AXAXLDataSubmission.RN = 1 
+AND 
+(
+#AXAXLDataSubmission.[Date closed] IS NOT NULL )
 
---SET AXAXLDataSubmission_Export_Close.Status =  'Close Case'
+UPDATE  #Tabs
 
---FROM AXAXLDataSubmission_Export_Close
---WHERE  AXAXLDataSubmission_Export_Close.Status IS NULL 
+SET  #Tabs.Status =  'Close Case'
+
+FROM  #Tabs
+WHERE   #Tabs.Status IS NULL 
 
 
 /*Update [Reason for panel budget change if occurred]
@@ -764,20 +749,20 @@ SET #AXAXLDataSubmission.Status = 'Create Case'
 FROM #AXAXLDataSubmission
 WHERE ISNULL(Status, '') = ''
 
---INSERT INTO AXAXLDataSubmission_Export_Create
---SELECT #AXAXLDataSubmission.* 
---FROM #AXAXLDataSubmission
---WHERE ISNULL(Status, '') = ''
+INSERT INTO  #Tabs
+SELECT #AXAXLDataSubmission.* 
+FROM #AXAXLDataSubmission
+WHERE ISNULL(Status, '') = ''
 
---UPDATE AXAXLDataSubmission_Export_Create 
+UPDATE  #Tabs
 
---SET AXAXLDataSubmission_Export_Create.Status = 'Create Case'
+SET  #Tabs.Status = 'Create Case'
 
---FROM AXAXLDataSubmission_Export_Create 
--- WHERE AXAXLDataSubmission_Export_Create.Status IS NULL 
+FROM  #Tabs
+ WHERE  #Tabs.Status IS NULL 
 
 SELECT *
-FROM #AXAXLDataSubmission
+FROM  #Tabs
 ORDER BY ms_fileid
 
 --A1001-12012 = 2021-05-19 00:00:00.000
