@@ -9,7 +9,10 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[FEDDocumentSearch] --'00006864','00005403'
+
+
+
+CREATE PROCEDURE [dbo].[FEDDocumentSearch] --'A00002','00007355','khanse'
 (
 @Client AS NVARCHAR(8)
 ,@Matter AS NCHAR(8)
@@ -29,7 +32,8 @@ PRINT @Filter
 DECLARE @MatterOwner AS INT
 SET @MatterOwner=(SELECT COUNT(1) FROM axxia01.dbo.cashdr
 INNER JOIN axxia01.dbo.camatgrp
- ON mg_client=mg_matter
+ ON client=mg_client
+ AND matter=mg_matter
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=mg_feearn COLLATE DATABASE_DEFAULT AND dss_current_flag='Y' 
 WHERE client=@Client AND matter=@Matter
@@ -38,7 +42,8 @@ AND windowsusername=@WindowsUserName)
 DECLARE @OtherUsers AS INT
 SET @OtherUsers=(SELECT COUNT(1) FROM axxia01.dbo.cashdr
 INNER JOIN axxia01.dbo.camatgrp
- ON mg_client=mg_matter
+ ON client=mg_client
+ AND matter=mg_matter
 INNER JOIN axxia01.dbo.casper
  ON casper.case_id = cashdr.case_id
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
@@ -54,7 +59,7 @@ SET @IsPrivate=(SELECT CASE WHEN case_private_desc1 IS NOT NULL OR case_private_
 PRINT @MatterOwner 
 PRINT @OtherUsers
 
-
+PRINT @IsPrivate
 IF @MatterOwner + @OtherUsers>0  AND @IsPrivate<>0 --OR @WindowsUserName='khanse'
 BEGIN
 
