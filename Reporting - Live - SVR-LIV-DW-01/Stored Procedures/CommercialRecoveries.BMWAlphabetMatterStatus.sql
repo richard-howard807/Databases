@@ -16,6 +16,7 @@ GO
 
 
 
+
 --EXEC CommercialRecoveries.BMWAlphabetMatterStatus 'Alphabet','Open' 
 CREATE PROCEDURE [CommercialRecoveries].[BMWAlphabetMatterStatus]
 (
@@ -54,7 +55,7 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,InstType.cdDesc AS [Instruction Type]
 ,txtCurenStatNot AS [Status of instruction]
 ,cboVehRecovered AS [Vehicle recovered]
-,curPayArrAmoun AS [Payment arrangement agreed]
+,CASE WHEN cboStatus='ACTIVE' THEN 'Yes' ELSE 'No' END AS [Payment arrangement agreed]
 ,curOriginalBal AS [Balance for recovery on instruction]
 ,TotalCollections AS [Total payments collected to date]
 ,Interest.Interest
@@ -66,7 +67,7 @@ SELECT CASE WHEN ISNULL(ClientRef.ClientRef,'')=''THEN txtCliRef ELSE ClientRef 
 ,red_dw.dbo.datetimelocal(LastHistoryNote) AS LastHistoryNote
 ,red_dw.dbo.datetimelocal(LastDoc) AS LastDoc
 ,CASE WHEN red_dw.dbo.datetimelocal(LastHistoryNote)>red_dw.dbo.datetimelocal(LastDoc) THEN red_dw.dbo.datetimelocal(LastHistoryNote) ELSE red_dw.dbo.datetimelocal(LastDoc) END AS LastAction
-,cboStatus
+
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
