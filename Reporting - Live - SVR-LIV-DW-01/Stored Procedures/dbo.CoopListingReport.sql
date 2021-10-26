@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 29-03-2018
@@ -33,7 +34,7 @@ BEGIN
 
 
 SELECT 
-	RTRIM(dim_matter_header_current.client_code) +'-'+ dim_matter_header_current.matter_number AS [Weightmans Reference]
+	RTRIM(dim_matter_header_current.master_client_code) +'-'+ dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 		, insurerclient_reference AS [Co-op Reference]
 		, dim_detail_core_details.[clients_claims_handler_surname_forename] AS [Co-op Handler]
 		, dim_detail_core_details.[coop_client_branch] AS [Client Branch]
@@ -228,6 +229,7 @@ SELECT
 	--	,dim_detail_outcome.[date_claim_concluded]
 	, CASE WHEN dim_client.client_group_code = '00000004' OR (dim_matter_header_current.client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op back book', 'Co-op forward book')) THEN 1 ELSE 0 END AS [Co-op back/foward book]
 	 ,red_dw.dbo.dim_detail_claim.msg_instruction_type
+	 ,brief_description_of_injury
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code =dim_matter_header_current.fee_earner_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND GETDATE() BETWEEN dss_start_date AND dss_end_date 
@@ -297,7 +299,7 @@ OR (dim_detail_outcome.[date_costs_settled] IS NULL OR dim_detail_outcome.[date_
 --AND dim_matter_header_current.client_code='00046018' AND dim_matter_header_current.matter_number='00061499'
 
 AND dim_matter_worktype.work_type_code <>'1044'
-
+AND ISNULL(msg_instruction_type,'') <>'MSG Savings project'
 END
 
 
