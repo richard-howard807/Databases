@@ -57,6 +57,7 @@ CREATE TABLE [dbo].[ClaimsSLAComplianceTable]
 [Count Initial Report Is Overdue] [int] NOT NULL,
 [Date Subsequent Report Due] [datetime] NULL,
 [Subsequent Report Due in 10 Working Days] [int] NOT NULL,
-[Subsequent Report is Overdue] [int] NOT NULL
+[Subsequent Report is Overdue] [int] NOT NULL,
+[work_type_name] [char] (40) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

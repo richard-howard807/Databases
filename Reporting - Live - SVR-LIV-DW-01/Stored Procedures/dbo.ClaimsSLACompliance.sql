@@ -589,6 +589,7 @@ SELECT
 		ELSE 
 			0
 	  END				AS [Subsequent Report is Overdue]
+	  ,work_type_name 
 
 INTO Reporting.dbo.ClaimsSLAComplianceTable
 FROM red_dw.dbo.fact_dimension_main
@@ -610,6 +611,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON [Client Name]=client_name COLLATE DATABASE_DEFAULT
 	LEFT OUTER JOIN #ClientReportDates
 		ON #ClientReportDates.master_client_code = dim_matter_header_current.master_client_code AND #ClientReportDates.master_matter_number = dim_matter_header_current.master_matter_number
+		LEFT JOIN red_Dw.dbo.dim_matter_worktype
+		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE 
 	reporting_exclusions=0
 	AND hierarchylevel2hist='Legal Ops - Claims'

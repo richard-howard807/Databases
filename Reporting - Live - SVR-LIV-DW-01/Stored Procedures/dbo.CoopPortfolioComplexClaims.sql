@@ -265,6 +265,13 @@ SELECT
            ELSE
                0
        END AS ProceedingsIsuued_2020
+	   ,CASE when
+           date.cal_quarter IN ( '202101', '202102', '202103', '202104')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2021
 	   ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' THEN 'Litigated'  ELSE 'Pre-lit'  END AS Litigation
        ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued >date_instructions_received THEN 'Litigated Post Instructions'
 	         WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued <=date_instructions_received THEN'Litigated Pre Instructions' 
@@ -326,7 +333,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care ON fact_detail_future_care.ma
 LEFT OUTER JOIN red_dw.dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 LEFT OUTER JOIN red_dw.dbo.dim_date as date ON  CAST(date.calendar_date AS DATE) = CAST(dim_detail_core_details.date_proceedings_issued AS DATE) 
 WHERE (dim_client.client_group_code = '00000004' 
-OR (dim_matter_header_current.master_client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op Back Book', 'Co-op Forward Book')))
+OR (dim_matter_header_current.master_client_code='W24438' AND dim_instruction_type.instruction_type IN ('Co-op back book', 'Co-op forward book')))
 --AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management >='2017-01-01')
 AND reporting_exclusions=0
 AND LOWER(ISNULL(outcome_of_case,''))NOT IN ('exclude from reports','returned to client')

@@ -14,7 +14,9 @@ BEGIN
 
 	SET NOCOUNT ON;
 
-SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [MatterSphere Client/Matter Number]
+SELECT 
+
+   dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [MatterSphere Client/Matter Number]
 	, dim_matter_header_current.matter_description AS [Matter Description]
 	, dim_matter_header_current.matter_owner_full_name AS [Matter Owner]
 	, dim_detail_core_details.[date_instructions_received] AS [Date Instructions Received]
@@ -33,7 +35,7 @@ SELECT dim_matter_header_current.master_client_code+'-'+dim_matter_header_curren
 	, dim_detail_advice.[lbs_outcome] AS [Outcome]
 	, dim_detail_advice.[lbs_status] AS [Status]
 	, dim_detail_advice.[date_last_call] AS [Date of Last Call]
-	, fact_all_time_activity.minutes_recorded/60 AS [Total Advice Hours]
+	, SUM(fact_all_time_activity.minutes_recorded)/60 AS [Total Advice Hours]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -52,7 +54,30 @@ ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_ou
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case,''))<>'exclude from reports'
 AND dim_matter_header_current.master_client_code ='W23504'
+AND dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number	 <>'W23504-86'
 AND dim_matter_worktype.work_type_name ='Employment Advice Line'
+
+GROUP BY 
+
+  dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number 
+	, dim_matter_header_current.matter_description 
+	, dim_matter_header_current.matter_owner_full_name
+	, dim_detail_core_details.[date_instructions_received] 
+	, dim_detail_advice.[lbs_issue] 
+	, dim_detail_advice.[lbs_secondary_issue] 
+	, dim_detail_advice.[risk] 
+	, dim_detail_advice.[name_of_caller] 
+	, dim_detail_advice.[whitbread_caller_job_title]
+	, dim_detail_advice.[lbs_caller_level] 
+	, dim_detail_advice.[lbs_caller_department] 
+	, dim_detail_advice.[name_of_employee] 
+	, dim_detail_advice.[whitbread_employee_job_title] 
+	, dim_detail_advice.[lbs_employee_level] 
+	, dim_detail_advice.[lbs_employee_department]
+	, dim_detail_advice.[employment_start_date] 
+	, dim_detail_advice.[lbs_outcome] 
+	, dim_detail_advice.[lbs_status] 
+	, dim_detail_advice.[date_last_call] 
 
 END
 GO

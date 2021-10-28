@@ -23,6 +23,7 @@ GO
 -- ES 24/02/2021 - #89228 added client code W24438--
 -- JL 17/03/2021 - #91487 added in Proceedings issued years/quarter split for dashboard chart
 -- JL 06/08/2021 - #107763 added in msg_instruction_type
+-- ES 27/10/2021 - #119792 excluded MSG Instruction Types = ‘Markerstudy Savings Project’ 
 -- =============================================
 
 CREATE PROCEDURE [dbo].[CoopListingReport]
@@ -300,6 +301,7 @@ OR (dim_detail_outcome.[date_costs_settled] IS NULL OR dim_detail_outcome.[date_
 
 AND dim_matter_worktype.work_type_code <>'1044'
 AND ISNULL(msg_instruction_type,'') <>'MSG Savings project'
+AND ISNULL(msg_instruction_type,'') <>'Markerstudy Savings Project'
 END
 
 

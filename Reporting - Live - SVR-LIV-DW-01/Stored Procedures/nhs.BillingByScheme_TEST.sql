@@ -9,12 +9,11 @@ GO
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
 	ES - 20190702 - had to revert this back as the macro helen duffy uses wasn't working, fixed fee cases have been removed for now
 	JB - 20210615 - #102528 added in Solicitors PQE years and office location
-	MT - 20211027 - #119732 added Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' 
 */
 
 
 
-CREATE PROCEDURE [nhs].[BillingByScheme] -- EXEC nhs.BillingByScheme_TEST 'Inquest Funding','2021-10-31'
+CREATE PROCEDURE [nhs].[BillingByScheme_TEST] -- EXEC nhs.BillingByScheme_TEST 'Inquest Funding','2021-10-31'
 (
     @Scheme AS VARCHAR(MAX),
     @EndDate AS DATETIME
@@ -93,7 +92,7 @@ BEGIN
               )
               --OR [output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee'
           )
-		 
+		 -- AND [output_wip_fee_arrangement] = 'Hourly rate' -- Added by MT 
 		  
 		  ;
 
@@ -185,9 +184,7 @@ BEGIN
           AND CONVERT(DATE, WorkDate) <= @EndDate
           AND UnbilledWIP.IsActive = 1
 		  AND ISNULL(TimeType,'') NOT IN ('CB10','CB11','CB12')
-
-		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' -- MT 20211026
-
+		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee'
     GROUP BY Matters.Client,
              Matters.Matter,
              UnbilledWIP.WorkRate,
@@ -309,7 +306,7 @@ BEGIN
           )
 		  
 		  
-		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' --MT 20211026
+		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee'
 		  
 		  ;
 
