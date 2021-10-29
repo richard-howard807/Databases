@@ -36,6 +36,8 @@ SELECT
 	, dim_detail_advice.[lbs_status] AS [Status]
 	, dim_detail_advice.[date_last_call] AS [Date of Last Call]
 	, SUM(fact_all_time_activity.minutes_recorded)/60 AS [Total Advice Hours]
+	, red_dw.dbo.dim_detail_advice.lbs_source
+	, red_dw.dbo.dim_detail_advice.manager_handling
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -78,6 +80,8 @@ GROUP BY
 	, dim_detail_advice.[lbs_outcome] 
 	, dim_detail_advice.[lbs_status] 
 	, dim_detail_advice.[date_last_call] 
+	, dim_detail_advice.lbs_source
+	, dim_detail_advice.manager_handling
 
 END
 GO

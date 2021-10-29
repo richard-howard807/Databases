@@ -173,13 +173,16 @@ SELECT
 		THEN 1 ELSE 0 END AS [Number of Matters]
 		, CASE WHEN totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
 	,red_dw.dbo.fact_finance_summary.damages_paid
+	,fact_finance_summary.damages_reserve AS [Damages Reserve Current ]
+	,fact_detail_reserve_detail.claimant_costs_reserve_current AS [Claimant Costs Reserve Current ]
+	,fact_finance_summary.defence_costs_reserve AS [Defence Costs Reserve Current]
 	,red_dw.dbo.fact_finance_summary.total_damages_and_tp_costs_reserve
 	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid
 	,red_dw.dbo.fact_finance_summary.defence_costs_billed
 	,CASE WHEN fact_finance_summary.damages_paid IS NULL OR fact_finance_summary.total_tp_costs_paid IS NULL THEN NULL ELSE ISNULL(damages_paid,0)-ISNULL(total_tp_costs_paid,0) END AS [Damages - Costs Paid]
 	,red_dw.dbo.dim_matter_header_current.final_bill_flag
 	,fact_finance_summary.total_reserve
-	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Paid] 
+	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Spend] 
 	,red_dw.dbo.fact_finance_summary.total_recovery
 	,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
 	,dim_matter_worktype.work_type_group AS [Matter Type Group]
@@ -304,7 +307,7 @@ SELECT
 , [Damages - Costs Paid]
 , final_bill_flag
 , (total_reserve	-Savings)/NULLIF(total_reserve,0)	AS [Total Reserve %]
-, [Total Paid] 
+, [Total Spend] 
 , total_recovery
 , Savings
 , total_reserve
@@ -335,6 +338,9 @@ SELECT
 , referral_reason
 , ms_only
 , zurich_result_date
+,[Damages Reserve Current ]
+,[Claimant Costs Reserve Current ]
+,[Defence Costs Reserve Current]
 FROM #MainData
 
    END

@@ -50,7 +50,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN (SELECT DISTINCT fileID,assocRef FROM ms_prod.config.dbAssociates WHERE assocType='CLIENT' AND assocRef IS NOT NULL) AS Ref
 ON ms_fileid=Ref.fileID
-WHERE master_client_code IN('W24815','W25103')
+WHERE master_client_code IN('W24815','W25103', 'W25612')
 AND reporting_exclusions=0
 AND master_matter_number <>'1'
 
