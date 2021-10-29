@@ -656,6 +656,8 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 --Large Loss
 ,dim_detail_core_details.[will_total_gross_reserve_on_the_claim_exceed_500000] AS [Will total gross damages reserve exceed £350,000?]
 
+,dim_court_involvement.court_name AS [Court Name]
+
 INTO dbo.Vis_GeneralData
 
 

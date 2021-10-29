@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[IAProducts]
 
 AS 
@@ -23,6 +25,9 @@ SELECT Pursuits.[Pursuit Number]
 ,'Pursuits' [Pursuits/Opportunity]
 ,NULL AS [Value]
 ,Pursuits.Stage
+,Pursuits.[Lead Partner]
+,Pursuits.[Closed Date]
+,NULL AS Outcome
 FROM (
 SELECT pursuitsn AS [Pursuit Number],
        company_name AS [Company],
@@ -82,7 +87,7 @@ WHERE dim_ia_activity.activity_date<=GETDATE()
 ) AS LastEngement
  ON LastEngement.ia_contact_id = dim_be_pursuits.ia_client_key
 	   WHERE pursuitsn <>'Unknown'
-	   AND close_date IS NULL
+	  -- AND close_date IS NULL
 	   AND product IS NOT NULL
 	   AND ISNULL(product,'')<>'Unknown'
 ) AS Pursuits
@@ -102,6 +107,9 @@ SELECT [Opportunity Number]
 ,'Opportunity' [Pursuits/Opportunity]
 ,[Opportunity Value] AS [Value]
 ,[Sales Stage] AS Stage
+,[CRP]
+,ActualClosedDate
+,Outcome
 FROM dbo.IA_Client_Data
 WHERE product IS NOT NULL
 AND ISNULL(Product,'')<>'Unknown'
