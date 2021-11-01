@@ -16,9 +16,6 @@ CREATE PROCEDURE [audit].[ACInternalAudits]
 as
 
 
-
-
-
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS NVARCHAR(50)
 --SET @Template='Claims Audit'
@@ -98,42 +95,47 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 		and  RIGHT(empkey,1)=RIGHT(position,1)
 		
 
-
-
-	select 
-			employees.employeeid, CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) audit_year,
-			dim_date.calendar_date, dim_date.fin_quarter, employees.employeestartdate, employees.leftdate,
-			name, employees.Department, employees.Team, employees.Division,
-			case when employeestartdate >= dateadd(month, -3, dim_date.calendar_date) then 1 
-			     when leftdate < dim_date.calendar_date then 2 
-			end as exclude
-			, dim_date.fin_quarter_no
-			, FIRST_VALUE(dim_date.fin_month_name) OVER (PARTITION BY dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS min_quarter_month
-			, LAST_VALUE(dim_date.fin_month_name) OVER (PARTITION BY dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS max_quarter_month
-		into #EmployeeDates
-	from red_dw.dbo.dim_date
-	cross apply (select distinct dim_employee.employeeid, dim_employee.employeestartdate, dim_employee.leftdate
-					, name AS [Name]
-					, dim_fed_hierarchy_history.hierarchylevel2hist AS [Division]
-					, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
-					, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
-				from red_dw.dbo.dim_employee 
-				left outer join red_dw.dbo.dim_date on cast(dim_employee.leftdate as date) = dim_date.calendar_date
-				LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
-								ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
-								AND dim_fed_hierarchy_history.dss_current_flag='Y'
-								AND dim_fed_hierarchy_history.activeud=1							
+select
+	employees.employeeid, CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) audit_year,
+	dim_date.calendar_date, dim_date.fin_quarter, employees.employeestartdate, employees.employeestartdate_fin_year, employees.leftdate,
+	employees.Name, employees.Department, employees.Team, employees.Division,
+	case when employeestartdate >= dateadd(month, -3, dim_date.calendar_date) then 1
+	when leftdate < dim_date.calendar_date then 2
+	end as exclude
+	, dim_date.fin_quarter_no
+	, quarter_name.min_quarter_month
+	, quarter_name.max_quarter_month
+into #EmployeeDates
+from red_dw.dbo.dim_date
+INNER JOIN (SELECT DISTINCT
+				dim_date.fin_quarter_no
+				, dim_date.fin_quarter
+				, dim_date.fin_year
+				, FIRST_VALUE(dim_date.fin_month_name) OVER(PARTITION BY dim_date.fin_year, dim_date.fin_quarter, dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no, dim_date.fin_month_no) AS min_quarter_month
+				, LAST_VALUE(dim_date.fin_month_name) OVER(PARTITION BY dim_date.fin_year, dim_date.fin_quarter, dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS max_quarter_month
+			FROM red_dw.dbo.dim_date) quarter_name on quarter_name.fin_quarter = dim_date.fin_quarter
+cross apply (select distinct dim_employee.employeeid, dim_employee.employeestartdate, start_year.fin_year AS employeestartdate_fin_year, dim_employee.leftdate
+				, name AS [Name]
+				, dim_fed_hierarchy_history.hierarchylevel2hist AS [Division]
+				, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
+				, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
+			from red_dw.dbo.dim_employee
+			LEFT OUTER JOIN red_dw.dbo.dim_date AS start_year ON start_year.calendar_date = CAST(dim_employee.employeestartdate AS DATE)
+			left outer join red_dw.dbo.dim_date on cast(dim_employee.leftdate as date) = dim_date.calendar_date
+			LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+				ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+				AND dim_fed_hierarchy_history.dss_current_flag='Y'
+				AND dim_fed_hierarchy_history.activeud=1
 				where dim_employee.deleted_from_cascade = 0
 				and dim_employee.classification = 'Casehandler'
 				AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
 				--and dim_employee.employeeid = '855920FD-6007-49F0-B1A5-0B391B2176FD'
-				and isnull(fin_year, '2099') >= (select distinct fin_year from red_dw.dbo.dim_date where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear	) -- exclude leavers after financial year they left
-				) employees
-	where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear
-	and dim_date.calendar_date >= employees.employeestartdate
-	--and dim_date.calendar_date <= isnull(employees.leftdate, '20990101')
-
-	
+				and isnull(dim_date.fin_year, '2099') >= (select distinct fin_year from red_dw.dbo.dim_date where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear ) -- exclude leavers after financial year they left
+		) employees
+where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear
+--and dim_date.calendar_date >= employees.employeestartdate
+--and dim_date.calendar_date <= isnull(employees.leftdate, '20990101')
+AND dim_date.fin_year >= employees.employeestartdate_fin_year
 
 
 select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin_quarter_no, #EmployeeDates.min_quarter_month, #EmployeeDates.max_quarter_month,
