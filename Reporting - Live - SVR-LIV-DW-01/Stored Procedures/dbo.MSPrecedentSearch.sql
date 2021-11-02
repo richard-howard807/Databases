@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[MSPrecedentSearch]
 (
 @StartDate AS DATE
@@ -39,7 +40,11 @@ SELECT
         ON FileOwner.usrID = dbFile.filePrincipleID
 		WHERE dbDocument.Created BETWEEN @StartDate AND @EndDate
 		
-		AND LOWER(dbPrec.PrecDesc) LIKE '%'+LOWER(@SearchString)+'%'
+		AND (
+		LOWER(RTRIM(dbPrec.PrecDesc)) LIKE '%'+LOWER(@SearchString)+'%' OR
+		LOWER(RTRIM(dbPrec.PrecTitle)) LIKE '%'+LOWER(@SearchString)+'%'
+		
+		)
 		ORDER BY dbDocument.Created
 
 		END 
