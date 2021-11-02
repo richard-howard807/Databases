@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-Create PROCEDURE [marketing].[Referral]
+CREATE PROCEDURE [marketing].[Referral]
 (
 @DateFrom AS DATE
 ,@DateTo AS DATE
@@ -120,8 +120,8 @@ is_this_part_of_a_campaign
 			+ ISNULL(fact_finance_summary.defence_costs_vat, 0)														AS [Total Amount Billed]
 	, 'Date Opened' AS [Date Range]		
 
-	, ISNULL(udExtClient.cboReferralType,'Unknown') [ReferralTypeCode]
-	, udReferral.description [Referral Type Description]
+	--, ISNULL(udExtClient.cboReferralType,'Unknown') [ReferralTypeCode]
+	--, udReferral.description [Referral Type Description]
 			
 			FROM red_Dw.dbo.fact_dimension_main
 LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
@@ -132,9 +132,9 @@ LEFT JOIN red_Dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_deta
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 
 
-INNER JOIN MS_Prod.config.dbClient dbClient ON dim_client.client_code = dim_matter_header_current.client_code
-INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
-LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
+--INNER JOIN MS_Prod.config.dbClient dbClient ON dim_client.client_code = dim_matter_header_current.client_code
+--INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
+--LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
 
 LEFT JOIN 
 (
@@ -183,8 +183,14 @@ AND dim_matter_header_current.reporting_exclusions = 0
 AND LOWER(dim_client.client_name) NOT LIKE '%test%'
 
 
-AND ISNULL(udExtClient.cboReferralType,'Unknown') IN (SELECT value  FROM   STRING_SPLIT(@BusinessSource,',') )
-
+AND dim_client.client_code COLLATE DATABASE_DEFAULT IN 
+(
+SELECT DISTINCT dbClient.clNo FROM  MS_Prod.config.dbClient dbClient 
+JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
+JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
+where
+ISNULL(udExtClient.cboReferralType,'Unknown') IN (SELECT value  FROM   STRING_SPLIT(@BusinessSource,',') )
+)
 
 UNION
 
@@ -289,8 +295,8 @@ is_this_part_of_a_campaign
 			+ ISNULL(fact_finance_summary.defence_costs_vat, 0)														AS [Total Amount Billed]
 	, 'Bill Date' AS [Date Range]		
 
-	, ISNULL(udExtClient.cboReferralType,'Unknown') [ReferralTypeCode]
-	, udReferral.description [Referral Type Description]
+	--, ISNULL(udExtClient.cboReferralType,'Unknown') [ReferralTypeCode]
+	--, udReferral.description [Referral Type Description]
 			
 			FROM red_Dw.dbo.fact_dimension_main
 LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
@@ -300,9 +306,9 @@ LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON  dim_fed_hierarchy_history.dim
 LEFT JOIN red_Dw.dbo.dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 
-INNER JOIN MS_Prod.config.dbClient dbClient ON dim_client.client_code = dim_matter_header_current.client_code
-INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
-LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
+--INNER JOIN MS_Prod.config.dbClient dbClient ON dim_client.client_code = dim_matter_header_current.client_code
+--INNER JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
+--LEFT JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
 
 
 
@@ -367,8 +373,14 @@ dim_matter_header_current.reporting_exclusions = 0
 
 AND LOWER(dim_client.client_name) NOT LIKE '%test%'
 
-AND ISNULL(udExtClient.cboReferralType,'Unknown') IN (SELECT value  FROM   STRING_SPLIT(@BusinessSource,',') )
-
+AND dim_client.client_code COLLATE DATABASE_DEFAULT IN 
+(
+SELECT DISTINCT dbClient.clNo FROM  MS_Prod.config.dbClient dbClient 
+JOIN MS_Prod.dbo.udExtClient udExtClient  ON udExtClient.clID = dbClient.clID
+JOIN MS_Prod.dbo.udReferral udReferral ON udExtClient.cboReferralType = udReferral.code
+where
+ISNULL(udExtClient.cboReferralType,'Unknown') IN (SELECT value  FROM   STRING_SPLIT(@BusinessSource,',') )
+)
 
 END
 GO

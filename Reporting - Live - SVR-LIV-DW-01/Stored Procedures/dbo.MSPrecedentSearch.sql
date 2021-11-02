@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[MSPrecedentSearch]
 (
 @StartDate AS DATE
@@ -19,6 +20,7 @@ SELECT
        dbFile.fileNo [Matter],
        dbPrec.PrecDesc,
        dbPrec.PrecPubName,
+	   dbPrec.PrecTitle,
 	   docID,
 	   docDesc,
        MS_PROD.config.dbDocument.Created [Date Document Created],
