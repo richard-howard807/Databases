@@ -161,7 +161,7 @@ SELECT
 	,CASE WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
 	AND CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
 	WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
-	CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilterDateofLastBill] 
+	CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilter Date of Last Bill] 
 
  ,CASE WHEN dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
@@ -184,7 +184,9 @@ SELECT
 	,fact_finance_summary.total_reserve
 	,red_dw.dbo.fact_finance_summary.total_tp_costs_paid + red_dw.dbo.fact_finance_summary.damages_paid + red_dw.dbo.fact_finance_summary.defence_costs_billed	 AS  [Total Spend] 
 	,red_dw.dbo.fact_finance_summary.total_recovery
-	,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
+	,(ISNULL(red_dw.dbo.fact_finance_summary.total_tp_costs_paid,0) + 
+	ISNULL(red_dw.dbo.fact_finance_summary.damages_paid,0) + 
+	ISNULL(red_dw.dbo.fact_finance_summary.defence_costs_billed,0))-ISNULL(red_dw.dbo.fact_finance_summary.total_recovery,0) AS Savings
 	,dim_matter_worktype.work_type_group AS [Matter Type Group]
 	,dim_detail_client.zurich_date_introductory_call
 	,dim_detail_core_details.zurich_introductory_call
@@ -208,7 +210,6 @@ SELECT
 	, ISNULL(damages_paid,0) + ISNULL(claimants_costs_paid,0)	+ ISNULL(total_amount_billed,0) -ISNULL(vat_billed,0)   AS [Indemnity Spend]
 	,vat_billed
 	, dim_detail_finance.[damages_banding] AS [Damages Banding]
-	,damages_reserve
 	, CASE 
 			WHEN fact_finance_summary.damages_reserve < 500000 THEN 'Below 500k'
 			WHEN fact_finance_summary.damages_reserve BETWEEN 500000 AND 1000000 THEN '500k to £1m'
@@ -219,6 +220,7 @@ SELECT
 
 	,dim_detail_core_details.[injury_type] [Injury Type]
 	,CASE WHEN tskCompleted IS NOT NULL AND tskActive=1 THEN 1 ELSE 0 END AS [ProcessCompleted]
+	,tskCompleted 
 	,CASE WHEN cboCLNotInd IS NULL  AND cboIssDrCov IS NULL AND cboIssVehCov IS NULL
 		AND cboIssInsVeh IS NULL AND cboSugBrePol IS NULL AND cboAccPrivLand IS NULL
 		AND cboAnOthIns IS NULL AND cboAnoInsParty IS NULL AND cboEleSubLoss IS NULL
@@ -255,6 +257,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current ON fact_matter_summary_cu
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key 
 LEFT OUTER JOIN ms_prod.dbo.dbTasks  ON  ms_fileid=dbTasks.fileid AND tskFilter='tsk_01_02_010_TechCheckMot '
 LEFT OUTER JOIN ms_prod.dbo.udTechMotor ON ms_fileid=udTechMotor.fileID
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK) ON  fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
+ AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
 
 
 
@@ -297,7 +301,7 @@ SELECT
 , [YearFilter] 
 , [YearFilterConcluded] 
 , [YearFilterCostSettled]
-, [YearFilterDateofLastBill] 
+, [YearFilter Date of Last Bill] 
 , [Number of Matters]
 , [countscore]
 , damages_paid
@@ -328,12 +332,12 @@ SELECT
 , [Damages Banding]
 , [Injury Type]
 , [ProcessCompleted]
+, tskCompleted 
 , ScoreISBlank
 , [Number]
 , [Damages Banding_test]
 , hierarchylevel3hist
 , hierarchylevel4hist
-, damages_reserve
 , [Indemnity Spend_dwh]
 , referral_reason
 , ms_only

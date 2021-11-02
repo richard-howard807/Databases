@@ -53,6 +53,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			, pvt3.fin_quarter
 			, pvt3.fin_quarter_no
 			, pvt3.fin_year
+			, pvt3.score
 		into #Audits
 		FROM (SELECT dim_ac_audits.dim_ac_audits_key,
 				auditor.employeeid
@@ -74,6 +75,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 				, dim_date.fin_quarter
 				, dim_date.fin_quarter_no
 				, dim_date.fin_year
+				, dim_ac_audits.score
 
 				--	SELECT * from red_dw..dim_date
 				from red_dw.dbo.dim_ac_audits
@@ -103,7 +105,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 		
 
 
-select #Audits.employeeid
+select distinct #Audits.employeeid
      , #Audits.auditee_emp_key
      , #Audits.[Auditee Poistion]
      , #Audits.[Client Code]
@@ -117,21 +119,27 @@ select #Audits.employeeid
      , #Audits.fin_year
      , dim_ac_audit_questions.question_id
      , dim_ac_audit_questions.section_id
-     , dim_ac_audit_questions.question_text
+     ,dim_ac_audit_questions.question_text question_text
      , dim_ac_audit_questions.observation
      , dim_ac_audit_questions.recommendation
-     , dim_ac_audit_questions.response
+     , iif(dim_ac_audit_questions.response = 'Assign Task', '', dim_ac_audit_questions.response) response
 	 , dim_ac_audit_questions.audit_id
 	 , dim_fed_hierarchy_history.hierarchylevel2hist Division
 	 , dim_fed_hierarchy_history.hierarchylevel3hist Department
 	 , dim_fed_hierarchy_history.hierarchylevel4hist Team
 	 , dim_fed_hierarchy_history.display_name
+	 , (select string_agg(cast(observation as varchar(max)), ',')  from red_dw..dim_ac_audit_questions x where x.audit_id=dim_ac_audit_questions.audit_id and len(x.observation) > 1 ) audit_observations
+	 ,  (select string_agg(cast(recommendation as varchar(max)), ',') from red_dw..dim_ac_audit_questions x where x.audit_id=dim_ac_audit_questions.audit_id  and len(x.recommendation) > 1) audit_recommendations
+	 , score
 from #Audits
 inner join red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
 inner join red_dw..dim_fed_hierarchy_history on #Audits.[Auditee key] = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
-
+left outer join red_dw..dim_ac_audit_details on dim_ac_audit_details.dim_ac_audits_key = #Audits.dim_ac_audits_key
+--where audit_id = 715658
 WHERE #Audits.Date BETWEEN isnull(@StartDate,GETDATE()-365) AND ISNULL(@EndDate, GETDATE()+1)
 
-AND TRIM(dim_fed_hierarchy_history.hierarchylevel3hist) = CASE WHEN @Department = 'All' THEN dim_fed_hierarchy_history.hierarchylevel3hist ELSE @Department END
-AND TRIM(dim_fed_hierarchy_history.hierarchylevel4hist) = CASE WHEN @Team = 'All' THEN dim_fed_hierarchy_history.hierarchylevel4hist ELSE @Team END
+AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
+AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
+
+
 GO
