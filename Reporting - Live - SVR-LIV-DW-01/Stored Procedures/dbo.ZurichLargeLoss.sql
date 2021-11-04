@@ -233,6 +233,7 @@ SELECT
 	,dim_detail_core_details.referral_reason
 	,dim_matter_header_current.ms_only
 	,dim_detail_outcome.zurich_result_date
+	,dim_detail_outcome.outcome_of_case [Outcome of Case ]
 	
 
 INTO #MainData
@@ -345,6 +346,7 @@ SELECT
 ,[Damages Reserve Current ]
 ,[Claimant Costs Reserve Current ]
 ,[Defence Costs Reserve Current]
+,[Outcome of Case ]
 FROM #MainData
 
    END
