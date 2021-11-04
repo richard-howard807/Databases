@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[MSPrecedentSearch]
 (
 @StartDate AS DATE
@@ -36,7 +38,8 @@ SELECT
        FileOwner.usrFullName [Matter Owner]
 		  FROM ms_prod.config.dbDocument WITH(NOLOCK)
   INNER JOIN MS_Prod.dbo.dbPrecedents dbPrec WITH(NOLOCK)
-        ON dbDocument.docbaseprecid = dbPrec.PrecID
+        --ON dbDocument.docbaseprecid = dbPrec.PrecID
+		ON ISNULL(docprecID,docbaseprecID) = dbPrec.PrecID
 	  LEFT JOIN MS_Prod.config.dbFile dbFile
         ON dbFile.fileID = dbDocument.fileID
     LEFT JOIN MS_Prod.config.dbClient dbClient
@@ -49,7 +52,8 @@ SELECT
 		
 		AND (
 		LOWER(RTRIM(dbPrec.PrecDesc)) LIKE '%'+LOWER(@SearchString)+'%' OR
-		LOWER(RTRIM(dbPrec.PrecTitle)) LIKE '%'+LOWER(@SearchString)+'%'
+		LOWER(RTRIM(dbPrec.PrecTitle)) LIKE '%'+LOWER(@SearchString)+'%' OR
+		LOWER(RTRIM(docID)) LIKE '%'+LOWER(@SearchString)+'%'
 		
 		)
 		ORDER BY dbDocument.Created
@@ -76,7 +80,8 @@ SELECT
        FileOwner.usrFullName [Matter Owner]
 		  FROM ms_prod.config.dbDocument WITH(NOLOCK)
   INNER JOIN MS_Prod.dbo.dbPrecedents dbPrec WITH(NOLOCK)
-        ON dbDocument.docbaseprecid = dbPrec.PrecID
+            --ON dbDocument.docbaseprecid = dbPrec.PrecID
+		ON ISNULL(docprecID,docbaseprecID) = dbPrec.PrecID
 	  LEFT JOIN MS_Prod.config.dbFile dbFile
         ON dbFile.fileID = dbDocument.fileID
     LEFT JOIN MS_Prod.config.dbClient dbClient
@@ -108,7 +113,8 @@ SELECT
        FileOwner.usrFullName [Matter Owner]
 		  FROM ms_prod.config.dbDocument WITH(NOLOCK)
   INNER JOIN MS_Prod.dbo.dbPrecedents dbPrec WITH(NOLOCK)
-        ON dbDocument.docbaseprecid = dbPrec.PrecID
+          --ON dbDocument.docbaseprecid = dbPrec.PrecID
+		ON ISNULL(docprecID,docbaseprecID) = dbPrec.PrecID
 	  LEFT JOIN MS_Prod.config.dbFile dbFile
         ON dbFile.fileID = dbDocument.fileID
     LEFT JOIN MS_Prod.config.dbClient dbClient
@@ -121,7 +127,8 @@ SELECT
 		
 		AND (
 		LOWER(RTRIM(dbPrec.PrecDesc)) LIKE '%'+LOWER(@SearchString)+'%' OR
-		LOWER(RTRIM(dbPrec.PrecTitle)) LIKE '%'+LOWER(@SearchString)+'%'
+		LOWER(RTRIM(dbPrec.PrecTitle)) LIKE '%'+LOWER(@SearchString)+'%'OR
+		LOWER(RTRIM(docID)) LIKE '%'+LOWER(@SearchString)+'%'
 		
 		)
 		AND dbClient.clNo=@Client

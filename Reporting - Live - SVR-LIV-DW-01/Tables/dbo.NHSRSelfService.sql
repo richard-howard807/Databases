@@ -79,6 +79,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Description of Injury] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Litigation / Regulatory] [varchar] (12) COLLATE Latin1_General_CI_AS NULL,
 [Liability Issue] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Is breach of duty admitted?] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Delegated] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Fixed Fee Amount] [numeric] (13, 2) NOT NULL,
 [Fee Arrangement] [varchar] (255) COLLATE Latin1_General_BIN NOT NULL,

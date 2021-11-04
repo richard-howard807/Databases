@@ -5,10 +5,6 @@ GO
 
 
 
-
-
-
-
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -466,18 +462,9 @@ dim_detail_health.nhs_scheme IN
            dim_court_involvement.court_name AS [Court Name],
            RTRIM(dim_detail_core_details.track) AS [Track],
            dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
-           --COALESCE(
-           --            dim_detail_fraud.[fraud_initial_fraud_type],
-           --            dim_detail_fraud.[fraud_current_fraud_type],
-           --            dim_detail_fraud.[fraud_type_ageas],
-           --            dim_detail_fraud.[fraud_current_secondary_fraud_type],
-           --            dim_detail_client.[coop_fraud_current_fraud_type],
-           --            dim_detail_fraud.[fraud_type],
-           --            dim_detail_fraud.[fraud_type_disease_pre_lit]
-           --        ) AS [Fraud Type],
-           --dim_detail_core_details.credit_hire AS [Credit Hire],
-          -- dim_agents_involvement.cho_name AS [Credit Hire Organisation],
-           --dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail],
+
+		  
+        
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
 		   CASE WHEN ClaimantsAddress.litigant_in_person=1 THEN 'Yes' ELSE NULL END AS [Is the claimant a litigant in person (LIP)?],
            dim_detail_claim.[number_of_claimants] AS [Number of Claimants],
@@ -507,6 +494,9 @@ dim_detail_health.nhs_scheme IN
                    'Litigation'
            END AS [Litigation / Regulatory],
            dim_detail_core_details.[is_there_an_issue_on_liability] AS [Liability Issue],
+
+		   [Is breach of duty admitted?] =  dim_detail_outcome.[is_breach_of_duty_admitted], --MT 20211102
+
            dim_detail_core_details.delegated AS [Delegated],
            --dim_detail_core_details.[fixed_fee] AS [Fixed Fee],
            ISNULL(fact_finance_summary.[fixed_fee_amount], 0) AS [Fixed Fee Amount],

@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 CREATE PROCEDURE [dbo].[UniversityOfCumbriaWIPAndRevenue]
 
 AS
@@ -14,27 +16,28 @@ SELECT master_client_code + '-'+master_matter_number AS [Reference]
 ,date_closed_case_management AS [Date Closed]
 ,name AS [Matter Owner]
 ,hierarchylevel4hist AS [Team]
-,LifetimeWIP.LifetimeWIP
-,LifetimeWIP.[Lifetime WIP Amount]
-,WIP.WIP
-,WIP.[WIP Amount]
-,RevenueBilled.BillHrs AS [Hrs Billed]
-,RevenueBilled.Revenue AS [Revenue Billed]
+,ISNULL(LifetimeWIP.LifetimeWIP,0) AS LifetimeWIP
+,ISNULL(LifetimeWIP.[Lifetime WIP Amount],0) AS [Lifetime WIP Amount]
+,ISNULL(WIP.WIP,0) AS WIP
+,ISNULL(WIP.[WIP Amount],0) AS [WIP Amount]
+,ISNULL(RevenueBilled.BillHrs,0) AS [Hrs Billed]
+,ISNULL(RevenueBilled.Revenue,0) AS [Revenue Billed]
 ,BOA.BOA_Total AS [Billed on Account]
 ,work_type_name AS [Matter Type]
+,matter_category
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 LEFT OUTER JOIN 
 (
-select dim_matter_header_curr_key, sum(mins.bill_total_excl_vat) BOA_Total
+SELECT dim_matter_header_curr_key, SUM(mins.bill_total_excl_vat) BOA_Total
 
-from red_dw.dbo.fact_bill_detail mins
-where dim_bill_charge_type_key = 1
-and mins.bill_total > 0
+FROM red_dw.dbo.fact_bill_detail mins
+WHERE dim_bill_charge_type_key = 1
+AND mins.bill_total > 0
 AND client_code = '00243439'
-and mins.dim_bill_key not in (select dim_bill_key from red_dw.dbo.dim_bill where bill_reversed = 1)
-group by dim_matter_header_curr_key
+AND mins.dim_bill_key NOT IN (SELECT dim_bill_key FROM red_dw.dbo.dim_bill WHERE bill_reversed = 1)
+GROUP BY dim_matter_header_curr_key
 ) AS BOA
  ON  BOA.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  
@@ -81,6 +84,8 @@ GROUP BY fact_bill_billed_time_activity.dim_matter_header_curr_key
 
 
 WHERE master_client_code='243439'
+AND date_opened_case_management>='2021-10-01'
+
 --AND master_matter_number='183'
 AND reporting_exclusions=0
 

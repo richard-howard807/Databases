@@ -312,7 +312,7 @@ dim_detail_health.nhs_scheme IN
                 WHEN dim_detail_health.nhs_scheme IN ('DH Liab','LTPS','PES') THEN 'Risk'
 	     END AS [Scheme]
 		, DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, ISNULL(dim_detail_outcome.date_claim_concluded, dim_matter_header_current.date_closed_case_management)) AS [Lifecycle (date opened to date concluded)]
-
+--, dim_detail_health.[nhs_instruction_type]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -357,6 +357,23 @@ AND NOT (LOWER(RTRIM(ISNULL(outcome_of_case,''))) IN ('exclude from reports','re
 AND client_group_name='NHS Resolution'
 AND NOT dim_matter_worktype.work_type_name LIKE 'PL - Pol%'
 AND dim_detail_core_details.referral_reason LIKE 'Dispute%'
-
+AND NOT dim_detail_health.[nhs_instruction_type] IN ('Breast screenings - group action'
+,'C&W Group Action'
+,'Derbyshire Healthcare Group Action'
+,'East Lancs Group Action'
+,'East Sussex Group Action'
+,'HIV Recall Group'
+,'Mid Staffs Group Action'
+,'MTW Group Action'
+,'RG - UHNM Group Action'
+,'SME Group Action'
+,'TB Group Midlands Partnership'
+,'UHNS Group Action'
+,'Worcester Group Action'
+,'WWL - Data Breach group action'
+)--excludes group actions
+--AND dim_matter_header_current.master_matter_number='18394'
 END
+
+
 GO
