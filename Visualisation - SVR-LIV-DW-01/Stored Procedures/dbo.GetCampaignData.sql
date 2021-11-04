@@ -7,6 +7,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[GetCampaignData]
 
 AS 
@@ -162,7 +165,7 @@ WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS P
 WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
 WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
 ELSE is_this_part_of_a_campaign
-END)  NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project') 
+END)  NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management') 
 
 
 

@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[IAPatronClient]
 
 AS 
@@ -81,6 +83,7 @@ INNER JOIN red_dw.dbo.dim_client
  ON dim_client.dim_client_key = fact_bill_activity.dim_client_key
 WHERE bill_fin_year= @PreFinYear
 AND bill_fin_month_no<=@FinMonth
+--AND dim_bill_date.bill_date<=CONVERT(DATE,DATEADD(YEAR,-1,GETDATE()),103)
 GROUP BY dim_client.dim_client_key
 ) AS RevenuePrev
  ON RevenuePrev.dim_client_key = dim_client.dim_client_key
