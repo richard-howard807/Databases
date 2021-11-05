@@ -13,9 +13,12 @@ CREATE PROCEDURE [nhs].[NHSKPIAudit] --EXEC [nhs].[NHSKPIAudit] '2019-01-01','20
 AS
 
 -- for testing purposes
---DECLARE @StartDate DATE = '20190701'
---	DECLARE @EndDate DATE = '20190731'
+--DECLARE @StartDate DATE = '20200501'
+--	DECLARE @EndDate DATE = '20211130'
 
+-- used to set fin year headings for NHSR MI Dashboard report
+DECLARE @current_fin_year AS INT = (SELECT DISTINCT dim_date.fin_year FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = @EndDate)
+DECLARE @previous_fin_year AS INT = @current_fin_year - 1
 
 BEGIN
 SELECT dim_detail_health.[nhs_type_of_instruction_billing] AS [Worktype]
@@ -120,7 +123,9 @@ WHEN
 ELSE '-' END AS [Damages Tranche]
 ,dim_detail_core_details.[date_instructions_received] AS [Instruction date]
 ,[red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) AS [Audit Date]
-
+, 'Q' + TRIM(STR(dim_date.fin_quarter_no))		AS fin_quarter_formatted
+, TRIM(STR(RIGHT(@previous_fin_year, 2))) + '/' +  TRIM(STR(RIGHT(@current_fin_year, 2)))		AS current_fin_year_formatted
+, TRIM(STR(RIGHT(@previous_fin_year - 1, 2))) + '/' +  TRIM(STR(RIGHT(@previous_fin_year, 2)))	AS previous_fin_year_formatted
 
 ,nhs_correct_costs_scheme AS [Correct costs scheme?]
 ,nhs_proactivity_on_file AS [Proactivity on File?]
@@ -286,7 +291,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
 				GROUP BY client_code,matter_number ) max_date ON max_date.client_code = dim_parent_detail.client_code
 				AND max_date.matter_number = dim_parent_detail.matter_number
 				AND max_date.nhs_audit_date = dim_parent_detail.nhs_audit_date
-
+LEFT OUTER JOIN red_dw.dbo.dim_date
+	ON CAST([red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) AS DATE) = dim_date.calendar_date
  
 WHERE master_client_code='N1001'
 AND reporting_exclusions=0
