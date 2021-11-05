@@ -126,6 +126,7 @@ ELSE '-' END AS [Damages Tranche]
 , 'Q' + TRIM(STR(dim_date.fin_quarter_no))		AS fin_quarter_formatted
 , TRIM(STR(RIGHT(@previous_fin_year, 2))) + '/' +  TRIM(STR(RIGHT(@current_fin_year, 2)))		AS current_fin_year_formatted
 , TRIM(STR(RIGHT(@previous_fin_year - 1, 2))) + '/' +  TRIM(STR(RIGHT(@previous_fin_year, 2)))	AS previous_fin_year_formatted
+, dim_date.current_fin_year
 
 ,nhs_correct_costs_scheme AS [Correct costs scheme?]
 ,nhs_proactivity_on_file AS [Proactivity on File?]
