@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -690,7 +691,7 @@ WHEN
            TraineeHours AS [Total Trainee Hours Recorded],
            dim_detail_finance.[damages_banding] AS [Damages Banding],
            fact_detail_elapsed_days.[elapsed_days_live_files] AS [Elapsed Days Live Files],
-           DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_costs_settled) AS [Elapsed Days to Costs Settlement],
+           DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_costs_settled) AS [Elapsed Days to Costs Settlement],
 		   DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.[date_claim_concluded])  AS  [Elapsed Days to Damages Concluded],
 
            red_dw.dbo.fact_finance_summary.commercial_costs_estimate [Current Costs Estimate],

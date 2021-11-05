@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[UniversityOfCumbriaWIPAndRevenue]
 
 AS
@@ -23,6 +24,8 @@ SELECT master_client_code + '-'+master_matter_number AS [Reference]
 ,ISNULL(RevenueBilled.BillHrs,0) AS [Hrs Billed]
 ,ISNULL(RevenueBilled.Revenue,0) AS [Revenue Billed]
 ,BOA.BOA_Total AS [Billed on Account]
+,ISNULL(TransferedTime.[Hrs Transferred],0) AS [Hrs Transferred] 
+,ISNULL(TransferedTime.[Funds Transferred],0) AS [Funds Transferred]
 ,work_type_name AS [Matter Type]
 ,matter_category
 FROM red_dw.dbo.dim_matter_header_current
@@ -81,7 +84,25 @@ AND bill_reversed=0
 GROUP BY fact_bill_billed_time_activity.dim_matter_header_curr_key
 ) AS RevenueBilled
  ON  RevenueBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
+LEFT OUTER JOIN 
+(
+SELECT 
+dim_orig_matter_header_curr_key AS dim_matter_header_curr_key
+,original_client_code AS [Original Client]
+,original_matter_number AS [Original Matter]
+,SUM(minutes_recorded)/60 AS [Hrs Transferred]
+,SUM(time_charge_value)  AS [Funds Transferred]
+FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
+WHERE master_client_code='243439' AND master_matter_number='194'
+AND dim_bill_key<>0
+AND isactive=1
+GROUP BY dim_orig_matter_header_curr_key
+,original_client_code,
+         original_matter_number
+) AS TransferedTime
+ ON  TransferedTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE master_client_code='243439'
 AND date_opened_case_management>='2021-10-01'
