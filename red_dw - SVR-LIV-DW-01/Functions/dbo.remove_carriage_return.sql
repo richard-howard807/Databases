@@ -15,7 +15,7 @@ AS
 
 
 BEGIN
-	SET @INPUT_STRING = REPLACE(REPLACE(REPLACE(@INPUT_STRING, Char (13), ' '), char (10), ': '), Char (9), '  ')
+	SET @INPUT_STRING = replace(replace(replace(REPLACE(REPLACE(@INPUT_STRING, Char (13), ' '), char (10), ': '), Char (9), '  '),'Â ', ''), 'Â','')
 	RETURN @INPUT_STRING
 END
 GO
