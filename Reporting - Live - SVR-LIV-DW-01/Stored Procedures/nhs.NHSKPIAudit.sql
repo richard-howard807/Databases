@@ -124,6 +124,12 @@ ELSE '-' END AS [Damages Tranche]
 ,dim_detail_core_details.[date_instructions_received] AS [Instruction date]
 ,[red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) AS [Audit Date]
 , 'Q' + TRIM(STR(dim_date.fin_quarter_no))		AS fin_quarter_formatted
+, CASE
+	WHEN dim_date.current_fin_year = 'Current' THEN
+		'Q' + TRIM(STR(dim_date.fin_quarter_no)) + ' ' + TRIM(STR(RIGHT(@previous_fin_year, 2))) + '/' +  TRIM(STR(RIGHT(@current_fin_year, 2)))	
+	ELSE
+		'Q' + TRIM(STR(dim_date.fin_quarter_no)) + ' ' + TRIM(STR(RIGHT(@previous_fin_year - 1, 2))) + '/' +  TRIM(STR(RIGHT(@previous_fin_year, 2)))
+  END				AS quarter_headings
 , TRIM(STR(RIGHT(@previous_fin_year, 2))) + '/' +  TRIM(STR(RIGHT(@current_fin_year, 2)))		AS current_fin_year_formatted
 , TRIM(STR(RIGHT(@previous_fin_year - 1, 2))) + '/' +  TRIM(STR(RIGHT(@previous_fin_year, 2)))	AS previous_fin_year_formatted
 , dim_date.current_fin_year

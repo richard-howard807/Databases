@@ -15,29 +15,74 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	IF OBJECT_ID(N'tempdb..#KeyDates') IS NOT NULL
+BEGIN
+DROP TABLE #KeyDates
+END
+SELECT t.dim_matter_header_curr_key,
+MAX(red_dw.dbo.dim_task_due_date.calendar_date) AS [TaskDueDate]
+INTO #KeyDates
+FROM [red_dw].[dbo].[fact_tasks] t 
+  INNER JOIN red_dw.dbo.dim_matter_header_current
+   ON dim_matter_header_current.dim_matter_header_curr_key = t.dim_matter_header_curr_key
+  JOIN [red_dw].[dbo].[dim_tasks] dimt ON t.dim_tasks_key = dimt.dim_tasks_key
+  LEFT OUTER JOIN red_dw.dbo.dim_task_due_date
+   ON dim_task_due_date.dim_task_due_date_key = t.dim_task_due_date_key
+  WHERE 
+     (t.task_code IN ('TRAA0348', 'NHSA0183')  -- Task Codes TRAA0348 REM: Trial due today - [CASE MAN] ,     REM: Disposal hearing due today [CASE MAN]   
+	 OR dimt.task_desccription IN ('Trial date - today' ,  'Trial window - today')   )
+	 AND master_client_code IN
+	 ('W17427','W15632','W15366','W15442','W20163')
+     
+GROUP BY  t.dim_matter_header_curr_key
+
+
 SELECT DISTINCT RTRIM(fact_dimension_main.client_code)+'-'+fact_dimension_main.matter_number AS [Weightmans Reference]
 	, fact_dimension_main.client_code AS [Client Code]
 	, fact_dimension_main.matter_number AS [Matter Number]
 	, matter_description AS [Matter Description]
+	, dim_matter_header_current.client_name AS [Client Name]
 	, date_instructions_received AS [Date Instructions Received]
 	, date_opened_case_management AS [Date Opened]
 	, date_closed_case_management AS [Date Closed]
 	, dim_fed_hierarchy_history.name AS [Matter Owner]
 	, hierarchylevel3hist AS [Department]
+	, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
 	, suspicion_of_fraud AS [Suspicion of Fraud]
-	, track AS [Track]
+	, dim_detail_core_details.track AS [Track]
 	, work_type_name AS [Work Type Name]
 	, work_type_group AS [Work Type Group]
+	, client_reference [Client Reference]
+	, dim_detail_core_details.clients_claims_handler_surname_forename AS [Clients Claim Handler] 
 	, dim_detail_core_details.present_position AS [Present Position]
+	, dim_detail_core_details.[referral_reason] [Referral Reason] 
+	, dim_detail_core_details.[credit_hire] [Credit Hire?]
 	, claimantsols_name AS [Claimant Solicitor]
+	, dim_detail_core_details.[date_initial_report_sent] [Date Initial Report]
+	, dim_detail_core_details.[date_subsequent_sla_report_sent] [Date of Subsequent Report]
 	, outcome_of_case AS [Outcome]
 	, date_claim_concluded AS [Date Claim Concluded]
+	, fact_finance_summary.[damages_reserve] [Damages Reserve Current]
+	, fact_detail_reserve_detail.[claimant_costs_reserve_current] [Claimants Cost Reserve Current]
+    , fact_finance_summary.[defence_costs_reserve] [Defence Cost Reserve Current] 
 	, damages_paid AS [Damages Paid]
 	, claimants_costs_paid AS [TP Costs Paid]
+	, dim_detail_outcome.[date_costs_settled] [Date Costs Settled] 
+	, fact_finance_summary.[tp_total_costs_claimed] [Claimants Total Costs Claimed against Client]
+    , fact_finance_summary.[claimants_costs_paid] [Claimant's Costs Paid by Client - Disease]
 	, defence_costs_billed AS [Revenue]
+	, wip AS [WIP]
 	, elapsed_days_damages AS [Damages Lifecycle]
 	, elapsed_days_costs AS [Costs Lifecycle]
 	, proceedings_issued AS [Proceedings Issued]
+	,CAST(dim_detail_core_details.[date_subsequent_sla_report_sent] AS DATE) AS [Date of Subsequent SLA Report Sent] 
+	,COALESCE(dim_detail_court.[date_of_trial],KeyDates.TaskDueDate) AS [Date of Trial]
+	,fact_detail_elapsed_days.[elapsed_days_damages] AS [Elapsed Days Damages]
+	,CAST(dim_detail_core_details.[date_initial_report_due] AS DATE) AS [Date Initial Report Due] 
+	,dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report] AS [Extension Requested]
+	,elapsed_days_live_files AS [Elapsed Days Live Files]
+	,elapsed_days_costs_to_settle AS [Elapsed Days Costs to Settle]
+	, fact_detail_elapsed_days.days_to_first_report_lifecycle AS [Days to First Report Lifecycle]
 	, ClaimantsAddress.[claimant1_postcode] AS [Claimant's Postcode]
 	, dim_detail_finance.[output_wip_fee_arrangement] AS [Fee Arrangement]
 	, Longitude
@@ -88,6 +133,15 @@ LEFT OUTER JOIN
         ) AS ClaimantsAddress
             ON fact_dimension_main.master_fact_key = ClaimantsAddress.fact_key
 		LEFT OUTER JOIN red_dw.dbo.Doogal ON Doogal.Postcode=ClaimantsAddress.claimant1_postcode
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+ ON dim_client_involvement.client_code = dim_matter_header_current.client_code
+ AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT JOIN red_dw.dbo.dim_detail_court 
+ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN #KeyDates AS KeyDates
+ ON KeyDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE reporting_exclusions=0
 AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-07-01')

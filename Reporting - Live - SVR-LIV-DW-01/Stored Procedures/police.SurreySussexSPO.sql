@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2020-08-21
@@ -65,7 +66,7 @@ ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
-WHERE dim_matter_header_current.master_client_code IN ('451638','113147')
+WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518')
 AND work_type_name ='PL - Pol - Stalking Protection Order'
 AND reporting_exclusions=0
 
