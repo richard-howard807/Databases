@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 --USE [Reporting]
 --GO
 --/****** Object:  StoredProcedure [dbo].[SelfServiceLTAonly]    Script Date: 25/08/2021 07:52:30 ******/
@@ -287,6 +288,7 @@ NonPartnerHours AS [Total Non-Partner Hours Recorded],
 --           red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_costs_via_third_party_contribution [Recovery Claimants via Third Party Contribution ],
 --           red_dw.dbo.fact_finance_summary.recovery_defence_costs_via_third_party_contribution [Defence Costs via Third Party Contribution],
  dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
+,billing_arrangement_description AS [Billing Arrangement]
 ,GETDATE() AS update_time
 
 ------------------------------------------

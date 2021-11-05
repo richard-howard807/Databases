@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -796,6 +797,7 @@ GETDATE() AS update_time,
 	, Disbursements.[2020] [Disbursements Billed 2019/2020]
 	, Disbursements.[2021] [Disbursements Billed 2020/2021]
 		, Disbursements.[2022] [Disbursements Billed 2021/2022]
+	,billing_arrangement_description AS [Billing Arrangement]
 	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
 	
     ---------------------------------------------------

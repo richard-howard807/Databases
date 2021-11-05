@@ -13,6 +13,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -805,6 +806,7 @@ WHEN
        ,dim_detail_claim.[tier_1_3_case]        -- Added as per request via HF 20210203 - MT
        ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
        ,will_total_gross_reserve_on_the_claim_exceed_500000 AS [LL Damages £350k+]
+	   ,billing_arrangement_description AS [Billing Arrangement]
        ,ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)

@@ -161,7 +161,7 @@ SELECT
 	,CASE WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, -1, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE)
 	AND CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, -1,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME)) AS DATE) THEN 'prioryear'
 	WHEN CAST(fact_matter_summary_current.last_bill_date AS DATE) >= CAST(DATEADD(YEAR, 0, DATEADD(Month,-12,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))) AS DATE) and
-	CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END [YearFilter Date of Last Bill] 
+	CAST(fact_matter_summary_current.last_bill_date AS DATE)<= CAST(DATEADD(YEAR, 0,CAST(EOMONTH(DATEADD(MONTH,-1,GETDATE())) AS DATETIME))AS DATE) then 'currentyear' ELSE NULL END AS  [YearFilterDateofLastBill]
 
  ,CASE WHEN dim_matter_header_current.reporting_exclusions=0
 		AND dim_matter_header_current.matter_number<>'ML'
@@ -233,7 +233,48 @@ SELECT
 	,dim_detail_core_details.referral_reason
 	,dim_matter_header_current.ms_only
 	,dim_detail_outcome.zurich_result_date
-	,dim_detail_outcome.outcome_of_case [Outcome of Case ]
+,dim_detail_outcome.outcome_of_case [Outcome of Case ]
+	,CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
+(
+'Rejected (MIB untraced only)                                ',
+'struck out                                                  ',
+'won at trial                                                ',
+'Struck Out                                                  ',
+'Struck out                                                  ',
+'Won At Trial                                                ',
+'Won at Trial                                                ',
+'Won at trial                                                '
+, 'Withdrawn'
+)) THEN 'Repudiated'
+
+
+WHEN
+((LOWER(outcome_of_case) LIKE 'settled%' ) OR (outcome_of_case IN
+(
+'Assessment of damages',
+'Assessment of damages (damages exceed claimant''s P36 offer) ',
+'Lost at Trial                                               ',
+'Lost at trial                                               ',
+'Lost at trial (damages exceed claimant''s P36 offer)         ',
+'Settled',
+'Settled  - claimant accepts P36 offer out of time',
+'Settled - Infant Approval                                   ',
+'Settled - Infant approval                                   ',
+'Settled - JSM',
+'Settled - Mediation                                         ',
+'Settled - mediation                                         '
+))) THEN 'Settled'
+ 
+
+ WHEN 
+ outcome_of_case 
+ IN
+(
+'Appeal',
+'Assessment of damages (claimant fails to beat P36 offer)    ',
+'Exclude from reports                                        ',
+'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
+) THEN 'Other' END AS [Repudiated/Settled]
 	
 
 INTO #MainData
@@ -302,7 +343,7 @@ SELECT
 , [YearFilter] 
 , [YearFilterConcluded] 
 , [YearFilterCostSettled]
-, [YearFilter Date of Last Bill] 
+, [YearFilterDateofLastBill]
 , [Number of Matters]
 , [countscore]
 , damages_paid
@@ -347,6 +388,7 @@ SELECT
 ,[Claimant Costs Reserve Current ]
 ,[Defence Costs Reserve Current]
 ,[Outcome of Case ]
+,[Repudiated/Settled]
 FROM #MainData
 
    END
