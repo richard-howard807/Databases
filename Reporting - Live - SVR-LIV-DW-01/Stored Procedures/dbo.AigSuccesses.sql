@@ -48,6 +48,8 @@ SELECT
 	, dim_detail_core_details.clients_claims_handler_surname_forename		AS [Client Claims Handler]
 	, dim_detail_core_details.aig_instructing_office		AS [AIG Instructing Office]
 	, dim_instruction_type.instruction_type			AS [AIG Instruction Type]
+	, fact_detail_paid_detail.total_settlement_value_of_the_claim_paid_by_all_the_parties		AS [Damages Paid by All Parties]
+	, fact_detail_paid_detail.claimants_total_costs_paid_by_all_parties			AS [Claimant Costs Paid by All Parties]
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT 
@@ -73,6 +75,9 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number 
 	LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 		ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+	LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
+		ON fact_detail_paid_detail.client_code = dim_matter_header_current.client_code
+			AND fact_detail_paid_detail.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'A2002'
 	AND date_claim_concluded BETWEEN  '2021-01-01' AND GETDATE()
@@ -134,7 +139,8 @@ WHERE 1 = 1
 	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%College%'
 	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Housing%'
 	AND ISNULL(outcome_of_case,'')<>'Returned to Client'
-
+ORDER BY
+	[Date Claim Concluded]
 
 END 
 GO
