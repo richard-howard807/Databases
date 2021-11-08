@@ -30,9 +30,11 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Claim for PI?],
 		dim_detail_fraud.[fraud_current_fraud_type] AS [Fraud Type],
 		dim_detail_core_details.[track] AS [Track],
+		CASE WHEN dim_detail_core_details.proceedings_issued ='Yes' THEN 'Litigated' ELSE 'Non-Litigated' END AS [Proceedings Issued],
+		dim_detail_outcome.[repudiation_outcome] [Repudiation - outcome],
 		dim_matter_header_current.[matter_description] AS [Matter Description],
 		dim_client_involvement.[insurerclient_reference] AS [Client Reference],
-		ISNULL(dim_detail_claim.[dst_claimant_solicitor_firm ],dim_claimant_thirdparty_involvement.[claimantsols_name]) AS [Claimant Solicitors],
+		ISNULL(dim_detail_claim.[dst_claimant_solicitor_firm],dim_claimant_thirdparty_involvement.[claimantsols_name]) AS [Claimant Solicitors],
 		dim_claimant_address.postcode AS [Claimant Postcode],
 		COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho]), dim_detail_hire_details.[other], dim_agents_involvement.cho_name)  AS [Credit Hire Organisation],
 		fact_detail_paid_detail.[hire_claimed] AS [Amount of Hire Claimed],
@@ -89,7 +91,17 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 					OR Claimant_Postcode.Postcode LIKE 'SE%'
 					OR Claimant_Postcode.Postcode LIKE 'SW%'
 					OR Claimant_Postcode.Postcode LIKE 'W%'
-					OR Claimant_Postcode.Postcode LIKE 'WC%' THEN 'London' ELSE 'Other' END AS [Area]
+					OR Claimant_Postcode.Postcode LIKE 'WC%' THEN 'London' ELSE 'Other' END AS [Area],	
+		dim_court_involvement.court_name AS [Court],
+		dim_detail_hire_details.[cho_postcode] AS [CHO Postcode],
+		CHO_Postcode.Latitude AS [CHO Latitude],
+		CHO_Postcode.Longitude AS [CHO Longitude],
+		dim_detail_hire_details.[chx_is_the_claimant_impecunious] AS [Is the Client Impecunious?],
+		dim_detail_fraud.fraud_type_motor AS [Motor Fraud Type],
+		CASE WHEN dim_detail_core_details.suspicion_of_fraud='Yes' THEN 'Fraud'
+		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='No' THEN 'TPPD only'
+		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' THEN 'BI and TPD'
+		ELSE NULL END AS [Claim Types]
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -126,6 +138,9 @@ ON dim_claimant_address.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] ON [Claimant_Postcode].Postcode=dim_claimant_address.postcode 
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 ON fact_finance_summary.master_fact_key=fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.Doogal AS [CHO_Postcode] ON [CHO_Postcode].Postcode=dim_detail_hire_details.[cho_postcode]
+LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
+ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
 
 WHERE date_opened_case_management>='20150101'
 AND reporting_exclusions=0

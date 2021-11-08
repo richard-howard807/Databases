@@ -83,6 +83,7 @@ CREATE TABLE [dbo].[selfserviceLTAonlyData]
 [revenue_estimate_net_of_vat] [numeric] (13, 2) NULL,
 [disbursements_estimate_net_of_vat] [numeric] (13, 2) NULL,
 [International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [update_time] [datetime] NOT NULL
 ) ON [PRIMARY]
 GO

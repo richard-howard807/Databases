@@ -226,6 +226,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Disbursements Billed 2019/2020] [numeric] (38, 5) NULL,
 [Disbursements Billed 2020/2021] [numeric] (38, 5) NULL,
 [Disbursements Billed 2021/2022] [numeric] (38, 5) NULL,
+[Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [bit] NULL
 ) ON [PRIMARY]
 GO
