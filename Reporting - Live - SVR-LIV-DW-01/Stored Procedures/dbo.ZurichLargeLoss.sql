@@ -360,6 +360,7 @@ SELECT
 , [Matter Type Group]
 , DATEDIFF(DAY,  MaxValue ,zurich_date_introductory_call ) AS [Days between Date Opened and phone call date or receipt of client file of papers (whichever is later) ] 
 , zurich_date_introductory_call
+,MaxValue
 --, zurich_introductory_call
 , grpageas_motor_date_of_receipt_of_clients_file_of_papers
 , #MainData.date_opened_case_management

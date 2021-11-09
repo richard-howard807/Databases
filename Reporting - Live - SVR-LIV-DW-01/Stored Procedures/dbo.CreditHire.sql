@@ -101,7 +101,8 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		CASE WHEN dim_detail_core_details.suspicion_of_fraud='Yes' THEN 'Fraud'
 		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='No' THEN 'TPPD only'
 		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' THEN 'BI and TPD'
-		ELSE NULL END AS [Claim Types]
+		ELSE NULL END AS [Claim Types],
+		Court.name
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -141,6 +142,26 @@ ON fact_finance_summary.master_fact_key=fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [CHO_Postcode] ON [CHO_Postcode].Postcode=dim_detail_hire_details.[cho_postcode]
 LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
 ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
+LEFT OUTER JOIN (select dim_involvement_full.client_code
+, dim_involvement_full.matter_number
+, dim_involvement_full.name
+from red_dw.dbo.dim_involvement_full
+inner join (
+select dim_involvement_full.client_code, dim_involvement_full.matter_number,
+max(dim_involvement_full.dim_involvement_full_key) last_court_key
+-- select *
+from red_dw.dbo.dim_involvement_full
+where lower(dim_involvement_full.capacity_description) like '%court'
+and dim_involvement_full.entity_code <> ''
+and dim_involvement_full.entity_code is not null
+--and dim_involvement_full.client_code = '00001328'
+--and dim_involvement_full.matter_number = '00000134'
+group by dim_involvement_full.client_code
+, dim_involvement_full.matter_number
+
+) last_court on last_court.last_court_key = dim_involvement_full.dim_involvement_full_key) AS Court 
+ON Court.client_code=dim_court_involvement.client_code
+AND Court.matter_number=dim_court_involvement.matter_number
 
 WHERE date_opened_case_management>='20150101'
 AND reporting_exclusions=0
