@@ -15,6 +15,9 @@ CREATE PROCEDURE [dbo].[CapacityPlanningClaims_Hours]
 
 AS
 
+DROP TABLE IF EXISTS #t1
+DROP TABLE IF EXISTS #pers
+
 SELECT 
 
 DatePeriod = REPLACE(RIGHT(fin_period,9),')',''),
@@ -27,6 +30,8 @@ CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()),
      WHEN a.minutes_recorded/60  = 0 THEN NULL
 ELSE a.minutes_recorded / 60 END) , 
 [Chargeable Hours Target] =  SUM(a.team_level_budget_value_hours)
+
+INTO #t1 
 
 FROM            red_dw.dbo.fact_agg_billable_time_monthly_rollup AS 
 
@@ -55,4 +60,21 @@ fin_period,
 fin_month_display
 
 ORDER BY fin_year, fin_month_no
+
+
+SELECT DISTINCT TOP 25  Month INTO #pers FROM #t1
+ORDER BY Month DESC 
+
+
+
+SELECT #t1.* 
+
+,
+LinearForecast = CASE WHEN [Actual Chargeable Hours] IS NULL  then 
+
+'''=' + Department + '_Linear!$E' +CAST(
+ROW_NUMBER() OVER (PARTITION BY Department ORDER BY  Month) - 7 AS VARCHAR(3)) END
+FROM #t1
+
+WHERE MONTH IN (SELECT DISTINCT Month FROM #pers)
 GO
