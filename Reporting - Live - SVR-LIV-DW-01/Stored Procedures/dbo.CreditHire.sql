@@ -101,7 +101,7 @@ SELECT dim_matter_header_current.[client_code] AS [Client Code],
 		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='No' THEN 'TPPD only'
 		WHEN dim_detail_core_details.suspicion_of_fraud='No' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' THEN 'BI and TPD'
 		ELSE NULL END AS [Claim Types],
-		Court.name AS [Court],
+		CASE WHEN Court.name LIKE 'Clerkenwell%' THEN 'Clerkenwell & Shoreditch County Court' ELSE Court.name END AS [Court],
 		Court.postcode AS [Court Postcode],
 		[Court_Postcode].Latitude AS [Court Latitude],
 		Court_Postcode.Longitude AS [Court Longitude]

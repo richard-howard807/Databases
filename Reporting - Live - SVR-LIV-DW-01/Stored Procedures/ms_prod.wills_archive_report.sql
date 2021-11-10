@@ -16,7 +16,11 @@ Version	  Date		    By				Description
 												 due to people leaving a process	
 
 */
-CREATE PROCEDURE [ms_prod].[wills_archive_report]
+CREATE PROCEDURE [ms_prod].[wills_archive_report]  --'W23912'
+
+(
+
+@Client AS VARCHAR(MAX))
 AS
 
 		SET TRAN ISOLATION LEVEL READ UNCOMMITTED
@@ -63,13 +67,14 @@ AS
 
 	WHERE 
 
-	dim_matter_worktype.work_type_name = 'Wills Archive                           '
+	dim_matter_worktype.work_type_name = 'Wills Archive'
+	AND client_code in (@Client)
 		--dwType IN ('ARCH005','ARCH006','ARCH004','ARCH002')
 		--AND 
 		--LOWER(udDeedWill.dwHolder) NOT LIKE '%(perm)%' -- this means the will has been permanently removed from archive
 		--AND (dwRetrievalReas <> 'LIVE' OR dwRetrievalReas IS NULL) -- exclude the old wills where a matter has now become live as the re-archive will be on the new file ref
 	--AND 
-	--dbFile.fileID = '5092686'
+	--dbFile.fileID 
 	
 	
 	

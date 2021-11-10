@@ -8,13 +8,13 @@ CREATE PROCEDURE [dbo].[CapacityPlanningClaims_Hours_LinearForecast]
 --EXEC [CapacityPlanningClaims_Hours_LinearForecast]
 AS
 
+
 DROP TABLE IF EXISTS #t1
 DROP TABLE IF EXISTS #pers
-
 SELECT 
 
 DatePeriod = REPLACE(RIGHT(fin_period,9),')',''),
-TimeLine = '01/0' + CAST(cal_month_no AS VARCHAR(2)) + '/'+ CAST(cal_year AS VARCHAR(4)),
+TimeLine = '01/' + CASE WHEN LEN(cal_month_no) = 1 THEN '0' + CAST(cal_month_no AS VARCHAR(2)) ELSE CAST(cal_month_no AS VARCHAR(2)) end  +  '/'+ CAST(cal_year AS VARCHAR(4)),
 Month = fin_period,
 Department =  hierarchylevel3hist, 
 fin_month_display,
@@ -24,6 +24,7 @@ CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()),
      WHEN a.minutes_recorded/60  = 0 THEN NULL
 ELSE a.minutes_recorded / 60 END) , 
 [Chargeable Hours Target] =  SUM(a.team_level_budget_value_hours)
+
 INTO #t1
 FROM            red_dw.dbo.fact_agg_billable_time_monthly_rollup AS 
 
@@ -50,8 +51,7 @@ fin_year
 ,fin_month_no,
 fin_period,
 fin_month_display
-,'01/0' + CAST(cal_month_no AS VARCHAR(2)) + '/'+ CAST(cal_year AS VARCHAR(4))
-
+, '01/' + CASE WHEN LEN(cal_month_no) = 1 THEN '0' + CAST(cal_month_no AS VARCHAR(2)) ELSE CAST(cal_month_no AS VARCHAR(2)) end  +  '/'+ CAST(cal_year AS VARCHAR(4))
 ORDER BY fin_year, fin_month_no
 
 --SELECT * FROM #t1 
@@ -60,7 +60,16 @@ ORDER BY fin_year, fin_month_no
 SELECT DISTINCT TOP 13  Month INTO #pers FROM #t1
 ORDER BY Month DESC 
 
-SELECT TimeLine, Month, [Actual Chargeable Hours], Department FROM #t1
+SELECT 
+TimeLine= CONVERT(DATE, TimeLine, 103), 
+Month, 
+[Actual Chargeable Hours], 
+Department, 
+CAST(ROW_NUMBER()  OVER (PARTITION BY Department ORDER BY Month ) + 5 AS VARCHAR(20))AS RN 
+--LEFT(DATENAME(MONTH,CAST(TimeLine AS DATE)),3) +'-'+ RIGHT(CAST(YEAR(CAST(TimeLine AS DATE)) AS varchar(4)), 2)
+
+
+FROM #t1
 WHERE Month
 
 IN (SELECT Month FROM #pers)
