@@ -33,7 +33,6 @@ BEGIN
 		  ,total_amount_billed
 		  ,dim_client_involvement.insurerclient_name AS [Insurer Associate]
 		  ,dim_detail_core_details.clients_claims_handler_surname_forename as [AXA XL Handler] 
-		  ,Associates.contName
 		  ,assocRef
 		  ,contEmail
 

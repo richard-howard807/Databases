@@ -28,6 +28,7 @@ BEGIN
 		, 1 AS [Open Practice Management Month]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
 		, dim_matter_worktype.work_type_group AS [Work Type Group]
+		, dim_matter_worktype.work_type_name AS [Work Type]
 		, proceedings_issued AS [Proceedings Issued]
 		, dim_detail_finance.output_wip_fee_arrangement
 		, dim_detail_core_details.suspicion_of_fraud
