@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[WorkingLists]
 
 AS
@@ -99,7 +100,9 @@ INNER JOIN red_dw.dbo.dim_ia_activity_type
 LEFT OUTER JOIN red_dw.dbo.dim_employee AS Employee2
  ON dim_created_employee_key=Employee2.dim_employee_key
 LEFT OUTER JOIN red_dw.dbo.dim_client
- ON dim_client.dim_client_key = dim_ia_contact_lists.dim_client_key
+  ON dim_client.dim_client_key = dim_company_key
+  --ON dim_client.dim_client_key = dim_ia_contact_lists.dim_client_key
+
 LEFT OUTER JOIN 
 (
 SELECT ia_contact_id
