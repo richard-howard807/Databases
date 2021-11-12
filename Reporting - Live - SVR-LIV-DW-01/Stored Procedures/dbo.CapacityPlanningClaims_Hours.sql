@@ -18,6 +18,22 @@ AS
 DROP TABLE IF EXISTS #t1
 DROP TABLE IF EXISTS #pers
 DROP TABLE IF EXISTS #matters
+DROP TABLE IF EXISTS #TradingminusHolidays
+
+/* Trading Days minus Holidays*/
+SELECT DISTINCT fin_period,
+     
+      
+       TradingminusHolidays = SUM(CASE WHEN trading_day_flag  = 'Y' THEN 1 END) - ISNULL(SUM(CASE WHEN holiday_flag = 'Y' THEN 1 END),0)
+      INTO #TradingminusHolidays
+     FROM red_dw.dbo.dim_date
+	 WHERE 1 = 1 
+	 AND fin_period >= '2020-12 (Apr-2020)' 
+
+	 GROUP BY 
+	 fin_period
+
+	 ORDER BY fin_period
 
 SELECT 
 
@@ -121,9 +137,11 @@ ROW_NUMBER() OVER (PARTITION BY #t1.Department  ORDER BY  Month) - 7 AS VARCHAR(
 ,#matters.NewMatters
 ,#matters.ClosedMatters
 ,#matters.Active
+,#TradingminusHolidays.TradingminusHolidays
 FROM #t1
 LEFT JOIN #matters
 ON #matters.DatePeriod = #t1.DatePeriod AND #matters.Department = #t1.Department
-
+LEFT JOIN #TradingminusHolidays
+ON fin_period = Month
 WHERE MONTH IN (SELECT DISTINCT Month FROM #pers)
 GO

@@ -25,6 +25,7 @@ ClosedMatters = SUM(CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAM
 Active = SUM(CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE fact_matter_summary.open_case_management end)
 ,[Disease - Groupings] = CASE WHEN instruction_type LIKE '%Outsource%' THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END
 ,Month = fin_period
+,Actuals.[Actual Chargeable Hours]
 INTO #t1 
 FROM red_dw.dbo.fact_matter_summary
 join red_dw.dbo.fact_dimension_main on fact_dimension_main.master_fact_key = fact_matter_summary.master_fact_key
@@ -41,20 +42,56 @@ ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_ou
 LEFT JOIN red_dw.dbo.dim_instruction_type 
 ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_history.dim_instruction_type_key
 
+
+LEFT JOIN (
+SELECT
+DatePeriod = REPLACE(RIGHT(fin_period,9),')',''),
+Month = fin_period,
+Department =  hierarchylevel3hist,
+[Actual Chargeable Hours]  = 
+SUM(
+CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL 
+     WHEN minutes_recorded/60  = 0 THEN NULL
+ELSE minutes_recorded / 60 END) 
+,[Disease - Groupings] = CASE WHEN instruction_type LIKE '%Outsource%' THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END
+
+FROM red_dw.dbo.fact_chargeable_time_activity
+JOIN red_dw.dbo.fact_dimension_main ON fact_dimension_main.master_fact_key = fact_chargeable_time_activity.master_fact_key
+JOIN red_dw.dbo.dim_date
+ON dim_date_key = dim_transaction_date_key
+JOIN red_dw.dbo.dim_fed_hierarchy_history
+ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_chargeable_time_activity.dim_fed_hierarchy_history_key
+JOIN red_dw.dbo.dim_matter_header_current
+ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+LEFT JOIN red_dw.dbo.dim_instruction_type 
+ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+
 WHERE 1 = 1 
 AND fin_period >= '2020-12 (Apr-2020)'
-AND ISNULL(hierarchylevel3hist,'') IN ('Casualty','Disease', 'Healthcare', 'Large Loss','Motor' )
-AND ISNULL(dim_matter_header_current.reporting_exclusions, 0)  = 0
-
-/*Test */
 AND ISNULL(hierarchylevel3hist,'') IN ('Disease' )
---AND fin_period = '2021-12 (Apr-2021)'
+
+
+GROUP BY 
+REPLACE(RIGHT(fin_period,9),')',''),
+fin_period,
+hierarchylevel3hist, CASE WHEN instruction_type LIKE '%Outsource%' THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END
+) Actuals ON Actuals.DatePeriod = REPLACE(RIGHT(fin_period,9),')','') AND Actuals.Department = hierarchylevel3hist
+AND Actuals.[Disease - Groupings] = CASE WHEN instruction_type LIKE '%Outsource%' THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END
+
+
+
+WHERE 1 = 1 
+AND fin_period >= '2020-12 (Apr-2020)'
+AND ISNULL(dim_matter_header_current.reporting_exclusions, 0)  = 0
+AND ISNULL(hierarchylevel3hist,'') IN ('Disease' )
+
 
 GROUP BY 
 
 fin_period,
   hierarchylevel3hist, fact_matter_summary.fin_month
   ,CASE WHEN instruction_type LIKE '%Outsource%' THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END
+  ,Actuals.[Actual Chargeable Hours]
   ORDER BY  hierarchylevel3hist, CASE WHEN instruction_type LIKE '%Outsource%'  THEN 'Disease Outsource' ELSE 'Disease exc Outsource' END, fin_period
 
 
