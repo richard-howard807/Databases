@@ -13,6 +13,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[LTAMilestoneFileOpeningTMFE] -- EXEC [dbo].[LTAMilestoneFileOpeningTMFE] '2021-02-15','2021-02-21'
 ( 
 @StartDate AS DATE
@@ -125,6 +126,7 @@ WHERE hierarchylevel2hist='Legal Ops - LTA'
 AND 
 CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate
 AND master_client_code<>'30645'
+AND date_closed_case_management IS NULL
 AND tskMSStage=1
 AND tskFilter IN (
 'tsk_01_280_admcostsestimatereview'
