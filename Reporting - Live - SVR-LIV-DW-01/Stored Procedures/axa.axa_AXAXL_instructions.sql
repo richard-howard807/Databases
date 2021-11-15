@@ -45,6 +45,7 @@ BEGIN
 ,contTypeCode
 ,Associates.contName
 ,Associates.assocType
+,fileID
 		  
 		  -- [Client Ref] = ISNULL(dim_client_involvement.insurerclient_reference,dim_involvement_full.reference),
            
@@ -89,7 +90,7 @@ AND assocActive = '1'
 	
  
  WHERE ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
-          AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
+          
           AND dim_matter_header_current.matter_number <> 'ML'
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
