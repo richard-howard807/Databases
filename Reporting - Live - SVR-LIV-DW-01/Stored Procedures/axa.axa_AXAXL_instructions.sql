@@ -93,6 +93,7 @@ AND assocActive = '1'
           AND dim_matter_header_current.matter_number <> 'ML'
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
+		  AND  work_type_name <>'Commercial Insurance DO NOT USE'
   
   END    
 GO

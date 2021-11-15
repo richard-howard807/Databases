@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS #t1
 DROP TABLE IF EXISTS #pers
 DROP TABLE IF EXISTS #matters
 DROP TABLE IF EXISTS #TradingminusHolidays
+DROP TABLE IF EXISTS #ActiveMatters
 
 /* Trading Days minus Holidays*/
 SELECT DISTINCT fin_period,
@@ -34,6 +35,45 @@ SELECT DISTINCT fin_period,
 	 fin_period
 
 	 ORDER BY fin_period
+
+
+/*Active Cases */
+SELECT 
+
+DatePeriod = REPLACE(RIGHT(fin_period,9),')',''),
+Month = fin_period,
+Department =  hierarchylevel3hist
+,ActiveMatters = COUNT(DISTINCT a.dim_matter_header_curr_key)
+INTO #ActiveMatters
+
+
+
+FROM          red_dw.dbo.fact_all_time_activity 
+
+
+a LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fed 
+ON fed.dim_fed_hierarchy_history_key = a.dim_fed_hierarchy_history_key
+LEFT JOIN red_dw.dbo.dim_date ON a.dim_transaction_date_key = dim_date_key
+
+WHERE 1 =1 --
+
+AND fin_period >= '2020-12 (Apr-2020)' -- may need to update with financial year - 1 
+AND fed.hierarchylevel2hist = 'Legal Ops - Claims'
+
+AND fed.hierarchylevel3hist IN ('Casualty','Disease', 'Healthcare', 'Large Loss','Motor' )
+
+/*Testing */
+
+
+--AND fed.hierarchylevel3hist IN ('Casualty')
+--AND fin_period = '2020-12 (Apr-2020)'
+
+GROUP BY 
+
+REPLACE(RIGHT(fin_period,9),')',''),
+fin_period,
+ hierarchylevel3hist 
+
 
 SELECT 
 
@@ -55,6 +95,7 @@ FROM            red_dw.dbo.fact_agg_billable_time_monthly_rollup AS
 a LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fed 
 ON fed.dim_fed_hierarchy_history_key = a.dim_fed_hierarchy_history_key
 LEFT JOIN red_dw.dbo.dim_date ON a.dim_gl_date_key = dim_date_key
+
 
 WHERE 1 =1 --
 
@@ -88,7 +129,7 @@ DatePeriod = REPLACE(RIGHT(fin_period,9),')',''),
 Department =  hierarchylevel3hist,
 NewMatters = SUM(CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE fact_matter_summary.open_practice_management_month end),
 ClosedMatters = SUM(CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE fact_matter_summary.closed_case_management_month end), 
-Active = SUM(CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE fact_matter_summary.open_case_management end)
+Active = CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE ActiveMatters  end -- fact_matter_summary.open_case_management
 INTO #matters
 FROM red_dw.dbo.fact_matter_summary
 join red_dw.dbo.fact_dimension_main on fact_dimension_main.master_fact_key = fact_matter_summary.master_fact_key
@@ -102,6 +143,7 @@ JOIN red_dw.dbo.dim_date
 ON dim_date.dim_date_key = fact_matter_summary.dim_date_key
 LEFT JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+LEFT JOIN #ActiveMatters ON fin_period = Month AND Department = hierarchylevel3hist
 WHERE 1 = 1 
 AND fin_period >= '2020-12 (Apr-2020)'
 AND ISNULL(hierarchylevel3hist,'') IN ('Casualty','Disease', 'Healthcare', 'Large Loss','Motor' )
@@ -115,6 +157,7 @@ GROUP BY
 
 fin_period,
   hierarchylevel3hist, fact_matter_summary.fin_month
+  ,CASE WHEN REPLACE(RIGHT(fin_period,9),')','') = LEFT(DATENAME(MONTH, GETDATE()), 3) + '-' + CAST(YEAR(GETDATE()) AS VARCHAR(4)) THEN NULL  ELSE ActiveMatters  end 
 
   ORDER BY  hierarchylevel3hist, fin_period
 
