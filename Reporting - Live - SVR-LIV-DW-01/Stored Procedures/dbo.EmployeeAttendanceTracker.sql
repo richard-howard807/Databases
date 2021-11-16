@@ -72,6 +72,7 @@ CROSS APPLY
 			, dim_fed_hierarchy_history.hierarchylevel3hist		AS department
 			, dim_fed_hierarchy_history.hierarchylevel4hist		AS team
 			, dim_employee.employeestartdate
+			, dim_employee.leftdate
 			, dim_fed_hierarchy_history.leaver
 		FROM red_dw.dbo.dim_employee
 			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -102,6 +103,12 @@ WHERE 1 = 1
 SELECT 
 	#employee_dates.*
 	, ISNULL(fact_employee_attendance.category, 'Working From Home')			AS category
+	, CASE
+		WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') THEN
+			1
+		ELSE
+			0
+	  END							AS working_day
 	, 1 AS day_count
 FROM #employee_dates
 	LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
