@@ -150,6 +150,7 @@ select distinct
 	, dim_detail_claim.national_insurance_number			AS [Claimant's National Insurance No.]
 	, CAST(dim_detail_core_details.claimants_date_of_birth AS  DATE)		AS [Claimant's DOB]
 	, CAST(last_transaction_date.last_transaction_date AS DATE)			AS [Last Time Transaction Date]
+	, fact_finance_summary.wip		AS [WIP]
 	--, claimants_address.claimant_address				AS [Claimant's Address]
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
