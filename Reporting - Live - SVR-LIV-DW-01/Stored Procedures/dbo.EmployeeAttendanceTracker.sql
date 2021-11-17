@@ -25,7 +25,7 @@ BEGIN
 
 
 --testing
---DECLARE @start_date AS INT = 202111
+--DECLARE @start_date AS INT = 202108
 --		, @end_date AS INT = 202111
 --		, @division AS NVARCHAR(MAX) = 'Business Services'
 --		, @department AS NVARCHAR(MAX) = 'Data Services'
@@ -33,6 +33,8 @@ BEGIN
 --		, @employee_id AS NVARCHAR(MAX) = (SELECT STRING_AGG(CAST(dim_fed_hierarchy_history.employeeid AS NVARCHAR(MAX)), '|') FROM red_dw.dbo.dim_fed_hierarchy_history WHERE	dim_fed_hierarchy_history.activeud = 1	AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Data Services' AND dim_fed_hierarchy_history.leaver = 0 AND dim_fed_hierarchy_history.windowsusername IS NOT NULL) 
 --		, @category AS NVARCHAR(MAX) = (SELECT STRING_AGG(CAST(all_data.category AS NVARCHAR(MAX)), '|') FROM (SELECT DISTINCT fact_employee_attendance.category AS category FROM red_dw.dbo.fact_employee_attendance UNION SELECT 'Working From Home') AS all_data)
 
+DECLARE	@start_cal_date AS DATE = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.cal_month = @start_date)
+DECLARE @end_cal_date AS DATE = (SELECT MAX(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.cal_month = @end_date)
 
 IF OBJECT_ID('tempdb..#employee_dates') IS NOT NULL DROP TABLE #employee_dates
 IF OBJECT_ID('tempdb..#division') IS NOT NULL DROP TABLE #division
@@ -95,7 +97,7 @@ WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
 	AND dim_date.trading_day_flag = 'Y'
 	AND dim_date.holiday_flag = 'N'
-	AND dim_date.cal_month IN (@start_date, @end_date)
+	AND dim_date.calendar_date BETWEEN @start_cal_date AND @end_cal_date
 	AND employees.employeestartdate <= dim_date.calendar_date
 	AND employees.leaver = 0
 
