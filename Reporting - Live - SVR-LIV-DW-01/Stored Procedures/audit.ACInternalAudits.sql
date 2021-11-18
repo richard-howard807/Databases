@@ -8,6 +8,7 @@ GO
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
 -- =============================================
 -- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
+-- JB 18-11-2021 - added NHS audit data 
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
 ( @Template AS NVARCHAR(MAX)
@@ -18,7 +19,7 @@ as
 
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS NVARCHAR(50)
---SET @Template='Claims Audit'
+--SET @Template='Claims Audit|NHSR'
 --SET @AuditYear='2021/2022'
 
 
@@ -94,6 +95,54 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 		WHERE  RIGHT(akey,1)=RIGHT(position,1)
 		and  RIGHT(empkey,1)=RIGHT(position,1)
 		
+		UNION	
+
+		SELECT
+			dim_fed_hierarchy_history.employeeid		AS employeeid
+			, dim_matter_header_current.matter_owner_full_name		AS [Auditee Name]
+			, dim_fed_hierarchy_history.dim_fed_hierarchy_history_key		AS [Auditee key]
+			, dim_fed_hierarchy_history.employeeid		AS auditee_emp_key
+			, 1			AS [Auditee Position]
+			, dim_matter_header_current.client_code		AS [Client Code]
+			, dim_matter_header_current.matter_number		AS [Matter Number]
+			, dim_date.calendar_date		AS [Date]
+		--------------------------------MS team changing score logic------------------------------------------
+			, CASE
+				WHEN fact_child_detail.nhs_audit_score >= 90 THEN
+					'Pass'
+				WHEN fact_child_detail.nhs_audit_score BETWEEN 70 AND 90 THEN
+					'Warning'
+				ELSE
+					'Fail'
+			  END				AS [Status]	
+		------------------------------------------------------------------------------------------------------
+			, 'NHSR'		AS [Template]
+			, NULL		AS [Auditor]
+			, dim_date.fin_quarter		AS fin_quarter
+			, dim_date.fin_quarter_no		AS fin_quarter_no
+			, dim_date.fin_year		AS fin_year
+		--SELECT DISTINCT dim_child_detail.*
+		FROM red_dw.dbo.dim_matter_header_current
+			INNER JOIN red_dw.dbo.fact_dimension_main
+				ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+			INNER JOIN red_dw.dbo.dim_parent_detail
+				ON dim_parent_detail.client_code = dim_matter_header_current.client_code
+					AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
+			INNER JOIN red_dw.dbo.fact_child_detail
+				ON fact_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+			INNER JOIN red_dw.dbo.dim_date
+				ON dim_date.calendar_date = CAST(dim_parent_detail.nhs_audit_date AS DATE)
+			INNER JOIN #Template
+				ON #Template.ListValue = 'NHSR'
+		WHERE
+			dim_parent_detail.nhs_audit_date IS NOT NULL
+			AND fact_child_detail.nhs_audit_score IS NOT NULL
+			AND dim_matter_header_current.master_client_code <> '30645'
+			AND dim_date.calendar_date >= '2021-09-01'
+
+
 
 select
 	employees.employeeid, CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) audit_year,
