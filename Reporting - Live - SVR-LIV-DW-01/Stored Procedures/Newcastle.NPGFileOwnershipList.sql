@@ -21,6 +21,8 @@ BEGIN
 --SELECT ISNULL(REPLACE(CRSystemSourceID,'-','.'),clNo+ '.'+fileNo) AS Matter_Code
 SELECT clNo+ '.'+fileNo  AS Matter_Code -- David T asked to remove the old reference
 ,[red_dw].[dbo].[datetimelocal](dbFile.Created) AS [date Opened]
+----------
+,[red_dw].[dbo].[datetimelocal](dbFile.fileClosed) [date Closed ]
 ,YEAR([red_dw].[dbo].[datetimelocal](dbFile.Created)) AS [Year_Opened]
 ,CASE WHEN MatStat.cdDesc IS NOT NULL THEN MatStat.cdDesc
 WHEN [red_dw].[dbo].[datetimelocal](fileClosed) IS NULL THEN 'O' ELSE 'C' END  AS matter_status

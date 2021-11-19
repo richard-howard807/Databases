@@ -6,6 +6,8 @@ GO
 -- Author:		Emily Smith
 -- Create date: 20200327
 -- Description:	New Instructions
+
+--changed the join for original matter owner to match the logic in the new instructions - firm dashboard
 -- =============================================
 CREATE PROCEDURE [Tableau].[NewInstructions]
 
@@ -176,9 +178,15 @@ THEN 1 ELSE 0 END AS showit
  FROM red_dw.dbo.fact_dimension_main
  LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
- LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON red_dw.dbo.dim_matter_header_current.fee_earner_code=fed_code
- AND date_opened_practice_management BETWEEN dss_start_date AND dss_end_date
+
+	--LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+	--ON red_dw.dbo.dim_matter_header_current.fee_earner_code=fed_code
+	--AND date_opened_practice_management BETWEEN dss_start_date AND dss_end_date
+
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+
+
  LEFT OUTER JOIN red_dw.dbo.dim_date 
  ON calendar_date=CAST(date_opened_case_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 

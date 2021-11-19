@@ -90,11 +90,13 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_curren
 	LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
+
 WHERE 
 	reporting_exclusions = 0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
+	AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded]IS NULL))
+	--ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
 	AND dim_matter_worktype.work_type_name <> 'Cross Border'
 	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
 	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability', 'Dispute on liability','Dispute on liability and quantum','Dispute on quantum')  
@@ -192,6 +194,7 @@ SELECT
 	,dim_detail_core_details.zurich_introductory_call
 	,dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers
 	,( SELECT MAX(v)FROM(VALUES(dim_matter_header_current.date_opened_case_management), (dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers)) AS value(v)) AS MaxValue
+	,[Zurich Intro Date]   ---use this field for date of intro call for magic phone call
 	,CASE WHEN dim_detail_client.zurich_date_introductory_call IS NULL THEN 1 ELSE 0 END AS CountPhoneCallNotComplete
 	,fact_finance_summary.claimants_costs_paid
 	,total_amount_billed
@@ -301,6 +304,12 @@ LEFT OUTER JOIN ms_prod.dbo.dbTasks  ON  ms_fileid=dbTasks.fileid AND tskFilter=
 LEFT OUTER JOIN ms_prod.dbo.udTechMotor ON ms_fileid=udTechMotor.fileID
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK) ON  fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
  AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
+ ---this join is to get the Min date of the introductory phone call as there are a few dates
+ LEFT OUTER JOIN
+ 
+ (SELECT MIN(dim_child_detail.zurich_date_introductory_call_made) AS [Zurich Intro Date],client_code,matter_number FROM red_dw.dbo.dim_child_detail GROUP BY client_code,matter_number  ) AS ZurichIntroDate
+ON ZurichIntroDate.client_code = dim_matter_header_current.client_code
+AND    ZurichIntroDate.matter_number = dim_matter_header_current.matter_number
 
 
 
@@ -308,7 +317,8 @@ WHERE
 	reporting_exclusions=0
 	AND  dim_client.client_group_name='Zurich'
 	AND hierarchylevel3hist = 'Large Loss'
-	AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
+AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outcome.[date_claim_concluded]IS NULL))
+	--ISNULL(dim_detail_outcome.[date_claim_concluded],dim_detail_outcome.zurich_result_date) IS NULL))
 	AND (dim_detail_outcome.outcome_of_case IS NULL OR RTRIM(LOWER(dim_detail_outcome.outcome_of_case)) <> 'exclude from reports')
 	AND dim_matter_worktype.work_type_name <> 'Cross Border'
 	AND dim_fed_hierarchy_history.hierarchylevel4hist <> 'Niche Costs'
@@ -358,10 +368,9 @@ SELECT
 , Savings
 , total_reserve
 , [Matter Type Group]
-, DATEDIFF(DAY,  MaxValue ,zurich_date_introductory_call ) AS [Days between Date Opened and phone call date or receipt of client file of papers (whichever is later) ] 
-, zurich_date_introductory_call
+, DATEDIFF(DAY,  MaxValue ,[Zurich Intro Date]  ) AS [Days between Date Opened and phone call date or receipt of client file of papers (whichever is later) ] 
+,[Zurich Intro Date] 
 ,MaxValue
---, zurich_introductory_call
 , grpageas_motor_date_of_receipt_of_clients_file_of_papers
 , #MainData.date_opened_case_management
 , CountPhoneCallNotComplete

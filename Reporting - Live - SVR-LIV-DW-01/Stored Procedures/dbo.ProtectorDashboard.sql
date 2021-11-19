@@ -22,11 +22,11 @@ END
 SELECT t.dim_matter_header_curr_key,
 MAX(red_dw.dbo.dim_task_due_date.calendar_date) AS [TaskDueDate]
 INTO #KeyDates
-FROM [red_dw].[dbo].[fact_tasks] t 
-  INNER JOIN red_dw.dbo.dim_matter_header_current
+FROM [red_dw].[dbo].[fact_tasks] t WITH(NOLOCK)
+  INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
    ON dim_matter_header_current.dim_matter_header_curr_key = t.dim_matter_header_curr_key
-  JOIN [red_dw].[dbo].[dim_tasks] dimt ON t.dim_tasks_key = dimt.dim_tasks_key
-  LEFT OUTER JOIN red_dw.dbo.dim_task_due_date
+  JOIN [red_dw].[dbo].[dim_tasks] dimt WITH(NOLOCK) ON t.dim_tasks_key = dimt.dim_tasks_key
+  LEFT OUTER JOIN red_dw.dbo.dim_task_due_date WITH(NOLOCK)
    ON dim_task_due_date.dim_task_due_date_key = t.dim_task_due_date_key
   WHERE 
      (t.task_code IN ('TRAA0348', 'NHSA0183')  -- Task Codes TRAA0348 REM: Trial due today - [CASE MAN] ,     REM: Disposal hearing due today [CASE MAN]   
@@ -61,6 +61,7 @@ SELECT DISTINCT RTRIM(fact_dimension_main.client_code)+'-'+fact_dimension_main.m
 	, dim_detail_core_details.[date_initial_report_sent] [Date Initial Report]
 	, dim_detail_core_details.[date_subsequent_sla_report_sent] [Date of Subsequent Report]
 	, outcome_of_case AS [Outcome]
+	, dim_detail_outcome.repudiation_outcome AS [Repudiation]
 	, date_claim_concluded AS [Date Claim Concluded]
 	, fact_finance_summary.[damages_reserve] [Damages Reserve Current]
 	, fact_detail_reserve_detail.[claimant_costs_reserve_current] [Claimants Cost Reserve Current]
@@ -83,31 +84,34 @@ SELECT DISTINCT RTRIM(fact_dimension_main.client_code)+'-'+fact_dimension_main.m
 	,elapsed_days_live_files AS [Elapsed Days Live Files]
 	,elapsed_days_costs_to_settle AS [Elapsed Days Costs to Settle]
 	, fact_detail_elapsed_days.days_to_first_report_lifecycle AS [Days to First Report Lifecycle]
+	, [Reporting].[dbo].[ReturnElapsedDaysExcludingBankHolidays](dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_case_management) AS [Working Days to File Opening]
+	, [Reporting].[dbo].[ReturnElapsedDaysExcludingBankHolidays](dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_case_management) AS [Working Days to Acknowledge]
+	, [Reporting].[dbo].[ReturnElapsedDaysExcludingBankHolidays](dim_matter_header_current.date_opened_case_management, GETDATE()) AS [Working Days Since File Opened]
 	, ClaimantsAddress.[claimant1_postcode] AS [Claimant's Postcode]
 	, dim_detail_finance.[output_wip_fee_arrangement] AS [Fee Arrangement]
 	, Longitude
 	, Latitude
 
-FROM red_dw.dbo.fact_dimension_main
-LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
 ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
-LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype WITH(NOLOCK)
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+LEFT OUTER JOIN red_dw.dbo.fact_finance_summary WITH(NOLOCK)
 ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days
+LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days WITH(NOLOCK)
 ON fact_detail_elapsed_days.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement WITH(NOLOCK)
 ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+LEFT OUTER JOIN red_dw.dbo.dim_detail_finance WITH(NOLOCK)
 ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
-LEFT OUTER JOIN red_dw.dbo.dim_involvement_full
+LEFT OUTER JOIN red_dw.dbo.dim_involvement_full WITH(NOLOCK)
 ON dim_involvement_full.client_code=dim_matter_header_current.client_code
 AND dim_involvement_full.matter_number=dim_matter_header_current.matter_number
 AND dim_involvement_full.is_active=1
@@ -130,17 +134,17 @@ LEFT OUTER JOIN
                     ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
             WHERE dim_client.dim_client_key != 0
 			AND dim_client.client_code IN ('W17427','W15632','W15366','W15442','W20163')
-        ) AS ClaimantsAddress
+        ) AS ClaimantsAddress 
             ON fact_dimension_main.master_fact_key = ClaimantsAddress.fact_key
-		LEFT OUTER JOIN red_dw.dbo.Doogal ON Doogal.Postcode=ClaimantsAddress.claimant1_postcode
-LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+		LEFT OUTER JOIN red_dw.dbo.Doogal WITH(NOLOCK) ON Doogal.Postcode=ClaimantsAddress.claimant1_postcode
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK)
  ON dim_client_involvement.client_code = dim_matter_header_current.client_code
  AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
- LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK)
  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
- LEFT JOIN red_dw.dbo.dim_detail_court 
+ LEFT JOIN red_dw.dbo.dim_detail_court WITH(NOLOCK)
 ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN #KeyDates AS KeyDates
+LEFT OUTER JOIN #KeyDates AS KeyDates WITH(NOLOCK)
  ON KeyDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE reporting_exclusions=0
