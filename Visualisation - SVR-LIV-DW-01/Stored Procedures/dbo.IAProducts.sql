@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[IAProducts]
 
 AS 
@@ -28,6 +29,7 @@ SELECT Pursuits.[Pursuit Number]
 ,Pursuits.[Lead Partner]
 ,Pursuits.[Closed Date]
 ,NULL AS Outcome
+,CASE WHEN Pursuits.[Closed Date] IS NULL THEN Pursuits.[Expected Closure Date] ELSE Pursuits.[Closed Date] END AS [Closed/Estimated Date] 
 FROM (
 SELECT pursuitsn AS [Pursuit Number],
        company_name AS [Company],
@@ -110,6 +112,7 @@ SELECT [Opportunity Number]
 ,[CRP]
 ,ActualClosedDate
 ,Outcome
+,CASE WHEN ActualClosedDate IS NULL THEN [Expected Close Date] ELSE ActualClosedDate END AS [Closed/Estimated Date]
 FROM dbo.IA_Client_Data
 WHERE product IS NOT NULL
 AND ISNULL(Product,'')<>'Unknown'
