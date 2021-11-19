@@ -9,27 +9,32 @@ GO
 -- =============================================
 -- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
 -- JB 18-11-2021 - added NHS audit data 
+-- JB 19-11-2021 - added HSD/Director/Trainee exclusions
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
 ( @Template AS NVARCHAR(MAX)
 , @AuditYear AS NVARCHAR(50)
+, @hsd_director AS NVARCHAR(MAX)
 )
 as
 
 
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS NVARCHAR(50)
+--, @hsd_director AS NVARCHAR(MAX)
 --SET @Template='Claims Audit|NHSR'
 --SET @AuditYear='2021/2022'
+--SET @hsd_director = '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
 
 
 DROP TABLE IF EXISTS #Template
-drop table if exists #Audits
-drop table if exists #EmployeeDates
-drop table if exists #exclude_data
+DROP TABLE IF EXISTS #hsd_director
+DROP TABLE IF EXISTS #Audits
+DROP TABLE IF EXISTS #EmployeeDates
+DROP TABLE IF EXISTS #exclude_data
 
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template)
-
+SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @hsd_director)
 
 	
 		SELECT  pvt3.employeeid
@@ -96,7 +101,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 		and  RIGHT(empkey,1)=RIGHT(position,1)
 		
 		UNION	
-
+		--NHSR audits
 		SELECT
 			dim_fed_hierarchy_history.employeeid		AS employeeid
 			, dim_matter_header_current.matter_owner_full_name		AS [Auditee Name]
@@ -195,10 +200,14 @@ select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin
 				when max(#EmployeeDates.exclude) = 2 then 'Left ' +  cast(cast(#EmployeeDates.leftdate as date) as varchar(12))
 				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 
 				     then (select string_agg(val, ', ') from (select distinct val from dbo.split_delimited_to_rows(string_agg(category, ','),',')) x ) 
+				WHEN hsd_director_data.employeeid IS NOT NULL THEN 'HSD/Director'
+				WHEN trainees.employeeid IS NOT NULL THEN 'Trainee, no live matters'
 		  end as reason
 
 		, case  when max(#EmployeeDates.exclude) in (1,2) then 1
 				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 then 1 
+				WHEN hsd_director_data.employeeid IS NOT NULL THEN 1
+				WHEN trainees.employeeid IS NOT NULL THEN 1
 				
 		  end as exclude_flag
   into #exclude_data
@@ -219,7 +228,34 @@ left outer join (select fact_employee_attendance.employeeid, fact_employee_atten
 					)
 				
 				) fact_employee_attendance on #EmployeeDates.calendar_date = fact_employee_attendance.startdate and #EmployeeDates.employeeid = fact_employee_attendance.employeeid
-
+LEFT OUTER JOIN (
+				select distinct dim_fed_hierarchy_history.employeeid
+				from red_dw.dbo.dim_fed_hierarchy_history
+					INNER JOIN #hsd_director	
+						ON #hsd_director.ListValue = dim_fed_hierarchy_history.employeeid COLLATE DATABASE_DEFAULT
+				where 1=1
+				and (dim_fed_hierarchy_history.management_role_one in ('HoSD','Director')
+				or dim_fed_hierarchy_history.management_role_two in ('HoSD','Director'))
+				and dim_fed_hierarchy_history.hierarchylevel2hist in ('Legal Ops - Claims', 'Legal Ops - LTA')
+				)	AS hsd_director_data
+		ON hsd_director_data.employeeid = #EmployeeDates.employeeid COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN (
+				SELECT DISTINCT dim_employee.employeeid
+				FROM red_dw.dbo.dim_fed_hierarchy_history
+					left outer join ( SELECT dim_matter_header_current.fee_earner_code
+									FROM red_dw.dbo.dim_matter_header_current
+									WHERE dim_matter_header_current.date_closed_case_management is null
+								) AS closed_cases ON dim_fed_hierarchy_history.fed_code = closed_cases.fee_earner_code
+					INNER JOIN red_dw.dbo.dim_employee
+						ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+				WHERE
+					closed_cases.fee_earner_code IS NULL
+					AND dim_employee.classification = 'Casehandler'
+					AND ISNULL(dim_employee.leftdate, '3000-01-01') >= CAST(GETDATE() AS DATE) 
+					AND dim_employee.deleted_from_cascade = 0
+					AND dim_employee.jobtitle IN ('Apprentice Solicitor', 'Trainee', 'Trainee Solicitor')
+				) AS trainees
+		ON trainees.employeeid = #EmployeeDates.employeeid COLLATE DATABASE_DEFAULT
 group by #EmployeeDates.employeeid
        , #EmployeeDates.fin_quarter
 	   , #EmployeeDates.employeestartdate
@@ -232,6 +268,8 @@ group by #EmployeeDates.employeeid
 	   , #EmployeeDates.fin_quarter_no
 	   , #EmployeeDates.min_quarter_month
 	   , #EmployeeDates.max_quarter_month
+	   , hsd_director_data.employeeid
+	   , trainees.employeeid
 
 
 
