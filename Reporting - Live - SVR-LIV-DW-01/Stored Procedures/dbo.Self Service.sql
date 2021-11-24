@@ -14,6 +14,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -170,6 +171,7 @@ DROP TABLE IF EXISTS #TimeRecording
  SELECT fact_chargeable_time_activity.master_fact_key,
                    SUM(minutes_recorded) AS [MinutesRecorded],
                    SUM(minutes_recorded) / 60 AS [HoursRecorded]
+				   ,SUM(time_charge_value) AS TimeChargeValue
 				   INTO #TimeRecording
             FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
                 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -706,14 +708,7 @@ WHEN
        ) AS [Fin Year Of Last Time Posting]
        ,TimeRecorded.HoursRecorded AS [Hours Recorded]
        ,TimeRecorded.MinutesRecorded AS [Minutes Recorded]
-       ,((CASE
-             WHEN TimeRecorded.MinutesRecorded <= 12 THEN
-                 0
-             WHEN TimeRecorded.MinutesRecorded > 12 THEN
-                 TimeRecorded.MinutesRecorded - 12
-         END
-        ) * 115
-       ) / 60 AS [Legal Spend exc (VAT)]
+       ,TimeChargeValue  AS [Legal Spend exc (VAT)]
        ,fact_matter_summary_current.time_billed / 60 AS [Time Billed] -- removed as its wrong
 	   ,[Hrs Billed] AS [Hours Billed To Client]
        ,NonPartnerHours AS [Total Non-Partner Hours Recorded]

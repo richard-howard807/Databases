@@ -208,6 +208,7 @@ SELECT
 											  WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 	,dim_detail_health.[nhs_risk_management_factor]	--Added 20211122 - JL
+	,dim_instruction_type.instruction_type AS [Instruction Type] --Added 20211122 - JL 
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -238,12 +239,14 @@ FROM red_dw.dbo.fact_dimension_main
 		ON RTRIM(#instruction_type.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN dim_detail_health.nhs_instruction_type = '' THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_instruction_type) END, 'Missing')
 	INNER JOIN #referral_reason
 		ON RTRIM(#referral_reason.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN LOWER(dim_detail_core_details.referral_reason) = '' THEN 'missing' ELSE LOWER(RTRIM(dim_detail_core_details.referral_reason)) END, 'missing')
+		LEFT OUTER JOIN red_dw.dbo.dim_instruction_type WITH(NOLOCK)
+ ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND dim_detail_outcome.date_claim_concluded >= @last_year
+	AND dim_detail_outcome.date_claim_concluded >= @last_year	--OR dim_instruction_type.instruction_type = 'Limited instructions'
 	AND dim_matter_header_current.ms_only = 1
 
 /*
@@ -279,10 +282,13 @@ SELECT
 	, NULL
 	, NULL
 	, NULL
+	, NULL
 FROM red_dw.dbo.dim_date
 WHERE
 	dim_date.calendar_date BETWEEN @last_year AND GETDATE()
 
 END
+
+
 
 GO

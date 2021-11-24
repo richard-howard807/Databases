@@ -162,7 +162,7 @@ CREATE TABLE [dbo].[selfservice]
 [Fin Year Of Last Time Posting] [int] NULL,
 [Hours Recorded] [numeric] (38, 6) NULL,
 [Minutes Recorded] [numeric] (38, 2) NULL,
-[Legal Spend exc (VAT)] [numeric] (38, 6) NULL,
+[Legal Spend exc (VAT)] [numeric] (38, 2) NULL,
 [Time Billed] [numeric] (17, 6) NULL,
 [Hours Billed To Client] [numeric] (38, 6) NULL,
 [Total Non-Partner Hours Recorded] [numeric] (38, 6) NULL,

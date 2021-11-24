@@ -148,7 +148,8 @@ LEFT OUTER JOIN #KeyDates AS KeyDates WITH(NOLOCK)
  ON KeyDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE reporting_exclusions=0
-AND (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-07-01')
+AND (dim_matter_header_current.date_closed_case_management IS NULL --OR dim_matter_header_current.date_closed_case_management>='2020-01-01'
+	OR dim_detail_outcome.date_claim_concluded>='2020-01-01' OR dim_detail_outcome.date_costs_settled>='2020-01-01')
 AND ISNULL(dim_detail_outcome.outcome_of_case,'') <>'Exclude from reports'
 AND (
 dim_matter_header_current.master_client_code='W17427'

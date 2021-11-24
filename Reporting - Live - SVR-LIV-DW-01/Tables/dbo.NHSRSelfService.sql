@@ -149,7 +149,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Date of Last Time Posting] [datetime] NULL,
 [Hours Recorded] [numeric] (38, 6) NULL,
 [Minutes Recorded] [numeric] (38, 2) NULL,
-[Legal Spend exc (VAT)] [numeric] (38, 6) NULL,
+[Legal Spend exc (VAT)] [numeric] (38, 2) NULL,
 [Time Billed] [numeric] (17, 6) NULL,
 [Hours Billed to Client] [numeric] (38, 6) NULL,
 [Total Non-Partner Hours Recorded] [numeric] (38, 6) NULL,
