@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ProtectorAllMatters]
 AS
 BEGIN
@@ -127,7 +128,7 @@ SELECT date_opened_case_management [Date Opened ] ,
 	   ,dim_matter_header_current.delegated AS Delegated
 	   ,dst_claimant_solicitor_firm
 	  --,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE elapsed_days - days_to_first_report_lifecycle END AS [Days to first report]
-	   	   ,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE DATEDIFF(DAY,date_instructions_received,date_initial_report_sent) END [Days to first report]
+	   	   ,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE days_to_first_report_lifecycle END [Days to first report]
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (

@@ -7,7 +7,9 @@ CREATE PROCEDURE [dbo].[MotorProsecutions] --EXEC dbo.MotorProsecutions '2020-05
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
-)--DECLARE @StartDate AS DATE
+)
+
+--DECLARE @StartDate AS DATE
 --DECLARE @EndDate AS DATE
 --SET @StartDate='2021-05-01'
 --SET @EndDate='2021-12-31'
@@ -15,6 +17,7 @@ CREATE PROCEDURE [dbo].[MotorProsecutions] --EXEC dbo.MotorProsecutions '2020-05
 AS 
 
 BEGIN 
+
 SELECT 
 ISNULL(CASE WHEN client_group_name='' THEN NULL ELSE client_group_name END,client_name) AS [Client Group]
 ,client_name AS [Client Name]
@@ -45,8 +48,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
- ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
- AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
+ ON fact_matter_summary_current.master_fact_key = fact_finance_summary.master_fact_key -- Updated MT 20211124
+
 LEFT OUTER JOIN 
 (
 SELECT fact_bill.dim_matter_header_curr_key
@@ -58,7 +61,9 @@ INNER JOIN red_dw.dbo.dim_matter_header_current
  ON  dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-WHERE work_type_name='Motoring prosecutions'
+WHERE 1 =1 
+AND work_type_code  =  '1026'
+--work_type_name='Motoring prosecutions' This work type doesn't exists but told by Bob to use worktype code 1026 as this was the previous worktype 
 AND reporting_exclusions=0
 AND bill_date BETWEEN @StartDate AND @EndDate
 GROUP BY fact_bill.dim_matter_header_curr_key
@@ -75,7 +80,9 @@ INNER JOIN red_dw.dbo.dim_matter_header_current
  ON  dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-WHERE work_type_name='Motoring prosecutions'
+WHERE 1 = 1 
+ AND work_type_code  =  '1026'
+--work_type_name='Motoring prosecutions'
 AND reporting_exclusions=0
 AND bill_date BETWEEN DATEADD(YEAR,-1,@StartDate) AND DATEADD(YEAR,-1,@EndDate)
 GROUP BY fact_bill.dim_matter_header_curr_key
@@ -97,7 +104,10 @@ GROUP BY client,matter
 ) AS WIPPrevious
 ON WIPPrevious.client_code = dim_matter_header_current.client_code
 AND WIPPrevious.matter_number = dim_matter_header_current.matter_number
-WHERE work_type_name='Motoring prosecutions'
+WHERE 1 = 1 
+AND work_type_code  =  '1026'
+
+--work_type_name='Motoring prosecutions'
 AND reporting_exclusions=0
 
 END 

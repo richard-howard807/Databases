@@ -208,7 +208,31 @@ SELECT
 											  WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	                                          WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 	,dim_detail_health.[nhs_risk_management_factor]	--Added 20211122 - JL
-	,dim_instruction_type.instruction_type AS [Instruction Type] --Added 20211122 - JL 
+	,	CASE 
+		WHEN nhs_instruction_type IN 
+		('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
+		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25') THEN 
+			'Delegated authority'
+		WHEN nhs_instruction_type IN 
+		('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
+		,'CFF 250 (Non-PA)','CFF 250 (PA)','Clinical - Non DA','Clinical - Non DA (ENS)','Derbyshire Healthcare Group Action'
+		,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
+		,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
+		,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
+		,'Worcester Group Action','WWL - Data Breach group action') THEN 
+			'Direct instruction'
+		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 
+			'Inquest'
+		WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
+		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
+		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
+		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
+		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
+			'Limited instructions'
+		WHEN nhs_instruction_type IN ('Other') THEN 
+			'Other'
+	  END			AS NewInstructionType --Added 20211122 - JL
+	  ,	dim_detail_health.zurichnhs_date_final_bill_sent_to_client
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -246,7 +270,16 @@ FROM red_dw.dbo.fact_dimension_main
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND dim_detail_outcome.date_claim_concluded >= @last_year	--OR dim_instruction_type.instruction_type = 'Limited instructions'
+	AND dim_detail_outcome.date_claim_concluded >= @last_year
+	or (CASE WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
+		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
+		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
+		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
+		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
+			1 ELSE 0 END  = 1 AND 	  dim_detail_health.zurichnhs_date_final_bill_sent_to_client >=@last_year )
+	--AND dim_detail_health[zurichnhs_date_final_bill_sent_to_client] IS NOT null
+
+
 	AND dim_matter_header_current.ms_only = 1
 
 /*
@@ -276,6 +309,7 @@ SELECT
 	, LEFT(DATENAME(MONTH, dim_date.calendar_date), 3) + '-' + FORMAT(dim_date.calendar_date, 'yy')
 	, 0
 	, 0
+	, NULL
 	, NULL
 	, NULL
 	, NULL
