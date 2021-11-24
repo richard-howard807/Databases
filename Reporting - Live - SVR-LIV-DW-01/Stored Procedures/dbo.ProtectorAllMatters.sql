@@ -4,6 +4,9 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
+
 CREATE PROCEDURE [dbo].[ProtectorAllMatters]
 AS
 BEGIN
@@ -117,6 +120,15 @@ SELECT date_opened_case_management [Date Opened ] ,
 	   ,dim_detail_core_details.[ll00_have_we_had_an_extension_for_the_initial_report]
 	   ,elapsed_days_live_files
 	   ,elapsed_days_costs_to_settle
+	   ,does_claimant_have_personal_injury_claim
+	   ,injury_type
+	   ,claimant_name AS [Claimant Name]
+	   ,incident_date AS [Incident Date]
+	   ,dim_matter_header_current.delegated AS Delegated
+	   ,dst_claimant_solicitor_firm
+	  --,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE elapsed_days - days_to_first_report_lifecycle END AS [Days to first report]
+	   	   ,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE DATEDIFF(DAY,date_instructions_received,date_initial_report_sent) END [Days to first report]
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (
 SELECT DISTINCT dim_matter_header_curr_key
@@ -150,13 +162,16 @@ INNER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE master_client_code='W20163'
 AND does_claimant_have_personal_injury_claim='Yes' -- FCC Environmental
-AND incident_date>='2018-01-01'
+AND incident_date>='2018-07-14'
 UNION
 SELECT dim_matter_header_curr_key FROM red_dw.dbo.dim_matter_header_current WHERE master_client_code='W15366'
 AND master_matter_number IN 
 ('4482','4532','4553','4552','4594','4560','4601','4611','4628','4663','4678','4720'
 ,'4733','4750','4756','4770','4773','4779','4780','4783','4784','4785','4786','4790'
-,'4792','4804','4813','4825','4826','4831','4834','4851','4852','4855','4863') -- Broadspire
+,'4792','4804','4813','4825','4826','4831','4834','4851','4852','4855','4863'
+,'4864','4867','4870','4872','4874','4884','4885','4892','4896','4895' --
+
+) -- Broadspire
 UNION
 SELECT dim_matter_header_curr_key FROM red_dw.dbo.dim_matter_header_current WHERE master_client_code='W17427' --Protector
 ) AS Clients
@@ -194,6 +209,8 @@ LEFT JOIN red_dw.dbo.dim_detail_court
 ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN #KeyDates AS KeyDates
  ON KeyDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+ ON  dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  WHERE (date_closed_case_management IS NULL OR date_closed_case_management>='2018-07-01')
  AND master_matter_number <>'0'
  AND ISNULL(outcome_of_case,'')<>'Exclude from reports'
