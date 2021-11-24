@@ -8,6 +8,7 @@ GO
 -- Create date: 2021-09-16
 -- Description:	#114359 - New report to count no. of new instructions for Zurich
 -- =============================================
+-- 24/11/2021 - JB - ad-hoc request from Wendy LB. Added the 2 referral reason columns
 
 CREATE PROCEDURE [dbo].[ZurichNewInstructions] --EXEC [dbo].[ZurichNewInstructions]
 (
@@ -40,6 +41,8 @@ SELECT
 	  END																AS [Team]
 	, dim_detail_core_details.zurich_track			AS [Zurich Track]
 	, dim_detail_finance.output_wip_fee_arrangement			AS [Fee Structure]
+	, dim_detail_claim.referral_reason		AS [Referral Reason]
+	, dim_detail_core_details.zurich_referral_reason		AS [Zurich Referral Reason]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)			AS [Date Opened]
 	, dim_date.fin_year			AS [Financial Year Opened]
 	, dim_date.cal_year			AS [Calendar Year Opened]
