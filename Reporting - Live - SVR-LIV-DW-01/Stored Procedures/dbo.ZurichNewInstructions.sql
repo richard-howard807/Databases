@@ -41,7 +41,7 @@ SELECT
 	  END																AS [Team]
 	, dim_detail_core_details.zurich_track			AS [Zurich Track]
 	, dim_detail_finance.output_wip_fee_arrangement			AS [Fee Structure]
-	, dim_detail_claim.referral_reason		AS [Referral Reason]
+	, dim_detail_core_details.referral_reason		AS [Referral Reason]
 	, dim_detail_core_details.zurich_referral_reason		AS [Zurich Referral Reason]
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)			AS [Date Opened]
 	, dim_date.fin_year			AS [Financial Year Opened]
