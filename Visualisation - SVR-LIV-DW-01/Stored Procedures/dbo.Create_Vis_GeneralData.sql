@@ -658,6 +658,19 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 
 ,dim_court_involvement.court_name AS [Court Name]
 
+--Hastings
+, dim_detail_claim.[hastings_fundamental_dishonesty] AS [Hastings - Fundamental Dishonesty]
+, dim_detail_claim.[hastings_fault_rating] AS [Hastings - Fault Rating]
+, dim_detail_claim.[hastings_accident_type] AS [Hastings - Accident Type]
+, dim_detail_claim.[hastings_injury_type] AS [Hastings - Injury Type]
+, dim_detail_claim.[hastings_indemnity_position] AS [Hastings - Indemnity position (confirmed position)]
+, dim_detail_claim.[hastings_claim_status] AS [Hastings - Claim Status]
+--PREDiCT
+, fact_detail_reserve_detail.[hastings_predict_damages_meta_model_value] AS [PREDiCT Damages meta-model value]
+, fact_detail_reserve_detail.[hastings_predict_claimant_costs_meta_model_value] AS [PREDiCT Claimant costs meta-model value]
+, fact_detail_reserve_detail.[hastings_predict_lifecycle_meta_model_value] AS [PREDiCT Lifecycle meta-model value]
+
+
 INTO dbo.Vis_GeneralData
 
 

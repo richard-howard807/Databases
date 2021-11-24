@@ -7,6 +7,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[GoAheadClientDashboard]
 
 AS 
@@ -81,9 +84,9 @@ WHEN dim_detail_outcome.[outcome_of_case] = 'Lost at trial' THEN 'No' ELSE  '-' 
 ,[Operating Company]
 ,Maps.Longitude
 ,Maps.Latitude
-,damages_reserve_initial AS [Damages Reserve Initial]
-,defence_costs_reserve_initial AS [Defence Cost Reserve Initial]
-,tp_costs_reserve_initial AS [Claimants Cost Reseve Initial]
+,damages_reserve AS [Damages Reserve Initial]
+,defence_costs_reserve AS [Defence Cost Reserve Initial]
+,tp_costs_reserve AS [Claimants Cost Reseve Initial]
 ,brief_description_of_injury AS injury_type
 ,((ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) ) - ISNULL(ChamberFees.[Chambers & Barrister Fees],0)
 ) + ISNULL(ChamberFees.[Chambers & Barrister Fees],0) 
@@ -91,7 +94,9 @@ WHEN dim_detail_outcome.[outcome_of_case] = 'Lost at trial' THEN 'No' ELSE  '-' 
 +ISNULL(fact_finance_summary.damages_paid,0) 
 +(ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[claimants_solicitors_disbursements_paid],0))
 AS [Total Cost]
-
+, ConcludedPeriod.[Period Name] AS [GAG Concluded Period]
+,ConcludedPeriod.[GAG Year] AS [GAG Concluded Year]
+,ISNULL(dim_matter_header_current.present_position,'Claim and costs outstanding') AS [Present Position]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -134,11 +139,14 @@ INNER JOIN Reporting.dbo.GoAheadDepots
  ON GoAheadDepots.Postcode = Doogal.Postcode COLLATE DATABASE_DEFAULT
  ) AS Maps
   ON Maps.Ref=UPPER(LEFT(dim_client_involvement.[insuredclient_reference], 3)) COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN (SELECT * FROM GoAheadReporingPeriods WHERE Exclude='No') AS ConcludedPeriod
+ ON CONVERT(DATE,ISNULL(date_claim_concluded,date_closed_case_management),103) BETWEEN CONVERT(DATE,ConcludedPeriod.[From],103) AND CONVERT(DATE,ConcludedPeriod.[To],103)
+
  WHERE client_group_code = '00000126'
 AND ISNULL(outcome_of_case,'')<> 'Exclude from reports'
 AND ISNULL(dim_client_involvement.[insuredclient_name],'') <> 'Avis Budget UK'
 AND dim_matter_header_current.matter_number <>'ML'
-AND incident_date>='2012-06-30'
+AND (date_closed_case_management IS NULL OR ISNULL(date_claim_concluded,date_closed_case_management)>='2018-07-01')--incident_date>='2012-06-30'
 AND master_client_code + '-' + master_matter_number <>'W15492-1455'
 --AND RTRIM(dim_matter_header_current.client_code) +'/'+ RTRIM(dim_matter_header_current.[matter_number])='00065232/00001259'
 

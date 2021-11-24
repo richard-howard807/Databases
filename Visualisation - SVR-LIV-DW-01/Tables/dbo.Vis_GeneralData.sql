@@ -507,6 +507,15 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [covid_reason_code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [covid_reason_desc] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Will total gross damages reserve exceed £350,000?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
-[Court Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL
+[Court Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
+[Hastings - Fundamental Dishonesty] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Fault Rating] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Accident Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Injury Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Indemnity position (confirmed position)] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Claim Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[PREDiCT Damages meta-model value] [money] NULL,
+[PREDiCT Claimant costs meta-model value] [money] NULL,
+[PREDiCT Lifecycle meta-model value] [numeric] (13, 2) NULL
 ) ON [PRIMARY]
 GO
