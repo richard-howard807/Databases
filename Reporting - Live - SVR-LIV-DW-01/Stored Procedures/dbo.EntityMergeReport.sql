@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 /*
 	20190418 LD  ##16242 Added a left outer join to dim_client using the contactid to return the Interaction UCI field (which is the dimClient key.
 
@@ -89,7 +91,13 @@ SELECT dbcontact.contID AS [MS Entity Number] ,
        NULL AS [Billings for clients in the last 3 yrs (Profit Costs)],                    --?
 	   dim_client.dim_client_key [Interaction UCI]
 	   ,CASE WHEN existinInteraction=1 THEN 'Yes' ELSE 'No' END  AS [existinInteraction]
+	   ,EMailAddresses
 FROM   MS_Prod.config.dbContact WITH ( NOLOCK )
+LEFT OUTER JOIN (SELECT contID,STRING_AGG(CAST(contEmail AS NVARCHAR(MAX)),',') AS [EmailAddresses]
+FROM ms_prod.dbo.dbContactEmails
+GROUP BY contID
+) AS EMailAddresses
+ ON EMailAddresses.contID = dbContact.contID
        LEFT OUTER JOIN MS_Prod.config.dbClient WITH ( NOLOCK ) ON dbcontact.contID = dbClient.clDefaultContact
        LEFT OUTER JOIN (   SELECT   clID ,
                                     COUNT(1) AS MSNumberMatters
@@ -171,7 +179,7 @@ INNER JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrInde
 WHERE site.IsDefault=1
 --AND  contid=@contid
 AND (dbcontact.contID LIKE '%'+@contid+'%'
-OR dbContact.contName like '%'+@name+'%')
+OR dbContact.contName LIKE '%'+@name+'%')
 
 
 
@@ -246,7 +254,7 @@ FROM [svr-liv-iasq-01].InterAction.weightmans.vwContacts
   ) AS dim_client
 	  ON MS_Prod.config.dbContact.contID = dim_client.contactid
 WHERE  dbcontact.contID LIKE '%'+@contid+'%'
-OR dbContact.contName like '%'+@name+'%'
+OR dbContact.contName LIKE '%'+@name+'%'
 
 ;
 
