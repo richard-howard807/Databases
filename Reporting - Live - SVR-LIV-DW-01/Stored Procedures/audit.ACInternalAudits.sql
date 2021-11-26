@@ -7,6 +7,7 @@ GO
 -- Create date: 2021-09-13
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
 -- =============================================
+-- RH 25-11-2021 - changed logic so that audits are always assigned to Qtr 1,2,3 & 4 in order regardless of when they are completed 
 -- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
 -- JB 18-11-2021 - added NHS audit data 
 -- JB 19-11-2021 - added HSD/Director/Trainee exclusions
@@ -21,23 +22,25 @@ as
 
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS NVARCHAR(50)
---, @hsd_director AS NVARCHAR(MAX)
---SET @Template='Claims Audit|NHSR'
---SET @AuditYear='2021/2022'
---SET @hsd_director = '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
+--, @hsd_director AS NVARCHAR(MAX);
+--SET @Template='Claims Audit|NHSR';
+--SET @AuditYear='2021/2022';
+--SET @hsd_director = '';-- '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
 
 
-DROP TABLE IF EXISTS #Template
-DROP TABLE IF EXISTS #hsd_director
-DROP TABLE IF EXISTS #Audits
-DROP TABLE IF EXISTS #EmployeeDates
-DROP TABLE IF EXISTS #exclude_data
+DROP TABLE IF EXISTS #Template;
+DROP TABLE IF EXISTS #hsd_director;
+DROP TABLE IF EXISTS #Audits;
+DROP TABLE IF EXISTS #EmployeeDates;
+DROP TABLE IF EXISTS #exclude_data;
+drop table if exists #Audits_Calculated;
 
-SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template)
-SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @hsd_director)
+SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template);
+SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @hsd_director);
 
 	
-		SELECT  pvt3.employeeid
+		SELECT  pvt3.audit_id
+			,pvt3.employeeid
 			, name AS [Auditee Name]
 			, auditeekey AS [Auditee key]
 			, pvt3.auditee_emp_key
@@ -54,7 +57,9 @@ SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @
 			, pvt3.fin_quarter_no
 			, pvt3.fin_year
 			into #Audits
-		FROM (SELECT auditor.employeeid
+		FROM (SELECT 
+					dim_ac_audits.audit_id,
+					auditor.employeeid
 				, dim_ac_audits.auditee_1_name AS [Auditee Name 1]
 				, dim_ac_audits.dim_auditee1_hierarchy_history_key AS [Auditee Key 1]
 				, audite1.employeeid Auditee_Emp_key_1
@@ -101,8 +106,9 @@ SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @
 		and  RIGHT(empkey,1)=RIGHT(position,1)
 		
 		UNION	
+
 		--NHSR audits
-		SELECT
+		select dim_matter_header_current.dim_matter_header_curr_key auditid,
 			dim_fed_hierarchy_history.employeeid		AS employeeid
 			, dim_matter_header_current.matter_owner_full_name		AS [Auditee Name]
 			, dim_fed_hierarchy_history.dim_fed_hierarchy_history_key		AS [Auditee key]
@@ -145,7 +151,7 @@ SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @
 			dim_parent_detail.nhs_audit_date IS NOT NULL
 			AND fact_child_detail.nhs_audit_score IS NOT NULL
 			AND dim_matter_header_current.master_client_code <> '30645'
-			AND dim_date.calendar_date >= '2021-09-01'
+			AND dim_date.calendar_date >= '2021-09-01';
 
 
 
@@ -189,12 +195,13 @@ cross apply (select distinct dim_employee.employeeid, dim_employee.employeestart
 where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear
 --and dim_date.calendar_date >= employees.employeestartdate
 --and dim_date.calendar_date <= isnull(employees.leftdate, '20990101')
-AND dim_date.fin_year >= employees.employeestartdate_fin_year
+AND dim_date.fin_year >= employees.employeestartdate_fin_year;
 
 
 select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin_quarter_no, #EmployeeDates.min_quarter_month, #EmployeeDates.max_quarter_month,
 		#EmployeeDates.Division, #EmployeeDates.Department, #EmployeeDates.Team, #EmployeeDates.Name, #EmployeeDates.audit_year,
 		count(#EmployeeDates.calendar_date) days_in_qtr, 
+		#EmployeeDates.employeestartdate,
 		sum(fact_employee_attendance.durationdays) days_absent
 		, case  when max(#EmployeeDates.exclude) = 1 then 'Started ' + cast(cast(#EmployeeDates.employeestartdate as date) as varchar(12))
 				when max(#EmployeeDates.exclude) = 2 then 'Left ' +  cast(cast(#EmployeeDates.leftdate as date) as varchar(12))
@@ -269,32 +276,99 @@ group by #EmployeeDates.employeeid
 	   , #EmployeeDates.min_quarter_month
 	   , #EmployeeDates.max_quarter_month
 	   , hsd_director_data.employeeid
-	   , trainees.employeeid
+	   , trainees.employeeid;
 
 
 
-select  #exclude_data.employeeid
+	   
+select #Audits.*,
+		-- Puts audits into qtr 1,2,3 & 4 regardless of when the audit was complete. 
+		 iif(
+           case
+               when #Audits.fin_year = 2022 then -- Start at Qtr 2 for 2022 as we never used AC before that date 
+                   row_number() over (partition by #Audits.auditee_emp_key
+                                                 , #Audits.fin_year
+                                      order by #Audits.Date
+                                     ) + iif(dim_date.fin_year = #Audits.fin_year, dim_date.fin_quarter_no, 1) -- Starts qtr from employee start date if they started in current year
+               else
+                   row_number() over (partition by #Audits.auditee_emp_key
+                                                 , #Audits.fin_year
+                                      order by #Audits.Date
+                                     ) + iif(dim_date.fin_year = #Audits.fin_year, dim_date.fin_quarter_no, 0) 
+           end > 4 -- Put any audits over 4 into last qtr
+         , 4
+         , case
+               when #Audits.fin_year = 2022 then
+                   row_number() over (partition by #Audits.auditee_emp_key
+                                                 , #Audits.fin_year
+                                      order by #Audits.Date
+                                     ) + iif(dim_date.fin_year = #Audits.fin_year, dim_date.fin_quarter_no, 1)
+               else
+                   row_number() over (partition by #Audits.auditee_emp_key
+                                                 , #Audits.fin_year
+                                      order by #Audits.Date
+                                     ) + iif(dim_date.fin_year = #Audits.fin_year, dim_date.fin_quarter_no, 0)
+           end) calculated_fin_qtr
+
+
+
+ into #Audits_Calculated
+from #Audits
+    inner join red_dw..dim_employee on #Audits.auditee_emp_key = dim_employee.employeeid
+    left outer join red_dw..dim_date on dim_date.calendar_date = dim_employee.employeestartdate
+
+
+
+
+
+
+select    #exclude_data.employeeid
 		, #exclude_data.Division
 		, #exclude_data.Department
 		, #exclude_data.Team
 		, #exclude_data.Name
-		, #Audits.Auditor
-		, #Audits.[Auditee Poistion]
-		, CASE WHEN #Audits.Date IS NOT NULL THEN 1 ELSE 0 END AS [Audits Completed]
-		, CASE WHEN #Audits.Status='Pass' THEN 1 ELSE 0 END AS [Audits Passed]
-		, #Audits.[Client Code]
-		, #Audits.[Matter Number]
-		, #Audits.Date
-		, #Audits.Status
-		, #Audits.Template
-		, #exclude_data.audit_year [Audit Year]
+		,  string_agg(Audits.Auditor, '<br>') [Auditor]
+		, string_agg(Audits.[Auditee Poistion],'<br>') [Auditee Poistion]
+		, sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) as [Audits Completed]
+		, sum(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 end) AS [Audits Passed]
+		, case when sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) > 0 then sum(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 end) / sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) else null end [audits_passed_perc]
+		, string_agg(Audits.[Client Code], '<br>') [Client Code]
+		, string_agg(Audits.[Matter Number], '<br>') [Matter Number]
+		, string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') [Date]
+		, string_agg(Audits.Status, '<br>') [Status]
+	--	, Audits.Template
+	--	, #exclude_data.audit_year [Audit Year]
+		, #exclude_data.employeestartdate
+	--	, Audits.Date audit_date
 		, 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-' + #exclude_data.max_quarter_month [Audit Quarter]
 		, #exclude_data.exclude_flag
 		, #exclude_data.reason
+		-- string_agg(Audits.Status, '<br>') Audits.audit_id
+		
 from #exclude_data
-left outer join #Audits on #Audits.auditee_emp_key = #exclude_data.employeeid and #Audits.fin_quarter = #exclude_data.fin_quarter
--- where #exclude_data.employeeid = '5D9FBEA8-1E61-48A0-A769-CEEB303C4A99'
-order by #exclude_data.employeeid
+left outer join #Audits_Calculated Audits on Audits.auditee_emp_key = #exclude_data.employeeid and Audits.calculated_fin_qtr = #exclude_data.fin_quarter_no
+ --where #exclude_data.employeeid = '440C1838-A18D-4592-B8AB-F196F1094221'
+--where name = 'Samantha Wright'
+group by 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-'
+       + #exclude_data.max_quarter_month
+       , #exclude_data.employeeid
+       , #exclude_data.Division
+       , #exclude_data.Department
+       , #exclude_data.Team
+       , #exclude_data.Name
+     --  , Audits.Auditor
+      -- , Audits.[Auditee Poistion]
+       , #exclude_data.employeestartdate
+       , #exclude_data.exclude_flag
+       , #exclude_data.reason
+    --   , Audits.audit_id
+order by #exclude_data.employeeid--, Audits.audit_id;
+
+
+
+
+
+
 
 
 

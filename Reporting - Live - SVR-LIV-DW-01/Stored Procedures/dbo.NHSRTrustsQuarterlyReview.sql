@@ -84,13 +84,14 @@ SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit(
 SELECT 
 	dim_matter_header_current.client_code
 	, dim_matter_header_current.matter_number
+	,dim_matter_header_current.dim_matter_header_curr_key
 	, --(CASE WHEN key_date_rag.rag = 'orange' THEN 'amber' ELSE key_date_rag.rag END) + ' - ' + 
 		CAST(FORMAT(key_date_rag.date_due, 'd', 'en-gb') AS VARCHAR(10)) + ' -' + key_date_rag.task_desccription		AS [key_date_rag_trigger]
 	, CASE	
 		WHEN dim_detail_court.date_of_trial >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_trial) <= GETDATE() OR 
 			trial_key_date.trial_date >= GETDATE() AND DATEADD(MONTH, -6, trial_key_date.trial_date) <= GETDATE() THEN
 			'' + CAST(FORMAT(COALESCE(trial_key_date.trial_date, dim_detail_court.date_of_trial), 'd', 'en-gb') AS VARCHAR(10)) + ' - trial date in 6 months'
-	  END				AS [trial_date_rag_trigger]
+		END				AS [trial_date_rag_trigger]
 	, CASE
 		WHEN dim_detail_court.date_of_first_day_of_trial_window >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_first_day_of_trial_window) <= GETDATE() THEN
 			'' + CAST(FORMAT(dim_detail_court.date_of_first_day_of_trial_window, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
@@ -156,43 +157,43 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_detail_court.client_code = dim_matter_header_current.client_code
 			AND dim_detail_court.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN (
-						SELECT 
-							dim_tasks.client_code
-							, dim_tasks.matter_number
-							, dim_tasks.task_code
-							, dim_tasks.task_type_description
-							, dim_tasks.task_desccription
-							, CAST(dim_date.calendar_date AS DATE)			AS [date_due]
-							, CASE	
-								WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%mediation%' OR LOWER(dim_tasks.task_desccription) LIKE '%joint settlement%' OR LOWER(dim_tasks.task_desccription) LIKE '%pre-inquest%') 
-									AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
-									'red'
-								WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%infant approval%' OR LOWER(dim_tasks.task_desccription) LIKE '%inquest date%' OR LOWER(dim_tasks.task_desccription) LIKE '%application hearing%') 
-									AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -6, dim_date.calendar_date) <= GETDATE() THEN
-									'red'
-								WHEN (LOWER(dim_tasks.task_desccription) LIKE '%conference%' AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
-									'orange'
-								END	AS [rag]
-							, ROW_NUMBER() OVER(PARTITION BY dim_tasks.client_code, dim_tasks.matter_number ORDER BY dim_date.calendar_date) AS [xorder]
-						FROM red_dw.dbo.fact_tasks
-							INNER JOIN red_dw.dbo.dim_tasks
-								ON dim_tasks.dim_tasks_key = fact_tasks.dim_tasks_key
-							INNER JOIN red_dw.dbo.dim_date
-								ON fact_tasks.dim_task_due_date_key = dim_date.dim_date_key
-						WHERE
-							dim_tasks.client_code = 'N1001'
-							AND RTRIM(dim_tasks.task_type_description) = 'Key Date'
-							AND dim_date.calendar_date >= GETDATE()
-							AND CASE	
-											WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%mediation%' OR LOWER(dim_tasks.task_desccription) LIKE '%joint settlement%' OR LOWER(dim_tasks.task_desccription) LIKE '%pre-inquest%') 
-												AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
-												'red'
-											WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%infant approval%' OR LOWER(dim_tasks.task_desccription) LIKE '%inquest date%' OR LOWER(dim_tasks.task_desccription) LIKE '%application hearing%') 
-												AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -6, dim_date.calendar_date) <= GETDATE() THEN
-												'red'
-											WHEN (LOWER(dim_tasks.task_desccription) LIKE '%conference%' AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
-												'orange'
-											END IS NOT NULL	
+					SELECT 
+						dim_tasks.client_code
+						, dim_tasks.matter_number
+						, dim_tasks.task_code
+						, dim_tasks.task_type_description
+						, dim_tasks.task_desccription
+						, CAST(dim_date.calendar_date AS DATE)	AS [date_due]
+						, CASE	
+							WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%mediation%' OR LOWER(dim_tasks.task_desccription) LIKE '%joint settlement%' OR LOWER(dim_tasks.task_desccription) LIKE '%pre-inquest%') 
+								AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
+								'red'
+							WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%infant approval%' OR LOWER(dim_tasks.task_desccription) LIKE '%inquest date%' OR LOWER(dim_tasks.task_desccription) LIKE '%application hearing%') 
+								AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -6, dim_date.calendar_date) <= GETDATE() THEN
+								'red'
+							WHEN (LOWER(dim_tasks.task_desccription) LIKE '%conference%' AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
+								'orange'
+							END	AS [rag]
+						, ROW_NUMBER() OVER(PARTITION BY dim_tasks.client_code, dim_tasks.matter_number ORDER BY dim_date.calendar_date) AS [xorder]
+					FROM red_dw.dbo.fact_tasks
+						INNER JOIN red_dw.dbo.dim_tasks
+						ON dim_tasks.dim_tasks_key = fact_tasks.dim_tasks_key
+						INNER JOIN red_dw.dbo.dim_date
+						ON fact_tasks.dim_task_due_date_key = dim_date.dim_date_key
+					WHERE
+						dim_tasks.client_code = 'N1001'	 
+						AND RTRIM(dim_tasks.task_type_description) = 'Key Date'
+						AND dim_date.calendar_date >= GETDATE()
+						AND CASE	
+										WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%mediation%' OR LOWER(dim_tasks.task_desccription) LIKE '%joint settlement%' OR LOWER(dim_tasks.task_desccription) LIKE '%pre-inquest%') 
+											AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
+											'red'
+										WHEN ((LOWER(dim_tasks.task_desccription) LIKE '%infant approval%' OR LOWER(dim_tasks.task_desccription) LIKE '%inquest date%' OR LOWER(dim_tasks.task_desccription) LIKE '%application hearing%') 
+											AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -6, dim_date.calendar_date) <= GETDATE() THEN
+											'red'
+										WHEN (LOWER(dim_tasks.task_desccription) LIKE '%conference%' AND LOWER(dim_tasks.task_desccription) LIKE '%today%') AND DATEADD(MONTH, -3, dim_date.calendar_date) <= GETDATE() THEN
+											'orange'
+										END IS NOT NULL	
 			) AS key_date_rag
 		ON key_date_rag.client_code = dim_matter_header_current.client_code
 			AND key_date_rag.matter_number = dim_matter_header_current.matter_number
@@ -200,9 +201,11 @@ FROM red_dw.dbo.dim_matter_header_current
 					SELECT 
 						dim_matter_header_current.dim_matter_header_curr_key
 						, CAST(dim_key_dates.key_date AS DATE)	AS trial_date
-					FROM red_dw.dbo.dim_key_dates
-						INNER JOIN red_dw.dbo.dim_matter_header_current
-							ON  dim_matter_header_current.dim_matter_header_curr_key = dim_key_dates.dim_matter_header_curr_key
+						, ROW_NUMBER() OVER(PARTITION BY dim_key_dates.dim_matter_header_curr_key ORDER BY dim_key_dates.key_date)	AS rw --added due to duplication JL 20211126
+
+					FROM red_dw.dbo.dim_key_dates 
+					INNER JOIN red_dw.dbo.dim_matter_header_current
+					ON  dim_matter_header_current.dim_matter_header_curr_key = dim_key_dates.dim_matter_header_curr_key
 					WHERE
 						dim_matter_header_current.master_client_code = 'N1001'
 						AND dim_key_dates.type = 'TRIAL'
@@ -212,11 +215,12 @@ FROM red_dw.dbo.dim_matter_header_current
 					) AS trial_key_date
 		ON trial_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
-	dim_matter_header_current.master_client_code = 'N1001'
+	dim_matter_header_current.master_client_code = 'N1001'	 
 	AND dim_matter_header_current.ms_only = 1
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
-	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
+	AND trial_key_date.rw = 1
+
 
 
 --==============================================================================================================================================================
@@ -529,7 +533,7 @@ SELECT
 											WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	 WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 
-	 ,dim_detail_health.nhs_risk_management_factor
+	-- ,dim_detail_health.nhs_risk_management_factor
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

@@ -160,7 +160,9 @@ OR (dim_matter_header_current.master_client_code='W15366' AND dim_matter_header_
 ,'4750','4756','4770','4773','4779','4780'
 ,'4783','4784','4785','4786','4790','4792'
 ,'4804','4813','4825','4826','4831','4834'
-,'4851','4852','4855','4863'
+,'4851','4852','4855','4863','4864','4867'
+,'4870','4872','4874','4884','4885','4892'
+,'4896','4895'
 ))
 OR (dim_matter_header_current.master_client_code='W15442' AND dim_involvement_full.name LIKE '%Protector%')
 OR (dim_matter_header_current.master_client_code='W20163' AND dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes'AND dim_detail_core_details.incident_date>'2018-07-14')
