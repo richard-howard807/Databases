@@ -80,6 +80,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Exclude from Reports] [int] NULL,
 [Total Reserve] [numeric] (13, 2) NULL,
 [Total Reserve (Net)] [numeric] (13, 2) NULL,
+[Damages Banding] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Damages Reserve] [numeric] (13, 2) NULL,
 [TP Costs Reserve] [numeric] (13, 2) NULL,
 [Defence Costs Reserve] [numeric] (13, 2) NULL,
@@ -507,6 +508,9 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [covid_reason_code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [covid_reason_desc] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Will total gross damages reserve exceed £350,000?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[LL Current Damages Reserve] [numeric] (13, 2) NULL,
+[LL Current Claimant Costs Reserve] [numeric] (13, 2) NULL,
+[LL Current Defence Costs Reserve] [numeric] (13, 2) NULL,
 [Court Name] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Hastings - Fundamental Dishonesty] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Hastings - Fault Rating] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
@@ -516,6 +520,11 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Hastings - Claim Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [PREDiCT Damages meta-model value] [money] NULL,
 [PREDiCT Claimant costs meta-model value] [money] NULL,
-[PREDiCT Lifecycle meta-model value] [numeric] (13, 2) NULL
+[PREDiCT Lifecycle meta-model value] [numeric] (13, 2) NULL,
+[PREDiCT Recommended Claimant Costs Reserve] [numeric] (13, 2) NULL,
+[PREDiCT Recommended Damages Reserve] [numeric] (13, 2) NULL,
+[Claimant Solicitors Postcode] [char] (15) COLLATE Latin1_General_BIN NULL,
+[Claimant Solicitors Postcode Latitude] [varchar] (500) COLLATE Latin1_General_BIN NULL,
+[Claimant Solicitors Postcode Longitude] [varchar] (500) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

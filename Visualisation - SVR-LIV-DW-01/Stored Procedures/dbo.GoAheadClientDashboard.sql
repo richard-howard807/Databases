@@ -10,65 +10,61 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[GoAheadClientDashboard]
 
 AS 
 
 BEGIN
 
-SELECT master_client_code + '-' + master_matter_number AS [master_client_matter_combined]            
+SELECT master_client_code + '-' + master_matter_number AS [master_client_matter_combined] 
+,[Solicitor Reference]= RTRIM(dim_matter_header_current.client_code) +'/'+ RTRIM(dim_matter_header_current.[matter_number])
 ,dim_client_involvement.[insurerclient_reference] AS [GAG Op.Company Ref]
 ,dim_client_involvement.[insuredclient_reference]
 ,dim_client_involvement.[insuredclient_name]
-,dim_matter_header_current.[client_code]
-,dim_matter_header_current.[matter_number]
 ,dim_detail_core_details.[incident_date] AS [Date Of Accident]
 ,date_opened_case_management AS [Date Case Opened] 
-,dim_detail_outcome.[date_claim_concluded] AS [Date Case Concluded]
-,dim_detail_core_details.[date_instructions_received]
-,dim_detail_core_details.[proceedings_issued] AS [Proceedings issued]
+,brief_description_of_injury AS injury_type
 ,dim_detail_core_details.[track] AS [Track]
+,[Categories]= CASE WHEN dim_detail_core_details.[track] = 'Small Claims' THEN 'Small Claims'
+WHEN dim_detail_core_details.[track] = 'Multi Track' THEN 'Multi Track'
+WHEN dim_detail_core_details.[track] = 'Fast Track' THEN 'Fast Track'
+WHEN dim_detail_core_details.[grpageas_motor_moj_stage] IS NOT NULL THEN 'MOJ'
+WHEN dim_detail_core_details.[referral_reason] IN ('Infant Approval', 'Inquest Criminal Hearing') OR dim_detail_core_details.[track] ='Pre-Action Disclosure' THEN 'OTHER' END 
+
 ,dim_detail_core_details.[referral_reason] AS [Referral Reason]
 ,dim_detail_core_details.[is_there_an_issue_on_liability] AS [Is there an issue on liability]
-, dim_detail_outcome.[outcome_of_case] AS Outcome
+,damages_reserve_net AS [Damages Reserve Current(Net)]
+,defence_costs_reserve_net AS [Defence Cost Reserve Current(Net)]
+,tp_costs_reserve_net AS [Claimants Cost Reseve Current(Net)]
+,dim_detail_core_details.[grpageas_motor_moj_stage]
+,dim_detail_core_details.[proceedings_issued] AS [Proceedings issued]
 ,dim_detail_court.[date_of_trial] AS [Date of Trial]
+,dim_detail_outcome.[date_claim_concluded] AS [Date Case Concluded]
+,dim_detail_outcome.[outcome_of_case] AS Outcome
+
 ,fact_finance_summary.[damages_paid] AS [Damages Paid]
 ,fact_finance_summary.[claimants_costs_paid]
 ,fact_finance_summary.[claimants_solicitors_disbursements_paid]
 ,defence_costs_billed AS [Own Solicitors Fees]
 ,date_closed_case_management AS [Date Closed]
-,dim_detail_core_details.[grpageas_motor_moj_stage]
-,fact_finance_summary.[defence_costs_billed]
-,fact_finance_summary.[disbursements_billed]
+
+,fact_finance_summary.[defence_costs_billed] AS [Revenue]
+,fact_finance_summary.[disbursements_billed] AS [Disbursements]
+,red_dw.dbo.fact_finance_summary.vat_billed AS [Vat]
 ,fact_finance_summary.[recovery_defence_costs_from_claimant]
 ,fact_finance_summary.[recovery_defence_costs_via_third_party_contribution]
-,fact_detail_paid_detail.[vat_amount]
-,dim_experts_involvement.[counsel_name]
 ,fact_detail_recovery_detail.[costs_recovered]
 ,fact_finance_summary.[total_costs_paid]
 ,fact_finance_summary.[total_costs_recovery] AS [Costs Recovered]
 ,fact_detail_paid_detail.[total_damages_paid] AS [Cost of TP Indemnity]
 ,fact_finance_summary.[claimants_total_costs_paid_by_all_parties] AS [Cost of TP Legal Costs]
-,defence_costs_billed AS [Total (Net of VAT)]
 ,[Chambers & Barrister Fees]
 ,(ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) ) - ISNULL(ChamberFees.[Chambers & Barrister Fees],0) AS [Own Solicitors Fees (excl VAT and Chambers & Barrister Fees)]
+,ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0)  AS [Total Billed]
 ,[Settled Pre Trail]= CASE WHEN outcome_of_case IN ('Won at trial','Lost at trial','Struck out') THEN 'N'ELSE  'Y' END
-
-,[Categories]= CASE WHEN dim_detail_core_details.[track] = 'Small Claims' THEN 'Small Claims'
-WHEN dim_detail_core_details.[track] = 'Multi Track' THEN 'Multi Track'
-WHEN dim_detail_core_details.[track] = 'Fast Track' THEN 'Fast Track'
-WHEN dim_detail_core_details.[grpageas_motor_moj_stage] IS NULL THEN 'MOJ'
-WHEN dim_detail_core_details.[referral_reason] IN ('Infant Approval', 'Inquest Criminal Hearing') OR dim_detail_core_details.[track] ='Pre-Action Disclosure' THEN 'OTHER' END 
-
-
-,[Small Claims]= CASE WHEN dim_detail_core_details.[track] = 'Small Claims' THEN  'Y' ELSE  '-' END
-,[Multi Track]= CASE WHEN dim_detail_core_details.[track] = 'Multi Track' THEN 'Y' ELSE '-' END
-,[Fast Track]= CASE WHEN dim_detail_core_details.[track] = 'Fast Track' THEN 'Y'ELSE '-' END
-,[Infant Approval]= CASE WHEN dim_detail_core_details.[referral_reason]='Infant Approval' THEN 'Y' ELSE '-' END
-,[Inquest]= CASE WHEN dim_detail_core_details.[referral_reason]='Inquest Criminal Hearing' THEN 'Y' ELSE '-' END
-,[Pre- Disclousre Action]= CASE WHEN dim_detail_core_details.[track] = 'Pre-Action Disclosure' THEN 'Y' ELSE '-'END
-,[If Y Then on small track Cases which stage settled]= CASE WHEN dim_detail_core_details.[track] = 'Small Claims' THEN dim_detail_core_details.[grpageas_motor_moj_stage] END
-,[If Y Then on Fast Track  Cases which stage settled]=CASE WHEN dim_detail_core_details.[track] = 'Fast Track' THEN dim_detail_core_details.[grpageas_motor_moj_stage]END
 ,[Trail won]= CASE WHEN dim_detail_outcome.[outcome_of_case] = 'Won at trial' THEN 'Yes'
 WHEN dim_detail_outcome.[outcome_of_case] = 'Lost at trial' THEN 'No' ELSE  '-' END
 ,[Claim Discontinued Struck Out]= CASE WHEN dim_detail_outcome.[outcome_of_case] IN ('Discontinued - post-lit with costs order','Discontinued','Discontinued - pre-lit','Struck out') THEN 'Y' ELSE 'No' END 
@@ -76,27 +72,28 @@ WHEN dim_detail_outcome.[outcome_of_case] = 'Lost at trial' THEN 'No' ELSE  '-' 
 ,[Comments]= CASE WHEN date_closed_case_management IS NOT NULL THEN 'Concluded'   END
 ,[Status] = CASE WHEN date_closed_practice_management IS NULL THEN 'Live' ELSE 'Closed' END 
 ,[MOJ] =CASE WHEN dim_detail_core_details.[grpageas_motor_moj_stage] IS NULL THEN 'N' ELSE  dim_detail_core_details.[grpageas_motor_moj_stage] END
-,[Life Span]= DATEDIFF(DAY,ISNULL(date_instructions_received,date_opened_case_management),date_claim_concluded)
-,[Solicitor Reference]= RTRIM(dim_matter_header_current.client_code) +'/'+ RTRIM(dim_matter_header_current.[matter_number])
 ,[REF]= UPPER(LEFT(dim_client_involvement.[insuredclient_reference], 3))
 ,[Postcode] 
 ,ISNULL([Depot],'Other') AS Depot
 ,[Operating Company]
 ,Maps.Longitude
 ,Maps.Latitude
-,damages_reserve AS [Damages Reserve Initial]
-,defence_costs_reserve AS [Defence Cost Reserve Initial]
-,tp_costs_reserve AS [Claimants Cost Reseve Initial]
-,brief_description_of_injury AS injury_type
-,((ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) ) - ISNULL(ChamberFees.[Chambers & Barrister Fees],0)
-) + ISNULL(ChamberFees.[Chambers & Barrister Fees],0) 
-+ ISNULL(fact_finance_summary.[total_costs_recovery],0)
-+ISNULL(fact_finance_summary.damages_paid,0) 
-+(ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[claimants_solicitors_disbursements_paid],0))
-AS [Total Cost]
+,ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) +
+ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[claimants_solicitors_disbursements_paid],0) AS [Claims Spend]
+--,((ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) ) - ISNULL(ChamberFees.[Chambers & Barrister Fees],0)
+--) + ISNULL(ChamberFees.[Chambers & Barrister Fees],0) 
+--+ ISNULL(fact_finance_summary.[total_costs_recovery],0)
+--+ISNULL(fact_finance_summary.damages_paid,0) 
+--+(ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[claimants_solicitors_disbursements_paid],0))
+--AS [Total Cost]
 , ConcludedPeriod.[Period Name] AS [GAG Concluded Period]
 ,ConcludedPeriod.[GAG Year] AS [GAG Concluded Year]
 ,ISNULL(dim_matter_header_current.present_position,'Claim and costs outstanding') AS [Present Position]
+,dim_detail_outcome.recovery_claimants_our_client_damages AS [Recovery Claimant's (our client) Damages]
+,recovery_claimants_our_client_costs AS [Recovery Claimant's (our client) Costs]
+,CASE WHEN referral_reason IN ('Recovery','Intel only') THEN 'Yes' ELSE 'No' END AS [Recovery and Intel]
+,CASE WHEN referral_reason LIKE 'Disp%' THEN 'Yes' ELSE 'No' END AS [Dispute Only]
+,hierarchylevel3hist AS [Department]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -149,6 +146,6 @@ AND dim_matter_header_current.matter_number <>'ML'
 AND (date_closed_case_management IS NULL OR ISNULL(date_claim_concluded,date_closed_case_management)>='2018-07-01')--incident_date>='2012-06-30'
 AND master_client_code + '-' + master_matter_number <>'W15492-1455'
 --AND RTRIM(dim_matter_header_current.client_code) +'/'+ RTRIM(dim_matter_header_current.[matter_number])='00065232/00001259'
-
+AND hierarchylevel3hist <>'Regulatory'
 END
 GO

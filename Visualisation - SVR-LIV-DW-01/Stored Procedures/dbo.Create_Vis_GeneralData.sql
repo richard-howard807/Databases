@@ -22,6 +22,7 @@ Current Version:	Initial Create
 -- ES 11/02/2021 #88316, added dim_detail_core_details.[do_clients_require_an_initial_report]
 -- ES 18/06/2021 added dim_detail_core_details[will_total_gross_reserve_on_the_claim_exceed_500000] for EJ
 -- ES 25/06/2021 added no locks as it was causing blocks
+-- ES 25/11/2021 added claimant solicitor postcode for BH
 ====================================================
 
 */
@@ -131,6 +132,7 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, dim_detail_outcome.exclude_from_reports AS [Exclude from Reports]
 		, fact_finance_summary.total_reserve AS [Total Reserve]
 		, fact_finance_summary.[total_reserve_net] AS [Total Reserve (Net)]
+		, dim_detail_finance.[damages_banding] AS [Damages Banding]
 		, fact_finance_summary.damages_reserve AS [Damages Reserve]
 		, fact_finance_summary.tp_costs_reserve AS [TP Costs Reserve]
 		, fact_finance_summary.defence_costs_reserve AS [Defence Costs Reserve]
@@ -655,6 +657,9 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 
 --Large Loss
 ,dim_detail_core_details.[will_total_gross_reserve_on_the_claim_exceed_500000] AS [Will total gross damages reserve exceed £350,000?]
+, fact_detail_reserve_detail.[large_loss_hundred_perc_current_dam_res_total] AS [LL Current Damages Reserve]
+, fact_detail_reserve_detail.[claimant_legal_costs_reserve_12_month] AS [LL Current Claimant Costs Reserve]
+, fact_detail_reserve_detail.[own_legal_costsdisbs_reserve_12_month] AS [LL Current Defence Costs Reserve]
 
 ,dim_court_involvement.court_name AS [Court Name]
 
@@ -669,7 +674,12 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 , fact_detail_reserve_detail.[hastings_predict_damages_meta_model_value] AS [PREDiCT Damages meta-model value]
 , fact_detail_reserve_detail.[hastings_predict_claimant_costs_meta_model_value] AS [PREDiCT Claimant costs meta-model value]
 , fact_detail_reserve_detail.[hastings_predict_lifecycle_meta_model_value] AS [PREDiCT Lifecycle meta-model value]
+, ISNULL(fact_detail_reserve_detail.[predict_rec_claimant_costs_reserve_current], fact_detail_reserve_initial.[predict_rec_claimant_costs_reserve_initial]) AS [PREDiCT Recommended Claimant Costs Reserve]
+, ISNULL(fact_detail_reserve_detail.[predict_rec_damages_reserve_current], fact_detail_reserve_initial.[predict_rec_damages_reserve_initial]) AS [PREDiCT Recommended Damages Reserve]
 
+, [Claimant Solicitors Postcode]
+, [Claimant Solicitors Postcode Latitude]
+, [Claimant Solicitors Postcode Longitude]
 
 INTO dbo.Vis_GeneralData
 
@@ -710,6 +720,7 @@ LEFT OUTER JOIN Visualisation.[dbo].[TGIPostcodes] WITH(NOLOCK) ON RTRIM([TGIPos
 LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area WITH(NOLOCK) ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_client WITH(NOLOCK) ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK) ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_initial WITH(NOLOCK) ON fact_detail_reserve_initial.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi WITH(NOLOCK) ON dim_detail_critical_mi.dim_detail_critical_mi_key=fact_dimension_main.dim_detail_critical_mi_key 
 LEFT OUTER JOIN red_dw.dbo.dim_site_address WITH(NOLOCK) ON dim_site_address.client_code=dim_detail_client.client_code AND dim_site_address.matter_number=dim_detail_client.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_detail_hire_details WITH(NOLOCK) ON dim_detail_hire_details.dim_detail_hire_detail_key = fact_dimension_main.dim_detail_hire_detail_key
@@ -792,6 +803,31 @@ LEFT OUTER JOIN (SELECT fact_dimension_main.master_fact_key,
 						INNER JOIN red_dw.dbo.dim_involvement_full WITH (NOLOCK) ON dim_involvement_full.dim_involvement_full_key = dim_claimant_thirdparty_involvement.claimant_1_key
 						INNER JOIN red_dw.dbo.dim_client WITH (NOLOCK) ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
 						WHERE dim_client.dim_client_key != 0) AS [Claimant Address] ON [Claimant Address].master_fact_key=fact_dimension_main.master_fact_key
+
+LEFT OUTER JOIN (select dim_involvement_full.client_code
+, dim_involvement_full.matter_number
+, dim_client.postcode AS [Claimant Solicitors Postcode]
+, Doogal.Latitude AS [Claimant Solicitors Postcode Latitude]
+, Doogal.Longitude AS [Claimant Solicitors Postcode Longitude]
+--, *
+from red_dw.dbo.dim_involvement_full
+inner join (
+select dim_involvement_full.client_code, dim_involvement_full.matter_number,
+max(dim_involvement_full.dim_involvement_full_key) last_key
+-- select *
+from red_dw.dbo.dim_involvement_full
+where dim_involvement_full.capacity_code='CLAIMANTSOLS'
+and dim_involvement_full.entity_code <> ''
+and dim_involvement_full.entity_code is not null
+--and dim_involvement_full.client_code = 'W15373'
+--and dim_involvement_full.matter_number = '00006977'
+group by dim_involvement_full.client_code
+, dim_involvement_full.matter_number
+) last_record on last_record.last_key = dim_involvement_full.dim_involvement_full_key
+left outer join red_dw.dbo.dim_client on dim_involvement_full.dim_client_key = dim_client.dim_client_key
+LEFT OUTER JOIN red_dw.dbo.Doogal ON Doogal.Postcode = dim_client.postcode) AS [Claimant Solicitor Postcode] ON [Claimant Solicitor Postcode].client_code=dim_matter_header_current.client_code
+AND [Claimant Solicitor Postcode].matter_number=dim_matter_header_current.matter_number
+
 
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [Property_Postcode] WITH(NOLOCK) ON [Property_Postcode].Postcode=dim_detail_property.postcode
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [Claimant_Postcode] WITH(NOLOCK) ON [Claimant_Postcode].Postcode=[Claimant Address].[claimant1_postcode]
@@ -969,7 +1005,7 @@ AND dim_client.client_code  NOT IN ('00030645','95000C','00453737')
 AND dim_matter_header_current.reporting_exclusions=0
 AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
 
-
+--AND RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number='W15373-6977'
 END
 
 
