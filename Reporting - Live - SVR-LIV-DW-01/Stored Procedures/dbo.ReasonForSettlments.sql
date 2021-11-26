@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[ReasonForSettlments]
 AS 
 
@@ -20,7 +21,7 @@ RTRIM(master_client_code) + '-'+RTRIM(master_matter_number) AS [client and matte
 ,dim_detail_core_details.[suspicion_of_fraud] AS  [suspicion of fraud]
 ,dim_detail_core_details.[injury_type] AS  [injury type]
 ,dim_detail_outcome.[outcome_of_case] AS  [outcome]
-,ISNULL(dim_detail_health.[reason_for_settlement],dim_detail_outcome.reason_for_settlement) AS [reason for outcome]
+,REPLACE(ISNULL(dim_detail_health.[reason_for_settlement],dim_detail_outcome.reason_for_settlement),'Generic - ','') AS [reason for outcome]
 ,reasons_for_successful_outcome [reason for success]
 ,date_claim_concluded [date claim concluded]
 ,damages_paid [damages paid]
@@ -43,5 +44,6 @@ dim_detail_health.[reason_for_settlement] IS NOT NULL OR
 dim_detail_outcome.[reason_for_settlement] IS NOT NULL OR 
 dim_detail_outcome.reasons_for_successful_outcome IS NOT NULL
 )
+AND reporting_exclusions=0
 END 
 GO
