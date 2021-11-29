@@ -92,7 +92,7 @@ LEFT OUTER JOIN #Completion AS Completion
 ON ms_fileid=Completion.fileID
  
 WHERE dim_matter_header_current.master_client_code = 'W15353'
-AND dim_detail_plot_details.[type_of_scheme] = 'Help to Buy'
+AND dim_detail_plot_details.[type_of_scheme] IN ( 'Help to Buy', 'First Buy')
 AND (date_closed_case_management >= '2012-05-01' OR date_closed_case_management IS NULL)
 AND reporting_exclusions = 0
 AND TRIM(master_matter_number) <> '12096'
@@ -101,4 +101,6 @@ ORDER BY dim_matter_header_current.master_client_code, master_matter_number
 
 END 
 
+--SELECT DISTINCT dim_detail_plot_details.[type_of_scheme] 
+--FROM red_dw.dbo.dim_detail_plot_details
 GO

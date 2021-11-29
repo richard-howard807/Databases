@@ -12,6 +12,7 @@ GO
 -- Ticket:		#68460
 -- Description:	New report for NHSR Trusts Quarterly Review
 -- Update: MT as per 92701 added [Risk Management Recommendations] 
+--		   JL as per ticket #122283 and corrected duplication by adding row_number 
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
@@ -217,7 +218,8 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'	 
 	AND dim_matter_header_current.ms_only = 1
-	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
+	--AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
+	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > 2018-05-01) 
 	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
 	AND trial_key_date.rw = 1
 
