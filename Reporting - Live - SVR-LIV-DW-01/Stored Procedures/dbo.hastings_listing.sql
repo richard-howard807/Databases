@@ -39,6 +39,9 @@ SELECT
 	, fact_finance_summary.tp_total_costs_claimed
 	, fact_finance_summary.claimants_costs_paid
 	, fact_finance_summary.total_amount_billed
+	, fact_finance_summary.defence_costs_billed
+	, fact_finance_summary.disbursements_billed
+	, fact_finance_summary.vat_billed
 	, paid_bills.bill_amount_paid
 	, paid_bills.vat_paid
 	, fact_detail_paid_detail.paid_disbursements
@@ -314,6 +317,9 @@ SELECT
 	--  END																			AS [Total Claim Costs Savings (percent)]
 	, 'TBC'		AS [Total Claim Costs Savings (money)]
 	, 'TBC'		AS [Total Claim Costs Savings (percent)]
+	, #hastings_financials.defence_costs_billed
+	, #hastings_financials.disbursements_billed
+	, #hastings_financials.vat_billed
 	, #hastings_financials.total_amount_billed						AS [Suppliers Billing to Date]
 	, final_bill.final_bill_date								AS [Date of Final Invoice]
 	, #hastings_financials.bill_amount_paid			AS [Suppliers Billing Paid]
