@@ -535,7 +535,7 @@ SELECT
 											WHEN dim_detail_health.[nhs_risk_management_factor] IS NULL THEN 'N/A'
 	 WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 
-	-- ,dim_detail_health.nhs_risk_management_factor
+	 ,dim_detail_health.nhs_risk_management_factor
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
