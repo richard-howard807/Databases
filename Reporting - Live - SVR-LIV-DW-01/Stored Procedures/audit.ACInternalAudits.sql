@@ -7,15 +7,17 @@ GO
 -- Create date: 2021-09-13
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
 -- =============================================
--- RH 25-11-2021 - changed logic so that audits are always assigned to Qtr 1,2,3 & 4 in order regardless of when they are completed 
+
 -- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
 -- JB 18-11-2021 - added NHS audit data 
 -- JB 19-11-2021 - added HSD/Director/Trainee exclusions
+-- RH 25-11-2021 - changed logic so that audits are always assigned to Qtr 1,2,3 & 4 in order regardless of when they are completed 
+-- RH 25-11-2021 - Removed HSD/Director Logic, added sickness as exclusion criteria
+
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
 ( @Template AS NVARCHAR(MAX)
 , @AuditYear AS NVARCHAR(50)
-, @hsd_director AS NVARCHAR(MAX)
 )
 as
 
@@ -36,7 +38,7 @@ DROP TABLE IF EXISTS #exclude_data;
 drop table if exists #Audits_Calculated;
 
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template);
-SELECT ListValue  INTO #hsd_director  FROM Reporting.dbo.[udt_TallySplit]('|', @hsd_director);
+
 
 	
 		SELECT  pvt3.audit_id
@@ -231,15 +233,14 @@ left outer join (select fact_employee_attendance.employeeid, fact_employee_atten
 					N'Paid Dependant Leave',
 					N'Secondment',
 					N'Sabbatical',
-					N'Unpaid Leave'
+					N'Unpaid Leave',
+					N'Sickness'
 					)
 				
 				) fact_employee_attendance on #EmployeeDates.calendar_date = fact_employee_attendance.startdate and #EmployeeDates.employeeid = fact_employee_attendance.employeeid
 LEFT OUTER JOIN (
 				select distinct dim_fed_hierarchy_history.employeeid
 				from red_dw.dbo.dim_fed_hierarchy_history
-					INNER JOIN #hsd_director	
-						ON #hsd_director.ListValue = dim_fed_hierarchy_history.employeeid COLLATE DATABASE_DEFAULT
 				where 1=1
 				and (dim_fed_hierarchy_history.management_role_one in ('HoSD','Director')
 				or dim_fed_hierarchy_history.management_role_two in ('HoSD','Director'))
