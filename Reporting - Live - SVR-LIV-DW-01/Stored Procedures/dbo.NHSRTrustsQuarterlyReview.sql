@@ -147,7 +147,7 @@ SELECT
 			'LimeGreen'
 	  END									AS [Risk Rating]
 INTO #rag_status
-FROM red_dw.dbo.dim_matter_header_current
+FROM red_dw.dbo.dim_matter_header_current														 
 	LEFT OUTER JOIN	red_dw.dbo.dim_detail_health
 		ON dim_detail_health.client_code = dim_matter_header_current.client_code
 			AND dim_detail_health.matter_number = dim_matter_header_current.matter_number
@@ -221,7 +221,8 @@ WHERE
 	--AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > 2018-05-01) 
 	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
-	AND trial_key_date.rw = 1
+	AND (trial_key_date.rw IS NULL or trial_key_date.rw = 1)
+
 
 
 

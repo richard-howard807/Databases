@@ -73,6 +73,9 @@ SELECT client_name AS [Client Name]
 ,[Supporting Fee Earner Hours Recorded] = TimeRecorded.[Supporting Fee Earner_HoursRecorded]
 ,[Other Hours Recorded] = TimeRecorded.Other_HoursRecorded
 ,[Value of Hours Recorded] = TimeRecorded.RecordedValue
+,TimeRecorded.[Hours Recorded by Plot Sales EXEC]
+,TimeRecorded.[Hours Recorded by Paralegal]
+,TimeRecorded.[Hours Recorded by Other Fee Earner]
 ,[Revenue] = revenue.Revenue
 ,[Revnue - fact_bill_activity_bill_amount] = revenue.Revenue
 ,[Profit/ Loss] =  CASE WHEN revenue.Revenue IS NOT NULL THEN ISNULL(revenue.Revenue, 0) - ISNULL(TimeRecorded.RecordedValue, 0) 
@@ -165,9 +168,13 @@ ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
                          ,'Solicitor'
             ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60  AS [Other_HoursRecorded]
 
- 
-
-
+           ,[Hours Recorded by Plot Sales EXEC] = SUM(CASE WHEN ISNULL(TRIM(jobtitle), '') 
+				    IN ( 'Plot Sales Executive'  ,'Plot Sales Manager' ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60 
+			,[Hours Recorded by Paralegal] = SUM(CASE WHEN ISNULL(TRIM(jobtitle), '') 
+				    IN ( 'Paralegal' ) THEN fact_chargeable_time_activity.minutes_recorded END) / 60 
+			,[Hours Recorded by Other Fee Earner] = SUM(CASE WHEN ISNULL(TRIM(jobtitle), '') 
+				  NOT  IN ('Plot Sales Executive'  ,'Plot Sales Manager','Paralegal')
+				  THEN fact_chargeable_time_activity.minutes_recorded END) / 60 
 
             FROM red_dw.dbo.fact_chargeable_time_activity
                 INNER JOIN red_dw.dbo.dim_matter_header_current
@@ -207,6 +214,7 @@ AND date_opened_case_management >= '2015-05-01'
 AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number <> '190593P-7716'
 
+AND hierarchylevel4hist  <> 'Workflows'
 
 END 
 
