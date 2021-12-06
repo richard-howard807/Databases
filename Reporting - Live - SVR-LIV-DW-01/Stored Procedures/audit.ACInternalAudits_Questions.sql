@@ -6,6 +6,7 @@ GO
 -- Author:		Richard Howard
 -- Create date: 2021-10-26
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
+-- ad-hoc from Hillary 01/12/2021 - added Client paramater
 -- =============================================
 
 CREATE PROCEDURE [audit].[ACInternalAudits_Questions]
@@ -15,7 +16,7 @@ CREATE PROCEDURE [audit].[ACInternalAudits_Questions]
 ,@EndDate AS DATE 
 ,@Department AS NVARCHAR(50)
 ,@Team AS NVARCHAR(50)
-
+,@Client AS NVARCHAR(8)
 )
 as
 
@@ -25,6 +26,7 @@ as
 --,@EndDate AS DATE = GETDATE()
 --,@Department AS NVARCHAR(50) = 'All'
 --,@Team AS NVARCHAR(50) = 'All'
+--, @Client AS NVARCHAR(8) = 'Z1001'
 
 
 
@@ -124,6 +126,6 @@ and lower(dim_ac_audit_questions.question_text) not like '%do you wish to includ
 and dim_ac_audit_questions.question_text not in ('Positive feedback details','Complaint details')
 AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
 AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
-
+AND LOWER(#Audits.[Client Code]) IN (IIF(@Client IS NULL, LOWER(#Audits.[Client Code]), LOWER(@Client)))
 
 GO
