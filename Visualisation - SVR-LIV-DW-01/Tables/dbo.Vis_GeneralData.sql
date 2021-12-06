@@ -518,6 +518,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Hastings - Injury Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Hastings - Indemnity position (confirmed position)] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Hastings - Claim Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Hastings - Policyholder] [nvarchar] (511) COLLATE Latin1_General_BIN NULL,
 [PREDiCT Damages meta-model value] [money] NULL,
 [PREDiCT Claimant costs meta-model value] [money] NULL,
 [PREDiCT Lifecycle meta-model value] [numeric] (13, 2) NULL,

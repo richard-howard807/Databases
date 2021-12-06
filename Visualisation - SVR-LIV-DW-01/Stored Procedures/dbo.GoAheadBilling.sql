@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[GoAheadBilling]
 
 AS 
@@ -9,7 +10,7 @@ AS
 BEGIN
 SELECT bill_date AS [Bill Date]
 ,Depot
-,[Operating Company]
+,ISNULL([Operating Company],'London General Transport Services LTD') AS [Operating Company]
 ,ISNULL(ConcludedPeriod.[Period Name],'Historic') AS [GAG Period]
 ,ISNULL(ConcludedPeriod.Quarter,'Historic') AS [GAG Quarter]
 ,ISNULL(ConcludedPeriod.[GAG Year],'Historic') AS [GAG Year]

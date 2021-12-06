@@ -6,13 +6,6 @@ GO
 
 
 
-
-
-
-
-
-
-
 CREATE PROCEDURE [dbo].[GoAheadClientDashboard]
 
 AS 
@@ -36,9 +29,12 @@ WHEN dim_detail_core_details.[referral_reason] IN ('Infant Approval', 'Inquest C
 
 ,dim_detail_core_details.[referral_reason] AS [Referral Reason]
 ,dim_detail_core_details.[is_there_an_issue_on_liability] AS [Is there an issue on liability]
-,damages_reserve_net AS [Damages Reserve Current(Net)]
-,defence_costs_reserve_net AS [Defence Cost Reserve Current(Net)]
-,tp_costs_reserve_net AS [Claimants Cost Reseve Current(Net)]
+,fact_finance_summary.damages_reserve_net AS [Damages Reserve Current(Net)]
+,fact_finance_summary.defence_costs_reserve_net AS [Defence Cost Reserve Current(Net)]
+,fact_finance_summary.tp_costs_reserve_net AS [Claimants Cost Reseve Current(Net)]
+,fact_finance_summary.damages_reserve AS [Damage Reserve Current]
+,fact_finance_summary.defence_costs_reserve AS [Defence Cost Reserve Current]
+,fact_finance_summary.tp_costs_reserve AS [Claimants Cost Reserve Current]
 ,dim_detail_core_details.[grpageas_motor_moj_stage]
 ,dim_detail_core_details.[proceedings_issued] AS [Proceedings issued]
 ,dim_detail_court.[date_of_trial] AS [Date of Trial]
@@ -55,7 +51,6 @@ WHEN dim_detail_core_details.[referral_reason] IN ('Infant Approval', 'Inquest C
 ,fact_finance_summary.[disbursements_billed] AS [Disbursements]
 ,red_dw.dbo.fact_finance_summary.vat_billed AS [Vat]
 ,fact_finance_summary.[recovery_defence_costs_from_claimant]
-,fact_finance_summary.[recovery_defence_costs_via_third_party_contribution]
 ,fact_detail_recovery_detail.[costs_recovered]
 ,fact_finance_summary.[total_costs_paid]
 ,fact_finance_summary.[total_costs_recovery] AS [Costs Recovered]
@@ -70,12 +65,12 @@ WHEN dim_detail_outcome.[outcome_of_case] = 'Lost at trial' THEN 'No' ELSE  '-' 
 ,[Claim Discontinued Struck Out]= CASE WHEN dim_detail_outcome.[outcome_of_case] IN ('Discontinued - post-lit with costs order','Discontinued','Discontinued - pre-lit','Struck out') THEN 'Y' ELSE 'No' END 
 ,[Third Party Legal Costs & Disbursements paid]= ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summary.[claimants_solicitors_disbursements_paid],0)
 ,[Comments]= CASE WHEN date_closed_case_management IS NOT NULL THEN 'Concluded'   END
-,[Status] = CASE WHEN date_closed_practice_management IS NULL THEN 'Live' ELSE 'Closed' END 
+,[Status] = CASE WHEN date_closed_practice_management IS NOT NULL OR dim_detail_core_details.present_position IN ('To be closed/minor balances to be clear','Final bill sent - unpaid') THEN 'Closed' ELSE  'Live' END 
 ,[MOJ] =CASE WHEN dim_detail_core_details.[grpageas_motor_moj_stage] IS NULL THEN 'N' ELSE  dim_detail_core_details.[grpageas_motor_moj_stage] END
 ,[REF]= UPPER(LEFT(dim_client_involvement.[insuredclient_reference], 3))
 ,[Postcode] 
 ,ISNULL([Depot],'Other') AS Depot
-,[Operating Company]
+,ISNULL([Operating Company],'London General Transport Services LTD') AS [Operating Company]
 ,Maps.Longitude
 ,Maps.Latitude
 ,ISNULL(fact_finance_summary.damages_paid,0)+ISNULL(defence_costs_billed,0) + ISNULL(disbursements_billed,0) +
@@ -89,11 +84,21 @@ ISNULL(fact_finance_summary.[claimants_costs_paid],0) + ISNULL(fact_finance_summ
 , ConcludedPeriod.[Period Name] AS [GAG Concluded Period]
 ,ConcludedPeriod.[GAG Year] AS [GAG Concluded Year]
 ,ISNULL(dim_matter_header_current.present_position,'Claim and costs outstanding') AS [Present Position]
-,dim_detail_outcome.recovery_claimants_our_client_damages AS [Recovery Claimant's (our client) Damages]
-,recovery_claimants_our_client_costs AS [Recovery Claimant's (our client) Costs]
 ,CASE WHEN referral_reason IN ('Recovery','Intel only') THEN 'Yes' ELSE 'No' END AS [Recovery and Intel]
 ,CASE WHEN referral_reason LIKE 'Disp%' THEN 'Yes' ELSE 'No' END AS [Dispute Only]
 ,hierarchylevel3hist AS [Department]
+,dim_detail_outcome.[recovery_claimants_our_client_damages] AS [Recovery claimant's (our client) damages]
+,fact_detail_recovery_detail.[recovery_claimants_our_client_costs] AS [Recovery claimant's (our client) costs]
+,fact_finance_summary.[recovery_defence_costs_from_claimant] AS [Recovery defence costs from claimant]
+,fact_detail_recovery_detail.[recovery_claimants_costs_via_third_party_contribution] AS [Recovery claimant's costs (via third party contribution)]
+,fact_finance_summary.[recovery_defence_costs_via_third_party_contribution] AS [Recovery defence costs (via third party contribution)]
+,fact_detail_reserve_detail.[recovery_reserve] AS [Claimant Recovery) Amount of client's outlay]
+,fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery claimant's damages via third party contribution]
+,dim_detail_outcome.[are_we_pursuing_a_recovery] AS [Are we pursuing a recovery?]
+,ISNULL(dim_detail_outcome.[recovery_claimants_our_client_damages],0) +
+ISNULL(fact_detail_recovery_detail.[recovery_claimants_our_client_costs],0) AS [Recovery Made]
+
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -116,6 +121,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
 LEFT OUTER JOIN red_dw.dbo.dim_experts_involvement 
  ON dim_experts_involvement.client_code = dim_matter_header_current.client_code
  AND dim_experts_involvement.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+ ON  fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN 
 (
 SELECT dim_matter_header_current.dim_matter_header_curr_key,SUM(bill_total_excl_vat) AS [Chambers & Barrister Fees]

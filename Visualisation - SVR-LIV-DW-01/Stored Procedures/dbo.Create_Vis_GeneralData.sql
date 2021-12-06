@@ -670,6 +670,7 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 , dim_detail_claim.[hastings_injury_type] AS [Hastings - Injury Type]
 , dim_detail_claim.[hastings_indemnity_position] AS [Hastings - Indemnity position (confirmed position)]
 , dim_detail_claim.[hastings_claim_status] AS [Hastings - Claim Status]
+, dim_detail_client.[hastings_policyholder_first_name]+' '+dim_detail_client.[hastings_policyholder_last_name] AS [Hastings - Policyholder]
 --PREDiCT
 , fact_detail_reserve_detail.[hastings_predict_damages_meta_model_value] AS [PREDiCT Damages meta-model value]
 , fact_detail_reserve_detail.[hastings_predict_claimant_costs_meta_model_value] AS [PREDiCT Claimant costs meta-model value]
