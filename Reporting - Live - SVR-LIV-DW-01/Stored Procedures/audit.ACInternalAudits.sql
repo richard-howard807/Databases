@@ -134,7 +134,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			, dim_date.fin_quarter		AS fin_quarter
 			, dim_date.fin_quarter_no		AS fin_quarter_no
 			, dim_date.fin_year		AS fin_year
-		--SELECT DISTINCT dim_child_detail.*
+		--	SELECT DISTINCT dim_child_detail.*
 		FROM red_dw.dbo.dim_matter_header_current
 			INNER JOIN red_dw.dbo.fact_dimension_main
 				ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -153,8 +153,46 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			dim_parent_detail.nhs_audit_date IS NOT NULL
 			AND fact_child_detail.nhs_audit_score IS NOT NULL
 			AND dim_matter_header_current.master_client_code <> '30645'
-			AND dim_date.calendar_date >= '2021-09-01';
+			AND dim_date.calendar_date >= '2021-09-01'
 
+	union all
+
+	
+
+	select dbFile.fileID auditid
+	, auditor.employeeid 
+	, dbFile.fileDesc collate Latin1_General_CI_AS [Auditee Name] 
+	, dim_fed_hierarchy_history.dim_fed_hierarchy_history_key [Auditee key]
+	, dim_fed_hierarchy_history.employeeid [auditee_emp_key]
+	, 1 [Auditee Position]
+	--, txtClMtNo MatterRef
+	, replace(left(ltrim(rtrim(x.val)), charindex('-',ltrim(rtrim(x.val)),1)), '-','') collate Latin1_General_CI_AS client_code
+	, substring(ltrim(rtrim(x.val)), charindex('-',ltrim(rtrim(x.val)),1) +1, 8) collate Latin1_General_CI_AS matter_number
+	, [red_dw].[dbo].[datetimelocal](dteDateAudit) Date
+	--, udRiskSearchList.txtReason
+	, 'Pass' Status
+	, 'August 21 MS Audits' Template
+	, auditor.name Auditor
+	, '2022-Q2' fin_quarter
+	--,txtTMName
+	, 2 fin_quarter_no
+	, 2022 fin_year
+
+	FROM MS_Prod.dbo.udRiskSearchList 
+	INNER JOIN MS_Prod.config.dbFile
+	 ON udRiskSearchList.fileID=dbFile.fileID
+	 INNER JOIN red_dw.dbo.dim_matter_header_current header ON MS_Prod.config.dbFile.fileID = header.ms_fileid
+	INNER JOIN MS_Prod.config.dbClient
+	 ON dbFile.clID=dbClient.clID
+	 inner join red_dw..dim_matter_header_current on dbFile.fileID = dim_matter_header_current.ms_fileid
+	 inner join red_dw..dim_fed_hierarchy_history on dim_fed_hierarchy_history.name = dbFile.fileDesc collate Latin1_General_CI_AS
+											and [red_dw].[dbo].[datetimelocal](dteDateAudit) between dim_fed_hierarchy_history.dss_start_date and dim_fed_hierarchy_history.dss_end_date 
+											and dim_fed_hierarchy_history.activeud = 1
+	 inner join red_dw..dim_fed_hierarchy_history auditor on auditor.fed_code = dim_matter_header_current.fee_earner_code and auditor.dss_current_flag = 'Y' and auditor.activeud = 1
+	 cross apply (select val from dbo.split_delimited_to_rows(txtClMtNo, ','))  x
+
+	 WHERE [red_dw].[dbo].[datetimelocal](dteDateAudit) between '20210801' and '20210901'
+		 ;
 
 
 select

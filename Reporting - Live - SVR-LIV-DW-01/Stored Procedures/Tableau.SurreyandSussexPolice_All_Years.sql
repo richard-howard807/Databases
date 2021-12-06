@@ -15,6 +15,7 @@ Current Version:	Initial Create
 -- ES 2020-05-06 Added new financial year requested by HW
 -- ES 2021-06-16 Added DVPO victim postcode with longitudes and latitudes for dvpo map and additional dvpo details for filters on the map
 -- ES 2021-06-18 Added policing priority field, joined to the work type lookup table
+-- ES 2021-12-02 Amended logic to go back to 2016, requested by BH
 ====================================================
 
 */
@@ -115,7 +116,7 @@ INNER JOIN
 					WHEN bill_date BETWEEN '2021-04-01' AND '2022-03-31' THEN '2021/22'
 					ELSE NULL END [TFY]
               FROM red_dw..fact_bill_matter_detail  
-			  WHERE  bill_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-3,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
+			  WHERE  bill_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
               AND  client_code IN ( '00451638','00113147') 
               --AND client_code='00451638' AND matter_number='00000190'
               GROUP BY CASE
@@ -161,7 +162,7 @@ LEFT OUTER JOIN (SELECT client_code
 				FROM red_dw.dbo.fact_all_time_activity
 				INNER JOIN red_dw.dbo.dim_transaction_date
 				ON dim_transaction_date.dim_transaction_date_key = fact_all_time_activity.dim_transaction_date_key
-				AND transaction_calendar_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-3,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
+				AND transaction_calendar_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
 				WHERE client_code IN ( '00451638','00113147') 
 				GROUP BY CASE
                          WHEN transaction_calendar_date

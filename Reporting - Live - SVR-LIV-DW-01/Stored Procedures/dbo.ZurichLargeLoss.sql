@@ -278,6 +278,8 @@ WHEN
 'Exclude from reports                                        ',
 'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
 ) THEN 'Other' END AS [Repudiated/Settled]
+,dim_detail_client.zurich_no_call_made
+
 	
 
 INTO #MainData
@@ -399,6 +401,8 @@ SELECT
 ,[Defence Costs Reserve Current]
 ,[Outcome of Case ]
 ,[Repudiated/Settled]
+,zurich_no_call_made
+,zurich_introductory_call
 FROM #MainData
 
    END

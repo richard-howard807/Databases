@@ -11,6 +11,7 @@ GO
 -- Ticket:		#68460
 -- Description:	To deal with the Summary tables on NHSR Trusts Quarterly Review report, summary doesn't need @start_date & @end_date that NHSRTrustsQuarterlyReview uses
 -- Update: MT as per 92701 added [Risk Management Recommendations] 
+-- Update: JL as per ticket #122283 have rejigged the where. Added in case statement and "AND/OR" conditions to determine the correct order to evaluate the where in as was not bring back the correct matters. Also added distinct to start as the #specialty join was duplicating matters
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReviewSummary]
 (
@@ -25,9 +26,9 @@ BEGIN
 
 -- For testing
 --==============================================================================================================================================
---DECLARE @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust' 
---	, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
---	, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1'
+--DECLARE @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust|Tameside and Glossop Integrated Care NHS Foundation Trust|Maidstone and Tunbridge Wells NHS Trust|Other'
+--	, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery|Maidstone and Tunbridge Wells NHS Trust|Other' 
+--	, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1|Schedule 2'
 --	, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
 
 --==========================================================================================================================================================================================
@@ -72,7 +73,7 @@ SELECT udt_TallySplit.ListValue  INTO #specialty FROM 	dbo.udt_TallySplit('|', @
 SELECT udt_TallySplit.ListValue  INTO #instruction_type FROM 	dbo.udt_TallySplit('|', @instruction_type)
 SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit('|', @referral_reason)
 
-SELECT 
+SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 	dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
@@ -264,6 +265,7 @@ FROM red_dw.dbo.fact_dimension_main
 		ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 	LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 		ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
+
 	INNER JOIN #defendant_trust
 		ON (CASE WHEN RTRIM(dim_detail_claim.defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_claim.defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT 
 	INNER JOIN #specialty
@@ -278,19 +280,25 @@ FROM red_dw.dbo.fact_dimension_main
 
 
 WHERE
-	dim_matter_header_current.master_client_code = 'N1001'
+	dim_matter_header_current.master_client_code = 'N1001'	
+	--AND dim_detail_health.matter_number = '00020596'
 	AND dim_matter_header_current.reporting_exclusions = 0
-	AND dim_detail_outcome.date_claim_concluded >= @last_year
-	or (CASE WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
+	and(CASE WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
 		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
 		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
 		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
 		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
-			1 ELSE 0 END  = 1 AND 	  dim_detail_health.zurichnhs_date_final_bill_sent_to_client >=@last_year )
-	--AND dim_detail_health[zurichnhs_date_final_bill_sent_to_client] IS NOT null
+			1 ELSE 0 END  = 1 AND 	  dim_detail_health.zurichnhs_date_final_bill_sent_to_client >=@last_year) --JL Added 30-11-2021 #122283
+			OR (dim_detail_outcome.date_claim_concluded >= @last_year )	  --JL Added 30-11-2021 #122283
+			AND	dim_matter_header_current.master_client_code = 'N1001'				 
+			AND dim_matter_header_current.reporting_exclusions = 0
+				AND dim_matter_header_current.ms_only = 1
+				
+			 
 
 
-	AND dim_matter_header_current.ms_only = 1
+
+
 
 /*
 Chart in the report wasnt generating all months (or at all) if there was no closures in month/year for selected trust

@@ -14,6 +14,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReport] 
 	
 	@Division VARCHAR(MAX)
@@ -91,6 +93,7 @@ SELECT ClaimsManagementReportSnapshotTable.employeeid,
 	   ,ISNULL(FutureMaternity,0) AS FutureMaternity
 	   ,ISNULL(FutureSickness,0) AS FutureSickness
 	   ,ISNULL(FutureOther,0) AS FutureOther
+	   ,ISNULL(SicknessDays,0) +ISNULL(OtherDays,0) +ISNULL([Holidays Taken to Date],0)+ISNULL(MaternityYTD,0) AS [AllAbs]
 	   FROM dbo.ClaimsManagementReportSnapshotTable
 	   LEFT OUTER JOIN red_dw.dbo.dim_employee
 	    ON dim_employee.employeeid = ClaimsManagementReportSnapshotTable.employeeid
