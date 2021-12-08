@@ -6,17 +6,18 @@ GO
 -- Author:		Richard Howard
 -- Create date: 2021-10-26
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
--- ad-hoc from Hillary 01/12/2021 - added Client paramater
 -- =============================================
+-- ad-hoc from Hillary 01/12/2021 - added Client paramater
+-- ad-hoc from Hillary 07/12/2021 - Changed department, team and client params to enable multiple selection
 
 CREATE PROCEDURE [audit].[ACInternalAudits_Questions]
 
 ( @Template AS NVARCHAR(MAX)
 ,@StartDate AS DATE 
 ,@EndDate AS DATE 
-,@Department AS NVARCHAR(50)
-,@Team AS NVARCHAR(50)
-,@Client AS NVARCHAR(8)
+,@Department AS NVARCHAR(MAX)
+,@Team AS NVARCHAR(MAX)
+,@Client AS NVARCHAR(MAX)
 )
 as
 
@@ -24,19 +25,24 @@ as
 --, @AuditYear AS NVARCHAR(50) ='2021/2022'
 --,@StartDate AS DATE = GETDATE() -300
 --,@EndDate AS DATE = GETDATE()
---,@Department AS NVARCHAR(50) = 'All'
---,@Team AS NVARCHAR(50) = 'All'
---, @Client AS NVARCHAR(8) = 'Z1001'
+--,@Department AS NVARCHAR(MAX) = 'Casualty|Healthcare'
+--,@Team AS NVARCHAR(MAX) = 'Casualty Liverpool|Healthcare North West 1'
+--, @Client AS NVARCHAR(MAX) = 'Z1001|A1001|A3003'
 
 
 
 
 DROP TABLE IF EXISTS #Template
+DROP TABLE IF EXISTS #Department
+DROP TABLE IF EXISTS #Team
+DROP TABLE IF EXISTS #Client
 drop table if exists #Audits
 
 
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template)
-
+SELECT ListValue  INTO #Department  FROM Reporting.dbo.[udt_TallySplit]('|', @Department)
+SELECT ListValue  INTO #Team FROM Reporting.dbo.[udt_TallySplit]('|', @Team)
+SELECT ListValue INTO #Client FROM Reporting.dbo.udt_TallySplit('|', @Client)
 
 	
 	SELECT distinct dim_ac_audits.dim_ac_audits_key,
@@ -118,14 +124,20 @@ select distinct #Audits.employeeid
 	 , matter_description
 from #Audits
 inner join red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
-inner join red_dw..dim_fed_hierarchy_history on #Audits.[Auditee key] = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+inner join red_dw..dim_fed_hierarchy_history 
+	ON #Audits.[Auditee key] = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+INNER JOIN #Department
+	ON dim_fed_hierarchy_history.hierarchylevel3hist = #Department.ListValue COLLATE DATABASE_DEFAULT
+INNER JOIN #Team
+	ON dim_fed_hierarchy_history.hierarchylevel4hist = #Team.ListValue COLLATE DATABASE_DEFAULT
+INNER JOIN #Client
+	ON UPPER(TRIM(#Audits.[Client Code])) = #Client.ListValue COLLATE DATABASE_DEFAULT
 left outer join red_dw..dim_ac_audit_details on dim_ac_audit_details.dim_ac_audits_key = #Audits.dim_ac_audits_key
 --where audit_id = 715658
 WHERE #Audits.Date BETWEEN isnull(@StartDate,GETDATE()-365) AND ISNULL(@EndDate, GETDATE()+1)
 and lower(dim_ac_audit_questions.question_text) not like '%do you wish to include any feedback%'
 and dim_ac_audit_questions.question_text not in ('Positive feedback details','Complaint details')
-AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
-AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
-AND LOWER(#Audits.[Client Code]) IN (IIF(@Client IS NULL, LOWER(#Audits.[Client Code]), LOWER(@Client)))
+--AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
+--AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
 
 GO
