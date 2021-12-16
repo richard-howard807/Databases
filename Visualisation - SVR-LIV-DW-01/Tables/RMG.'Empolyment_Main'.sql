@@ -1,4 +1,4 @@
-CREATE TABLE [RMG].[Employment_Main]
+CREATE TABLE [RMG].['Empolyment_Main']
 (
 [Case - Status] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Personal - Pay Number & Surname] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -56,7 +56,7 @@ CREATE TABLE [RMG].[Employment_Main]
 [Delay - Postponement by Appellant (Sick, A/L, etc#) - Days] [float] NULL,
 [Delay - Total Number of Days] [float] NULL,
 [Case - Outcome of Appeal / NAP] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[Case - Appeal / NAP Learning Detail] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[Case - Appeal / NAP Learning Detail] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [Case - NAP CWU Panelist] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Case - NAP Chairman] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Case - App 3 Outcome Enclosed] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -73,7 +73,7 @@ CREATE TABLE [RMG].[Employment_Main]
 [EC - ICM Dealing] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [EC - Brief Description of Case] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [EC - ACAS Conciliator Details] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[EC - Which Letter/s Have Been Sent?] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
+[EC - Which Letter/s Have Been Sent?] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [EC - Date Sent to XSP] [datetime] NULL,
 [EC - XSP] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [EC - XSP Contact Details] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -115,7 +115,7 @@ CREATE TABLE [RMG].[Employment_Main]
 [ET - Instructions sent to XSP] [datetime] NULL,
 [ET - Instructions Received by XSP] [datetime] NULL,
 [ET - Instructions Via] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[ET - Brief Description of Case] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
+[ET - Brief Description of Case] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [ET - Sensitivity and Risk] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [ET - Date ET3 served] [datetime] NULL,
 [ET - Status] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -170,7 +170,7 @@ CREATE TABLE [RMG].[Employment_Main]
 [ET - Date Requested 5] [datetime] NULL,
 [ET - Date Sent 5] [datetime] NULL,
 [ET - Method 5] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[ET Learning Detail] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
+[ET Learning Detail] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [ET Case Closed Date] [datetime] NULL,
 [Further - Bullying and Harassment Case] [bit] NOT NULL,
 [Further - Date Received in ER Ops from Sheffield Archives] [datetime] NULL,
@@ -197,6 +197,7 @@ CREATE TABLE [RMG].[Employment_Main]
 [Remote Hearing] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Item Type] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Path] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[Personal - Business Unit 2] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL
+[Personal - Business Unit 2] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[Learning Points] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO
