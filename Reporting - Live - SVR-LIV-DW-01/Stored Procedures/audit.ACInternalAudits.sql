@@ -2,17 +2,20 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
--- =============================================
--- Author:		Emily Smith
--- Create date: 2021-09-13
--- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
--- =============================================
+--SET QUOTED_IDENTIFIER ON
+--SET ANSI_NULLS ON
+--GO
+---- =============================================
+---- Author:		Emily Smith
+---- Create date: 2021-09-13
+---- Description:	Data for Risk and Complaince to keep track of audits created on audit comply
+---- =============================================
 
--- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
--- JB 18-11-2021 - added NHS audit data 
--- JB 19-11-2021 - added HSD/Director/Trainee exclusions
--- RH 25-11-2021 - changed logic so that audits are always assigned to Qtr 1,2,3 & 4 in order regardless of when they are completed 
--- RH 25-11-2021 - Removed HSD/Director Logic, added sickness as exclusion criteria
+---- JB 05-10-2021 - changed exclude flag and reason to 20% rather than 80% as per Hillary Stephenson's request. Also added min_quarter_month and max_quarter_month columns for final audit quarter column
+---- JB 18-11-2021 - added NHS audit data 
+---- JB 19-11-2021 - added HSD/Director/Trainee exclusions
+---- RH 25-11-2021 - changed logic so that audits are always assigned to Qtr 1,2,3 & 4 in order regardless of when they are completed 
+---- RH 25-11-2021 - Removed HSD/Director Logic, added sickness as exclusion criteria
 
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
@@ -201,10 +204,12 @@ select
 	employees.Name, employees.Department, employees.Team, employees.Division,
 	case when employeestartdate >= dateadd(month, -3, dim_date.calendar_date) then 1
 	when leftdate < dim_date.calendar_date then 2
+	when not_current_active = 1 then 3
 	end as exclude
 	, dim_date.fin_quarter_no
 	, quarter_name.min_quarter_month
 	, quarter_name.max_quarter_month
+	, employees.jobtitle
 into #EmployeeDates
 from red_dw.dbo.dim_date
 INNER JOIN (SELECT DISTINCT
@@ -214,11 +219,12 @@ INNER JOIN (SELECT DISTINCT
 				, FIRST_VALUE(dim_date.fin_month_name) OVER(PARTITION BY dim_date.fin_year, dim_date.fin_quarter, dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no, dim_date.fin_month_no) AS min_quarter_month
 				, LAST_VALUE(dim_date.fin_month_name) OVER(PARTITION BY dim_date.fin_year, dim_date.fin_quarter, dim_date.fin_quarter_no ORDER BY dim_date.fin_quarter_no) AS max_quarter_month
 			FROM red_dw.dbo.dim_date) quarter_name on quarter_name.fin_quarter = dim_date.fin_quarter
-cross apply (select distinct dim_employee.employeeid, dim_employee.employeestartdate, start_year.fin_year AS employeestartdate_fin_year, dim_employee.leftdate
+			cross apply (select distinct dim_employee.employeeid, dim_employee.employeestartdate, start_year.fin_year AS employeestartdate_fin_year, dim_employee.leftdate, dim_employee.not_current_active
 				, name AS [Name]
 				, dim_fed_hierarchy_history.hierarchylevel2hist AS [Division]
 				, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
 				, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
+				, dim_employee.jobtitle
 			from red_dw.dbo.dim_employee
 			LEFT OUTER JOIN red_dw.dbo.dim_date AS start_year ON start_year.calendar_date = CAST(dim_employee.employeestartdate AS DATE)
 			left outer join red_dw.dbo.dim_date on cast(dim_employee.leftdate as date) = dim_date.calendar_date
@@ -240,23 +246,26 @@ AND dim_date.fin_year >= employees.employeestartdate_fin_year;
 
 select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin_quarter_no, #EmployeeDates.min_quarter_month, #EmployeeDates.max_quarter_month,
 		#EmployeeDates.Division, #EmployeeDates.Department, #EmployeeDates.Team, #EmployeeDates.Name, #EmployeeDates.audit_year,
-		count(#EmployeeDates.calendar_date) days_in_qtr, 
+		count(#EmployeeDates.calendar_date) days_in_qtr,  #EmployeeDates.leftdate,
 		#EmployeeDates.employeestartdate,
 		sum(fact_employee_attendance.durationdays) days_absent
-		, case  when max(#EmployeeDates.exclude) = 1 then 'Started ' + cast(cast(#EmployeeDates.employeestartdate as date) as varchar(12))
-				when max(#EmployeeDates.exclude) = 2 then 'Left ' +  cast(cast(#EmployeeDates.leftdate as date) as varchar(12))
+		, case  when max(#EmployeeDates.exclude) = 1 then 'Started ' + cast(format (cast(#EmployeeDates.employeestartdate as date), 'dd/MM/yyyy') as varchar(12))
+				when max(#EmployeeDates.exclude) = 2 then 'Left ' +  cast(format (cast(leftdate as date), 'dd/MM/yyyy') as varchar(12))
 				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 
 				     then (select string_agg(val, ', ') from (select distinct val from dbo.split_delimited_to_rows(string_agg(category, ','),',')) x ) 
+                when max(#EmployeeDates.exclude) = 3 then 'Not an active employee' 
+			    when #EmployeeDates.jobtitle = 'Investigator' then 'Investigator'
 				WHEN hsd_director_data.employeeid IS NOT NULL THEN 'HSD/Director'
 				WHEN trainees.employeeid IS NOT NULL THEN 'Trainee, no live matters'
 		  end as reason
 
-		, case  when max(#EmployeeDates.exclude) in (1,2) then 1
+		, case  when max(#EmployeeDates.exclude) in (1,2,3) then 1
 				when sum(fact_employee_attendance.durationdays) / count(#EmployeeDates.calendar_date) > .2 then 1 
 				WHEN hsd_director_data.employeeid IS NOT NULL THEN 1
 				WHEN trainees.employeeid IS NOT NULL THEN 1
-				
+				when #EmployeeDates.jobtitle = 'Investigator' then 1 
 		  end as exclude_flag
+
   into #exclude_data
 from #EmployeeDates
 left outer join (select fact_employee_attendance.employeeid, fact_employee_attendance.durationdays, fact_employee_attendance.category, fact_employee_attendance.startdate
@@ -315,8 +324,10 @@ group by #EmployeeDates.employeeid
 	   , #EmployeeDates.min_quarter_month
 	   , #EmployeeDates.max_quarter_month
 	   , hsd_director_data.employeeid
-	   , trainees.employeeid;
-
+	   , trainees.employeeid
+	   , jobtitle
+	   , #EmployeeDates.leftdate; 
+	   
 
 
 	   
@@ -380,14 +391,14 @@ select    #exclude_data.employeeid
 		, #exclude_data.employeestartdate
 	--	, Audits.Date audit_date
 		, 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-' + #exclude_data.max_quarter_month [Audit Quarter]
-		, #exclude_data.exclude_flag
-		, #exclude_data.reason
+		, iif(string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') IS NULL and leftdate is not null and #exclude_data.exclude_flag is null, 1, #exclude_data.exclude_flag)  exclude_flag
+		, iif(string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') is NULL and leftdate is not null and #exclude_data.exclude_flag is null, 'Left ' + cast(format (cast(leftdate as date), 'dd/MM/yyyy') as varchar(12)), #exclude_data.reason) reason
 		-- string_agg(Audits.Status, '<br>') Audits.audit_id
 		
 from #exclude_data
 left outer join #Audits_Calculated Audits on Audits.auditee_emp_key = #exclude_data.employeeid and Audits.calculated_fin_qtr = #exclude_data.fin_quarter_no
  --where #exclude_data.employeeid = '440C1838-A18D-4592-B8AB-F196F1094221'
---where name = 'Samantha Wright'
+--where name = 'Julie Byrne'
 group by 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-'
        + #exclude_data.max_quarter_month
        , #exclude_data.employeeid
@@ -400,6 +411,7 @@ group by 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude
        , #exclude_data.employeestartdate
        , #exclude_data.exclude_flag
        , #exclude_data.reason
+	   , #exclude_data.leftdate
     --   , Audits.audit_id
 order by #exclude_data.employeeid--, Audits.audit_id;
 

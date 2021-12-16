@@ -91,6 +91,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_curren
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
 
+
 WHERE 
 	reporting_exclusions = 0
 	AND  dim_client.client_group_name='Zurich'
@@ -119,6 +120,7 @@ SELECT
 	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
 	ELSE 'SLA Met'
 	END	AS [Initial Report SLA Status]
+
 	, dim_detail_core_details.present_position AS [Present Position]
 	--, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
 	, do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
@@ -128,7 +130,7 @@ SELECT
 	--	WHEN date_initial_report_sent IS NOT NULL THEN NULL
 	--	WHEN date_initial_report_sent IS NULL THEN dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())
 	--	WHEN date_initial_report_sent IS NULL AND dbo.ReturnElapsedDaysExcludingBankHolidays(CASE WHEN grpageas_motor_date_of_receipt_of_clients_file_of_papers> date_opened_case_management THEN grpageas_motor_date_of_receipt_of_clients_file_of_papers ELSE date_opened_case_management END , GETDATE())<[Initial Report SLA (days)] THEN 'Not yet due'
-	--	ELSE NULL END AS [Days without Initial Report]
+	--	ELSE NULL END AS [Days without Report]
 	, date_subsequent_sla_report_sent AS [Date Subsequent SLA Report Sent]
 	,  #ClientReportDates.[date_subsequent_report_due]
 	, CASE
@@ -279,6 +281,9 @@ WHEN
 'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
 ) THEN 'Other' END AS [Repudiated/Settled]
 ,dim_detail_client.zurich_no_call_made
+,[ll00_have_we_had_an_extension_for_the_initial_report]	AS [Have we had an extension for Initial Report]
+,date_initial_report_due 
+
 
 	
 
@@ -403,6 +408,8 @@ SELECT
 ,[Repudiated/Settled]
 ,zurich_no_call_made
 ,zurich_introductory_call
+,[Have we had an extension for Initial Report]
+,date_initial_report_due 
 FROM #MainData
 
    END

@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- LD 20190809 Amended to wrap the audit date with the [datetimelocal] function
 --				Amended so that only the last audit date is shown
 
@@ -123,6 +124,8 @@ WHEN
 ELSE '-' END AS [Damages Tranche]
 ,dim_detail_core_details.[date_instructions_received] AS [Instruction date]
 ,[red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) AS [Audit Date]
+,AuditComments.nhs_audit_date
+,AuditComments.nhs_auditor_comments
 , 'Q' + TRIM(STR(dim_date.fin_quarter_no))		AS fin_quarter_formatted
 , CASE
 	WHEN dim_date.current_fin_year = 'Current' THEN
@@ -300,7 +303,18 @@ LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
 				AND max_date.nhs_audit_date = dim_parent_detail.nhs_audit_date
 LEFT OUTER JOIN red_dw.dbo.dim_date
 	ON CAST([red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) AS DATE) = dim_date.calendar_date
- 
+LEFT OUTER JOIN (
+SELECT dim_parent_detail.client_code,dim_parent_detail.matter_number
+,nhs_auditor_comments,nhs_audit_date 
+,ROW_NUMBER() OVER (PARTITION BY dim_parent_detail.client_code,dim_parent_detail.matter_number ORDER BY nhs_audit_date) AS xOrder
+FROM red_dw.dbo.dim_parent_detail 
+LEFT OUTER JOIN red_dw.dbo.dim_child_detail 
+ ON dim_child_detail.client_code = dim_parent_detail.client_code
+ AND dim_child_detail.matter_number = dim_parent_detail.matter_number
+ AND dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+				WHERE [red_dw].[dbo].[datetimelocal](nhs_audit_date) BETWEEN @StartDate AND @EndDate) AS AuditComments
+				 ON AuditComments.client_code = dim_matter_header_current.client_code
+				 AND AuditComments.matter_number = dim_matter_header_current.matter_number
 WHERE master_client_code='N1001'
 AND reporting_exclusions=0
 AND [red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) BETWEEN @StartDate AND @EndDate

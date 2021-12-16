@@ -43,6 +43,7 @@ GO
 --OK 20210526 removed matter zero BH
 --KH 109184 Changes to rule for Worktype Group in self serve
 -- Added as per OK 19/08/2021 - Claimant Costs x 4 - MT
+-- ES 20211208 Added ate details, requested by BH
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -651,6 +652,8 @@ WHEN
        ,fact_detail_paid_detail.interim_costs_payments AS [Interim Costs Payments]
        ,fact_detail_claim.[claimant_sols_total_costs_sols_claimed] AS [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)]
        ,fact_finance_summary.[total_tp_costs_paid] AS [Total third party costs paid (sum of TRA072+NMI143+NMI379)]
+	   , fact_finance_summary.[ate_premium_claimed] [Ate Premimum Claimed]
+	   , fact_finance_summary.[ate_premium_paid] [Ate Premimum Paid]
        ,fact_finance_summary.tp_total_costs_claimed AS [Claimants Total Costs Claimed against Client]
        ,CASE
            WHEN fact_finance_summary.[claimants_costs_paid] IS NULL

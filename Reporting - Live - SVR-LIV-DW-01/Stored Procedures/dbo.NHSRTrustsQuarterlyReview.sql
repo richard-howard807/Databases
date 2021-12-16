@@ -12,7 +12,8 @@ GO
 -- Ticket:		#68460
 -- Description:	New report for NHSR Trusts Quarterly Review
 -- Update: MT as per 92701 added [Risk Management Recommendations] 
---		   JL as per ticket #122283 and corrected duplication by adding row_number 
+--		   JL as per ticket #122283 and corrected duplication by adding row_number
+--		   JL Change of name to report, added new RAG logic for 'Safety & Learning Factor identified'
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
@@ -86,6 +87,7 @@ SELECT
 	dim_matter_header_current.client_code
 	, dim_matter_header_current.matter_number
 	,dim_matter_header_current.dim_matter_header_curr_key
+	,dim_detail_health.nhs_risk_management_factor 
 	, --(CASE WHEN key_date_rag.rag = 'orange' THEN 'amber' ELSE key_date_rag.rag END) + ' - ' + 
 		CAST(FORMAT(key_date_rag.date_due, 'd', 'en-gb') AS VARCHAR(10)) + ' -' + key_date_rag.task_desccription		AS [key_date_rag_trigger]
 	, CASE	
@@ -94,8 +96,8 @@ SELECT
 			'' + CAST(FORMAT(COALESCE(trial_key_date.trial_date, dim_detail_court.date_of_trial), 'd', 'en-gb') AS VARCHAR(10)) + ' - trial date in 6 months'
 		END				AS [trial_date_rag_trigger]
 	, CASE
-		WHEN dim_detail_court.date_of_first_day_of_trial_window >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_first_day_of_trial_window) <= GETDATE() THEN
-			'' + CAST(FORMAT(dim_detail_court.date_of_first_day_of_trial_window, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
+		WHEN trialWindow_key_date.trial_window__date >= GETDATE() AND DATEADD(MONTH, -6, trialWindow_key_date.trial_window__date) <= GETDATE() THEN
+			'' + CAST(FORMAT(trialWindow_key_date.trial_window__date, 'd', 'en-gb') AS VARCHAR(10)) + ' -  trial window in 6 months'
 	  END				AS [trial_window_rag_trigger]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
@@ -121,13 +123,16 @@ SELECT
 		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
 			' proceedings no/liability no'
 	  END				AS [no_proceedings_liability_rag_trigger]
+	,CASE 
+		WHEN  dim_detail_health.nhs_risk_management_factor  <> 'N/A' AND dim_detail_health.nhs_risk_management_factor IS NOT NULL THEN 'Safety & Learning Factor identified'  END AS [rag_trigger_10]
+
 	, CASE	
 		WHEN key_date_rag.rag = 'red' THEN
 			'Red'
 		WHEN dim_detail_court.date_of_trial >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_trial) <= GETDATE() OR 
 			trial_key_date.trial_date >= GETDATE() AND DATEADD(MONTH, -6, trial_key_date.trial_date) <= GETDATE() THEN
 			'Red'
-		WHEN dim_detail_court.date_of_first_day_of_trial_window >= GETDATE() AND DATEADD(MONTH, -6, dim_detail_court.date_of_first_day_of_trial_window) <= GETDATE() THEN
+		WHEN trialWindow_key_date.trial_window__date >= GETDATE() AND DATEADD(MONTH, -6, trialWindow_key_date.trial_window__date) <= GETDATE() THEN
 			'Red'
 		WHEN RTRIM(dim_detail_core_details.proceedings_issued) = 'Yes' AND RTRIM(dim_detail_health.nhs_any_publicity) = 'Yes' THEN
 			'Red'
@@ -143,9 +148,13 @@ SELECT
 			'Orange'
 		WHEN ISNULL(RTRIM(dim_detail_core_details.proceedings_issued), 'No') = 'No' AND RTRIM(dim_detail_health.nhs_liability) = 'No' THEN
 			'Orange'
+		WHEN dim_detail_health.nhs_risk_management_factor <> 'N/A' AND dim_detail_health.nhs_risk_management_factor  IS NOT NULL THEN 'Orange'		 --added new RAG
 		ELSE
 			'LimeGreen'
 	  END									AS [Risk Rating]
+	  ,dim_detail_court.date_of_trial
+	  ,dim_detail_court.date_of_first_day_of_trial_window
+	  ,trial_key_date.trial_date
 INTO #rag_status
 FROM red_dw.dbo.dim_matter_header_current														 
 	LEFT OUTER JOIN	red_dw.dbo.dim_detail_health
@@ -203,7 +212,7 @@ FROM red_dw.dbo.dim_matter_header_current
 						dim_matter_header_current.dim_matter_header_curr_key
 						, CAST(dim_key_dates.key_date AS DATE)	AS trial_date
 						, ROW_NUMBER() OVER(PARTITION BY dim_key_dates.dim_matter_header_curr_key ORDER BY dim_key_dates.key_date)	AS rw --added due to duplication JL 20211126
-
+						
 					FROM red_dw.dbo.dim_key_dates 
 					INNER JOIN red_dw.dbo.dim_matter_header_current
 					ON  dim_matter_header_current.dim_matter_header_curr_key = dim_key_dates.dim_matter_header_curr_key
@@ -215,13 +224,33 @@ FROM red_dw.dbo.dim_matter_header_current
 						AND dim_key_dates.is_active = 1
 					) AS trial_key_date
 		ON trial_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN (
+					SELECT 
+						dim_matter_header_current.dim_matter_header_curr_key
+						, CAST(dim_key_dates.key_date AS DATE)	AS trial_window__date
+						, ROW_NUMBER() OVER(PARTITION BY dim_key_dates.dim_matter_header_curr_key ORDER BY dim_key_dates.key_date)	AS rw --added due to duplication JL 20211126
+						 
+					FROM red_dw.dbo.dim_key_dates 
+					INNER JOIN red_dw.dbo.dim_matter_header_current
+					ON  dim_matter_header_current.dim_matter_header_curr_key = dim_key_dates.dim_matter_header_curr_key
+					WHERE
+						dim_matter_header_current.master_client_code = 'N1001'
+						AND dim_key_dates.type = 'TRIALWINDOW'
+						AND CAST(dim_key_dates.key_date AS DATE) >= CAST(GETDATE() AS DATE)
+						AND CAST(dim_key_dates.key_date AS DATE) <= CAST(DATEADD(MONTH, 6, GETDATE()) AS DATE)
+						AND dim_key_dates.is_active = 1
+					) AS trialWindow_key_date
+		ON trialWindow_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
-	dim_matter_header_current.master_client_code = 'N1001'	 
+	dim_matter_header_current.master_client_code = 'N1001'
+	--AND dim_matter_header_current.matter_number = '00015453'
 	AND dim_matter_header_current.ms_only = 1
 	--AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > @nDate)
 	AND (dim_matter_header_current.date_closed_practice_management IS NULL OR dim_matter_header_current.date_closed_practice_management > 2018-05-01) 
 	AND (key_date_rag.xorder IS NULL OR key_date_rag.xorder = 1)
 	AND (trial_key_date.rw IS NULL or trial_key_date.rw = 1)
+	AND (trialWindow_key_date.rw IS NULL or trialWindow_key_date.rw = 1)
 
 
 
@@ -335,6 +364,7 @@ SELECT
 	, #rag_status.no_proceedings_publicity_rag_trigger	AS [rag_trigger_7]
 	, #rag_status.no_proceedings_repercussive_rag_trigger	AS [rag_trigger_8]
 	, #rag_status.no_proceedings_liability_rag_trigger		AS [rag_trigger_9]
+	, #rag_status.[rag_trigger_10]
 	, dim_detail_claim.defendant_trust			AS [Trust]
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
@@ -537,6 +567,7 @@ SELECT
 	 WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 
 	 ,dim_detail_health.nhs_risk_management_factor
+	 
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

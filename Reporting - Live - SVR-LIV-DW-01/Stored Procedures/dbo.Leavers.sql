@@ -7,15 +7,19 @@ GO
 -- Author:		Emily Smith
 -- Create date: 2020-06-22
 -- Description:	61937 New leavers report for Office Managers
+-- RH 2021/12/09 - Removed reference to ComponentDefinitionLaptop as it is no longer a table in SDP 
 -- =============================================
 
 CREATE PROCEDURE [dbo].[Leavers]
 
 AS
 BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
+--	 SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+
+
 
 SELECT forename+' '+surname AS [Name]
 	, payrollid AS [Payroll ID]
@@ -46,6 +50,8 @@ LEFT OUTER JOIN (SELECT hierarchylevel3hist
 						   AND dim_fed_hierarchy_history.activeud = 1
 						   AND dim_fed_hierarchy_history.management_role_one = 'HoSD') AS [HSD] 
 ON HSD.hierarchylevel3hist=dim_fed_hierarchy_history.hierarchylevel3hist
+
+
 
 LEFT OUTER JOIN (
 SELECT 
@@ -105,26 +111,26 @@ FROM [SVR-LIV-3PTY-01].ServiceDeskPlus.dbo.WorkstationCI WITH (NOLOCK)
     
     LEFT JOIN [SVR-LIV-3PTY-01].ServiceDeskPlus.dbo.ResourceOwner WITH (NOLOCK)
         ON Resources.RESOURCEID = ResourceOwner.RESOURCEID
-    LEFT JOIN [SVR-LIV-3PTY-01].ServiceDeskPlus.dbo.ComponentDefinitionLaptop WITH (NOLOCK)
-        ON (
-               (Resources.COMPONENTID = ComponentDefinitionLaptop.COMPONENTID)
-               AND
-               (
-                   (
-                       (Resources.COMPONENTID = ComponentDefinitionLaptop.COMPONENTID)
-                       AND
-                       (
-                           (ComponentDefinitionLaptop.COMPONENTID >= 1)
-                           AND (ComponentDefinitionLaptop.COMPONENTID <= 100000000)
-                       )
-                   )
-                   AND
-                   (
-                       (ComponentDefinitionLaptop.COMPONENTID >= 1)
-                       AND (ComponentDefinitionLaptop.COMPONENTID <= 100000000)
-                   )
-               )
-           )
+    --LEFT JOIN [SVR-LIV-3PTY-01].ServiceDeskPlus.dbo.ComponentDefinitionLaptop WITH (NOLOCK)
+    --    ON (
+    --           (Resources.COMPONENTID = ComponentDefinitionLaptop.COMPONENTID)
+    --           AND
+    --           (
+    --               (
+    --                   (Resources.COMPONENTID = ComponentDefinitionLaptop.COMPONENTID)
+    --                   AND
+    --                   (
+    --                       (ComponentDefinitionLaptop.COMPONENTID >= 1)
+    --                       AND (ComponentDefinitionLaptop.COMPONENTID <= 100000000)
+    --                   )
+    --               )
+    --               AND
+    --               (
+    --                   (ComponentDefinitionLaptop.COMPONENTID >= 1)
+    --                   AND (ComponentDefinitionLaptop.COMPONENTID <= 100000000)
+    --               )
+    --           )
+    --       )
     LEFT JOIN [SVR-LIV-3PTY-01].ServiceDeskPlus.dbo.ResourceAssociation WITH (NOLOCK)
         ON ResourceOwner.RESOURCEOWNERID = ResourceAssociation.RESOURCEOWNERID
 
@@ -182,22 +188,24 @@ WHERE (
               (WorkstationCI.CIID >= 1)
               AND (WorkstationCI.CIID <= 100000000)
           )
-          AND
-          (
-              (ComponentDefinitionLaptop.ISLAPTOP = 1)
-              AND (SystemInfo.ISSERVER = 0)
-          )
+          --AND
+          --(
+          --    (ComponentDefinitionLaptop.ISLAPTOP = 1)
+          --    AND (SystemInfo.ISSERVER = 0)
+          --)
       )
 	  --AND SystemInfo.WORKSTATIONNAME LIKE 'l08347%'
  )AS [Asset] ON [Asset].[User]=name COLLATE DATABASE_DEFAULT
 
 WHERE leaverlastworkdate>GETDATE()
 AND DATEDIFF(DAY, GETDATE(), leaverlastworkdate)<=14
-
+--and forename+' '+surname = 'Sara Khan'
 
 ORDER BY leaverlastworkdate
 
-END
 
+
+
+END
 
 GO

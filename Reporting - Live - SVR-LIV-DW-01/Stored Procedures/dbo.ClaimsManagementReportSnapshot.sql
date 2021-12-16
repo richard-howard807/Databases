@@ -24,6 +24,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[ClaimsManagementReportSnapshot] 
 	
 	
@@ -381,7 +382,7 @@ SELECT employeeid
 FROM red_dw.dbo.fact_employee_attendance
 WHERE CONVERT(DATE,startdate,103) > CONVERT(DATE,GETDATE(),103) AND 
 CONVERT(DATE,startdate,103)<=@EndDate
-AND category<>'Holiday'
+AND category NOT IN ('Holiday', 'In Office')
 AND CONVERT(DATE,startdate,103)  IN (SELECT CONVERT(DATE,calendar_date,103) FROM red_dw.dbo.dim_date WHERE trading_day_flag='Y' AND dim_date.holiday_flag = 'N')
 
 

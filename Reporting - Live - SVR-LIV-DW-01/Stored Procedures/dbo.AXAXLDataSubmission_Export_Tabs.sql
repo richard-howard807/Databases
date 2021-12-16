@@ -558,7 +558,7 @@ WHERE
 OR    #MainAPI.[Line of Business] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[New Line of Business]
 OR    #MainAPI.[Product Type]  COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Product Type New] 
 OR    #MainAPI.[Insured Name] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Insured Name]
-OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> #AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]
+OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> CAST(#AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]  AS DECIMAL(18,2))
 OR    #MainAPI.[AXA XL Claims Handler] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[AXA XL Claims Handler]
 OR    #MainAPI.[Third Party Administrator] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Third Party Administrator]
 OR    #MainAPI.[Coverage defence ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Coverage / defence?]
@@ -580,7 +580,7 @@ WHERE
 OR    #MainAPI.[Line of Business] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[New Line of Business]
 OR    #MainAPI.[Product Type]  COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Product Type New] 
 OR    #MainAPI.[Insured Name] COLLATE DATABASE_DEFAULT <>  #AXAXLDataSubmission.[Insured Name]
-OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> #AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]
+OR    CAST(#MainAPI.[AXA XL Percentage line share of loss expenses recovery] AS DECIMAL(18,2))  <> CAST(#AXAXLDataSubmission.[AXA XL Percentage line share of loss / expenses / recovery]  AS DECIMAL(18,2))
 OR    #MainAPI.[AXA XL Claims Handler] COLLATE DATABASE_DEFAULT<> #AXAXLDataSubmission.[AXA XL Claims Handler]
 OR    #MainAPI.[Third Party Administrator] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Third Party Administrator]
 OR    #MainAPI.[Coverage defence ] COLLATE DATABASE_DEFAULT <> #AXAXLDataSubmission.[Coverage / defence?]

@@ -18,6 +18,7 @@ CREATE PROCEDURE [audit].[ACInternalAudits_Questions]
 ,@Department AS NVARCHAR(MAX)
 ,@Team AS NVARCHAR(MAX)
 ,@Client AS NVARCHAR(MAX)
+,@Fee_Earner AS NVARCHAR(MAX)
 )
 as
 
@@ -28,7 +29,7 @@ as
 --,@Department AS NVARCHAR(MAX) = 'Casualty|Healthcare'
 --,@Team AS NVARCHAR(MAX) = 'Casualty Liverpool|Healthcare North West 1'
 --, @Client AS NVARCHAR(MAX) = 'Z1001|A1001|A3003'
-
+--, @Fee_Earner AS NVARCHAR(MAX) = '67FBDB1C-4457-44C9-89FC-D321B699C2C9|CDA09A5D-504A-4B88-B36A-6D3B50287692|4D4D7697-6D70-405C-8619-0CB22D55094F'
 
 
 
@@ -36,13 +37,16 @@ DROP TABLE IF EXISTS #Template
 DROP TABLE IF EXISTS #Department
 DROP TABLE IF EXISTS #Team
 DROP TABLE IF EXISTS #Client
-drop table if exists #Audits
+DROP TABLE IF EXISTS #Fee_Earner
+DROP table if exists #Audits
+
 
 
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template)
 SELECT ListValue  INTO #Department  FROM Reporting.dbo.[udt_TallySplit]('|', @Department)
 SELECT ListValue  INTO #Team FROM Reporting.dbo.[udt_TallySplit]('|', @Team)
 SELECT ListValue INTO #Client FROM Reporting.dbo.udt_TallySplit('|', @Client)
+SELECT ListValue INTO #Fee_Earner FROM Reporting.dbo.udt_TallySplit('|', @Fee_Earner)
 
 	
 	SELECT distinct dim_ac_audits.dim_ac_audits_key,
@@ -114,6 +118,8 @@ select distinct #Audits.employeeid
 	 , dim_fed_hierarchy_history.hierarchylevel3hist Department
 	 , dim_fed_hierarchy_history.hierarchylevel4hist Team
 	 , dim_fed_hierarchy_history.display_name
+	 , #Audits.[Auditee key]
+	 , #Audits.Auditee_Emp_key_1
 	 , (select string_agg(cast(observation as varchar(max)), ',')  from red_dw..dim_ac_audit_questions x where x.audit_id=dim_ac_audit_questions.audit_id and len(x.observation) > 1 ) audit_observations
 	 ,  (select string_agg(cast(recommendation as varchar(max)), ',') from red_dw..dim_ac_audit_questions x where x.audit_id=dim_ac_audit_questions.audit_id  and len(x.recommendation) > 1) audit_recommendations
 	 , score
@@ -132,6 +138,8 @@ INNER JOIN #Team
 	ON dim_fed_hierarchy_history.hierarchylevel4hist = #Team.ListValue COLLATE DATABASE_DEFAULT
 INNER JOIN #Client
 	ON UPPER(TRIM(#Audits.[Client Code])) = #Client.ListValue COLLATE DATABASE_DEFAULT
+INNER JOIN #Fee_Earner
+	ON #Fee_Earner.ListValue = #Audits.Auditee_Emp_key_1 COLLATE DATABASE_DEFAULT
 left outer join red_dw..dim_ac_audit_details on dim_ac_audit_details.dim_ac_audits_key = #Audits.dim_ac_audits_key
 --where audit_id = 715658
 WHERE #Audits.Date BETWEEN isnull(@StartDate,GETDATE()-365) AND ISNULL(@EndDate, GETDATE()+1)

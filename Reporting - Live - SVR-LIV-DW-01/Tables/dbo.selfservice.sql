@@ -127,6 +127,8 @@ CREATE TABLE [dbo].[selfservice]
 [Interim Costs Payments] [numeric] (13, 2) NULL,
 [Total third party costs claimed (the sum of TRA094+NMI599+NMI600)] [numeric] (13, 2) NULL,
 [Total third party costs paid (sum of TRA072+NMI143+NMI379)] [numeric] (13, 2) NULL,
+[Ate Premimum Claimed] [numeric] (13, 2) NULL,
+[Ate Premimum Paid] [numeric] (13, 2) NULL,
 [Claimants Total Costs Claimed against Client] [numeric] (13, 2) NULL,
 [Claimant's Costs Paid by Client - Disease] [numeric] (13, 2) NULL,
 [Claimant’s Solicitor’s Base Costs Claimed + VAT] [numeric] (13, 2) NULL,

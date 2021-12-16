@@ -12,6 +12,7 @@ GO
 --				NOTE:  I have done this in sql because I can do it quickly.  Should probably be written
 --						against the profit costs cube in MDX.  On my todo list!
 -- =============================================
+-- ES 2021-12-14 added segment and sector removed team parameter requested by BH 
 
 
 CREATE PROCEDURE [kpi].[client_profit_costs_per_department]
@@ -20,7 +21,7 @@ CREATE PROCEDURE [kpi].[client_profit_costs_per_department]
 	,@current_fin_to INT
 	,@division VARCHAR(MAX)
 	,@department VARCHAR(MAX)
-	,@team VARCHAR(MAX)
+	--,@team VARCHAR(MAX)
 )
 AS
 
@@ -38,9 +39,9 @@ AS
 	INTO #department
 	FROM dbo.split_delimited_to_rows(@department,',')
 	 
-	 SELECT val 
-	 INTO #team
-	 FROM dbo.split_delimited_to_rows(@team,',')
+	 --SELECT val 
+	 --INTO #team
+	 --FROM dbo.split_delimited_to_rows(@team,',')
 
 
 	
@@ -63,6 +64,8 @@ AS
 		,fee_earner.hierarchylevel4hist [team]
 		,COALESCE(NULLIF(client.client_group_code,''),client.client_code) client_or_group
 		,COALESCE(NULLIF(client.client_group_name,''),client.client_name) client_or_group_name
+		,client.segment
+		,client.sector
 		-- financials
 		,SUM(CASE WHEN bill_date.calendar_date BETWEEN @PreviousDateFrom AND @PreviousDateTo THEN bills.bill_amount ELSE 0 END)  previous_pc_ytd
 		,SUM(CASE WHEN bill_date.calendar_date BETWEEN @DateFrom AND @DateTo THEN bills.bill_amount ELSE 0 END  ) [current_pc_ytd]
@@ -76,7 +79,7 @@ AS
 	--AND fee_earner.hierarchylevel3hist = @department
 	AND fee_earner.hierarchylevel2hist COLLATE DATABASE_DEFAULT IN (SELECT val FROM #division)
 	AND fee_earner.hierarchylevel3hist COLLATE DATABASE_DEFAULT IN (SELECT val FROM #department)
-	AND fee_earner.hierarchylevel4hist COLLATE DATABASE_DEFAULT IN (SELECT val FROM #team)
+	--AND fee_earner.hierarchylevel4hist COLLATE DATABASE_DEFAULT IN (SELECT val FROM #team)
 	
 	AND bills.client_code NOT IN ('00030645','95000C')
 	GROUP BY 	fee_earner.hierarchylevel2hist 
@@ -84,6 +87,8 @@ AS
 			,fee_earner.hierarchylevel4hist 
 		,COALESCE(NULLIF(client.client_group_code,''),client.client_code) 
 		,COALESCE(NULLIF(client.client_group_name,''),client.client_name) 
+		,client.segment
+		,client.sector
 	
 	ORDER BY division,department,team,current_pc_ytd DESC
 

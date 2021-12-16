@@ -18,6 +18,7 @@ BEGIN
 
     SELECT dim_matter_header_current.client_code AS [Client Code]
 	, dim_matter_header_current.matter_number AS [Matter Number]
+	, dim_matter_header_current.client_name AS [Client Name]
 	, matter_description AS [Matter Description]
 	, matter_owner_full_name AS [Case Manager]
 	, date_opened_case_management AS [Date Opened]
@@ -55,6 +56,8 @@ BEGIN
 	, dim_detail_advice.dvpo_if_contested_date_of_next_hearing AS [If Contested, Date of Next Hearing]
 	, dim_detail_advice.dvpo_full_order_granted  AS [Full Order Granted]
 	, dim_detail_advice.dvpo_length_of_order AS [Length of Order]
+	, Doogal.Latitude AS [Victim Postcode Latitude]
+	, Doogal.Longitude AS [Victim Postcode Longitude]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -65,6 +68,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.Doogal
+ON Doogal.Postcode=dim_detail_advice.dvpo_victim_postcode
 
 WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518')
 AND work_type_name ='PL - Pol - Stalking Protection Order'
