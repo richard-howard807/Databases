@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[hastings_listing_table]
 [Case Description - DELETE BEFORE SENDING] [varchar] (200) COLLATE Latin1_General_BIN NULL,
 [Present Position - DELETED BEFORE SENDING] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Referral Reason - DELETE BEFORE SENDING] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[work_type_name] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Supplier Branch] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Claimant First Name] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [Claimant Surname] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,

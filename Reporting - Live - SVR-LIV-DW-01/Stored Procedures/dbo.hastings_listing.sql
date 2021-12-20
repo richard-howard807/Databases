@@ -203,6 +203,7 @@ SELECT
 	, dim_matter_header_current.matter_description		AS [Case Description - DELETE BEFORE SENDING]
 	, dim_detail_core_details.present_position			AS [Present Position - DELETED BEFORE SENDING]
 	, dim_detail_core_details.referral_reason		AS [Referral Reason - DELETE BEFORE SENDING]
+	, dim_matter_worktype.work_type_name
 	, dim_matter_header_current.branch_name			AS [Supplier Branch]
 	, claimant_names.claimant_forenames			AS [Claimant First Name]
 	, claimant_names.claimant_surnames			AS [Claimant Surname]
