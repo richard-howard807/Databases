@@ -50,6 +50,7 @@ SELECT
 	, dim_instruction_type.instruction_type			AS [AIG Instruction Type]
 	, fact_detail_paid_detail.total_settlement_value_of_the_claim_paid_by_all_the_parties		AS [Damages Paid by All Parties]
 	, fact_detail_paid_detail.claimants_total_costs_paid_by_all_parties			AS [Claimant Costs Paid by All Parties]
+	, dim_detail_claim.[dst_claimant_solicitor_firm] AS [Claimant Solicitor Firm ]
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT 
@@ -78,6 +79,8 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
 		ON fact_detail_paid_detail.client_code = dim_matter_header_current.client_code
 			AND fact_detail_paid_detail.matter_number = dim_matter_header_current.matter_number
+	LEFT JOIN red_dw.dbo.dim_detail_claim 
+	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = 'A2002'
 	AND date_claim_concluded BETWEEN  '2021-01-01' AND GETDATE()
@@ -94,50 +97,50 @@ WHERE 1 = 1
 	   END >= 0.5
 	)
 	----------------------Exclusions--------------------------------------
-	AND sector NOT LIKE '%Education%'
-	AND sector NOT LIKE '%Emergency Services%'
-	AND sector NOT LIKE '%Health%'
-	AND sector NOT LIKE '%Local & Central Government%'
-	AND insured_sector NOT LIKE '%Ambulance%'
-	AND insured_sector NOT LIKE '%Education%'
-	AND insured_sector NOT LIKE '%Fire%'
-	AND insured_sector NOT LIKE '%Local & Central Government%'
-	AND insured_sector NOT LIKE '%Police%'
-	AND insured_sector NOT LIKE '%Healthcare%'
-	AND insured_sector NOT LIKE '%Social Housing%'
-	AND insured_sector NOT LIKE '%Societies/political/religious%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Council%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Borough%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%MBC%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%LBC%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%CC%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%BC%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%DC%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Police%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Constab%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Fire%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Health%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%NHS%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%School%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%University%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%College%'
-	AND red_dw.dbo.dim_matter_header_current.client_name NOT LIKE '%Housing%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Council%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Borough%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%MBC%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%LBC%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%CC%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%BC%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%DC%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Police%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Constab%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Fire%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Health%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%NHS%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%School%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%University%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%College%'
-	AND red_dw.dbo.dim_matter_header_current.matter_description NOT LIKE '%Housing%'
+	AND ISNULL(sector,'') NOT LIKE '%Education%'
+	AND ISNULL(sector,'') NOT LIKE '%Emergency Services%'
+	AND ISNULL(sector,'') NOT LIKE '%Health%'
+	AND ISNULL(sector,'') NOT LIKE '%Local & Central Government%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Ambulance%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Education%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Fire%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Local & Central Government%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Police%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Healthcare%'
+	AND ISNULL(insured_sector,'') NOT LIKE '%Social Housing%'
+	AND ISNULL(insured_sector, '') NOT LIKE '%Societies/political/religious%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Council%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Borough%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%MBC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%LBC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%CC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%BC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%DC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Police%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Constab%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Fire%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Health%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%NHS%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%School%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%University%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%College%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.client_name,'') NOT LIKE '%Housing%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Council%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Borough%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%MBC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%LBC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%CC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%BC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%DC%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Police%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Constab%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Fire%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Health%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%NHS%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%School%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%University%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%College%'
+	AND ISNULL(red_dw.dbo.dim_matter_header_current.matter_description,'') NOT LIKE '%Housing%'
 	AND ISNULL(outcome_of_case,'')<>'Returned to Client'
 ORDER BY
 	[Date Claim Concluded]

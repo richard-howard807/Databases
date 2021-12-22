@@ -42,15 +42,14 @@ AND GETDATE() BETWEEN dss_start_date AND dss_end_date
 AND dss_current_flag='Y'
 AND activeud=1
 
-LEFT OUTER JOIN (SELECT hierarchylevel3hist
+LEFT OUTER JOIN (SELECT dim_fed_hierarchy_history.employeeid
 						   , dim_fed_hierarchy_history.name AS [HSD]
 					FROM red_dw.dbo.dim_fed_hierarchy_history
 					WHERE dim_fed_hierarchy_history.windowsusername IS NOT NULL
 						   AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
 						   AND dim_fed_hierarchy_history.activeud = 1
-						   AND dim_fed_hierarchy_history.management_role_one = 'HoSD') AS [HSD] 
-ON HSD.hierarchylevel3hist=dim_fed_hierarchy_history.hierarchylevel3hist
-
+						   and dim_fed_hierarchy_history.leaver = 0) AS [HSD] 
+ON HSD.employeeid=dim_fed_hierarchy_history.reportingbcmidud
 
 
 LEFT OUTER JOIN (

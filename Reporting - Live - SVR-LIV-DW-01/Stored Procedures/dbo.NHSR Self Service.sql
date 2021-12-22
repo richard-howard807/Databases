@@ -27,6 +27,7 @@ GO
 -- ES 20210519 #99395, added is the claimant a litigant in person flag
 -- OK 20210909 #113172 add 2021/2022 years for rev, hours , chrgedhours, disb
 -- JL 20210924 #115469 added in stage of settlement nhsr
+-- ES 20211220 added recovery rate requested by EJ
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -793,9 +794,13 @@ GETDATE() AS update_time,
 		, Disbursements.[2022] [Disbursements Billed 2021/2022]
 	,billing_arrangement_description AS [Billing Arrangement]
 	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
+
+	--added requested by EJ
+	, [RevenueAmount].bill_amount AS [Revenue]
+	, CASE WHEN ISNULL([RevenueAmount].bill_amount,0)=0 OR ISNULL(BilledHours.billed_hours,0)=0 THEN NULL ELSE ISNULL([RevenueAmount].bill_amount,0)/ISNULL(BilledHours.billed_hours,0) END AS [Recovery Rate]
 	
     ---------------------------------------------------
-    INTO Reporting.dbo.NHSRSelfService
+   INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810
 
     --ss.GeneralDataFile
@@ -1205,6 +1210,14 @@ LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current
 -- Added Disbursements #61966
 LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.client_code=Disbursements.client_code
 			AND dim_matter_header_current.matter_number=Disbursements.matter_number 
+
+
+--added fields for recovery rate
+LEFT OUTER JOIN (SELECT fact_bill_billed_time_activity.master_fact_key, SUM(fact_bill_billed_time_activity.invoiced_minutes)/60 AS billed_hours
+				FROM red_dw.dbo.fact_bill_billed_time_activity
+				GROUP BY fact_bill_billed_time_activity.master_fact_key) AS [BilledHours] ON [BilledHours].master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN (SELECT master_fact_key, SUM(bill_amount) bill_amount FROM red_dw.dbo.fact_bill_activity
+GROUP BY fact_bill_activity.master_fact_key) [RevenueAmount] ON [RevenueAmount].master_fact_key = fact_dimension_main.master_fact_key
 
     WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )

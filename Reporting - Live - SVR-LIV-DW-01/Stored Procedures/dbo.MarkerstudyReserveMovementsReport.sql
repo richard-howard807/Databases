@@ -3,10 +3,15 @@ GO
 SET ANSI_NULLS ON
 GO
 
-  CREATE PROCEDURE [dbo].[LLandMTRawDataReport]
+CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
+@DateClaimConcluded AS VARCHAR(20), @SettlementMonth AS VARCHAR(20)
   
-  AS
+ AS
   
+
+ -- TESTING 
+  --DECLARE @DateClaimConcluded AS VARCHAR(20) = 'Dec-2021'
+  --, @SettlementMonth AS VARCHAR(20) = NULL
   
   DROP TABLE IF EXISTS #DamagesReserveChanges
  SELECT  x.master_fact_key, 
@@ -56,7 +61,7 @@ GROUP BY x.master_fact_key
 
 
 SELECT 
-  [FilterMonth] =  LEFT(DATENAME(MONTH, dim_detail_outcome.[date_claim_concluded]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_claim_concluded]) AS VARCHAR(4)) ,
+  [DateClaimConcludedMonth] =  LEFT(DATENAME(MONTH, dim_detail_outcome.[date_claim_concluded]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_claim_concluded]) AS VARCHAR(4)) ,
   [3E Reference] = fact_dimension_main.master_client_code +'-'+master_matter_number,
   [Co op Handler] = dim_detail_core_details.[clients_claims_handler_surname_forename],
   [CIS Reference] = dim_client_involvement.insurerclient_reference	,
@@ -102,7 +107,11 @@ END,
   [Fourth damages reserve figure input into MI],
   [Date fourth damages reserve figure was input into MI], 
   [Fifth damages reserve figure input into MI],
-  [Date fifth damages reserve figure was input into MI] 
+  [Date fifth damages reserve figure was input into MI] ,
+
+
+  /* Settlement Month */
+  [Settlement Month] = LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4))
 
   FROM  red_dw.dbo.fact_dimension_main
   JOIN red_dw.dbo.dim_matter_header_current
@@ -221,7 +230,16 @@ AND ms_fileid NOT IN
   WHERE dbCodeLookup.cdDesc  =  'MSG Savings project'   
   AND [fileID] IS NOT NULL  
   )
+
+  AND CASE WHEN @DateClaimConcluded ='All' 
+  THEN ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_claim_concluded]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_claim_concluded]) AS VARCHAR(4)), '')  
+  ELSE @DateClaimConcluded END
+  = ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_claim_concluded]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_claim_concluded]) AS VARCHAR(4)), '') 
   
+  AND 
+  CASE WHEN @SettlementMonth ='All'  
+  THEN  ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4)), '')
+  ELSE @SettlementMonth END = ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4)),'')
   
   
   /*Testing*/

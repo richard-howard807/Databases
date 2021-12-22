@@ -14,6 +14,7 @@ GO
 -- Update: MT as per 92701 added [Risk Management Recommendations] 
 --		   JL as per ticket #122283 and corrected duplication by adding row_number
 --		   JL Change of name to report, added new RAG logic for 'Safety & Learning Factor identified'
+--			#125557, ES added additional details
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
@@ -369,7 +370,18 @@ SELECT
 	, dim_client_involvement.insuredclient_reference		AS [Trust Ref]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	AS [Panel Ref]
 	, dim_matter_header_current.matter_owner_full_name		AS [Panel Case Handler]
-	--, dim_client_involvement.insurerclient_reference		AS [NHSR Ref]
+	
+	--#125557 - ES added 
+	, ISNULL(dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference)		AS [NHSR Ref]
+	, CASE WHEN dim_detail_outcome.[is_breach_of_duty_admitted]='Yes' THEN 'Breach of duty admitted'
+		WHEN dim_detail_outcome.is_breach_of_duty_admitted='No' THEN 'Breach of duty not admitted'
+		ELSE NULL END [Liability Position]
+	, COALESCE(dim_detail_claim.dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name) AS [Claimant's Solicitors]
+	, CASE WHEN dim_detail_core_details.date_proceedings_issued IS NOT NULL THEN 'Proceedings issued on '+CAST(FORMAT(dim_detail_core_details.date_proceedings_issued, 'd', 'en-gb') AS VARCHAR(10))
+		WHEN dim_detail_core_details.proceedings_issued='No' THEN 'Pre-Issue'
+		WHEN dim_detail_core_details.proceedings_issued='Yes' THEN 'Post-Issue'
+		ELSE NULL END AS [Pre or Post Issue]
+
 	--, dim_detail_core_details.clients_claims_handler_surname_forename		AS [NHSR Case Handler]
 	--, dim_detail_health.nhs_scheme		AS [Scheme]
 	, dim_detail_health.nhs_instruction_type		AS [Instruction Type]
@@ -567,6 +579,7 @@ SELECT
 	 WHEN dim_detail_health.[nhs_risk_management_factor] IS NOT NULL THEN dim_detail_health.[nhs_risk_management_recommendations] END -- Added 20210319 - MT
 
 	 ,dim_detail_health.nhs_risk_management_factor
+	 ,dim_detail_health.nhs_risk_management_recommendations
 	 
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current

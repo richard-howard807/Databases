@@ -19,7 +19,14 @@ BEGIN
 		, fact_dimension_main.client_code AS [Client Code]
 		, fact_dimension_main.matter_number AS [Matter Number]
 		, dim_matter_header_current.matter_description AS [Matter Description]
+		, dim_date.calendar_date
 		, dim_matter_header_current.date_opened_practice_management AS [Date Opened]
+		, dim_date.fin_month_name AS [Month Name]
+		, dim_date.fin_month_no AS [Month]
+		, dim_date.fin_month
+		, dim_date.fin_year
+		, dim_date.current_fin_month
+		, CAST(fin_year-1 AS VARCHAR)+'/'+CAST(fin_year AS VARCHAR) AS [Year]
 		, cal_week_in_year AS [Week Number]
 		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_current.date_opened_practice_management)-1), dim_matter_header_current.date_opened_practice_management) AS DATE) [Week Start]
 		, trading_days_in_mth AS [Working Days in Month]
@@ -83,7 +90,82 @@ BEGIN
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
 									, 1 AS [Number of Matters]
-			
+		
+		
+				, CASE WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)=0 THEN '£0'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=50000 THEN '£1-£50,000'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=100000 THEN '£50,000-£100,000'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=250000 THEN '£100,000-£250,000'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=1000000 THEN '£250,000-£1m'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=3000000 THEN '£1m-£3m'
+				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)>3000000 THEN '>£3m' ELSE '£0' END AS [Damages Banding]
+		
+		, CASE 
+		WHEN (
+				CASE 
+					WHEN LOWER(work_type_name)='claims handling' THEN 
+						COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve])  
+					WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+						fact_finance_summary.[damages_reserve]
+					WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+						fact_detail_reserve_detail.initial_damages_reserve
+					ELSE
+						fact_finance_summary.damages_paid
+					END) <= 25000 THEN 
+			'Fast Track'
+		WHEN (
+				CASE 
+					WHEN LOWER(work_type_name)='claims handling' THEN 
+						COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+					WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+						fact_finance_summary.[damages_reserve]
+					WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+						fact_detail_reserve_detail.initial_damages_reserve
+					ELSE
+						fact_finance_summary.damages_paid
+				END) <= 100000 THEN 
+			'£25,000-£100,000'
+		WHEN (
+				CASE 
+					WHEN LOWER(work_type_name)='claims handling' THEN 
+						COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+					WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+						fact_finance_summary.[damages_reserve]
+					WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+						fact_detail_reserve_detail.initial_damages_reserve
+					ELSE
+						fact_finance_summary.damages_paid
+				END) <= 500000 THEN 
+			'£100,001-£500,000'
+		WHEN (
+				CASE
+					WHEN LOWER(work_type_name)='claims handling' THEN 
+						COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+					WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+						fact_finance_summary.[damages_reserve]
+					WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+						fact_detail_reserve_detail.initial_damages_reserve
+					ELSE
+						fact_finance_summary.damages_paid 
+				END) <= 1000000 THEN 
+			'£500,001-£1m'
+		WHEN (
+				CASE 
+					WHEN LOWER(work_type_name)='claims handling' THEN 
+						COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) 
+					WHEN ISNULL(fact_finance_summary.[damages_reserve], 0) > 0 THEN
+						fact_finance_summary.[damages_reserve]
+					WHEN ISNULL(fact_detail_reserve_detail.initial_damages_reserve, 0) > 0 THEN
+						fact_detail_reserve_detail.initial_damages_reserve
+					ELSE
+						fact_finance_summary.damages_paid 
+				END) <= 3000000 THEN 
+			'£1m-£3m'
+		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' THEN 
+			'Other Instructions'
+		ELSE
+			'No Reserve' 
+	END					AS [Damages Banding - Extended Version]
 
  FROM red_dw.dbo.dim_matter_header_current
  LEFT OUTER JOIN red_dw.dbo.fact_dimension_main
