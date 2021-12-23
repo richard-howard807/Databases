@@ -308,7 +308,7 @@ LEFT OUTER JOIN (
 					AND dim_employee.classification = 'Casehandler'
 					AND ISNULL(dim_employee.leftdate, '3000-01-01') >= CAST(GETDATE() AS DATE) 
 					AND dim_employee.deleted_from_cascade = 0
-					AND dim_employee.jobtitle IN ('Apprentice Solicitor', 'Trainee', 'Trainee Solicitor')
+					AND dim_employee.jobtitle IN ('Apprentice Solicitor', 'Trainee', 'Trainee Solicitor', 'Intelligence Analyst')
 				) AS trainees
 		ON trainees.employeeid = #EmployeeDates.employeeid COLLATE DATABASE_DEFAULT
 group by #EmployeeDates.employeeid

@@ -433,6 +433,7 @@ AND dim_matter_header_current.date_opened_case_management <= DATEADD(MONTH, DATE
 DROP TABLE IF EXISTS #MainAPI
 
 SELECT DISTINCT  
+      [Status],
       [AXA XL Claim Number],
       [Law Firm Matter Number],
       [Line of Business],
@@ -709,12 +710,14 @@ AND
 --OR    ISNULL(#AXAXLDataSubmission.[Was litigation avoidable - Select from list], '') COLLATE DATABASE_DEFAULT <> ISNULL(#MainAPI.[Was litigation avoidable Select from list], '') 
  
 )
+AND #MainAPI.Status <> 'Close Case'
 
 INSERT INTO  #Tabs
 SELECT #AXAXLDataSubmission.*
 FROM #AXAXLDataSubmission
 JOIN #MainAPI ON  #MainAPI.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT = #AXAXLDataSubmission.[Law Firm Matter Number]
 WHERE #AXAXLDataSubmission.RN = 1 
+AND #MainAPI.Status <> 'Close Case'
 AND 
 (
 #AXAXLDataSubmission.[Date closed] IS NOT NULL )
