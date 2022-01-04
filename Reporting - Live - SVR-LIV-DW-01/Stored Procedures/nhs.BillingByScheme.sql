@@ -186,7 +186,7 @@ BEGIN
           AND UnbilledWIP.IsActive = 1
 		  AND ISNULL(TimeType,'') NOT IN ('CB10','CB11','CB12')
 
-		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' -- MT 20211026
+		 -- AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' -- MT 20211026
 
     GROUP BY Matters.Client,
              Matters.Matter,
@@ -309,7 +309,7 @@ BEGIN
           )
 		  
 		  
-		  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' --MT 20211026
+		--  AND Details.FeeArrangement <> 'Fixed Fee/Fee Quote/Capped Fee' --MT 20211026
 		  
 		  ;
 

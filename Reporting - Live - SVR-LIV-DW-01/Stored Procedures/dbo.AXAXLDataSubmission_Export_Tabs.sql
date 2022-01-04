@@ -27,24 +27,18 @@ FROM
 (
 
 SELECT  DISTINCT
-[Status] = CAST('' AS NVARCHAR(20))
-,dim_matter_header_current.ms_fileid
-,COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA')  AS [AXA XL Claim Number]
-, RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) AS [Law Firm Matter Number]
+  [Status] = CAST('' AS NVARCHAR(20))
+, dim_matter_header_current.ms_fileid
+, [AXA XL Claim Number] = COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA')  
+, [Law Firm Matter Number] = RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) 
 , [Line of Business] = hierarchylevel3hist 
 , [New Line of Business] = LineofBus.[CaseText] 
-
-
  ,[Product Type] = work_type_name 
- 
-, [Product Type New] =  ProdType.[CaseText]
- 
-		
-, [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name
-    ELSE dim_detail_claim.[dst_insured_client_name] END  
+, [Product Type New] =  ProdType.[CaseText]		
+, [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name ELSE dim_detail_claim.[dst_insured_client_name] END  
 , [AXA XL Percentage line share of loss / expenses / recovery]  = CASE WHEN udMICoreAXA.pctLineShare > 1 THEN udMICoreAXA.pctLineShare/100 ELSE COALESCE(udMICoreAXA.pctLineShare, 1) END-- udMICoreAXA
-, dim_detail_core_details.[clients_claims_handler_surname_forename]                                        AS [AXA XL Claims Handler]
-, Brokername [Third Party Administrator] 
+, [AXA XL Claims Handler] = dim_detail_core_details.[clients_claims_handler_surname_forename]                                        
+, [Third Party Administrator]  = Brokername 
 , [Coverage / defence?] = COALESCE(cboCovDef.cdDesc, API.[cboCovDef_CaseText])    -- udMICoreAXA
 , [Law firm handling office (city)] = branch_name 
 , [Date Instructed] = COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) 
@@ -62,31 +56,28 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 		 WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
 		 ELSE COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) END) END  -- udMICoreAXA
 , [Proceeding Track] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END 
-, ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) AS   [Trial date]
-, fact_finance_summary.damages_reserve AS [Damages Reserve]
-, COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) AS [Opposing side's costs reserve]
-, defence_costs_reserve AS [Panel budget/reserve]
-, COALESCE(cboReaForPanel.cdDesc, 'No change') AS  [Reason for panel budget change if occurred] -- udMICoreAXA
-, defence_costs_billed AS [Panel Fees Paid]
-, Disbursements.[Disbs - Counsel fees] AS  [Counsel Paid]
-, ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) [Other Disbursements Paid]
-, fact_finance_summary.[tp_total_costs_claimed]  AS [Opposing side's Costs Claimed]
-
-, NULL [Timekeepers - Details of anyone who worked on the case during the time period.]
-, BilledTime.Name [Name]
-, BilledTime.[First name] AS Timekeepers_Firstname
-, BilledTime.[Last name] AS Timekeepers_Lastname
-, BilledTime.[Unique timekeeper ID per timekeeper] [Unique timekeeper ID per timekeeper]
-, BilledTime.[Level (solicitor, partner)] AS  [Level (solicitor, partner)]
-, CASE WHEN BilledTime.PQE <0 THEN 0 
+, [Trial date] = ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) 
+, [Damages Reserve] = fact_finance_summary.damages_reserve 
+, [Opposing side's costs reserve] = COALESCE(fact_finance_summary.[tp_total_costs_claimed], tp_costs_reserve) 
+, [Panel budget/reserve] = defence_costs_reserve 
+, [Reason for panel budget change if occurred] = COALESCE(cboReaForPanel.cdDesc, 'No change')  -- udMICoreAXA
+, [Panel Fees Paid] = defence_costs_billed 
+, [Counsel Paid] = Disbursements.[Disbs - Counsel fees] 
+, [Other Disbursements Paid] = ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0) 
+, [Opposing side's Costs Claimed] = fact_finance_summary.[tp_total_costs_claimed] 
+, [Timekeepers - Details of anyone who worked on the case during the time period.] = NULL 
+, [Name] = BilledTime.Name 
+, Timekeepers_Firstname = BilledTime.[First name] 
+, Timekeepers_Lastname = BilledTime.[Last name] 
+, [Unique timekeeper ID per timekeeper] = BilledTime.[Unique timekeeper ID per timekeeper] 
+, [Level (solicitor, partner)] = BilledTime.[Level (solicitor, partner)] 
+, [PQE] = CASE WHEN BilledTime.PQE <0 THEN 0 
        WHEN BilledTime.PQE IS NULL THEN 0
-                            ELSE BilledTime.PQE END [PQE]
+                            ELSE BilledTime.PQE END 
 , [Hours spent on case] = BilledTime.[Hours spent on case] 
 , [Upon closing a case add the following information] = NULL
-, [Date closed] = 
-CASE WHEN fact_finance_summary.unpaid_bill_balance =0.00 AND dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN Receipt.receipt_date END
-, [Date of Final Panel Invoice] = 
-CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date END
+, [Date closed] = CASE WHEN fact_finance_summary.unpaid_bill_balance =0.00 AND dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN Receipt.receipt_date END
+, [Date of Final Panel Invoice] = CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN last_bill_date END
 , [Date Damages settled] = dim_detail_outcome.date_claim_concluded 
 , [Final Damages Amount] = fact_finance_summary.[damages_paid] 
 , [Claimants Costs Handled by Panel?] = CASE WHEN  TRIM(cboOutOfIns.cdDesc) IN 
@@ -106,8 +97,6 @@ CASE WHEN cboOutOfIns.cdDesc = 'Discontinued' THEN   'Discontinued or not pursue
 	 WHEN cboOutOfIns.cdDesc = 'Successfully defended (no indemnity payment)' THEN 'Successfully defended no indemnity payment'
 	 WHEN cboOutOfIns.cdDesc = 'Coverage (declined claim)' THEN 'Coverage declined claim'
 	 ELSE cboOutOfIns.cdDesc END   -- udMICoreAXA
-
-
 , [Was litigation avoidable - Select from list] =
 CASE WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes – other' THEN 'Yes other' -- udMICoreAXA
      WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - other' THEN 'Yes other'
@@ -117,16 +106,14 @@ CASE WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes – other' THEN 'Yes other' -- udMICor
 	 WHEN TRIM(cboWasLitAv.cdDesc) = 'Yes - Differing opinions on merits' THEN 'Yes differing opinions on merits'
 	 ELSE TRIM(cboWasLitAv.cdDesc)
 	 END
-
-
 ,hierarchylevel3hist
-,hierarchylevel4hist AS [Team]
-,dim_fed_hierarchy_history.name AS [Weightmans Handler name]
-,dim_detail_core_details.referral_reason AS [Referral reason]
+,[Team] = hierarchylevel4hist 
+,[Weightmans Handler name] = dim_fed_hierarchy_history.name 
+,[Referral reason] = dim_detail_core_details.referral_reason 
 ,dim_detail_core_details.[proceedings_issued] 
 ,[Counsel Paid / Other disbursements] = Disbursements.[Disbs - Counsel fees]
 ,[Disbursements] = Disbursements.DisbAmount
-,dim_detail_core_details.[present_position] AS [status_present_postition]
+,[status_present_postition] = dim_detail_core_details.[present_position] 
 ,dim_matter_header_current.date_closed_case_management 
 ,matter_description
 ,dim_client_involvement.insuredbroker_name
