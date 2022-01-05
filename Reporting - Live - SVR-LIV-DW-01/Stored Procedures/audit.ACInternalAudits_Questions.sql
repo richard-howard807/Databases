@@ -91,6 +91,19 @@ SELECT ListValue INTO #Fee_Earner FROM Reporting.dbo.udt_TallySplit('|', @Fee_Ea
 				WHERE dim_ac_audits.created_at >='2021-09-01'
 				and dim_ac_audits.dim_auditee1_hierarchy_history_key <> 0 
 				and audite1.display_name <> 'Unknown'
+				AND (CASE	
+						WHEN LOWER(dim_ac_audits.client_code) LIKE '%test%' THEN
+							1
+						WHEN LOWER(dim_ac_audits.matter_number) LIKE '%test%' THEN
+							1
+						WHEN LOWER(dim_ac_audits.area) LIKE '%test%' THEN
+							1
+						WHEN LOWER(dim_ac_audits.matter_description) LIKE '%test%' THEN
+							1
+						ELSE
+							0
+					  END 
+					) = 0
 
 		
 
