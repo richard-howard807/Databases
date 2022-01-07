@@ -5,7 +5,7 @@ GO
 
 
 CREATE PROCEDURE [dbo].[AvivaasInsurerListingReport_Dataset_Param]
-@StartDate AS DATE, @EndDate AS DATE
+--@StartDate AS DATE, @EndDate AS DATE
 
 AS
 
@@ -40,8 +40,8 @@ SELECT DISTINCT
           OR (LOWER(dim_client_involvement.[insuredclient_name]) LIKE '%veolia%' AND LOWER(dim_client_involvement.[insurerclient_name]) LIKE '%aviva%' )
           OR (LOWER(dim_client.[client_name]) LIKE '%green%king%' AND LOWER(dim_client_involvement.[insurerclient_name]) LIKE '%aviva%' )
           OR (LOWER(dim_client_involvement.[insuredclient_name]) LIKE '%green%king%' AND LOWER(dim_client_involvement.[insurerclient_name]) LIKE '%aviva%' )
-          OR (dim_client.[client_name] LIKE '%menzies%' AND dim_client_involvement.[insurerclient_name] LIKE '%aviva%' )
-          OR (dim_client_involvement.[insuredclient_name] LIKE '%menzies%' AND dim_client_involvement.[insurerclient_name] LIKE '%aviva%' )
+          OR (LOWER(dim_client.[client_name]) LIKE '%menzies%' AND LOWER(dim_client_involvement.[insurerclient_name]) LIKE '%aviva%' )
+          OR (LOWER(dim_client_involvement.[insuredclient_name]) LIKE '%menzies%' AND LOWER(dim_client_involvement.[insurerclient_name]) LIKE '%aviva%' )
 		  /*Bring in matters under Client No 817628 (Smiths News) where ‘Does claimant have personal injury claim’ = Yes and Aviva is listed in the Associates section*/
           OR (
 		  dim_matter_header_current.master_client_code = '817628' 
@@ -116,7 +116,7 @@ WHERE ms_fileid
 
 IN (SELECT ms_fileid FROM #filterList)
 
- AND CAST(date_opened_case_management AS DATE )
- BETWEEN @StartDate AND @EndDate
+ --AND CAST(date_opened_case_management AS DATE )
+ --BETWEEN @StartDate AND @EndDate
  
 GO
