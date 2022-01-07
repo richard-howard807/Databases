@@ -4,13 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
 CREATE PROCEDURE [dbo].[SabreBillingProjectReport]
 AS
 BEGIN
@@ -78,6 +71,7 @@ WHERE master_client_code='W15564'
 AND fees_total <>0
 AND dim_bill.bill_number <>'PURGE'
 AND bill_reversed=0
+
 GROUP BY fact_bill.client_code,fact_bill.matter_number) AS LastBillNonDisbBill
  ON LastBillNonDisbBill.client_code = dim_matter_header_current.client_code
  AND LastBillNonDisbBill.matter_number = dim_matter_header_current.matter_number
@@ -98,10 +92,20 @@ END)>=60)
 )
 OR present_position='Final bill due - claim and costs concluded'
 )
+AND (
+	CASE
+		WHEN ISNULL(RTRIM(dim_matter_header_current.fee_arrangement), '') = 'Fixed Fee/Fee Quote/Capped Fee' AND RTRIM(dim_matter_header_current.present_position) = 'Claim and costs outstanding' THEN
+			0
+		ELSE
+			1
+	END	
+	) = 1
 
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)
 END
+
+
 
 GO
