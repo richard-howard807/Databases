@@ -46,22 +46,22 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , [AXA XL Percentage line share of loss / expenses / recovery] = CASE WHEN udMICoreAXA.pctLineShare > 1 THEN udMICoreAXA.pctLineShare/100 ELSE COALESCE(udMICoreAXA.pctLineShare, 1) END  -- udMICoreAXA
 , [AXA XL Claims Handler] = dim_detail_core_details.[clients_claims_handler_surname_forename]                                       
 , [Third Party Administrator]  = Brokername 
-, [Coverage / defence?]  = COALESCE(cboCovDef.cdDesc, API.[cboCovDef_CaseText])   -- udMICoreAXA
+, [Coverage / defence?]  = cboCovDef.cdDesc  -- API.[cboCovDef_CaseText]  -- udMICoreAXA
 , [Law firm handling office (city)] = branch_name 
 , [Date Instructed] = COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) 
 , [Opposing Side's Solicitor Firm Name] = COALESCE(dim_detail_claim.[dst_claimant_solicitor_firm], red_dw.dbo.dim_claimant_thirdparty_involvement.claimantsols_name) 
-, [Reason For instruction] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN 'Litigation' ELSE COALESCE(cboReaIns.cdDesc,API.[cboReaIns_CaseText] ) END   -- udMICoreAXA
+, [Reason For instruction] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN 'Litigation' ELSE cboReaIns.cdDesc  END    -- udMICoreAXA
 , [Fee Scale] = CASE WHEN dim_detail_finance.[output_wip_fee_arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' THEN 'fixed_fee' ELSE dim_detail_finance.[output_wip_fee_arrangement] END 
 , [Damages Claimed] = damages_reserve 
-, [First acknowledgement Date]= COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , CONVERT(datetime,  API.[FirstAcknowledgementDate], 103), udMICoreAXA.[dteFirstAck])  
+, [First acknowledgement Date]= COALESCE(dim_detail_claim.[axa_first_acknowledgement_date] , udMICoreAXA.[dteFirstAck])  
 , [Report Date] = ISNULL(date_subsequent_sla_report_sent,date_initial_report_sent) 
 , [Date Proceedings Issued] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN COALESCE(dim_detail_court.[date_proceedings_issued], KD_Acknowledgement.[Acknowledgement of Service]) END
-, [AXA XL as defendant]  =  CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  COALESCE(cboIsAXADef.cdDesc, API.[cboIsAXADef_CaseText], 'Yes')  END -- udMICoreAXA NEW*** 
+, [AXA XL as defendant]  =  CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  COALESCE(cboIsAXADef.cdDesc, 'Yes')  END -- udMICoreAXA NEW*** 
 , [Reason for proceedings] = 
 CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
-	(CASE WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Quantum dispute' THEN 'Quantum disputes' 
-		 WHEN COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
-		 ELSE COALESCE(cboReForProc.cdDesc, API.[cboReForProc_CaseText]  ) END) END  -- udMICoreAXA
+	(CASE WHEN cboReForProc.cdDesc = 'Quantum dispute' THEN 'Quantum disputes' 
+		 WHEN cboReForProc.cdDesc = 'Insured delay - should be settled' THEN 'Insured delay should be settled'
+		 ELSE cboReForProc.cdDesc END) END  -- udMICoreAXA
 , [Proceeding Track] = CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN  dim_detail_core_details.[track] ELSE NULL END 
 , [Trial date] = ISNULL(dim_detail_court.[date_of_trial],Trials.TrialDate) 
 , fact_finance_summary.damages_reserve AS [Damages Reserve]
@@ -379,20 +379,20 @@ LEFT JOIN (SELECT fileID,  dateadd(DD, -14, cast(MAX(tskDue)as date)) AS [Acknow
 
 /* Temp Fix due to API issues. */
 
-LEFT JOIN 
-(
-SELECT ClNo 
+--LEFT JOIN 
+--(
+--SELECT ClNo 
   
- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReForProc' THEN  TRIM([CaseText]) END) [cboReForProc_CaseText]
- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReaIns' THEN  TRIM([CaseText]) END) [cboReaIns_CaseText]
- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboCovDef' THEN  TRIM([CaseText]) END) [cboCovDef_CaseText]
- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboIsAXADe' THEN  TRIM([CaseText]) END) [cboIsAXADef_CaseText]
- ,MAX(CASE WHEN TRIM([MSCode])  = 'Not created  - check' THEN  [CaseDate] END) [FirstAcknowledgementDate]
-  FROM [SQLAdmin].[dbo].[_20210509_API] 
-  WHERE TRIM([MSCode]) IN ('cboReForProc', 'cboReaIns', 'cboCovDef', 'cboIsAXADe', 'Not created  - check')
-  GROUP BY ClNo
-  ) API
-  ON API.ClNo  = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT + '-' + master_matter_number COLLATE DATABASE_DEFAULT
+-- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReForProc' THEN  TRIM([CaseText]) END) [cboReForProc_CaseText]
+-- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboReaIns' THEN  TRIM([CaseText]) END) [cboReaIns_CaseText]
+-- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboCovDef' THEN  TRIM([CaseText]) END) [cboCovDef_CaseText]
+-- ,MAX(CASE WHEN TRIM([MSCode])  = 'cboIsAXADe' THEN  TRIM([CaseText]) END) [cboIsAXADef_CaseText]
+-- ,MAX(CASE WHEN TRIM([MSCode])  = 'Not created  - check' THEN  [CaseDate] END) [FirstAcknowledgementDate]
+--  FROM [SQLAdmin].[dbo].[_20210509_API] 
+--  WHERE TRIM([MSCode]) IN ('cboReForProc', 'cboReaIns', 'cboCovDef', 'cboIsAXADe', 'Not created  - check')
+--  GROUP BY ClNo
+--  ) API
+--  ON API.ClNo  = dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT + '-' + master_matter_number COLLATE DATABASE_DEFAULT
 
  
  /* MS fix for [AXA XL Claim Number] */
