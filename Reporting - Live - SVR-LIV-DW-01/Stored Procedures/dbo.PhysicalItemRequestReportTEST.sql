@@ -14,7 +14,6 @@ GO
 
 
 
-
 CREATE PROCEDURE [dbo].[PhysicalItemRequestReportTEST] 
 (
    @Start AS DATETIME,
@@ -31,10 +30,12 @@ BEGIN
 BEGIN
  
  -- Test 
- --DECLARE @Start AS DATE = GETDATE() - 100
- --      , @End AS DATE = GETDATE()
+ --DECLARE @Start AS DATE = '2021-12-30'--GETDATE() - 100
+ --      , @End AS DATE =  '2022-01-06'  --  GETDATE()
 	--   ,@Status AS int = 0
+SELECT * FROM 
 
+(
 
  SELECT DISTINCT
 		Final.job_id,
@@ -49,6 +50,7 @@ BEGIN
         Final.document_link,
         Final.SourceSystem,
         Final.OriginalStatus
+		,RN = ROW_NUMBER() OVER (PARTITION BY Final.job_id ORDER BY CASE WHEN Final.Result = 'COMPLETED' THEN 1 ELSE 0 END DESC)
 
  FROM 
 
@@ -216,7 +218,10 @@ LEFT JOIN [SVR-LIV-3PTY-01].[ServiceDeskPlus].[dbo].CategoryDefinition cd
 
 ) Final 
 
-ORDER BY Final.[Date Requested] DESC
+--WHERE Final.job_id = 200431
+) f
+WHERE RN =1 
+ORDER BY f.[Date Requested] DESC
 
 
 END 

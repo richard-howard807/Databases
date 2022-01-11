@@ -178,8 +178,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		 ON dim_bill_date.dim_bill_date_key = fact_bill_billed_time_activity.dim_bill_date_key
 		WHERE master_client_code='N1001'
 		AND time_activity_code IN ('CB10','CB11','CB12','CB13')
-		--AND bill_date BETWEEN @Startdate AND @Enddate
-		AND bill_date BETWEEN '2021-12-01' AND '2021-12-02'
+		AND bill_date BETWEEN @Startdate AND @Enddate
+		--AND bill_date BETWEEN '2021-12-01' AND '2021-12-02'
 		
 		GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 		) AS CBCodes
@@ -228,6 +228,7 @@ ON BudgetDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter
 		 ON DisbsAfterCosts.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
+	--AND dim_matter_header_current.master_matter_number = '00018093'
 	AND dim_matter_header_current.reporting_exclusions = 0
 
 	--AND dim_detail_outcome.date_costs_settled BETWEEN @Startdate AND @Enddate
