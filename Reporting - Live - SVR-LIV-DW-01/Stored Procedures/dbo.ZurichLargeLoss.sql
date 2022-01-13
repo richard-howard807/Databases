@@ -115,9 +115,9 @@ SELECT
 	, dim_detail_core_details.date_initial_report_sent
 	, date_instructions_received AS [Date Instructions Received]
 , CASE
-	WHEN  [Days to send initial report (working days)] >10 THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
 	WHEN do_clients_require_an_initial_report = 'No' THEN 'Report Not Required'
 	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
+	WHEN  [Days to send initial report (working days)] >10 THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
 	ELSE 'SLA Met'
 	END	AS [Initial Report SLA Status]
 

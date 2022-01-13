@@ -72,7 +72,7 @@ LEFT OUTER JOIN red_dw.dbo.Doogal
 ON Doogal.Postcode=dim_detail_advice.dvpo_victim_postcode
 
 WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518')
-AND work_type_name ='PL - Pol - Stalking Protection Order'
+AND TRIM(work_type_name) ='PL - Pol - Stalking Protection Order'
 AND reporting_exclusions=0
 
 
