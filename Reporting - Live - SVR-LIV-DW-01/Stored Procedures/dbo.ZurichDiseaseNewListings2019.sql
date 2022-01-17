@@ -13,6 +13,7 @@ GO
 -- JB 2020-12-03 - Ticket #80905 added policy cover dates and ms_only flag
 -- JB 2021-05-11 - Ticket #95135 removed claimant address join, was producing multiple lines if data due to multiple claimant associates. Column no longer needed in report
 -- JB 2021-10-07 - Ticket #117315 added last time transaction date
+-- ES 2022-01-14 - Ticket #128874 added field, closed as part of bulk review
 -- =============================================
 
 CREATE PROCEDURE [dbo].[ZurichDiseaseNewListings2019]
@@ -152,6 +153,8 @@ select distinct
 	, CAST(last_transaction_date.last_transaction_date AS DATE)			AS [Last Time Transaction Date]
 	, fact_finance_summary.wip		AS [WIP]
 	--, claimants_address.claimant_address				AS [Claimant's Address]
+	, ClaimDetails.closed_as_part_of_bulk_review AS [Closed as Part of Bulk Review?]
+
 from red_dw.dbo.fact_dimension_main
     inner join red_dw.dbo.dim_fed_hierarchy_history
         on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
@@ -279,7 +282,8 @@ from red_dw.dbo.fact_dimension_main
 			   [Claimants Cost Reserve],
 			   dim_child.date_policy_start,
 			   dim_child.date_policy_end,
-			   dim_child.catalina_claim_number
+			   dim_child.catalina_claim_number,
+			   dim_child.closed_as_part_of_bulk_review
 			   -- select *
 
         from
@@ -309,6 +313,7 @@ from red_dw.dbo.fact_dimension_main
 					   , dim_child_detail.date_policy_start
 					   , dim_child_detail.date_policy_end
 					   , dim_child_detail.catalina_claim_number
+					   , dim_child_detail.[closed_as_part_of_bulk_review]
                 from red_dw.dbo.dim_child_detail
             ) as dim_child
               on Parent.dim_parent_key = dim_child.dim_parent_key

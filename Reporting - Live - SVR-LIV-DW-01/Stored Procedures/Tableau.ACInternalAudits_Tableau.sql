@@ -8,8 +8,7 @@ GO
 -- Description:	Data for Risk and Complaince to keep track of audits created on audit comply dashboard
 -- =============================================
 
-
-CREATE PROCEDURE [Tableau].[ACInternalAudits_Questions]
+CREATE PROCEDURE [Tableau].[ACInternalAudits_Tableau]
 AS
 BEGIN
 
@@ -20,7 +19,7 @@ BEGIN
 
 --DROP TABLE IF EXISTS #Template
 DROP table if exists #Audits
-
+ SET NOCOUNT ON 
 
 
 --SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template)
@@ -112,7 +111,7 @@ select distinct #Audits.employeeid
      ,dim_ac_audit_questions.question_text question_text
      , dim_ac_audit_questions.observation
      , dim_ac_audit_questions.recommendation
-     , iif(dim_ac_audit_questions.response = 'Assign Task', '', dim_ac_audit_questions.response) response
+     , iif(dim_ac_audit_questions.response = 'Assign Task', '', dim_ac_audit_questions.response) AS response
 	 , dim_ac_audit_questions.audit_id
 	 , dim_fed_hierarchy_history.hierarchylevel2hist Division
 	 , dim_fed_hierarchy_history.hierarchylevel3hist Department
