@@ -240,7 +240,8 @@ INSERT INTO dbo.catalina_post_snapshot
     report_week_no,
     report_tab,
     post_split_by_age,
-    outstanding_post
+    outstanding_post,
+	update_time
 )
 SELECT 
 	*
@@ -281,6 +282,7 @@ SELECT
 		ELSE
 			'>60'
 	  END						AS outstanding_post
+	, GETDATE() AS update_time
 FROM (	
 		SELECT 
 			#catalina_matters.ms_ref

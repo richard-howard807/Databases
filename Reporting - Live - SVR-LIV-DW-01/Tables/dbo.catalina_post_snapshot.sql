@@ -17,6 +17,7 @@ CREATE TABLE [dbo].[catalina_post_snapshot]
 [report_week_no] [int] NULL,
 [report_tab] [nvarchar] (10) COLLATE Latin1_General_CI_AS NULL,
 [post_split_by_age] [nvarchar] (10) COLLATE Latin1_General_CI_AS NULL,
-[outstanding_post] [nvarchar] (10) COLLATE Latin1_General_CI_AS NULL
+[outstanding_post] [nvarchar] (10) COLLATE Latin1_General_CI_AS NULL,
+[update_time] [datetime] NULL
 ) ON [PRIMARY]
 GO
