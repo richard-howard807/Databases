@@ -116,6 +116,7 @@ SELECT
 	, date_instructions_received AS [Date Instructions Received]
 , CASE
 	WHEN do_clients_require_an_initial_report = 'No' THEN 'Report Not Required'
+	WHEN ISNULL(dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report, '') = 'Yes' THEN 'Has had an extension'
 	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
 	WHEN  [Days to send initial report (working days)] >10 THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
 	ELSE 'SLA Met'
