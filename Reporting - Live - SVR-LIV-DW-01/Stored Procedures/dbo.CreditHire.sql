@@ -168,8 +168,8 @@ LEFT OUTER JOIN red_dw.dbo.Doogal AS [Court_Postcode] ON [Court_Postcode].Postco
 
 WHERE date_opened_case_management>='20150101'
 AND reporting_exclusions=0
-AND dim_detail_core_details.credit_hire='Yes'
-AND dim_detail_core_details.are_we_dealing_with_the_credit_hire='Yes'
+AND (dim_detail_core_details.credit_hire='Yes'
+OR dim_detail_core_details.are_we_dealing_with_the_credit_hire='Yes')
 AND dim_fed_hierarchy_history.hierarchylevel3hist='Motor'
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports' 
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Returned to Client'
