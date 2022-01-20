@@ -362,10 +362,10 @@ SELECT
 --	ELSE 'SLA Met'
 --	END	AS [Initial Report SLA Status]
 , CASE
-	WHEN #MainData.[Do Clients Require an Initial Report?] = 'No' THEN 'Report Not Required'
+	WHEN #MainData.[Do Clients Require an Initial Report?] = 'No' THEN 'Report Not Required'  -- not required 
 	WHEN #MainData.[Days to send initial report (working days)] <=10 THEN 'SLA Met' 
-	WHEN #MainData.[Days to send initial report (working days)] >10 AND ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'Has had an extension/sla not met'  
-	WHEN ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'Has had an extension/sla not met'  
+	WHEN #MainData.[Days to send initial report (working days)] >10 AND ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'SLA Met'--if they have had an extention they have met SLA 
+	WHEN ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'SLA Met' 
 	WHEN #MainData.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
 	--THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
 	ELSE 'SLA Not Met'
