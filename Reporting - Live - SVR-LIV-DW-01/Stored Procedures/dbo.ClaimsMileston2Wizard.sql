@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 
 AS 
@@ -38,60 +40,60 @@ INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT  AND dss_current_flag='Y' AND activeud=1
-LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_ReviewMatter' AND tskMSStage='2') AS Milestones
+LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_ReviewMatter' AND tskMSStage='2') AS Milestones
  ON ms_fileid=Milestones.fileID
-LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSStage='2') AS Workflow
+LEFT OUTER JOIN (SELECT fileID,CASE WHEN  tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSStage='2') AS Workflow
  ON ms_fileid=Workflow.fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Review Matter Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_ReviewMatter' AND tskMSStage='2') AS [Review Matter Process]
  ON ms_fileid=[Review Matter Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [FIC process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_021_02_010_FIC' AND tskMSStage='2') AS [FIC process]
  ON ms_fileid=[FIC process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Intel Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_023_02_010_Intel' AND tskMSStage='2') AS [Intel Process]
  ON ms_fileid=[Intel Process].fileID
 
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [MIIC Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_01_02_010_TechCheckMot' AND tskMSStage='2') AS [MIIC Process]
  ON ms_fileid=[MIIC Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [CRU Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_028_02_010_CRU' AND tskMSStage='2') AS [CRU Process]
  ON ms_fileid=[CRU Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Magic Phone Call Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_020_010_MagicPhone' AND tskMSStage='2') AS [Magic Phone Call Process]
  ON ms_fileid=[Magic Phone Call Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Contact Insured Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_270_ContactInsured' AND tskMSStage='2') AS [Contact Insured Process]
  ON ms_fileid=[Contact Insured Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Vulnerable Person Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_280_Vulnerable' AND tskMSStage='2') AS [Vulnerable Person Process]
  ON ms_fileid=[Vulnerable Person Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Report to Client Process]
@@ -103,7 +105,7 @@ FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_310_RepClient' AND tskMSSta
  ELSE 'Not Outstanding' END AS [Report MI Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1260_ReportMI' AND tskMSStage='2') AS [Report MI Process]
  ON ms_fileid=[Report MI Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Date of Next File Review]
@@ -144,6 +146,8 @@ AND dim_matter_worktype.work_type_code NOT IN ('0008'
 ,'1327','1328','1329','1330','1331','1332','1333','1334','1340','1341','1342','1343','1344'
 ,'1345','1346','1347','1348','1349','1350','1351','1352','1353','1354','1509','1563','1566'
 ,'1567','1569','1570','1583','1586','1587','1588','1599','2037','2038','9000')
+--AND master_client_code='W20218' AND master_matter_number='517'
+
 
 END
 GO
