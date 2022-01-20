@@ -47,13 +47,14 @@ SELECT
 	, CASE 
 	WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL 
 	THEN [dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
-	WHEN date_initial_report_due IS NULL 
+	WHEN date_instructions_received IS NOT NULL 
 	THEN [dbo].[AddWorkDaysToDate](date_instructions_received ,ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
-	WHEN date_instructions_received IS NULL
+	WHEN dim_matter_header_current.date_opened_case_management IS NOT NULL
 	THEN [dbo].[AddWorkDaysToDate](CAST(dim_matter_header_current.date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
 	ELSE date_initial_report_due 
 	END	AS [initial_report_due]
-  	, [dbo].[ReturnElapsedDaysExcludingBankHolidays] (COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,red_dw.dbo.dim_detail_core_details.date_instructions_received,dim_matter_header_current.date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
+
+  	--, [dbo].[ReturnElapsedDaysExcludingBankHolidays] (COALESCE(grpageas_motor_date_of_receipt_of_clients_file_of_papers,red_dw.dbo.dim_detail_core_details.date_instructions_received,dim_matter_header_current.date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
 --Logic for Subsequent Report Due (Date)
 , CASE 
 	WHEN do_clients_require_an_initial_report = 'No' 
@@ -116,8 +117,9 @@ WHERE
 	AND red_dw.dbo.dim_detail_core_details.referral_reason IN ('Dispute on Liability', 'Dispute on liability','Dispute on liability and quantum','Dispute on quantum')  
 	AND dim_matter_header_current.ms_only = '1'
 					
---=========================================================================================================================================================================================================================================================================
---=========================================================================================================================================================================================================================================================================
+/*--=========================================================================================================================================================================================================================================================================
+    Main Data
+--=========================================================================================================================================================================================================================================================================*/
 
 SELECT 
 	dim_client.client_name AS [Client Name]
@@ -126,15 +128,9 @@ SELECT
 	--, [dbo].[ReturnElapsedDaysExcludingBankHolidays](COALESCE(#ClientReportDates.grpageas_motor_date_of_receipt_of_clients_file_of_papers,#ClientReportDates.date_instructions_received,dim_matter_header_current.date_opened_case_management),date_initial_report_sent) AS [Days to send initial report (working days)]
 	, [dbo].[ReturnElapsedDaysExcludingBankHolidays](#ClientReportDates.initial_report_due,red_dw.dbo.dim_detail_core_details.date_initial_report_sent) AS [Days to send initial report (working days)]
 	, dim_detail_core_details.date_initial_report_sent
-	--, #ClientReportDates.date_instructions_received AS [Date Instructions Received]
-	,#ClientReportDates.initial_report_due  
-, CASE
-	WHEN do_clients_require_an_initial_report = 'No' THEN 'Report Not Required'
-	WHEN ISNULL(dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report, '') = 'Yes' THEN 'Has had an extension'
-	WHEN dim_detail_core_details.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
-	WHEN  [Days to send initial report (working days)] >10 THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
-	ELSE 'SLA Met'
-	END	AS [Initial Report SLA Status]
+	,#ClientReportDates.initial_report_due
+	,red_dw.dbo.dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
+
 
 	, dim_detail_core_details.present_position AS [Present Position]
 	--, CASE WHEN CAST(date_instructions_received AS DATE)=CAST(date_opened_case_management AS DATE) THEN 0 ELSE dbo.ReturnElapsedDaysExcludingBankHolidays(date_instructions_received,date_opened_case_management) END AS [Days to File Opened from Date Instructions Received]
@@ -297,7 +293,7 @@ WHEN
 ) THEN 'Other' END AS [Repudiated/Settled]
 ,dim_detail_client.zurich_no_call_made
 ,[ll00_have_we_had_an_extension_for_the_initial_report]	AS [Have we had an extension for Initial Report]
-,#ClientReportDates.date_initial_report_due 
+--,#ClientReportDates.date_initial_report_due 
 
 
 
@@ -349,19 +345,36 @@ AND ((dim_detail_outcome.[date_claim_concluded] >='20190201' OR dim_detail_outco
 'Dispute on liability and quantum',                            
 'Dispute on quantum')  
 AND dim_matter_header_current.ms_only = '1'
-	AND dim_matter_header_current.client_code = 'Z1001'
-	AND dim_matter_header_current.matter_number = '00080482'
 
+/*-----------------------------------------------------------------------------------------------------------------------------------------------
+Final Data Set for Dashboard
+--------------------------------------------------------------------------------------------------------------------------------------------*/
 
 SELECT 
 [Client Name]
 , [Mattersphere Weightmans Reference]
 , [Matter Owner]
+--, CASE
+--	WHEN #MainData.[Do Clients Require an Initial Report?] = 'No' THEN 'Report Not Required'
+--	WHEN ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'Has had an extension'
+--	WHEN #MainData.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
+--	WHEN  #MainData.[Days to send initial report (working days)] >10 THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
+--	ELSE 'SLA Met'
+--	END	AS [Initial Report SLA Status]
+, CASE
+	WHEN #MainData.[Do Clients Require an Initial Report?] = 'No' THEN 'Report Not Required'
+	WHEN #MainData.[Days to send initial report (working days)] <=10 THEN 'SLA Met' 
+	WHEN #MainData.[Days to send initial report (working days)] >10 AND ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'Has had an extension/sla not met'  
+	WHEN ISNULL(#MainData.[Have we had an Extension?], '') = 'Yes' THEN 'Has had an extension/sla not met'  
+	WHEN #MainData.date_initial_report_sent IS NULL THEN 'No Date' --NOT GOT A DATE = 3
+	--THEN 'SLA Not Met' 	--10 WORKING DAYS IS THE ZURICH SLA
+	ELSE 'SLA Not Met'
+	END	AS [Initial Report SLA Status]
 , [Days to send initial report (working days)]
---, [Days to send initial report (working days)_VERSION2]
 , date_initial_report_sent
---, [Date Instructions Received]
-, [Initial Report SLA Status]
+, initial_report_due
+, [Date Instructions Received]
+, #MainData.date_opened_case_management
 , [Present Position]
 , [Do Clients Require an Initial Report?]
 , [Date Receipt of File Papers]
@@ -397,7 +410,7 @@ SELECT
 ,[Zurich Intro Date] 
 ,MaxValue
 , grpageas_motor_date_of_receipt_of_clients_file_of_papers
-, #MainData.date_opened_case_management
+
 , CountPhoneCallNotComplete
 , claimants_costs_paid
 , NULLIF(total_amount_billed,0)	- NULLIF(vat_billed,0)  AS [total_amount_billed]
@@ -427,11 +440,8 @@ SELECT
 ,zurich_no_call_made
 ,zurich_introductory_call
 ,[Have we had an extension for Initial Report]
-,date_initial_report_due
-,initial_report_due
 FROM #MainData
---WHERE
---[Mattersphere Weightmans Reference] ='Z1001-81280'
+
 
 
    END
