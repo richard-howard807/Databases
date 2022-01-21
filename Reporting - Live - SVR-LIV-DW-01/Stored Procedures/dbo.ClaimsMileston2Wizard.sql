@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 
 AS 
@@ -99,7 +101,7 @@ FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_280_Vulnerable' AND tskMSSt
  ELSE 'Not Outstanding' END AS [Report to Client Process]
 FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_310_RepClient' AND tskMSStage='2') AS [Report to Client Process]
  ON ms_fileid=[Report to Client Process].fileID
- LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskCompleted=1 AND tskActive=1  THEN 'Completed'
+ LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
  WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
  ELSE 'Not Outstanding' END AS [Report MI Process]
@@ -147,7 +149,7 @@ AND dim_matter_worktype.work_type_code NOT IN ('0008'
 ,'1345','1346','1347','1348','1349','1350','1351','1352','1353','1354','1509','1563','1566'
 ,'1567','1569','1570','1583','1586','1587','1588','1599','2037','2038','9000')
 --AND master_client_code='W20218' AND master_matter_number='517'
-
+AND name <>'Steve Hassall'
 
 END
 GO
