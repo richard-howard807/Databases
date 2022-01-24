@@ -13,6 +13,7 @@ GO
 
 
 
+
 --EXEC [CommercialRecoveries].[LeedsBillingAllClient] '2020-03-06', '2020-03-06'
 
 CREATE PROCEDURE [CommercialRecoveries].[LeedsBillingAllClient]
@@ -47,31 +48,31 @@ WHEN cboCatDesc='7' THEN 'Unrecoverable Cost' END AS [Disbursment/Cost Type]
 ,ISNULL(AssociateRef,txtCliRef) AS AssociateRef
 ,ISNULL(UnbilledDisb,0) AS UnbilledDisb
 ,LastBillDate AS LastBill
-FROM ms_prod.config.dbFile
-INNER JOIN ms_prod.config.dbClient
+FROM ms_prod.config.dbFile WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbClient  WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
-INNER JOIN MS_Prod.dbo.udCRLedgerSL
+INNER JOIN MS_Prod.dbo.udCRLedgerSL  WITH(NOLOCK)
  ON udCRLedgerSL.fileID = dbFile.fileID
-LEFT OUTER JOIN MS_Prod.dbo.udExtFile
+LEFT OUTER JOIN MS_Prod.dbo.udExtFile  WITH(NOLOCK)
  ON udExtFile.fileID = dbFile.fileID
- LEFT OUTER JOIN MS_Prod.dbo.dbUser
+ LEFT OUTER JOIN MS_Prod.dbo.dbUser  WITH(NOLOCK)
   ON MS_Prod.dbo.udCRLedgerSL.usrID=dbuser.usrid
-LEFT OUTER JOIN MS_Prod.dbo.udCRCore
+LEFT OUTER JOIN MS_Prod.dbo.udCRCore  WITH(NOLOCK)
  ON udCRCore.fileID = dbFile.fileID
-LEFT OUTER JOIN MS_Prod.dbo.dbBranch
+LEFT OUTER JOIN MS_Prod.dbo.dbBranch  WITH(NOLOCK)
  ON dbBranch.brID = dbfile.brID
-LEFT OUTER JOIN (SELECT dbAssociates.fileID,assocRef  AS AssociateRef FROM ms_prod.config.dbAssociates
-INNER JOIN ms_prod.config.dbFile
+LEFT OUTER JOIN (SELECT dbAssociates.fileID,assocRef  AS AssociateRef FROM ms_prod.config.dbAssociates  WITH(NOLOCK)
+INNER JOIN ms_prod.config.dbFile  WITH(NOLOCK)
  ON dbFile.fileID = dbAssociates.fileID
 WHERE assocType='CLIENT'AND assocRef IS NOT NULL
 AND assocOrder=0
 AND fileType='2038') AS AssociateRef
  ON AssociateRef.fileID = dbFile.fileID
- LEFT OUTER JOIN dbo.ComRecUnbilledDisbs
+ LEFT OUTER JOIN dbo.ComRecUnbilledDisbs  WITH(NOLOCK)
  ON  ComRecUnbilledDisbs.fileID = dbFile.fileID
 LEFT OUTER JOIN (SELECT fileID,MAX(InvDate) AS LastBillDate
-FROM TE_3E_Prod.dbo.ARDetail
-INNER JOIN MS_Prod.config.dbFile
+FROM TE_3E_Prod.dbo.ARDetail  WITH(NOLOCK)
+INNER JOIN MS_Prod.config.dbFile  WITH(NOLOCK)
  ON Matter=fileExtLinkID
 WHERE ARList IN ('Bill','BillRev')
 AND fileType='2038'

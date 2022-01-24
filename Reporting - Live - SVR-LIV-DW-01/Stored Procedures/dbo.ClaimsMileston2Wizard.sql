@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 
 AS 
@@ -24,6 +25,7 @@ SELECT hierarchylevel2hist AS Division
 ,dim_matter_header_current.master_client_code AS [Client]
 ,dim_matter_header_current.master_matter_number AS [Matter]
 ,matter_description AS [MatterDescription]
+,date_opened_case_management AS [Date Opened]
 ,ISNULL([Review Matter Process],'Not Outstanding') AS [Review Matter Process]
 ,ISNULL([FIC process],'Not Outstanding') AS [FIC process]
 ,ISNULL([Intel Process],'Not Outstanding') AS [Intel Process]

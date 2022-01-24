@@ -194,6 +194,9 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 	 inner join red_dw..dim_fed_hierarchy_history auditor on auditor.fed_code = dim_matter_header_current.fee_earner_code and auditor.dss_current_flag = 'Y' and auditor.activeud = 1
 	 cross apply (select val from dbo.split_delimited_to_rows(txtClMtNo, ','))  x
 
+	 INNER JOIN #Template
+				ON #Template.ListValue = 'August 21 MS Audits'
+
 	 WHERE [red_dw].[dbo].[datetimelocal](dteDateAudit) between '20210801' and '20210901'
 		 ;
 
