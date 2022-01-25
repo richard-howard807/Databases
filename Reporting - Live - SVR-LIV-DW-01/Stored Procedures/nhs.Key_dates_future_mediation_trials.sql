@@ -12,6 +12,7 @@ GO
 					we have moved to mattersphere (hopefully all keydates will be available in the warehouse.
 	Amendments:		15/05/2019 - ES - Amended task descriptions to look at MS descriptions
 					17/07/2019 - ES - Removed FED union, only active MS tasks need to pull through, JS
+					25/01/2020 - JB - #130720 added is_there_an_issue_on_liability columns. Added an order on damages reserve
  */
  
 CREATE PROCEDURE [nhs].[Key_dates_future_mediation_trials]
@@ -67,7 +68,7 @@ CREATE PROCEDURE [nhs].[Key_dates_future_mediation_trials]
   ,plan_date,activity_desc  collate database_default AS  activity_desc  
  ,'MS' AS [Systems]
  ,locationidud AS [Office]
- 
+ , dim_detail_core_details.is_there_an_issue_on_liability		AS [Liability Admitted]
 FROM red_dw.dbo.dim_matter_header_current matter
 INNER JOIN red_dw.dbo.fact_finance_summary finance ON finance.client_code = matter.client_code
 AND finance.matter_number = matter.matter_number 
@@ -89,8 +90,12 @@ SELECT fileID
 
 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history ON fee_earner_code=fed_code collate database_default AND dss_current_flag='Y'
 LEFT OUTER JOIN red_dw.dbo.dim_employee ON dim_fed_hierarchy_history.dim_employee_key=dim_employee.dim_employee_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+	ON dim_detail_core_details.client_code = matter.client_code
+		AND dim_detail_core_details.matter_number = matter.matter_number
  WHERE matter.client_group_name = 'NHS Resolution'
  AND matter.date_closed_case_management IS NULL  
-
+ORDER BY
+	finance.damages_reserve DESC	
 
 GO
