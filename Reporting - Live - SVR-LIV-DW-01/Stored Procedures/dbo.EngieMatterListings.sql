@@ -10,6 +10,7 @@ AS
 BEGIN 
 
 SELECT master_client_code+ '-'+master_matter_number AS [Matter Number]
+,master_client_code
 ,date_opened_case_management AS [File open date]
 ,matter_owner_full_name AS [Case handler]
 ,matter_description AS [Matter description]
@@ -30,7 +31,10 @@ INNER JOIN TE_3E_Prod.dbo.Matter WITH(NOLOCK)
  ON LeadMatter=MattIndex
  GROUP BY MattIndex) AS Financials
   ON fileExtLinkID=MattIndex
- WHERE  client_group_code='00000273'
+ WHERE
+ master_client_code IN('WB172562','WB172014','WB172015')
+ --client_group_code='00000273'
+ AND CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE	 'Closed' END='Open'
 
  END 
 GO

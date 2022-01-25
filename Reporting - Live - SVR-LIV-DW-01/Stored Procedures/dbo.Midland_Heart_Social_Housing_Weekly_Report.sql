@@ -18,6 +18,7 @@ BEGIN
 SELECT 
 	RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
 	,dim_matter_header_current.[matter_description] AS [Matter Description]
+	, date_closed_case_management
 	, dim_matter_worktype.[work_type_name] AS [Work Type]
 	, dim_matter_header_current.date_opened_case_management AS [Date Case Opened]
 	, clientcontact_name AS [Instructing Officer]

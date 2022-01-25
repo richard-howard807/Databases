@@ -7,8 +7,11 @@ GO
 
 
 
-CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 
+CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
+(
+@EndDate AS DATE
+)
 AS 
 
 BEGIN
@@ -117,7 +120,7 @@ FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSS
  ON ms_fileid=[Date of Next File Review].fileID
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details 
 ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-WHERE date_opened_case_management>='2022-01-17'
+WHERE date_opened_case_management>='2022-01-17' AND CONVERT(DATE,date_opened_case_management,103)<=@EndDate
 AND hierarchylevel2hist='Legal Ops - Claims'
 AND date_closed_case_management IS NULL
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')

@@ -260,6 +260,7 @@ select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin
 			    when #EmployeeDates.jobtitle = 'Investigator' then 'Investigator'
 				WHEN hsd_director_data.employeeid IS NOT NULL THEN 'HSD/Director'
 				WHEN trainees.employeeid IS NOT NULL THEN 'Trainee, no live matters'
+				when noaudits.exclusion_reason is not null then noaudits.exclusion_reason collate database_default
 		  end as reason
 
 		, case  when max(#EmployeeDates.exclude) in (1,2,3) then 1
@@ -267,11 +268,14 @@ select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin
 				WHEN hsd_director_data.employeeid IS NOT NULL THEN 1
 				WHEN trainees.employeeid IS NOT NULL THEN 1
 				when #EmployeeDates.jobtitle = 'Investigator' then 1 
+				when noaudits.exclusion_reason is not null then 1
 		  end as exclude_flag
 
   into #exclude_data
+
 from #EmployeeDates
-left outer join (select fact_employee_attendance.employeeid, fact_employee_attendance.durationdays, fact_employee_attendance.category, fact_employee_attendance.startdate
+left outer join (
+				select fact_employee_attendance.employeeid, fact_employee_attendance.durationdays, fact_employee_attendance.category, fact_employee_attendance.startdate
 				from red_dw..fact_employee_attendance 
 				where fact_employee_attendance.category IN
 					(
@@ -296,7 +300,8 @@ LEFT OUTER JOIN (
 				or dim_fed_hierarchy_history.management_role_two in ('HoSD','Director'))
 				and dim_fed_hierarchy_history.hierarchylevel2hist in ('Legal Ops - Claims', 'Legal Ops - LTA')
 				)	AS hsd_director_data
-		ON hsd_director_data.employeeid = #EmployeeDates.employeeid COLLATE DATABASE_DEFAULT
+		ON hsd_director_data.employeeid = #EmployeeDates.employeeid COLLATE database_default
+        
 LEFT OUTER JOIN (
 				SELECT DISTINCT dim_employee.employeeid
 				FROM red_dw.dbo.dim_fed_hierarchy_history
@@ -312,8 +317,27 @@ LEFT OUTER JOIN (
 					AND ISNULL(dim_employee.leftdate, '3000-01-01') >= CAST(GETDATE() AS DATE) 
 					AND dim_employee.deleted_from_cascade = 0
 					AND dim_employee.jobtitle IN ('Apprentice Solicitor', 'Trainee', 'Trainee Solicitor', 'Intelligence Analyst')
+									   
 				) AS trainees
-		ON trainees.employeeid = #EmployeeDates.employeeid COLLATE DATABASE_DEFAULT
+		ON trainees.employeeid = #EmployeeDates.employeeid COLLATE database_default
+        
+left outer join (
+
+
+		-- No Audit Audits (if an employee dosn't require an audit in a qtr but it's not recorded on Cascade they insert a dummy audit into AC and it falls into the exclusions
+		select distinct dim_fed_hierarchy_history.employeeid, dim_date.calendar_date , exclusion_reason.response exclusion_reason
+		from red_dw.dbo.dim_ac_audits
+		inner join red_dw.dbo.dim_ac_audit_questions audit_qtr on audit_qtr.audit_id = dim_ac_audits.audit_id and audit_qtr.question_text = 'Audit Quarter'
+		inner join red_dw.dbo.dim_ac_audit_questions audit_yr on audit_yr.audit_id = dim_ac_audits.audit_id and audit_yr.question_text = 'Audit Year'
+		inner join red_dw.dbo.dim_ac_audit_questions exclusion_reason on exclusion_reason.audit_id = dim_ac_audits.audit_id and exclusion_reason.question_text = 'Auditee - Auditee Name - Cascade ID Number'
+		inner join red_dw.dbo.dim_fed_hierarchy_history on dim_ac_audits.dim_auditee1_hierarchy_history_key =  dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+		inner join red_dw.dbo.dim_date on CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(right(dim_date.fin_year,2) as varchar(4)) = audit_yr.response
+								and replace(lower(audit_qtr.response), 'quarter ', '') = dim_date.fin_quarter_no
+		where dim_ac_audits.dim_ac_audit_type_key = 168
+
+		
+		) noaudits on noaudits.employeeid = #EmployeeDates.employeeid COLLATE database_default and #EmployeeDates.calendar_date = noaudits.calendar_date
+
 group by #EmployeeDates.employeeid
        , #EmployeeDates.fin_quarter
 	   , #EmployeeDates.employeestartdate
@@ -329,7 +353,8 @@ group by #EmployeeDates.employeeid
 	   , hsd_director_data.employeeid
 	   , trainees.employeeid
 	   , jobtitle
-	   , #EmployeeDates.leftdate; 
+	   , #EmployeeDates.leftdate
+	   , noaudits.exclusion_reason; 
 	   
 
 
