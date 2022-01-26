@@ -33,7 +33,7 @@ CREATE TABLE [dbo].[staging_auditcomply]
 [observations] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [customresponses] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [nonconformance] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
-[question_id] [int] NULL,
+[question_id] [bigint] NULL,
 [question_text] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [requirement_identifier] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [nonconformances] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,

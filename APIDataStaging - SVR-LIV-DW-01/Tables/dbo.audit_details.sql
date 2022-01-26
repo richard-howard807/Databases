@@ -1,7 +1,7 @@
 CREATE TABLE [dbo].[audit_details]
 (
 [id] [int] NULL,
-[question_id] [int] NULL,
+[question_id] [bigint] NULL,
 [question_text] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [requirement_identifier] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
 [nonconformances] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,

@@ -54,7 +54,7 @@ select data.name,
       NULL as customresponses,
       data.nonconformance,
 
-	  case when cust.custom_option_id IS NOT null and custfields.value is not null then cast (cast (cust.custom_option_id as varchar(20)) + cast(row_number() over (partition by data.id, cust.custom_option_id order by cust.field_label ) as varchar(2)) as int  )
+	  case when cust.custom_option_id IS NOT null and custfields.value is not null then cast (cast (cust.custom_option_id as varchar(20)) + cast(row_number() over (partition by data.id, cust.custom_option_id order by cust.field_label ) as varchar(2)) as bigint  )
 		   when cust.custom_option_id IS NOT null then cust.custom_option_id 
 		   else obs.question_id end as question_id,
 
@@ -126,7 +126,7 @@ WITH (	  name nvarchar(MAX)
 		) data
 
 outer apply openjson( observations, ''$'' ) 
-	with ( question_id int
+	with ( question_id bigint
 			, question_text nvarchar(MAX)
 			, requirement_identifier nvarchar(MAX)
 			, nonconformances nvarchar(MAX)
