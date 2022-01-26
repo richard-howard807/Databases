@@ -158,6 +158,40 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			AND dim_matter_header_current.master_client_code <> '30645'
 			AND dim_date.calendar_date >= '2021-09-01'
 
+		UNION	
+
+		--MIB audits
+		select dim_matter_header_current.dim_matter_header_curr_key auditid,
+			dim_fed_hierarchy_history.employeeid		AS employeeid
+			, dim_matter_header_current.matter_owner_full_name		AS [Auditee Name]
+			, dim_fed_hierarchy_history.dim_fed_hierarchy_history_key		AS [Auditee key]
+			, dim_fed_hierarchy_history.employeeid		AS auditee_emp_key
+			, 1			AS [Auditee Position]
+			, dim_matter_header_current.client_code		AS [Client Code]
+			, dim_matter_header_current.matter_number		AS [Matter Number]
+			, dim_date.calendar_date		AS [Date]
+			, NULL				AS [Status]	
+			, 'MIB'		AS [Template]
+			, NULL		AS [Auditor]
+			, dim_date.fin_quarter		AS fin_quarter
+			, dim_date.fin_quarter_no		AS fin_quarter_no
+			, dim_date.fin_year		AS fin_year
+		FROM red_dw.dbo.dim_matter_header_current
+			INNER JOIN red_dw.dbo.fact_dimension_main
+				ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+			INNER JOIN red_dw.dbo.dim_detail_audit
+				ON dim_detail_audit.dim_detail_audit_key = fact_dimension_main.dim_detail_audit_key 
+			INNER JOIN red_dw.dbo.dim_date
+				ON dim_date.calendar_date = CAST(dim_detail_audit.client_screen_date_of_audit AS DATE)
+			INNER JOIN #Template
+				ON #Template.ListValue = 'MIB'
+		WHERE
+			dim_matter_header_current.master_client_code = 'M1001'
+			AND dim_detail_audit.client_screen_date_of_audit IS NOT NULL
+			AND dim_date.calendar_date >= '2021-09-01'
+
 	union all
 
 	
