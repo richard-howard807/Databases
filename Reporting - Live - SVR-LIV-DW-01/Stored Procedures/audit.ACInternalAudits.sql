@@ -170,7 +170,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			, dim_matter_header_current.client_code		AS [Client Code]
 			, dim_matter_header_current.matter_number		AS [Matter Number]
 			, dim_date.calendar_date		AS [Date]
-			, NULL				AS [Status]	
+			, 'Pass'				AS [Status]	
 			, 'MIB'		AS [Template]
 			, NULL		AS [Auditor]
 			, dim_date.fin_quarter		AS fin_quarter
