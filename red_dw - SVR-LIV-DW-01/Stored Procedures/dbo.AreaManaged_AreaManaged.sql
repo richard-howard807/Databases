@@ -10,7 +10,24 @@ insert into @UsernameTbl
 select distinct employeeid, management_role_one, RTRIM(hierarchylevel4hist) AS hierarchylevel4hist, RTRIM(hierarchylevel3hist) AS hierarchylevel3hist, RTRIM(hierarchylevel2hist) AS hierarchylevel2hist, RTRIM(hierarchylevel1hist) AS hierarchylevel1hist from dim_fed_hierarchy_history
 where windowsusername = @Username and activeud = 1 and dss_current_flag = 'Y'
 
-														
+	
+-- Added 27/01/2022 to handle people who now manage more than one team	
+union 
+
+select distinct (select employeeid from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = 'ahadad' and activeud = 1 and dss_current_flag = 'Y'), 
+			    (select dim_fed_hierarchy_history.management_role_one from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = 'ahadad' and activeud = 1 and dss_current_flag = 'Y'), 
+	rtrim(hierarchylevel4hist) AS hierarchylevel4hist, RTRIM(hierarchylevel3hist) AS hierarchylevel3hist, RTRIM(hierarchylevel2hist) AS hierarchylevel2hist, RTRIM(hierarchylevel1hist) AS hierarchylevel1hist from dim_fed_hierarchy_history
+where dim_fed_hierarchy_history.reportingbcmidud in (select employeeid from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = @Username and activeud = 1 and dss_current_flag = 'Y')
+and activeud = 1 and dss_current_flag = 'Y'
+
+union 
+
+select distinct (select employeeid from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = 'ahadad' and activeud = 1 and dss_current_flag = 'Y'), 
+			    (select dim_fed_hierarchy_history.management_role_one from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = 'ahadad' and activeud = 1 and dss_current_flag = 'Y'), 
+	rtrim(hierarchylevel4hist) AS hierarchylevel4hist, RTRIM(hierarchylevel3hist) AS hierarchylevel3hist, RTRIM(hierarchylevel2hist) AS hierarchylevel2hist, RTRIM(hierarchylevel1hist) AS hierarchylevel1hist from dim_fed_hierarchy_history
+where dim_fed_hierarchy_history.worksforemployeeid in (select employeeid from dbo.dim_fed_hierarchy_history where dim_fed_hierarchy_history.windowsusername = @Username and activeud = 1 and dss_current_flag = 'Y')
+and activeud = 1 and dss_current_flag = 'Y'
+
 /**********
 		Divergent Hierarchy was created to cater 
 		for people that manage more than one team.
@@ -47,6 +64,9 @@ inner join @UsernameTbl u on u.team = dim_fed_hierarchy_history.hierarchylevel4h
 						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
 						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
+/*
+
+-- Removed 27/01/2022 as wasn't working for people who now manage more than one team
 
 union all
 
@@ -80,7 +100,7 @@ inner join @UsernameTbl u on u.employeeid = dim_fed_hierarchy_history.reportingb
 						 and activeud = 1
 						 and dim_fed_hierarchy_history.dss_current_flag = 'Y'
 						 and dim_fed_hierarchy_history.leaver = 0
-
+*/
 
 
 declare @TMSqlString varchar(max)
@@ -98,7 +118,7 @@ set @TMSqlString = stuff(@TMSqlString, len(@TMSqlString), 1, '') end
 if exists (select management_role_one from @UsernameTbl where management_role_one = 'HoSD') begin
 declare @HSDCodeTbl table (empcode varchar(max)) 
 insert into @HSDCodeTbl
-select dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
+select distinct dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.department = dim_fed_hierarchy_history.hierarchylevel3hist
 						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
@@ -117,7 +137,7 @@ set @HSDSqlString = stuff(@HSDSqlString, len(@HSDSqlString), 1, '') end
 if exists (select management_role_one from @UsernameTbl where management_role_one = 'Director') begin
 declare @DirCodeTable table (empcode varchar(max)) 
 insert into @DirCodeTable
-select dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
+select distinct dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
 
