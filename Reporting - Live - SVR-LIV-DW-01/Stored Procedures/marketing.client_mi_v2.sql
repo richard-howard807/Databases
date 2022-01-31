@@ -36,9 +36,9 @@ AS
 */
 
 	--DECLARE @current_fin_from INT = '202201'
-	--DECLARE @current_fin_to INT = '202201'
-	--DECLARE @client_group_name VARCHAR(200) = NULL --'Clarion Housing Group Limited'
-	--DECLARE @client_name VARCHAR(200) = 'Clarion Housing Group Limited' --NULL --'GreenAcres Groups Limited'
+	--DECLARE @current_fin_to INT = '202208'
+	--DECLARE @client_group_name VARCHAR(200) = 'Tesco' --'Clarion Housing Group Limited'
+	--DECLARE @client_name VARCHAR(200) = NULL --'GreenAcres Groups Limited'
 
 /*
 	Set the variables
@@ -71,10 +71,12 @@ SELECT DISTINCT
 	dim_matter_header_current.dim_matter_header_curr_key
 	, dim_matter_header_current.client_code
 	, dim_matter_header_current.matter_number
+	, dim_matter_header_current.master_client_code
+	, dim_matter_header_current.master_matter_number
 	, dim_client.client_name
 	, CASE 
 		WHEN (@client_group_name = 'Tesco' AND (RTRIM(dim_client.client_code) = 'T3003' 
-			OR ISNULL(dim_detail_claim.name_of_instructing_insurer, '') = 'Tesco Underwriting (TU)')) AND dim_client.client_group_name = 'Ageas' THEN 
+			OR (ISNULL(dim_detail_claim.name_of_instructing_insurer, '') = 'Tesco Underwriting (TU)' AND dim_client.client_group_name = 'Ageas'))) THEN 
 			'Tesco'
 		WHEN @client_group_name = 'Ageas' THEN 
 			CASE 
@@ -98,7 +100,7 @@ FROM red_dw.dbo.dim_client
 			AND dim_detail_claim.matter_number = dim_matter_header_current.matter_number
 WHERE 
 -- Logic added re Ageas client group due to Tesco splitting away from Ageas. Logic to get Tesco matters matches Tesco DAX queries in SSRS Tesco reports project
-CASE WHEN (@client_group_name = 'Tesco' AND (RTRIM(dim_client.client_code) = 'T3003' OR ISNULL(dim_detail_claim.name_of_instructing_insurer, '') = 'Tesco Underwriting (TU)')) AND dim_client.client_group_name = 'Ageas' THEN 1
+CASE WHEN (@client_group_name = 'Tesco' AND (RTRIM(dim_client.client_code) = 'T3003' OR (ISNULL(dim_detail_claim.name_of_instructing_insurer, '') = 'Tesco Underwriting (TU)' AND dim_client.client_group_name = 'Ageas'))) THEN 1
 	WHEN @client_group_name = 'Ageas' THEN 
 		CASE 
 			WHEN RTRIM(dim_client.client_code) <> 'T3003' AND ISNULL(dim_detail_claim.name_of_instructing_insurer, '') <> 'Tesco Underwriting (TU)' AND dim_client.client_group_name = 'Ageas' THEN 1
@@ -107,7 +109,6 @@ CASE WHEN (@client_group_name = 'Tesco' AND (RTRIM(dim_client.client_code) = 'T3
 	WHEN (@client_group_name IS NOT NULL AND dim_client.client_group_name = @client_group_name) THEN 1
 	WHEN @client_name IS NOT NULL AND dim_client.client_name = @client_name THEN 1
 	ELSE 0 END = 1	
-
 
 
 --==============================================================================================================================================
