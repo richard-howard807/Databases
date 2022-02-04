@@ -11,10 +11,10 @@ AS
 
 /*
 RH 21-07-2020 - Fixed Fee arrangmentent on files with no WIP
-
+JB 04-02-2022 - added last bill date join to final table. fact_matter_summary doesn't bring in a last_bill_date on matters with composite bills
 */
 
---DECLARE  @FinMonth VARCHAR(20) = '2021-03 (Jul-2020)'
+--DECLARE  @FinMonth VARCHAR(20) = '2022-09 (Jan-2022)'
 
 --[dbo].[WipAndDisbs] '2019-07 (Nov-2018)'
 
@@ -234,6 +234,25 @@ left JOIN #wip w ON d.dim_matter_header_history_key = w.dim_matter_header_histor
 
 
 
+-- adding last bill date for all matters, incl composite billing. fact_matter_summay doesn't appear to allow for composite
+SELECT 
+	fact_bill_matter_detail_summary.client_code
+	, fact_bill_matter_detail_summary.matter_number
+	, MAX(dim_date.calendar_date)	AS last_bill_date
+INTO #last_bill
+FROM red_dw.dbo.fact_bill_matter_detail_summary
+	INNER JOIN red_dw.dbo.dim_date
+		ON fact_bill_matter_detail_summary.dim_bill_date_key = dim_date.dim_date_key
+	INNER JOIN #joined
+		ON #joined.client_code_c = fact_bill_matter_detail_summary.client_code
+			AND #joined.matter_number_c = fact_bill_matter_detail_summary.matter_number
+WHERE 1 = 1
+	AND dim_date.fin_period <= @FinMonth
+GROUP BY
+	fact_bill_matter_detail_summary.client_code
+	, fact_bill_matter_detail_summary.matter_number
+
+
 
 SELECT 
 client_code_c [Client],
@@ -247,7 +266,7 @@ business_line_c [Division],
 practice_area_c [Department],
 team_c [Team],
 matter_owner_full_name_c [Matter Owner],
-last_bill_date_c [Last Bill Date],
+#last_bill.last_bill_date [Last Bill Date],
 SUM(ISNULL([0 - 30 Days], 0)) [0 - 30 Days],
 SUM(ISNULL([31 - 90 days], 0)) [31 - 90 days],
 SUM(ISNULL([Greater than 90 Days], 0)) [Greater than 90 Days],
@@ -260,7 +279,9 @@ MAX(fixed_fee_amount) AS [Fixed Fee Amount],
 output_wip_percentage_complete [Percentage Complete]
 
 FROM #joined
-
+	LEFT OUTER JOIN #last_bill
+		ON #last_bill.client_code = #joined.client_code_c
+			AND #last_bill.matter_number = #joined.matter_number_c
 GROUP BY
 client_code_c,
 matter_number_c,
@@ -273,17 +294,14 @@ business_line_c,
 practice_area_c,
 team_c,
 matter_owner_full_name_c,
-last_bill_date_c,
+#last_bill.last_bill_date,
 output_wip_fee_arrangement,
 output_wip_percentage_complete
 
 DROP TABLE #wip
 DROP TABLE #disbs
 DROP TABLE #joined
-
-
-
-
+DROP TABLE #last_bill
 GO
 GRANT EXECUTE ON  [dbo].[WipAndDisbs] TO [SBC\rmccab]
 GO
