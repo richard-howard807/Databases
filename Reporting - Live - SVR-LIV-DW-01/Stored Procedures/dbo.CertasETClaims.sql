@@ -25,7 +25,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, SUM(minutes_recorded) AS AllTimeChargeableHrs
+LEFT OUTER JOIN (SELECT dim_matter_header_curr_key, SUM(minutes_recorded)/60 AS AllTimeChargeableHrs
 FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
 GROUP BY dim_matter_header_curr_key) AS Chargeable
  ON Chargeable.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
