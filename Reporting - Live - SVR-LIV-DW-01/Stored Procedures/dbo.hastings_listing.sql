@@ -315,20 +315,11 @@ SELECT
 		ELSE
 			'Transparent'
 	  END								AS [total_costs_paid_rag_status]
-	--, #hastings_financials.costs_savings_currency			AS [Total Costs Savings (money)]
-	--, #hastings_financials.costs_savings_percent							AS [Total Costs Savings (percent)]
-	, 'TBC'		AS [Total Costs Savings (money)]
-	, 'TBC'		AS [Total Costs Savings (percent)]
+	, #hastings_financials.costs_savings_currency						AS [Total Costs Savings (money)]
+	, #hastings_financials.costs_savings_percent						 AS [Total Costs Savings (percent)]
+	--, 'TBC'		AS [Total Costs Savings (money)]
+	--, 'TBC'		AS [Total Costs Savings (percent)]
 	, #hastings_financials.total_claimed											AS [Total Costs of Claim Presented]
-	--, #hastings_financials.total_claimed - #hastings_financials.total_paid			AS [Total Claim Costs Savings (money)]
-	--, CASE
-	--	WHEN #hastings_financials.total_claimed = 0 AND #hastings_financials.total_paid = 0 THEN
-	--		0
-	--	WHEN #hastings_financials.total_claimed > 0 AND #hastings_financials.total_paid = 0 THEN
-	--		1
-	--	ELSE 
-	--		ROUND((#hastings_financials.total_claimed - #hastings_financials.total_paid)/#hastings_financials.total_claimed, 2)
-	--  END																			AS [Total Claim Costs Savings (percent)]
 	, 'TBC'		AS [Total Claim Costs Savings (money)]
 	, 'TBC'		AS [Total Claim Costs Savings (percent)]
 	, #hastings_financials.defence_costs_billed
