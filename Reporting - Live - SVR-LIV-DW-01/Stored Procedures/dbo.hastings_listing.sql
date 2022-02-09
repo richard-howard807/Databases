@@ -31,7 +31,7 @@ SELECT
 	, fact_finance_summary.damages_reserve
 	, fact_detail_cost_budgeting.hastings_claimant_schedule_value
 	, fact_detail_cost_budgeting.hastings_counter_schedule_of_loss_value
-	, fact_finance_summary.damages_paid	
+	, (fact_finance_summary.damages_paid - fact_detail_paid_detail.nhs_charges_paid_by_client)	AS damages_paid	
 	, fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat
 	, fact_detail_paid_detail.claimants_disbursements_claimed
 	, fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat
@@ -44,7 +44,7 @@ SELECT
 	, fact_finance_summary.vat_billed
 	, paid_bills.bill_amount_paid
 	, paid_bills.vat_paid
-	, fact_detail_paid_detail.paid_disbursements
+	, paid_bills.disbs_paid	AS paid_disbursements
 	, fact_finance_summary.wip
 	, fact_finance_summary.disbursement_balance
 	, fact_finance_summary.unpaid_bill_balance
@@ -57,7 +57,7 @@ SELECT
 	, fact_detail_reserve_detail.predict_rec_settlement_time
 	, CASE
 		WHEN fact_detail_cost_budgeting.hastings_claimant_schedule_value IS NOT NULL THEN
-			fact_detail_cost_budgeting.hastings_claimant_schedule_value - fact_finance_summary.damages_paid
+			fact_detail_cost_budgeting.hastings_claimant_schedule_value - (fact_finance_summary.damages_paid - fact_detail_paid_detail.nhs_charges_paid_by_client)
 		ELSE
 			NULL
 	  END												AS damages_savings_currency
@@ -69,21 +69,28 @@ SELECT
 				WHEN fact_detail_cost_budgeting.hastings_claimant_schedule_value > 0 AND fact_finance_summary.damages_paid = 0 THEN
 					1
 				ELSE 
-					(fact_detail_cost_budgeting.hastings_claimant_schedule_value - fact_finance_summary.damages_paid)/fact_detail_cost_budgeting.hastings_claimant_schedule_value
+					(fact_detail_cost_budgeting.hastings_claimant_schedule_value - (fact_finance_summary.damages_paid - fact_detail_paid_detail.nhs_charges_paid_by_client))/fact_detail_cost_budgeting.hastings_claimant_schedule_value
 			END 
 		ELSE
 			NULL
 	  END												AS damages_savings_percent
 	, ISNULL(fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat, 0) + ISNULL(fact_detail_paid_detail.claimants_disbursements_claimed, 0)		AS costs_claimed_sum_check
 	, ISNULL(fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat, 0) + ISNULL(fact_detail_paid_detail.claimants_solicitors_disbursements_paid, 0)	AS costs_paid_sum_check
-	, fact_detail_paid_detail.tp_total_costs_claimed - fact_finance_summary.claimants_costs_paid		AS costs_savings_currency
 	, CASE
-		WHEN fact_detail_paid_detail.tp_total_costs_claimed = 0 AND fact_finance_summary.claimants_costs_paid = 0 THEN
+		WHEN dim_detail_outcome.date_costs_settled IS NULL THEN
+			NULL
+		ELSE
+			(fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat + fact_detail_paid_detail.claimants_disbursements_claimed) - (fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat + fact_finance_summary.claimants_solicitors_disbursements_paid)	
+	  END															AS costs_savings_currency
+	, CASE
+		WHEN dim_detail_outcome.date_costs_settled IS NULL THEN
+			NULL
+		WHEN (fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat + fact_detail_paid_detail.claimants_disbursements_claimed) = 0 AND (fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat + fact_finance_summary.claimants_solicitors_disbursements_paid) = 0 THEN
 			0
-		WHEN fact_detail_paid_detail.tp_total_costs_claimed > 0 AND fact_finance_summary.claimants_costs_paid = 0 THEN
+		WHEN (fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat + fact_detail_paid_detail.claimants_disbursements_claimed) > 0 AND (fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat + fact_finance_summary.claimants_solicitors_disbursements_paid) = 0 THEN
 			1
 		ELSE 
-			(fact_detail_paid_detail.tp_total_costs_claimed - fact_finance_summary.claimants_costs_paid)/fact_detail_paid_detail.tp_total_costs_claimed
+			((fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat + fact_detail_paid_detail.claimants_disbursements_claimed) - (fact_detail_paid_detail.claimant_s_solicitor_s_base_costs_paid_vat + fact_finance_summary.claimants_solicitors_disbursements_paid))/(fact_detail_reserve_detail.claimant_s_solicitor_s_base_costs_claimed_vat + fact_detail_paid_detail.claimants_disbursements_claimed)
 	  END																AS costs_savings_percent
 	, COALESCE(NULLIF(fact_detail_cost_budgeting.hastings_claimant_schedule_value, 0), fact_finance_summary.damages_reserve, 0) + ISNULL(fact_finance_summary.tp_total_costs_claimed, 0)		AS total_claimed
 	, ISNULL(fact_finance_summary.damages_paid, 0) + ISNULL(fact_finance_summary.claimants_costs_paid, 0)			AS total_paid
@@ -109,11 +116,16 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_client
 		ON fact_detail_client.client_code = dim_matter_header_current.client_code
 			AND fact_detail_client.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+		ON dim_detail_outcome.client_code = dim_matter_header_current.client_code
+			AND dim_detail_outcome.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN (
 						SELECT 
 							TE_3E_Prod.dbo.Matter.Number																						
-							, (SUM(InvMaster.OrgAmt) - SUM(InvMaster.OrgTax)) - (SUM(InvMaster.BalAmt) - SUM(InvMaster.BalTax))		AS bill_amount_paid
+							, SUM(InvMaster.OrgFee) - SUM(InvMaster.BalFee)	AS bill_amount_paid
+							, (SUM(InvMaster.OrgHCo) + SUM(InvMaster.OrgSCo)) - (SUM(InvMaster.BalHCo) + SUM(InvMaster.BalSCo))	AS disbs_paid
 							, SUM(InvMaster.OrgTax) - SUM(InvMaster.BalTax)		AS vat_paid
+						--SELECT InvMaster.* 
 						FROM TE_3E_Prod.dbo.InvMaster 
 							INNER JOIN TE_3E_Prod.dbo.Matter 
 								ON Matter.MattIndex = InvMaster.LeadMatter
@@ -121,6 +133,7 @@ FROM red_dw.dbo.dim_matter_header_current
 								ON Client.ClientIndex = Matter.Client
 						WHERE 1 = 1
 							AND Client.Number = '4908'
+							--AND Matter.Number = '4908-16'
 							AND InvMaster.TaxInvNumber <> 'PURGE'
 							AND InvMaster.IsReversed = 0
 						GROUP BY
@@ -278,10 +291,10 @@ SELECT
 	  END										AS [Settlement Achieved]
 	, #hastings_financials.damages_paid						AS [Total Settlement]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)			AS [Date of Settlement]
-	--, #hastings_financials.damages_savings_currency											AS [Damages Settlement Saving (money)]
-	--, #hastings_financials.damages_savings_percent										AS [Damages Settlement Saving (percent)]
-	, 'TBC'			AS [Damages Settlement Saving (money)]
-	, 'TBC'			AS [Damages Settlement Saving (percent)]
+	, #hastings_financials.damages_savings_currency											AS [Damages Settlement Saving (money)]
+	, #hastings_financials.damages_savings_percent										AS [Damages Settlement Saving (percent)]
+	--, 'TBC'			AS [Damages Settlement Saving (money)]
+	--, 'TBC'			AS [Damages Settlement Saving (percent)]
 	, #hastings_financials.claimant_s_solicitor_s_base_costs_claimed_vat			AS [Claimant Costs Claimed]
 	, #hastings_financials.claimants_disbursements_claimed			AS [Claimant Disbursements Claimed]
 	, #hastings_financials.claimant_s_solicitor_s_base_costs_paid_vat			AS [Claimant Costs Paid]
