@@ -310,7 +310,9 @@ select #EmployeeDates.employeeid, #EmployeeDates.fin_quarter, #EmployeeDates.fin
 from #EmployeeDates
 left outer join (
 				select fact_employee_attendance.employeeid, fact_employee_attendance.durationdays, fact_employee_attendance.category, fact_employee_attendance.startdate
-				from red_dw..fact_employee_attendance 
+				FROM red_dw..fact_employee_attendance 
+					INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+						ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_employee_attendance.dim_fed_hierarchy_history_key
 				where fact_employee_attendance.category IN
 					(
 					N'Adoption',
@@ -324,6 +326,16 @@ left outer join (
 					N'Unpaid Leave',
 					N'Sickness'
 					)
+					AND 
+					--Casualty Guildford handlers are on secondment but they work on Weightmans Systems incl MS so require audits
+					(
+					CASE 
+						WHEN fact_employee_attendance.category = N'Secondment' AND dim_fed_hierarchy_history.hierarchylevel4hist = 'Casualty Guildford' THEN
+							0
+						ELSE
+							1
+					end
+					) = 1
 				
 				) fact_employee_attendance on #EmployeeDates.calendar_date = fact_employee_attendance.startdate and #EmployeeDates.employeeid = fact_employee_attendance.employeeid
 LEFT OUTER JOIN (
