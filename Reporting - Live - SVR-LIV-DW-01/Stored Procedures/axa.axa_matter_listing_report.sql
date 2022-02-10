@@ -21,7 +21,7 @@ GO
 -- JL 22/09/2020 - #72988 added in axa instruction type as per Helen Fox
 ---JL 13/10/2020 - #73089 added in fileds as per ticket 
 -- MT 03/03/2021 - #87387 added  dim_detail_core_details.[is_insured_vat_registered],  fact_finance_summary.vat_billed,dim_detail_previous_details.vat_registered and updated logic for Insured Client NEW Reference
-		  
+-- JB 10/02/2020 - #133804 changed logic on AXA CS Reference to look at client reference if insurer client ref is null. Changed logic to Track to be N/A if advice only
 		   
 ------------ =============================================
 CREATE PROCEDURE [axa].[axa_matter_listing_report]
@@ -36,7 +36,7 @@ BEGIN
 		   [Department] = fee_earner.hierarchylevel3hist,
            [Weightmans Reference ] = RTRIM(fact_dimension_main.client_code) + '-' + fact_dimension_main.matter_number,
            [AXA CS Handler] = dim_detail_core_details.clients_claims_handler_surname_forename,
-           [AXA CS Reference] = ISNULL(client_ref.insurerclient_reference,insrref.reference),
+           [AXA CS Reference] = COALESCE(client_ref.insurerclient_reference,insrref.reference, client_ref.client_reference),
            [Date of Accident] = dim_detail_core_details.incident_date,
            [Claimant Solicitors] = COALESCE(tp_ref.claimantsols_name,clsol.name,tp_ref.claimantrep_name),
            [Injury Type ] = dim_detail_core_details.brief_description_of_injury,
@@ -44,7 +44,7 @@ BEGIN
            [Matter Description] = dim_matter_header_current.matter_description,
            [Present Position] = dim_detail_core_details.present_position,
            [Referral reason] = dim_detail_core_details.referral_reason,
-           [Track] = dim_detail_core_details.track,
+           [Track] = IIF(LOWER(RTRIM(dim_detail_core_details.referral_reason)) = 'advice only', 'N/A', dim_detail_core_details.track),
            [Proceedings issued] = dim_detail_core_details.proceedings_issued,
            [Suspicion of Fraud] = dim_detail_core_details.suspicion_of_fraud,
            [Damages Reserve Current] = fact_finance_summary.damages_reserve,
