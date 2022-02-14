@@ -138,7 +138,16 @@ FROM (
 			AND CAST(dbDocument.Created AS DATE) >= '2022-01-10'
 			AND dbDocument.docDeleted = 0
 			AND dbDocument.docDirection = 1
-			AND dbDocument.docType <> 'EMAIL'
+			AND (
+					CASE
+						WHEN dbDocument.docType <> 'EMAIL' THEN
+							1
+						WHEN dbDocument.docType = 'EMAIL' AND dbTasks.tskType = 'EMAILRECEIPT' THEN
+							1
+						ELSE
+							0
+					END 
+				) = 1
 			--AND dbTasks.tskActive = 1
 			--AND dbDocument.docID = 37788742
 	) AS doc_tasks
