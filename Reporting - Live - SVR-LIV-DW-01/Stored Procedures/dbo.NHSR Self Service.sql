@@ -8,6 +8,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -319,6 +320,20 @@ AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_rese
 'Inquest funding'
 )
 AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 50001 AND 250000 THEN '£50,001-£250,000'
+
+ WHEN dim_detail_health.nhs_scheme IN
+(
+'CNSGP',
+'CNST',
+'DH CL',
+'ELS',
+'ELSGP',
+'ELSGP (MDDUS)',
+'ELSGP (MPS)',
+'Inquest Funding                                             ',
+'Inquest funding'
+)
+AND COALESCE(fact_finance_summary.damages_paid,fact_finance_summary.damages_reserve) BETWEEN 250001 AND 500000 THEN '£250,001-£500,000'
 
  WHEN dim_detail_health.nhs_scheme IN
 (
