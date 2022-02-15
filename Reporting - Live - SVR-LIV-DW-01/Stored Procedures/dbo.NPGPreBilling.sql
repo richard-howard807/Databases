@@ -12,6 +12,12 @@ GO
 
 
 
+
+
+
+
+
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -52,6 +58,12 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
 ,ISNULL(ms_workstream.workstream,'Other') AS workstream
 ,cboNPGFileType
+,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
+--,NPGBIlls.[Billed To NPG]
+--,NPGBIlls.[Billed To Other]
+--,NPGBIlls.[Billed To NPG Vat]
+--,NPGBIlls.[Billed To Other Vat]
+,curTPPaying AS [Third Pary Paying]
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -68,7 +80,7 @@ INNER JOIN red_dw.dbo.ds_sh_ms_dbclient WITH(NOLOCK)
  ON ds_sh_ms_dbclient.clid = dbfile.clid
 INNER JOIN red_dw.dbo.ds_sh_3e_timebill TB WITH(NOLOCK)  
 ON TB.armaster = ARD.armindex
-INNER JOIN red_dw.dbo.ds_sh_3e_chrgbilltax CBT WITH(NOLOCK) 
+LEFT JOIN red_dw.dbo.ds_sh_3e_chrgbilltax CBT WITH(NOLOCK) 
 ON tb.timebillindex = cbt.timebill
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND ARD.arlist  IN ('Bill','BillRev')
@@ -159,6 +171,44 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
+
+--LEFT OUTER JOIN (SELECT dbfile.fileid
+--,SUM(CASE WHEN Payor.DisplayName IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.arfee ELSE 0 END) AS [Billed To NPG]
+--,SUM(CASE WHEN Payor.DisplayName NOT IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.arfee ELSE 0 END) AS [Billed To Other]
+--,SUM(CASE WHEN Payor.DisplayName IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.artax ELSE 0 END) AS [Billed To NPG Vat]
+--,SUM(CASE WHEN Payor.DisplayName NOT IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.artax ELSE 0 END) AS [Billed To Other Vat]
+--FROM red_dw.dbo.ds_sh_3e_ardetail AS ARDetail WITH(NOLOCK) 
+--INNER JOIN red_dw.dbo.ds_sh_3e_matter AS Matter
+-- ON ARDetail.matter=Matter.mattindex
+--INNER JOIN red_dw.dbo.ds_sh_ms_dbfile AS dbfile WITH(NOLOCK)
+-- ON matter.mattindex=dbfile.fileextlinkid
+--INNER JOIN red_dw.dbo.ds_sh_ms_dbclient WITH(NOLOCK)
+-- ON ds_sh_ms_dbclient.clid = dbfile.clid
+--LEFT OUTER JOIN te_3e_prod.dbo.Payor
+-- ON ARDetail.payor=PayorIndex
+-- WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+--AND arlist  IN ('Bill','BillRev')
+
+--GROUP BY dbfile.fileid
+--) AS NPGBIlls
+--		  ON NPGBIlls.fileid = dbFile.fileID
+
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND fileNo<>'0'
 AND fileClosed IS NULL
@@ -197,6 +247,12 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
 ,ISNULL(ms_workstream.workstream,'Other') AS workstream
 ,cboNPGFileType
+,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
+,curTPPaying AS [Third Pary Paying]
+--,NPGBIlls.[Billed To NPG]
+--,NPGBIlls.[Billed To Other]
+--,NPGBIlls.[Billed To NPG Vat]
+--,NPGBIlls.[Billed To Other Vat]
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -213,7 +269,7 @@ INNER JOIN red_dw.dbo.ds_sh_ms_dbclient WITH(NOLOCK)
  ON ds_sh_ms_dbclient.clid = dbfile.clid
 INNER JOIN red_dw.dbo.ds_sh_3e_timebill TB WITH(NOLOCK)  
 ON TB.armaster = ARD.armindex
-INNER JOIN red_dw.dbo.ds_sh_3e_chrgbilltax CBT WITH(NOLOCK) 
+LEFT JOIN red_dw.dbo.ds_sh_3e_chrgbilltax CBT WITH(NOLOCK) 
 ON tb.timebillindex = cbt.timebill
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND ARD.arlist  IN ('Bill','BillRev')
@@ -304,6 +360,41 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
+--LEFT OUTER JOIN (SELECT dbfile.fileid
+--,SUM(CASE WHEN Payor.DisplayName IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.arfee ELSE 0 END) AS [Billed To NPG]
+--,SUM(CASE WHEN Payor.DisplayName NOT IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.arfee ELSE 0 END) AS [Billed To Other]
+--,SUM(CASE WHEN Payor.DisplayName IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.artax ELSE 0 END) AS [Billed To NPG Vat]
+--,SUM(CASE WHEN Payor.DisplayName NOT IN 
+--('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
+--,'Northern Powergrid (Yorkshire) Plc','Northern Powergrid Limited'
+--,'Npower Yorkshire Limited','Yorkshire Electricity Distribution plc','Yorkshire Electricity Group Plc'
+--) THEN ARDetail.artax ELSE 0 END) AS [Billed To Other Vat]
+--FROM red_dw.dbo.ds_sh_3e_ardetail AS ARDetail WITH(NOLOCK) 
+--INNER JOIN red_dw.dbo.ds_sh_3e_matter AS Matter
+-- ON ARDetail.matter=Matter.mattindex
+--INNER JOIN red_dw.dbo.ds_sh_ms_dbfile AS dbfile WITH(NOLOCK)
+-- ON matter.mattindex=dbfile.fileextlinkid
+--INNER JOIN red_dw.dbo.ds_sh_ms_dbclient WITH(NOLOCK)
+-- ON ds_sh_ms_dbclient.clid = dbfile.clid
+--LEFT OUTER JOIN te_3e_prod.dbo.Payor
+-- ON ARDetail.payor=PayorIndex
+-- WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+--AND arlist  IN ('Bill','BillRev')
+
+--GROUP BY  dbfile.fileid) AS NPGBIlls
+--		  ON NPGBIlls.fileid = dbFile.fileID
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND fileNo<>'0'
 AND fileClosed IS NULL
