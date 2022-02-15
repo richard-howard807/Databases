@@ -139,6 +139,9 @@ group by fact_bill_activity.dim_gl_date_key
 SELECT 
 	dim_matter_header_current.client_name
 	, dim_matter_header_current.master_client_code
+	, dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number		AS ms_ref
+	, dim_matter_header_current.matter_description
+	, dim_matter_header_current.fixed_fee_amount
 	, dim_matter_worktype.work_type_name
 	, dim_client.sector
 	, hr_rely_clients.start_date
@@ -212,6 +215,9 @@ group by
  --      , hr_rely_clients.start_date
 	   dim_matter_header_current.client_name
 	, dim_matter_header_current.master_client_code
+	, dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number
+	, dim_matter_header_current.matter_description
+	, dim_matter_header_current.fixed_fee_amount
 	, dim_matter_worktype.work_type_name
 	, dim_client.sector
 	, hr_rely_clients.start_date
