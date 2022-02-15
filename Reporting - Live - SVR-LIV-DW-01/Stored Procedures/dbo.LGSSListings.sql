@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 --============================================
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
 -- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
@@ -26,6 +27,8 @@ SELECT
 ,ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0) AS  [Own costs (exc. VAT)]
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]
 ,dim_detail_core_details.[present_position]
+,dim_detail_core_details.[referral_reason]
+
 ,CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid') THEN  'Own costs only'
 WHEN dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding' THEN 'Recovery'
 WHEN dim_detail_core_details.[present_position]='Claim concluded but costs outstanding' THEN 'Claim concluded - costs outstanding'
@@ -77,6 +80,7 @@ ELSE 'Closed' END AS Tab
 , fact_detail_claim.damages_paid_by_client			AS [Damages Paid]
 , fact_finance_summary.total_tp_costs_paid			AS [TP Costs Paid]
 , fact_finance_summary.defence_costs_billed				AS [Revenue(total)]
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
