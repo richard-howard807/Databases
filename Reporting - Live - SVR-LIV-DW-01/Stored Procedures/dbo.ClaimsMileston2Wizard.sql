@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 (
 @EndDate AS DATE
@@ -23,8 +24,8 @@ SELECT hierarchylevel2hist AS Division
 ,1 AS [Number Live Matters]
 ,CASE WHEN ISNULL(Milestones.Completed,0)>=1 THEN 1 ELSE 0 END  AS [No of Matters Workflow Commenced]
 ,CASE WHEN ISNULL(Milestones.Completed,0)=0 THEN 1 ELSE 0 END  AS [No of Matters Workflow Not Commenced]
-,CASE WHEN ISNULL(Milestones.Completed,0)>=1 THEN 1 ELSE 0 END  AS [No of Matters Workflow Completed]
-,CASE WHEN ISNULL(Milestones.Completed,0)=0 THEN 1 ELSE 0 END  AS [No of Matter Workflow Not Completed]
+,CASE WHEN Workflow.Completed='Outstanding' THEN 1 ELSE 0 END  AS [No of Matters Workflow Completed]
+,CASE WHEN ISNULL(Workflow.Completed,'')<>'Outstanding' THEN 1 ELSE 0 END  AS [No of Matter Workflow Not Completed]
 ,dim_matter_header_current.master_client_code AS [Client]
 ,dim_matter_header_current.master_matter_number AS [Matter]
 ,matter_description AS [MatterDescription]
@@ -49,7 +50,10 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT  AND dss_current_flag='Y' AND activeud=1
 LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_ReviewMatter' AND tskMSStage='2') AS Milestones
  ON ms_fileid=Milestones.fileID
-LEFT OUTER JOIN (SELECT fileID,CASE WHEN  tskActive=1 THEN 1 ELSE 0 END AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSStage='2') AS Workflow
+LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
+ WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
+ WHEN tskActive=0 AND tskComplete=0 THEN 'Deleted' 
+ ELSE 'Not Outstanding' END  AS Completed FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSStage='2') AS Workflow
  ON ms_fileid=Workflow.fileID
  LEFT OUTER JOIN (SELECT fileID,CASE WHEN tskComplete=1 AND tskActive=1  THEN 'Completed'
  WHEN tskActive=1 AND tskComplete=0 THEN 'Outstanding'
