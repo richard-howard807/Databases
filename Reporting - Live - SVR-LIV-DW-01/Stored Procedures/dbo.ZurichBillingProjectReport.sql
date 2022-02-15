@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 --2019-08-07 ES added Casualty Liverpool 2 requested by JB 
 --2020-01-13 ES added Casualty Birmingham requested by JB
 --2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
@@ -132,7 +133,7 @@ OR (dim_detail_finance.[output_wip_fee_arrangement]='Fixed Fee/Fee Quote/Capped 
 AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=90
+END)>=85
 
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())

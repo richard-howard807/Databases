@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 --ok 2021-05-11 #98208 changed to ( 'Legal Ops - Claims' ,'Legal Ops - LTA') and remove all reference to wip and FF jenny byfield
 
 
@@ -87,9 +88,9 @@ AND wip > 1
 
 AND 
 (( wip>=500
-and (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=90 AND dim_matter_header_current.fixed_fee = 'Hourly')
+END)>=85 AND dim_matter_header_current.fixed_fee = 'Hourly')
 
 OR (dim_matter_header_current.present_position = 'Final bill due - claim and costs concluded   ' AND dim_matter_header_current.fixed_fee = 'Fixed Fee' AND wip IS NOT NULL AND  wip > 1 ))
 

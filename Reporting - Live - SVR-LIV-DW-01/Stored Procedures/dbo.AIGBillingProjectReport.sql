@@ -16,6 +16,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[AIGBillingProjectReport]
 AS
 BEGIN
@@ -265,7 +266,7 @@ OR (dim_matter_header_current.fee_arrangement='Fixed Fee/Fee Quote/Capped Fee' A
 AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=90
+END)>=85
 
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
