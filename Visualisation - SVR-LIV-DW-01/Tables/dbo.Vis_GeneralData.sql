@@ -435,7 +435,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [STW Initial Checklist Result] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Amount Recovery Sought] [numeric] (13, 2) NULL,
 [AXA PAS Status] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
-[Comments] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Comments] [varchar] (500) COLLATE Latin1_General_BIN NULL,
 [Current Fee Scale] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Instructing Office] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [AIG Reference] [varchar] (255) COLLATE Latin1_General_BIN NULL,
@@ -526,6 +526,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [PREDiCT Recommended Damages Reserve] [numeric] (13, 2) NULL,
 [Claimant Solicitors Postcode] [char] (15) COLLATE Latin1_General_BIN NULL,
 [Claimant Solicitors Postcode Latitude] [varchar] (500) COLLATE Latin1_General_BIN NULL,
-[Claimant Solicitors Postcode Longitude] [varchar] (500) COLLATE Latin1_General_BIN NULL
+[Claimant Solicitors Postcode Longitude] [varchar] (500) COLLATE Latin1_General_BIN NULL,
+[Does the Claimant have a Personal Injury Claim?] [varchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

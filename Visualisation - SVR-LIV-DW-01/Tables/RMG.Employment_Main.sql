@@ -1,4 +1,4 @@
-CREATE TABLE [RMG].['Empolyment_Main']
+CREATE TABLE [RMG].[Employment_Main]
 (
 [Case - Status] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Personal - Pay Number & Surname] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,

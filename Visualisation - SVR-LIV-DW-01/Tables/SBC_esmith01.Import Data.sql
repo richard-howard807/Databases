@@ -1,9 +1,9 @@
-CREATE TABLE [dbo].[RiversideGasComplianceLive]
+CREATE TABLE [SBC\esmith01].[Import Data]
 (
 [Firm Instructed] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[UPRN] [float] NULL,
+[UPRN] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Region] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[LGSR Expiry] [datetime] NULL,
+[LGSR Expiry] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Tenant's Full Address] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Tenant's Full Address 2] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Tenant's Full Address 3] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,

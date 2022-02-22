@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[GetCampaignData]
 
 AS 
@@ -22,35 +23,7 @@ SET @DateFrom='2020-05-01'
 SET @DateTo=CONVERT(DATE,GETDATE(),103)
 
 SELECT 
-CASE
-WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
-WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
-WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
-		OR (
-			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
-			AND (
-					LOWER(dim_matter_header_current.matter_description) LIKE '%coronavirus%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%corona virus%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%covid%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%cov-2%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%sars%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%pandemic%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%lock down%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%self-isolation%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
-				)
-			) THEN 'Coronavirus'
-WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
-WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
-WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
-WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
-WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
-WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
-ELSE is_this_part_of_a_campaign
-END Campaign,
+Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
 RTRIM(dim_client.client_code) client_code,
 dim_client.client_name,
@@ -102,6 +75,8 @@ is_this_part_of_a_campaign
 	, 'Bill Date' AS [Date Range]				
 			
 			FROM red_Dw.dbo.fact_dimension_main
+	LEFT OUTER JOIN  Reporting.dbo.CampaignView
+ ON CampaignView.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT JOIN red_Dw.dbo.dim_client ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
 LEFT JOIN red_Dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
 LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
@@ -137,37 +112,7 @@ WHERE
 dim_matter_header_current.reporting_exclusions = 0
 
 AND LOWER(dim_client.client_name) NOT LIKE '%test%'
-AND (CASE
-WHEN LOWER(work_type_name) LIKE'%stalking protection order%' THEN 'Stalking Protection Order'
-WHEN LOWER(work_type_name) LIKE '%cyber%' OR LOWER(matter_description) LIKE '%cyber%' THEN 'Cyber, Privacy & Data'
-WHEN LOWER(work_type_name) LIKE '%gdpr%' OR LOWER(matter_description) LIKE '%gdpr%' THEN 'GDPR'
---WHEN LOWER(work_type_name) LIKE '%prof risk - construction - contentious%'  THEN 'Building Safer Future' -- removed #90349
-WHEN LOWER(is_this_part_of_a_campaign) LIKE 'bsf%'  THEN 'Building Safer Future'
-WHEN LOWER(dim_detail_core_details.is_this_part_of_a_campaign) = 'coronavirus'
-		OR (
-			CAST(dim_matter_header_current.date_opened_practice_management AS DATE) >= '2020-01-01'
-			AND (
-					LOWER(dim_matter_header_current.matter_description) LIKE '%coronavirus%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%corona virus%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%covid%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%cov-2%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%sars%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%pandemic%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%lock down%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%self-isolation%' OR
-					LOWER(dim_matter_header_current.matter_description) LIKE '%quarantine%'
-				)
-			) THEN 'Coronavirus'
-WHEN LOWER(is_this_part_of_a_campaign) ='energy get ready' THEN 'Get ready!  Energy in transition'
-WHEN LOWER(is_this_part_of_a_campaign) ='industrial and logistics' THEN 'Industrial and Logistics development'
-WHEN LOWER(is_this_part_of_a_campaign) ='investment and asset management' THEN 'Investors, Property investment and Asset management'
-WHEN LOWER(is_this_part_of_a_campaign) ='private rent schemes (prs)' THEN 'PRS Private Rented Sector'
-WHEN LOWER(is_this_part_of_a_campaign) ='supply chain' THEN 'Future of supply chain'
-WHEN LOWER(dim_matter_worktype.work_type_name)='healthcare - remedy' THEN 'Healthcare - Remedy'
-ELSE is_this_part_of_a_campaign
-END)  NOT IN ('No', 'Pro Bono', 'GDPR', 'Construction','Brexit','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management') 
-
-
+AND Campaign NOT IN (SELECT Campaign COLLATE DATABASE_DEFAULT FROM Reporting.marketing.concludedcampaigns)
 
 
 --DECLARE @StartDate AS DATE

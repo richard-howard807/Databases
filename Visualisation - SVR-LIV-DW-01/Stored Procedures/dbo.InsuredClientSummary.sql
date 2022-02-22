@@ -3,13 +3,17 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROC [dbo].[InsuredClientSummary]
 
 AS 
 
 BEGIN
 
-IF EXISTS(SELECT * FROM   dbo.InsuredClientSummaryData)  DROP TABLE dbo.InsuredClientSummaryData
+DROP TABLE IF EXISTS dbo.InsuredClientSummaryData;
+
+
+
 
 SELECT RTRIM(dim_matter_header_current.client_code)+'-'+dim_matter_header_current.matter_number AS [Weightmans Client/Matter No]
 	, dim_matter_header_current.master_client_code+'-'+master_matter_number AS [MatterSphere Client/Matter No]

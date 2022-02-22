@@ -12,7 +12,6 @@ CREATE TABLE [dbo].[RiversideGasComplianceCompleted]
 [Date LBA issued] [datetime] NULL,
 [LBA expiry date] [datetime] NULL,
 [Is this a joint tenancy? (Y/N)] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[Status (Ongoing/Completed)] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [Date billed] [datetime] NULL,
 [Fees Billed exc# VAT] [money] NULL
 ) ON [PRIMARY]

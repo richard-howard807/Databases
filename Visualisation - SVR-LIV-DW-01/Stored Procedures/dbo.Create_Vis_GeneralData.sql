@@ -682,6 +682,8 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 , [Claimant Solicitors Postcode Latitude]
 , [Claimant Solicitors Postcode Longitude]
 
+, dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the Claimant have a Personal Injury Claim?]
+
 INTO dbo.Vis_GeneralData
 
 

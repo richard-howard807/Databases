@@ -1,4 +1,4 @@
-CREATE TABLE [dbo].[RiversideGasComplianceLive]
+CREATE TABLE [SBC\esmith01].[Imported data]
 (
 [Firm Instructed] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [UPRN] [float] NULL,
