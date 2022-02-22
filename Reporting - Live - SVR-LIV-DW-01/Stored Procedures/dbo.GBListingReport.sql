@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[GBListingReport]-- 'GB Associates'
 (
 @Filter AS NVARCHAR(20)
@@ -17,6 +19,7 @@ BEGIN
 SELECT 
 RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Number]
 ,matter_description AS [Matter Description]
+,dim_matter_header_current.client_name AS [Client Name]
 ,dim_matter_header_current.date_opened_case_management AS [Date Opened]
 ,dim_matter_header_current.date_closed_case_management AS [Date Closed]
 ,name AS [Case Manager]
@@ -107,6 +110,7 @@ BEGIN
 SELECT 
 RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Number]
 ,matter_description AS [Matter Description]
+,dim_matter_header_current.client_name AS [Client Name]
 ,dim_matter_header_current.date_opened_case_management AS [Date Opened]
 ,dim_matter_header_current.date_closed_case_management AS [Date Closed]
 ,name AS [Case Manager]
@@ -185,7 +189,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01' 
+WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code='G1001'
 END
 
@@ -198,6 +202,7 @@ BEGIN
 SELECT 
 RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Number]
 ,matter_description AS [Matter Description]
+,dim_matter_header_current.client_name AS [Client Name]
 ,dim_matter_header_current.date_opened_case_management AS [Date Opened]
 ,dim_matter_header_current.date_closed_case_management AS [Date Closed]
 ,name AS [Case Manager]
@@ -276,7 +281,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01' 
+WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code<>'G1001'
 END
 END 

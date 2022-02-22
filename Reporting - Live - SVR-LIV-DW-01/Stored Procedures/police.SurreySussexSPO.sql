@@ -8,6 +8,9 @@ GO
 -- Create date: 2020-08-21
 -- Description:	#69137, Surrey and Sussex SPO report
 -- =============================================
+-- ES 2020-02-08 #132189, added new details, updated original details
+-- =============================================
+
 CREATE PROCEDURE [police].[SurreySussexSPO] 
 	
 AS
@@ -52,12 +55,19 @@ BEGIN
 	, dim_detail_advice.dvpo_victim_age AS [Victim Age]
 	, dim_detail_advice.dvpo_victim_supports AS [Victim Supports]
 	, dim_detail_advice.dvpo_application_contested AS [Application Contested]
-	, dim_detail_advice.dvpo_interim_application AS [Interim Granted]
+	--, dim_detail_advice.dvpo_interim_application AS [Interim Granted]
 	, dim_detail_advice.dvpo_if_contested_date_of_next_hearing AS [If Contested, Date of Next Hearing]
-	, dim_detail_advice.dvpo_full_order_granted  AS [Full Order Granted]
-	, dim_detail_advice.dvpo_length_of_order AS [Length of Order]
+	--, dim_detail_advice.dvpo_full_order_granted  AS [Full Order Granted]
+	--, dim_detail_advice.dvpo_length_of_order AS [Length of Order]
 	, Doogal.Latitude AS [Victim Postcode Latitude]
 	, Doogal.Longitude AS [Victim Postcode Longitude]
+	, ISNULL(dim_detail_advice.interim_granted,udmipapolice1.cdDesc) AS [Interim granted]
+	, ISNULL(dim_detail_advice.date_interim_granted,udmipapolice.dteInterimGran) AS [Date Interim Granted]
+	, ISNULL(dim_detail_advice.full_order,udmipapolice2.cdDesc) AS [Full Order]
+	, ISNULL(dim_detail_advice.date_full_order_granted, udmipapolice.dteFulOrderGran) AS [Date Full Order Granted]
+	, ISNULL(dim_detail_advice.date_order_expiry,udmipapolice.dteOrderExpiry) AS [Date of Order Expiry]
+	, DATEDIFF(DAY,ISNULL(dim_detail_advice.date_full_order_granted,udmipapolice.dteFulOrderGran), ISNULL(dim_detail_advice.date_order_expiry,udmipapolice.dteOrderExpiry)) AS [Length of order]
+	, ISNULL(dim_detail_advice.reason_withdrawal_refusal,udmipapolice.txtWithdrawRea) AS [Reason for Withdrawal/Refusal]
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -70,6 +80,24 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.Doogal
 ON Doogal.Postcode=dim_detail_advice.dvpo_victim_postcode
+LEFT OUTER JOIN (SELECT fileID,cdDesc FROM MS_Prod.dbo.udMIPAPolice
+INNER JOIN ms_prod.dbo.dbCodeLookup 
+ ON cboInterimGran=cdCode AND cdType ='INTERIMGRANT'
+WHERE udMIPAPolice.cboInterimGran IS NOT NULL
+) AS udmipapolice1 ON udmipapolice1.fileID=dim_matter_header_current.ms_fileid
+
+LEFT OUTER JOIN (SELECT fileID,cdDesc FROM MS_Prod.dbo.udMIPAPolice
+INNER JOIN ms_prod.dbo.dbCodeLookup 
+ ON cboFullOrder=cdCode AND cdType ='FULLORDER'
+WHERE udMIPAPolice.cboFullOrder IS NOT NULL
+) AS udmipapolice2 ON udmipapolice2.fileID=dim_matter_header_current.ms_fileid
+
+LEFT OUTER JOIN (SELECT * FROM MS_Prod.dbo.udMIPAPolice
+WHERE udMIPAPolice.dteInterimGran IS NOT NULL
+OR udMIPAPolice.dteFulOrderGran IS NOT NULL
+OR udMIPAPolice.dteOrderExpiry IS NOT NULL
+OR udMIPAPolice.txtWithdrawRea IS NOT NULL
+) AS udmipapolice ON udmipapolice.fileID=dim_matter_header_current.ms_fileid
 
 WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518')
 AND TRIM(work_type_name) ='PL - Pol - Stalking Protection Order'

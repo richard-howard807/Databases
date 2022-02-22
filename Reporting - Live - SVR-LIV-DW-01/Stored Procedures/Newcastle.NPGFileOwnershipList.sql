@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -54,6 +55,8 @@ WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contChristianNames as firstname
  ,contSurname as lastname
  ,ISNULL(WayLeeCount.NumberWayleave,0) AS NumberWayleave
+  ,ISNULL(Agent.Agent,'N/A') AS Agent
+    ,dteCompletionD AS [Completion Date]
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -124,6 +127,24 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
+LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS Agent
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='AGENT'
+GROUP BY dbFile.fileID
+) AS Agent
+ ON Agent.fileID = dbFile.fileID
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 
@@ -173,6 +194,8 @@ WHEN cboNPGFileType='COMLIT' THEN 'Com-Lit' END AS Team
 ,contChristianNames AS firstname
  ,contSurname AS lastname
  ,ISNULL(WayLeeCount.NumberWayleave,0) AS NumberWayleave
+  ,ISNULL(Agent.Agent,'N/A') AS Agent
+  ,dteCompletionD AS [Completion Date]
 FROM MS_PROD.config.dbFile
 INNER JOIN MS_PROD.dbo.dbUser
  ON filePrincipleID=usrID
@@ -243,6 +266,24 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
+LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS Agent
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='AGENT'
+GROUP BY dbFile.fileID
+) AS Agent
+ ON Agent.fileID = dbFile.fileID
 WHERE  fileNo<>'0'
 AND fileStatus='LIVE'
 AND clNo IN 

@@ -14,6 +14,7 @@ GO
 --
 -- =============================================
 -- 1.1 #77976 amended logic requested by A-M
+-- #134494, amended type logic to take into account the specialty work type
 -- =============================================
 
 
@@ -59,8 +60,11 @@ BEGIN
 	/*The matter should be classified as “litigated” if the work type group 
 	is in your list below ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery'), 
 	otherwise it should be classified as “core” */
-	CASE WHEN TRIM(worktype.work_type_group) IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
-	THEN 'Litigation Work' ELSE 'Core Work' END AS  [Type]
+	CASE WHEN TRIM(work_type_group) IN ('EL','PL All','Disease','Claims Handling','Motor','Insurance Costs','Prof Risk','NHSLA','LMT','Recovery')
+	THEN 'Litigation Work' 
+	WHEN work_type_name LIKE ('Specialty:%')
+	THEN 'Litigation Work'
+	ELSE 'Core Work' END AS  [Type]
 		, matter.client_code
 		, matter.matter_number
 		, matter.matter_description

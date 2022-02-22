@@ -18,6 +18,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -64,6 +65,8 @@ SELECT dbFile.fileID AS [ms_fileid]
 --,NPGBIlls.[Billed To NPG Vat]
 --,NPGBIlls.[Billed To Other Vat]
 ,curTPPaying AS [Third Pary Paying]
+,cboFeeArrang
+,curFixedFeeAmou
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -171,7 +174,7 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
-
+LEFT OUTER JOIN ms_prod.dbo.udMICoreGeneral ON udMICoreGeneral.fileID = dbFile.fileID
 --LEFT OUTER JOIN (SELECT dbfile.fileid
 --,SUM(CASE WHEN Payor.DisplayName IN 
 --('Northern Electric Plc','Northern Powergrid (Northeast) Plc'
@@ -253,6 +256,8 @@ SELECT dbFile.fileID AS [ms_fileid]
 --,NPGBIlls.[Billed To Other]
 --,NPGBIlls.[Billed To NPG Vat]
 --,NPGBIlls.[Billed To Other Vat]
+,cboFeeArrang
+,curFixedFeeAmou
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -360,6 +365,7 @@ WHERE 1 = 1
 	AND dbClient.clNo IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 ) AS ms_workstream
 	ON ms_workstream.fileID = dbFile.fileID
+LEFT OUTER JOIN ms_prod.dbo.udMICoreGeneral ON udMICoreGeneral.fileID = dbFile.fileID
 --LEFT OUTER JOIN (SELECT dbfile.fileid
 --,SUM(CASE WHEN Payor.DisplayName IN 
 --('Northern Electric Plc','Northern Powergrid (Northeast) Plc'

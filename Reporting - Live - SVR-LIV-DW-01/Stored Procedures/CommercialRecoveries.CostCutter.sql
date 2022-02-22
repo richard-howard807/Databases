@@ -49,6 +49,10 @@ END AS [Insolvency proceedings]
 ,ActionReq AS ActionRequired
 ,red_dw.dbo.datetimelocal(HearingDate) AS HearingDate
 ,ISNULL(defence_costs_billed,0) AS [Revenue]
+,dim_detail_finance.[output_wip_fee_arrangement] AS [Fee Arrangement]
+,CASE WHEN dim_detail_finance.[output_wip_fee_arrangement]='Hourly rate' THEN fact_finance_summary.defence_costs_billed END [Weightmans Costs on Hourly Rate]
+,ISNULL(fact_finance_summary.disbursements_billed,0) AS [Disbursements]
+,ISNULL(defence_costs_billed,0)+ISNULL(fact_finance_summary.disbursements_billed,0) AS [Weightmans Cost including Disbursements]
 ,CostcutterStatus.CostsRecovered AS [Costs Recovered from o/s]
 ,
 (ISNULL(Ledger.Payments,0)+ISNULL(CostcutterStatus.CostsRecovered,0))-ISNULL(defence_costs_billed,0) AS [Net Payment to Costcutter £]
@@ -65,7 +69,7 @@ END AS [Insolvency proceedings]
 -ISNULL(defence_costs_billed,0)<=0 THEN 0 ELSE defence_costs_billed END AS DCB
 ,fileNotes
 ,fileExternalNotes
-
+,CASE WHEN cboStatus='ACTIVE' THEN 'Yes' ELSE 'No' END AS [Payment Arrangement Agreed]
 
 FROM [MS_PROD].config.dbFile WITH(NOLOCK)
 INNER JOIN [MS_PROD].config.dbClient  WITH(NOLOCK)
@@ -77,6 +81,8 @@ INNER JOIN red_dw.dbo.dim_matter_header_current  WITH(NOLOCK)
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary  WITH(NOLOCK)
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+ LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
+ ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN MS_Prod.dbo.dbUser  WITH(NOLOCK)
  ON filePrincipleID=usrID
 LEFT OUTER JOIN [MS_PROD].dbo.udCRAccountInformation  WITH(NOLOCK)
@@ -87,6 +93,8 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRInsolvency  WITH(NOLOCK)
  ON udCRInsolvency.fileID = dbFile.fileID
 LEFT OUTER JOIN MS_Prod.dbo.udCRIssueDetails
  ON udCRIssueDetails.fileID = dbFile.fileID
+ LEFT OUTER JOIN MS_Prod.dbo.udCRPaymentArrangement WITH(NOLOCK)
+ ON udCRPaymentArrangement.fileid = dbFile.fileID
 
 LEFT OUTER JOIN 
 (

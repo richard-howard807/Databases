@@ -44,6 +44,7 @@ GO
 --KH 109184 Changes to rule for Worktype Group in self serve
 -- Added as per OK 19/08/2021 - Claimant Costs x 4 - MT
 -- ES 20211208 Added ate details, requested by BH
+-- ES 20220222 added dst isured client name and removed FED from insured client name & reference field, requested by BH
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -404,8 +405,9 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_client_involvement.[insurerclient_reference] AS [Insurer Client Reference FED]
        ,dim_client_involvement.[insurerclient_name] AS [Insurer Name FED]
        ,dim_detail_core_details.clients_claims_handler_surname_forename AS [Clients Claim Handler ]
-       ,dim_client_involvement.[insuredclient_reference] AS [Insured Client Reference FED]
-       ,dim_client_involvement.[insuredclient_name] AS [Insured Client Name FED]
+       ,dim_client_involvement.[insuredclient_reference] AS [Insured Client Reference]
+       ,dim_client_involvement.[insuredclient_name] AS [Insured Client Name (Associate)]
+	   ,dim_detail_claim.dst_insured_client_name AS [Insured Client Name (Data Services)]
        ,CASE
            WHEN RTRIM(dim_detail_core_details.insured_sector) = 'Business services' THEN
                'Business Services'

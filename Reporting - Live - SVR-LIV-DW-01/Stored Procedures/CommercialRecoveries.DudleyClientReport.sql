@@ -12,6 +12,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[DudleyClientReport]
 AS
 BEGIN
@@ -87,7 +88,7 @@ AND cboDefendantNo='1') AS Defendant
 WHERE (CRSystemSourceID  LIKE '33746-%'OR clNo='W15410' --need client number mapped
 )
 AND fileType='2038'
-AND CRSystemSourceID NOT IN ('33746-10','33746-11')
+AND ISNULL(CRSystemSourceID,'') NOT IN ('33746-10','33746-11')
 
 ORDER BY dbFile.Created
 

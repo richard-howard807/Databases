@@ -7,6 +7,7 @@ GO
 
 
 
+
 -- ===============================================
 -- Author:		Emily Smith
 -- Create date: 20210602
@@ -131,7 +132,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END  IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management') 
+         END  IN (SELECT Campaign COLLATE DATABASE_DEFAULT FROM marketing.ConcludedCampaigns) --('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management') 
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN
@@ -282,7 +283,7 @@ AND CASE
          'Healthcare - Remedy'
          ELSE
          is_this_part_of_a_campaign
-         END  IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management')
+         END  IN (SELECT Campaign COLLATE DATABASE_DEFAULT FROM marketing.ConcludedCampaigns) --IN ('Pro Bono', 'GDPR', 'Construction','Emergency Services Collab', 'Environmental Claims','Industrial and Logistics development','PRS Private Rented Sector','Healthcare Commercial Masterclass','Wills bank project','Covid Loans','Investors, Property investment and Asset management')
 
 GROUP BY CASE
          WHEN LOWER(work_type_name) LIKE '%stalking protection order%' THEN

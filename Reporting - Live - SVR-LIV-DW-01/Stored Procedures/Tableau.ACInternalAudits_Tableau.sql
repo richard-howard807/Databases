@@ -97,6 +97,7 @@ DROP table if exists #Audits
 select distinct #Audits.employeeid
      , #Audits.[Client Code]
      , #Audits.[Matter Number]
+	 , #Audits.[Client Code]+'-'+#Audits.[Matter Number] AS [Client/Matter Number]
      , #Audits.Date
      , #Audits.Status
      , #Audits.Template
@@ -127,7 +128,9 @@ select distinct #Audits.employeeid
 	 , dim_ac_audit_details.positive_feedback_details
 	 , dim_ac_audit_details.complaint_details
 	 , matter_description
+
 from #Audits
+
 inner join red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
 inner join red_dw..dim_fed_hierarchy_history 
 	ON #Audits.[Auditee key] = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
@@ -148,6 +151,10 @@ and dim_ac_audit_questions.question_text not in ('Positive feedback details','Co
 --AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
 --AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
 AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+
+-----------------------------------------------------------------------------------------
+
+
 end
 
 GO
