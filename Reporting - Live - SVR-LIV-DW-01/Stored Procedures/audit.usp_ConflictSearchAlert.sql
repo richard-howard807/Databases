@@ -8,8 +8,9 @@ GO
 -- ES 20161214 Amended to exclude client number W16179 requested by Jenny Barr ticket 193211
 -- SG 20170201 Changes to the Email layout
 -- SG 20170531 Changes to the Email address requested by Jenny Barr   ticket -- 232914 
--- JL 20171201 Changed email address and message ticket 271706 
--- KH 20190312 New version created to point at mattersphere 
+-- JL 20171201 Changed email address and message tic  ket 271706 
+-- KH 20190312 New version created to point at mattersphere
+-- JL 20220223 #135063 Changed to email from Hillary Stephenson to John Thompson
  
 
 CREATE  PROC [audit].[usp_ConflictSearchAlert]
@@ -165,7 +166,7 @@ ORDER BY dim_matter_header_current.client_code,matter_number
                     BEGIN --main email to BCM, cc'd to Sue, and FEE EARNER
                         SET @vRecipients = @BCMEmailAddress + ';'
                             + @UserEmailAddress + ';'
-                            + 'Hillary.Stephenson@Weightmans.com'--'jenny.barr@weightmans.com' --+ ';' + 'Kevin.Hansen@Weightmans.com'
+                            + 'John.Thompson@weightmans.com'--'jenny.barr@weightmans.com' --+ ';' + 'Kevin.Hansen@Weightmans.com'
                         
                         --SET @cc = 'Jenny.Norman@Weightmans.com'
                         --SET @cc = @BCMEmailAddress + ';' + @cc
