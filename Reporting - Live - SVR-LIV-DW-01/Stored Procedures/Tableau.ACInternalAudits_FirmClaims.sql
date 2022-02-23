@@ -47,13 +47,10 @@ FROM
             dim_detail_practice_area.[internal_notification],
             dim_detail_practice_area.[leo_involved],
             dim_detail_practice_area.[original_clientmatter_number],
-
 			a.fileID,
 			fact_detail_cost_budgeting.costs_written_off_compliance,
 			dim_detail_compliance.risk_comments,
-			 
-         
-            dim_detail_practice_area.[status_of_complaint],
+			dim_detail_practice_area.[status_of_complaint],
             dim_detail_practice_area.[status_on_closure],
             dim_detail_practice_area.[office],
             dim_detail_practice_area.[who_received_complaint],
@@ -62,7 +59,10 @@ FROM
             fact_detail_client.[costs_paid],
             fact_detail_client.[costs_reserve],
             fact_detail_client.[damages_reserve_risk],
-            isnull(fact_detail_paid_detail.[damages_paid_risk], 0) [DamagesNEW]
+            isnull(fact_detail_paid_detail.[damages_paid_risk], 0) [DamagesNEW],
+			dim_date.fin_quarter,
+			dim_date.fin_quarter_no,
+			dim_date.fin_year
         
            
 
