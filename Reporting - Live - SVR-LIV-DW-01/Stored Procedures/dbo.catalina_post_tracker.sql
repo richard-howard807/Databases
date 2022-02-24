@@ -55,14 +55,15 @@ DECLARE @report_week_no AS INT = (
 									#report_week.cal_week_in_year = (SELECT DISTINCT dim_date.cal_week_in_year FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE))
 								)
 DECLARE @previous_report_week AS INT = (
-										SELECT DISTINCT TOP 1
-											dim_date.cal_week_in_year
-										FROM red_dw.dbo.dim_date
+										SELECT TOP 1
+											LAG(#report_week.cal_week_in_year) OVER(ORDER BY #report_week.cal_week_in_year) AS previous_week
+										FROM #report_week
 										WHERE
-											dim_date.calendar_date BETWEEN DATEADD(DAY, -7, @report_week) AND @report_week
+											#report_week.start_of_week <= (SELECT DISTINCT dim_date.calendar_date FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE))
+										ORDER BY
+											#report_week.start_of_week DESC	
 										)
 
---SELECT @report_week, @report_week_no, @previous_report_week
 
 --================================================================================================================
 -- Find all Catalina matters
@@ -250,10 +251,25 @@ INSERT INTO dbo.catalina_post_snapshot
     report_tab,
     post_split_by_age,
     outstanding_post,
-	update_time
+	update_time,
+	new_document
 )
 SELECT 
-	*
+	all_data.ms_ref
+    , all_data.catalina_claim_ref
+    , all_data.docID
+    , all_data.doc_received_date
+    , all_data.doc_allocated_date
+    , all_data.doc_completion_date
+    , all_data.outstanding_count
+    , all_data.response_time
+    , all_data.prior_weeks_response_time
+    , all_data.days_post_outstanding
+    , all_data.tskActive
+    , all_data.docDesc
+    , all_data.tskDesc
+    , all_data.report_week
+    , all_data.report_week_no
 	, CASE
 		WHEN all_data.days_post_outstanding IS NULL THEN	
 			NULL	
@@ -292,56 +308,64 @@ SELECT
 			'>60'
 	  END						AS outstanding_post
 	, GETDATE() AS update_time
+	, all_data.new_document
 FROM (	
 		SELECT 
 			#catalina_matters.ms_ref
 			, #catalina_matters.catalina_claim_ref
-			, #catalina_docs.docID
+			, catalina_docs.docID
 			, CAST(#doc_journey.event_time AS DATE)		AS doc_received_date
-			, #catalina_docs.doc_allocated_date		
-			, #catalina_docs.doc_completion_date
-			, IIF(#catalina_docs.doc_completion_date IS NULL, 1, 0)		AS outstanding_count
-			, dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(#doc_journey.event_time AS DATE), ISNULL(#catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))		AS response_time
+			, catalina_docs.doc_allocated_date		
+			, catalina_docs.doc_completion_date
+			, IIF(catalina_docs.doc_completion_date IS NULL, 1, 0)		AS outstanding_count
+			, dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(#doc_journey.event_time AS DATE), ISNULL(catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))		AS response_time
 			, CASE	
 				WHEN dim_date.cal_week_in_year = @previous_report_week THEN
-					dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(#doc_journey.event_time AS DATE), ISNULL(#catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))
+					dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(#doc_journey.event_time AS DATE), ISNULL(catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))
 				ELSE
 					NULL
 			  END				AS prior_weeks_response_time
 			, CASE
-				WHEN #catalina_docs.doc_completion_date IS NULL THEN
+				WHEN catalina_docs.doc_completion_date IS NULL THEN
 					--calendar days
 					DATEDIFF(DAY, CAST(#doc_journey.event_time AS DATE), CAST(GETDATE() AS DATE)) 
 				ELSE
 					NULL
 			  END								AS days_post_outstanding
-			, #catalina_docs.tskActive
-			, #catalina_docs.docDesc
-			, #catalina_docs.tskDesc
+			, catalina_docs.tskActive
+			, catalina_docs.docDesc
+			, catalina_docs.tskDesc
 			, @report_week			AS report_week
 			, @report_week_no		AS report_week_no
+			, IIF(catalina_post_snapshot.docID IS NULL, 1, 0)	 AS new_document
 		FROM #doc_journey
-			INNER JOIN #catalina_docs
-				ON #doc_journey.ms_doc_id = CAST(#catalina_docs.docID AS NVARCHAR)
+			INNER JOIN (
+						SELECT #catalina_docs.*, IIF(completed_tasks.docID IS NULL, 0, 1) AS exclude
+						FROM #catalina_docs
+							-- exclude documents/tasks  in table already completed
+							LEFT OUTER JOIN (SELECT DISTINCT catalina_post_snapshot.docID FROM dbo.catalina_post_snapshot WHERE catalina_post_snapshot.doc_completion_date IS NOT NULL)	AS completed_tasks
+								ON completed_tasks.docID = #catalina_docs.docID
+						WHERE
+							IIF(completed_tasks.docID IS NULL, 0, 1) = 0
+							--AND #catalina_docs.docID = 38175248
+						)	AS catalina_docs
+				ON #doc_journey.ms_doc_id = CAST(catalina_docs.docID AS NVARCHAR)
 			INNER JOIN #catalina_matters
-				ON #catalina_matters.ms_fileid = #catalina_docs.ms_fileid
+				ON #catalina_matters.ms_fileid = catalina_docs.ms_fileid
 			LEFT OUTER JOIN red_dw.dbo.dim_date
-				ON dim_date.calendar_date = #catalina_docs.doc_completion_date
+				ON dim_date.calendar_date = catalina_docs.doc_completion_date
+			LEFT OUTER JOIN (SELECT DISTINCT catalina_post_snapshot.docID FROM dbo.catalina_post_snapshot)	AS catalina_post_snapshot
+				ON catalina_post_snapshot.docID = catalina_docs.docID
 		WHERE 1 = 1
 			--AND #catalina_docs.doc_completion_date < @report_week
 			--AND #catalina_docs.doc_allocated_date < '2021-12-01'
 			AND CAST(#doc_journey.event_time AS DATE) < @report_week
 	) AS all_data
-WHERE
-	all_data.outstanding_count = 1
-	OR 
-	all_data.prior_weeks_response_time IS NOT NULL
+
 
 END
 
 
 
---SELECT *
---FROM dbo.catalina_post_snapshot
 
 GO
