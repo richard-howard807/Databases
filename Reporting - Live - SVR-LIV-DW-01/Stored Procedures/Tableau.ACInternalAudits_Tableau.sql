@@ -150,7 +150,7 @@ WHERE
 and dim_ac_audit_questions.question_text not in ('Positive feedback details','Complaint details')
 --AND iif(@Department = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel3hist)) in (@Department)
 --AND iif(@Team = 'All', 'All', trim(dim_fed_hierarchy_history.hierarchylevel4hist)) in (@Team)
-AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+AND dim_fed_hierarchy_history.hierarchylevel2hist IN( 'Legal Ops - Claims' ,'Legal Ops - LTA')
 
 -----------------------------------------------------------------------------------------
 

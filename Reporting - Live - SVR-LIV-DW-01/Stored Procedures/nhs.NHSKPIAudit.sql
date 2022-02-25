@@ -14,8 +14,8 @@ CREATE PROCEDURE [nhs].[NHSKPIAudit] --EXEC [nhs].[NHSKPIAudit] '2019-01-01','20
 AS
 
 -- for testing purposes
---DECLARE @StartDate DATE = '20200501'
---	DECLARE @EndDate DATE = '20211130'
+--DECLARE @StartDate AS DATE = '20200501'
+--, @EndDate AS DATE = '20210101'
 
 -- used to set fin year headings for NHSR MI Dashboard report
 DECLARE @current_fin_year AS INT = (SELECT DISTINCT dim_date.fin_year FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = @EndDate)
@@ -250,6 +250,9 @@ WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Partial'
 THEN 0.5 ELSE 0 END AS [Total Points]
 
 
+,[Auditee 1] = dim_child_detail.[nhs_auditee_1]
+,[Auditee 2] = dim_child_detail.[nhs_auditee_2]
+,[Auditor Comments] = dim_detail_compliance.[auditcomments]
 
 
 
@@ -315,8 +318,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_child_detail
 				WHERE [red_dw].[dbo].[datetimelocal](nhs_audit_date) BETWEEN @StartDate AND @EndDate) AS AuditComments
 				 ON AuditComments.client_code = dim_matter_header_current.client_code
 				 AND AuditComments.matter_number = dim_matter_header_current.matter_number
+LEFT JOIN red_dw.dbo.dim_detail_compliance
+ON dim_detail_compliance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+
 WHERE master_client_code='N1001'
 AND reporting_exclusions=0
 AND [red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) BETWEEN @StartDate AND @EndDate
+
+
 END
 GO
