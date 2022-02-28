@@ -7,6 +7,7 @@ GO
 --============================================
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
 -- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
+-- JL 25-02-2022 #135931, changed the LGSS Handler field 
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -28,7 +29,6 @@ SELECT
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]
 ,dim_detail_core_details.[present_position]
 ,dim_detail_core_details.[referral_reason]
-
 ,CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid') THEN  'Own costs only'
 WHEN dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding' THEN 'Recovery'
 WHEN dim_detail_core_details.[present_position]='Claim concluded but costs outstanding' THEN 'Claim concluded - costs outstanding'
@@ -39,7 +39,8 @@ WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and c
 WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and costs outstanding','Blank') AND CONVERT(DATE,dim_detail_claim.[date_of_witness_statement_exchange],103)<CONVERT(DATE,GETDATE(),103) AND dim_detail_court.[date_of_trial] IS NULL THEN 'Listing'
 WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and costs outstanding','Blank') AND CONVERT(DATE,dim_detail_court.[date_of_trial],103)>=CONVERT(DATE,GETDATE(),103) THEN 'Trial or listing windows or awaiting either'
 END AS [Position of claim]
-,dim_detail_core_details.[clients_claims_handler_surname_forename]+' ('+dim_matter_header_current.client_name+')' AS [LGSS Handler]
+,COALESCE(dim_detail_core_details.cambridgeshire_cc_handler,dim_detail_core_details.[clients_claims_handler_surname_forename]+' ('+dim_matter_header_current.client_name+')') AS [LGSS Handler]
+  
 ,CASE WHEN dim_detail_core_details.[is_there_an_issue_on_liability]='No' THEN 'Yes' ELSE 'No' END AS [Admitted?] 
 ,CASE WHEN CMC IS NOT NULL THEN 'Yes' ELSE 'No' END AS [Conference?]
 
@@ -224,4 +225,6 @@ AND work_type_group IN
 
 AND NOT RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) IN ('A1001-11582','A1001-11662','G1001-5826','W21390-2','W19220-21')
 END
+
+
 GO
