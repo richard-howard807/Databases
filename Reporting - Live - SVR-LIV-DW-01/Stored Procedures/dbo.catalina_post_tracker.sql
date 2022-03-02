@@ -84,7 +84,7 @@ FROM red_dw.dbo.dim_matter_header_current
 						SELECT DISTINCT
 							dim_child_detail.client_code
 							, dim_child_detail.matter_number
-							, catalina_claim_number
+							, dim_child_detail.is_this_a_catalina_claim_no
 							, STRING_AGG(CAST(dim_parent_detail.zurich_rsa_claim_number AS NVARCHAR(MAX)), ', ')		AS catalina_claim_ref
 						FROM red_dw.dbo.dim_parent_detail
 							INNER JOIN red_dw.dbo.dim_child_detail
@@ -94,7 +94,7 @@ FROM red_dw.dbo.dim_matter_header_current
 						GROUP BY
 							dim_child_detail.client_code
 							, dim_child_detail.matter_number
-							, catalina_claim_number
+							, dim_child_detail.is_this_a_catalina_claim_no
 					) AS pre_lit_catalina
 		ON pre_lit_catalina.client_code = dim_matter_header_current.client_code
 			AND pre_lit_catalina.matter_number = dim_matter_header_current.matter_number
@@ -102,7 +102,7 @@ WHERE 1 = 1
 	AND (
 		dim_matter_header_current.master_client_code = 'W25984'
 		OR	
-		pre_lit_catalina.catalina_claim_number = 'Yes'
+		pre_lit_catalina.is_this_a_catalina_claim_no = 'Yes'
 		OR
         dim_detail_client.is_there_a_catalina_claim_number_on_this_claim = 'Yes'
 		)
