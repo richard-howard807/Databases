@@ -3,58 +3,15 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 CREATE VIEW [dbo].[GLDetail_3ESQ-01]
 AS
-SELECT [GLDetailID],
-       [GLDetailIndex],
-       [JM],
-       [LineNum],
-       [TranDate],
-       [PostDate],
-       [CurrDate],
-       [GLAcct],
-       [Description],
-       [GLType],
-       [LineType],
-       [Currency],
-       [TranDR],
-       [TranCR],
-       [UnitCurr],
-       [UnitCurrType],
-       [UnitDR],
-       [UnitCR],
-       [FirmCurr],
-       [FirmCurrType],
+SELECT 
        [FirmDR],
-       [FirmCR],
-       [Rpt1Curr],
-       [Rpt1CurrType],
-       [Rpt1DR],
-       [Rpt1CR],
-       [Rpt2Curr],
-       [Rpt2CurrType],
-       [Rpt2DR],
-       [Rpt2CR],
-       [Rpt3DR],
-       [Rpt3CR],
-       [Rpt3Curr],
-       [Rpt3CurrType],
-       [GLProject],
-       [GLClearReg],
-       [GLRespTkpr],
-       [SeqNumInvMaster],
-       [SeqNumRcptMaster],
-       [SeqNumVoucher],
-       [SeqNumCkMaster],
-       [ICBClearing],
-       [TransactionSeqNum],
-       [IsICBClearingNB],
-       [ArchetypeCode],
-       [CurrProcItemID],
-       [LastProcItemID],
-       [OrigProcItemID],
-       [HasAttachments],
-       [TimeStamp]
-FROM [SVR-LIV-3ESQ-01].[TE_3E_PROD].[dbo].[GLDetail] WITH (NOLOCK)
+       [FirmCR]
+       
+FROM [TE_3E_PROD].[dbo].[GLDetail] WITH (NOLOCK)
 WHERE GLAcct = 15504;
 GO

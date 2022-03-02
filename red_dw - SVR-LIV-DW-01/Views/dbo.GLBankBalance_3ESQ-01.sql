@@ -4,21 +4,23 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE view [dbo].[GLBankBalance_3ESQ-01]
-as
-select        sum(total_balance) as total_balance
-from            (select        GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.FiscalYear, sum(GTS.OpenTranDR) + sum(GTS.OpenTranCR) + sum(GTS.TranPer01DR) 
-                                                    + sum(GTS.TranPer01CR) + sum(GTS.TranPer02DR) + sum(GTS.TranPer02CR) + sum(GTS.TranPer03DR) + sum(GTS.TranPer03CR) 
-                                                    + sum(GTS.TranPer04DR) + sum(GTS.TranPer04CR) + sum(GTS.TranPer05DR) + sum(GTS.TranPer05CR) + sum(GTS.TranPer06DR) 
-                                                    + sum(GTS.TranPer06CR) + sum(GTS.TranPer07DR) + sum(GTS.TranPer07CR) + sum(GTS.TranPer08DR) + sum(GTS.TranPer08CR) 
-                                                    + sum(GTS.TranPer09DR) + sum(GTS.TranPer09CR) + sum(GTS.TranPer10DR) + sum(GTS.TranPer10CR) + sum(GTS.TranPer11DR) 
-                                                    + sum(GTS.TranPer11CR) + sum(GTS.TranPer12DR) + sum(GTS.TranPer12CR) as total_balance
-                          from            [SVR-LIV-3ESQ-01].TE_3E_PROD.dbo.GLTranSumm as GTS with (nolock) inner join
-                                                    [SVR-LIV-3ESQ-01].TE_3E_PROD.dbo.GLAcct as GLA with (nolock) on GLA.AcctIndex = GTS.GLAcct inner join
-                                                    [SVR-LIV-3ESQ-01].TE_3E_PROD.dbo.GLNatural as GLN with (nolock) on GLN.GLNaturalID = GLA.GLNatural inner join
-                                                    [SVR-LIV-3ESQ-01].TE_3E_PROD.dbo.GLAcctClass as GLC with (nolock) on GLC.Code = GLN.GLAcctClass
-                          where        (GLC.Code = 'OffBank') and (GTS.FiscalYear = '2022')
-                          group by GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.GLAcct, GTS.FiscalYear) as total
+
+
+CREATE VIEW [dbo].[GLBankBalance_3ESQ-01]
+AS
+SELECT        SUM(total_balance) AS total_balance
+FROM            (SELECT        GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.FiscalYear, SUM(GTS.OpenTranDR) + SUM(GTS.OpenTranCR) + SUM(GTS.TranPer01DR) 
+                                                    + SUM(GTS.TranPer01CR) + SUM(GTS.TranPer02DR) + SUM(GTS.TranPer02CR) + SUM(GTS.TranPer03DR) + SUM(GTS.TranPer03CR) 
+                                                    + SUM(GTS.TranPer04DR) + SUM(GTS.TranPer04CR) + SUM(GTS.TranPer05DR) + SUM(GTS.TranPer05CR) + SUM(GTS.TranPer06DR) 
+                                                    + SUM(GTS.TranPer06CR) + SUM(GTS.TranPer07DR) + SUM(GTS.TranPer07CR) + SUM(GTS.TranPer08DR) + SUM(GTS.TranPer08CR) 
+                                                    + SUM(GTS.TranPer09DR) + SUM(GTS.TranPer09CR) + SUM(GTS.TranPer10DR) + SUM(GTS.TranPer10CR) + SUM(GTS.TranPer11DR) 
+                                                    + SUM(GTS.TranPer11CR) + SUM(GTS.TranPer12DR) + SUM(GTS.TranPer12CR) AS total_balance
+                          FROM            TE_3E_PROD.[dbo].[GLTranSumm] AS GTS WITH (NOLOCK) INNER JOIN
+                                          TE_3E_PROD.dbo.GLAcct AS GLA WITH (NOLOCK) ON GLA.AcctIndex = GTS.GLAcct INNER JOIN
+                                          TE_3E_PROD.dbo.GLNatural AS GLN WITH (NOLOCK) ON GLN.GLNaturalID = GLA.GLNatural INNER JOIN
+                                          TE_3E_PROD.dbo.GLAcctClass AS GLC WITH (NOLOCK) ON GLC.Code = GLN.GLAcctClass
+                          WHERE        (GLC.Code = 'OffBank') AND (GTS.FiscalYear = '2022')
+                          GROUP BY GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.GLAcct, GTS.FiscalYear) AS total
 GO
 EXEC sp_addextendedproperty N'MS_DiagramPane1', N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
 Begin DesignProperties = 
