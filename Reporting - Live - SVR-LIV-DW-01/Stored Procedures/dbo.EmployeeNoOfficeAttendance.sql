@@ -9,7 +9,7 @@ GO
 -- Ticket:		ad-hoc
 -- Description:	Tracks employees attendance into the office
 -- =============================================
-Create PROCEDURE [dbo].[EmployeeNoOfficeAttendance]
+CREATE PROCEDURE [dbo].[EmployeeNoOfficeAttendance]
 (
 	      @start_date AS INT
 		, @end_date AS INT
@@ -153,7 +153,7 @@ group by employee_data.dim_fed_hierarchy_history_key
        , employee_data.cal_month_name
        , employee_data.cal_quarter
        , employee_data.cal_year
-having sum(OfficeCount) = 0 
+having sum(OfficeCount) = 0 AND sum(employee_data.working_day) > 0
 
 END 
 
