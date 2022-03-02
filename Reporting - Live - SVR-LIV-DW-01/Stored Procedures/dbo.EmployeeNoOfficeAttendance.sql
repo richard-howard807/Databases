@@ -9,15 +9,15 @@ GO
 -- Ticket:		ad-hoc
 -- Description:	Tracks employees attendance into the office
 -- =============================================
-CREATE PROCEDURE [dbo].[EmployeeAttendanceTracker]
+Create PROCEDURE [dbo].[EmployeeNoOfficeAttendance]
 (
-		@start_date AS INT
+	      @start_date AS INT
 		, @end_date AS INT
 		, @division AS NVARCHAR(MAX)
 		, @department AS NVARCHAR(MAX)	
 		, @team AS NVARCHAR(MAX)
 		, @employee_id AS NVARCHAR(MAX)
-		, @category AS NVARCHAR(MAX)
+		, @category as nvarchar(max)
 )
 AS
 
@@ -25,8 +25,8 @@ BEGIN
 
 
 --testing
---DECLARE @start_date AS INT = 202108
---		, @end_date AS INT = 202111
+--DECLARE @start_date AS INT = 202202
+--		, @end_date AS INT = 202202
 --		, @division AS NVARCHAR(MAX) = 'Business Services'
 --		, @department AS NVARCHAR(MAX) = 'Data Services'
 --		, @team AS NVARCHAR(MAX) = 'Business Analytics'
@@ -42,7 +42,6 @@ IF OBJECT_ID('tempdb..#department') IS NOT NULL DROP TABLE #department
 IF OBJECT_ID('tempdb..#team') IS NOT NULL DROP TABLE #team
 IF OBJECT_ID('tempdb..#employee_id') IS NOT NULL DROP TABLE #employee_id
 IF OBJECT_ID('tempdb..#category') IS NOT NULL DROP TABLE #category
-
 
 SELECT udt_TallySplit.ListValue  INTO #division FROM dbo.udt_TallySplit('|', @division)
 SELECT udt_TallySplit.ListValue  INTO #department FROM dbo.udt_TallySplit('|', @department)
@@ -103,28 +102,58 @@ WHERE 1 = 1
 
 
 SELECT 
-	#employee_dates.*
-	, ISNULL(fact_employee_attendance.category, 'Working From Home')			AS category
-	, CASE
-		WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') THEN
-			1
-		ELSE
-			0
-	  END							AS OfficeCount
-	, CASE
-		WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') THEN
-			1
-		ELSE
-			0
-	  END							AS working_day
+	employee_data.dim_fed_hierarchy_history_key
+  , employee_data.employeeid
+  , employee_data.employee_name
+  , employee_data.office
+  , employee_data.division
+  , employee_data.department
+  , employee_data.team
+  , employee_data.employeestartdate
+  , employee_data.leftdate
+  , employee_data.leaver
+  , employee_data.cal_month
+  , employee_data.cal_month_name
+  , employee_data.cal_quarter
+  , employee_data.cal_year
+	, sum(OfficeCount)	AS OfficeCount
+	, sum(working_day) as working_day
 	, 1 AS day_count
-FROM #employee_dates
-	LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
-		ON fact_employee_attendance.employeeid = #employee_dates.employeeid
-			AND fact_employee_attendance.startdate = #employee_dates.calendar_date
-				AND fact_employee_attendance.attendancekey <> 'Dummy'
-	INNER JOIN #category
-		ON ISNULL(fact_employee_attendance.category, 'Working From Home') COLLATE DATABASE_DEFAULT = #category.ListValue
+
+from 
+
+	(
+		select #employee_dates.*,
+			case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') then 1
+		else 0  end OfficeCount,
+		case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') then 1
+		else 0 END as working_day
+
+		FROM #employee_dates
+			LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
+				ON fact_employee_attendance.employeeid = #employee_dates.employeeid
+					AND fact_employee_attendance.startdate = #employee_dates.calendar_date
+						AND fact_employee_attendance.attendancekey <> 'Dummy'
+			INNER JOIN #category
+				ON ISNULL(fact_employee_attendance.category, 'Working From Home') COLLATE DATABASE_DEFAULT = #category.ListValue
+	) employee_data
+	 
+
+group by employee_data.dim_fed_hierarchy_history_key
+       , employee_data.employeeid
+       , employee_data.employee_name
+       , employee_data.office
+       , employee_data.division
+       , employee_data.department
+       , employee_data.team
+       , employee_data.employeestartdate
+       , employee_data.leftdate
+       , employee_data.leaver
+       , employee_data.cal_month
+       , employee_data.cal_month_name
+       , employee_data.cal_quarter
+       , employee_data.cal_year
+having sum(OfficeCount) = 0 
 
 END 
 

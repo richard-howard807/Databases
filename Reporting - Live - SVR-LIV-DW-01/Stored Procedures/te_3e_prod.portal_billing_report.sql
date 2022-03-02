@@ -22,11 +22,10 @@ BEGIN
 	-- happy for a dirty read
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED 
 
-  SELECT DISTINCT
+	
+SELECT DISTINCT
 
-
-
-DATEDIFF(DAY,profdate,GETDATE()) [aged_days],
+DATEDIFF(DAY, isnull(NxWfItemStep.StepDate, prof.TimeStamp), getdate()) [aged_days],
 profstatus.[description] [status],
 profdate [status_date],
 profindex [proforma],
@@ -34,7 +33,7 @@ NxUser.BaseUserName [current_owner],
 client.displayname [client],
 matter.number [matter],
 matter.[description] [matter_description],
-team_name.[description] [team],
+--team_name.[description] [team],
 prof.feeamt [fees],
 prof.hcoamt + prof.scoamt [disbursements]
 ,taxamt
@@ -42,33 +41,33 @@ prof.hcoamt + prof.scoamt [disbursements]
 ,othamt
 ,intamt
 ,boaamt
---, WfHistory.CompletedDate
+,prof.BillTkpr
+, team_name.Description
+-- select *
+FROM  TE_3E_Prod..[ProfMaster] (nolock)   prof --ON WfHistory.joinid = prof.profmasterid
+LEFT JOIN TE_3E_Prod..[ProfStatus] (nolock)  profstatus ON profstatus.code = prof.profstatus 
+LEFT JOIN TE_3E_Prod..[Matter] (nolock)  matter ON matter.mattindex = prof.leadmatter
+LEFT JOIN TE_3E_Prod..[Client] (nolock)  client ON matter.client = client.clientindex
+INNER JOIN TE_3E_Prod..NxWfItemStep (nolock) as NxWfItemStep ON NxWfItemStep.JoinID = prof.ProfMasterID and NxWfItemStep.NxWFStepState = 1 
+LEFT OUTER JOIN TE_3E_Prod..NxBaseUser (nolock) AS NxUser ON NxWfItemStep.NextStepOwner = NxUser.NxBaseUserID
+LEFT OUTER JOIN TE_3E_Prod..Timekeeper (nolock)  tkpr ON tkpr.TRE_User = isnull(NxUser.NxBaseUserID, WM_Approver)
 
+LEFT JOIN TE_3E_Prod..[Timekeeper] (nolock) timekeeper ON timekeeper.tkprindex = prof.BillTkpr
 
-FROM [TE_3E_Prod].[dbo].[ProfMaster] prof --ON WfHistory.joinid = prof.profmasterid
-LEFT JOIN [TE_3E_Prod].[dbo].[ProfStatus] profstatus ON profstatus.code = prof.profstatus
-LEFT JOIN [TE_3E_Prod].[dbo].[Matter] matter ON matter.mattindex = prof.leadmatter
-LEFT JOIN [TE_3E_Prod].[dbo].[Client] client ON matter.client = client.clientindex
---LEFT OUTER JOIN NxRoleUser AS NxRole ON WfHistory.CurrentOwner = NxRole.RoleID
-LEFT OUTER JOIN [TE_3E_Prod].[dbo].NxBaseUser AS NxUser ON prof.WM_Approver = NxUser.NxBaseUserID
-LEFT OUTER JOIN [TE_3E_Prod].[dbo].Timekeeper tkpr ON tkpr.TRE_User = NxUser.NxBaseUserID
-
-
-
-LEFT JOIN [TE_3E_Prod].[dbo].[Timekeeper] timekeeper ON timekeeper.tkprindex = prof.BillTkpr
-LEFT JOIN red_dw.dbo.ds_sh_3e_user_sync team ON timekeeper.TkprIndex = team.timekeeperindex
+left outer join red_dw.dbo.ds_sh_3e_user_sync team on prof.BillTkpr = team.timekeeperindex
 LEFT JOIN [TE_3E_Prod].[dbo].[Section] team_name ON team_name.code = team.team COLLATE DATABASE_DEFAULT
+
 WHERE
 --WfHistory.CompletedDate IS NULL
 --AND WfHistory.IsHide = 0
 --AND
---prof.InvMaster IS NULL
---prof.ProfIndex=2437179
+----prof.InvMaster IS NULL
+-- prof.ProfIndex=2440229 
+-- and
+-- prof.WFRouteTo_ccc is not null
 
+ prof.ProfStatus not in ('Billed','RejectApproval','CL','CL_WM')
 
-prof.WFRouteTo_ccc is not null
-
-and prof.ProfStatus not in ('Billed','RejectApproval','CL')
 	
 
 
