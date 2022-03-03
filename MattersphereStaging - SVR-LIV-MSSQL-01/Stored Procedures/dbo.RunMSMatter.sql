@@ -5,6 +5,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[RunMSMatter]
 (
 	 @ID INT, 
@@ -61,6 +63,9 @@ BEGIN
 							INNER JOIN dbo.MSUsers ON MSPartner.MSID = MSUsers.usrID
 							WHERE usrAlias = CAST(@Partner AS NVARCHAR(15)))
 		
+		DECLARE @brIDMS AS INT
+		SET @brIDMS=(SELECT TOP 1 brid FROM MS_PROD.dbo.dbBranch WHERE brCode=@brID)
+
 -----------------VALIDATION---------------------------------------------------------------------------------------------------------------------
 
 IF (@clNo NOT IN (SELECT clno FROM MSClient  WHERE clno=@clno ))
@@ -136,7 +141,7 @@ BEGIN
 		@filePrincipleMSID,'DEFDEPT',@fileType,
 		@fileFundCode,@fileCurISoCode,@fileStatus,
 		@FileCreated,-200,@FileUpdated,@fileClosed,
-		@fileSource,@brID ,@MattIndex	 
+		@fileSource,@brIDMS ,@MattIndex	 
 
 --- Get FILEID
 	DECLARE @FileID AS INT
@@ -191,7 +196,10 @@ SET [fileDesc]=@fileDesc
 ,[fileStatus]=@fileStatus
 ,[Updated]=GETDATE()
 ,[fileClosed]=@fileClosed
-,[brID]=@brID
+--,[brID]=@brID
+,[brID]=(SELECT TOP 1 brid FROM MS_PROD.dbo.dbBranch WHERE brCode=@brID) --added to fix branch issue 
+
+
 WHERE fileID=@UpdateFileID
 
 
