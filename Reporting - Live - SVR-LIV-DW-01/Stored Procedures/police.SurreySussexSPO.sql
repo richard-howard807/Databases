@@ -9,6 +9,7 @@ GO
 -- Description:	#69137, Surrey and Sussex SPO report
 -- =============================================
 -- ES 2020-02-08 #132189, added new details, updated original details
+-- ES 2022-03-04 #137185, changed length of order to years, and changed niche ref to look at new field
 -- =============================================
 
 CREATE PROCEDURE [police].[SurreySussexSPO] 
@@ -25,7 +26,7 @@ BEGIN
 	, matter_description AS [Matter Description]
 	, matter_owner_full_name AS [Case Manager]
 	, date_opened_case_management AS [Date Opened]
-	, dim_detail_advice.niche_ref	AS [Niche Ref]
+	, dim_detail_advice.dvpo_niche_ref	AS [Niche Ref]
 	, dim_detail_advice.[dvpo_victim_postcode] AS [Victim Postcode]
 	, dim_detail_advice.dvpo_perpetrator_postcode AS [Perpetrator Postcode]
 	, CASE WHEN dim_matter_header_current.master_client_code='451638' THEN dim_detail_claim.[borough] 
@@ -66,7 +67,7 @@ BEGIN
 	, ISNULL(dim_detail_advice.full_order,udmipapolice2.cdDesc) AS [Full Order]
 	, ISNULL(dim_detail_advice.date_full_order_granted, udmipapolice.dteFulOrderGran) AS [Date Full Order Granted]
 	, ISNULL(dim_detail_advice.date_order_expiry,udmipapolice.dteOrderExpiry) AS [Date of Order Expiry]
-	, DATEDIFF(DAY,ISNULL(dim_detail_advice.date_full_order_granted,udmipapolice.dteFulOrderGran), ISNULL(dim_detail_advice.date_order_expiry,udmipapolice.dteOrderExpiry)) AS [Length of order]
+	, DATEDIFF(YEAR,ISNULL(dim_detail_advice.date_full_order_granted,udmipapolice.dteFulOrderGran), ISNULL(dim_detail_advice.date_order_expiry,udmipapolice.dteOrderExpiry)) AS [Length of order]
 	, ISNULL(dim_detail_advice.reason_withdrawal_refusal,udmipapolice.txtWithdrawRea) AS [Reason for Withdrawal/Refusal]
 
 FROM red_dw.dbo.fact_dimension_main
