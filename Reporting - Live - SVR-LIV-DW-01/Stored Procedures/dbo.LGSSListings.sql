@@ -8,6 +8,7 @@ GO
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
 -- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
 -- JL 25-02-2022 #135931, changed the LGSS Handler field 
+-- ES 03-03-2022 amended damages paid, requested by BH
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -78,7 +79,8 @@ ELSE 'Closed' END AS Tab
 , fact_detail_reserve_detail.defence_costs_reserve				AS [Own Costs Reserve]
 , dim_detail_outcome.date_claim_concluded				AS [Date Claim Concluded]
 , dim_detail_outcome.date_costs_settled				AS [Date Costs Concluded]
-, fact_detail_claim.damages_paid_by_client			AS [Damages Paid]
+--, fact_detail_claim.damages_paid_by_client			AS [Damages Paid]
+, fact_finance_summary.damages_paid			AS [Damages Paid]
 , fact_finance_summary.total_tp_costs_paid			AS [TP Costs Paid]
 , fact_finance_summary.defence_costs_billed				AS [Revenue(total)]
 

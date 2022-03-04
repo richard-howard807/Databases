@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [dbo].[STWBillingAnalysis] 
+CREATE PROCEDURE [dbo].[STWBillingAnalysis] --EXEC [STWBillingAnalysis] '2022-01-01', '2022-03-28'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -38,7 +38,7 @@ AND CAST(InvDate AS Date) BETWEEN @StartDate AND @EndDate
 AND  (LOWER(Narrative) LIKE '%stw%escrow%74%water%'
  OR LOWER(Narrative) LIKE '%balance%sheet%fund%100%water%'
  OR LOWER(Narrative) LIKE '%derwent%fund%86%water%'
- OR fact_bill.client_code = '00257248') 
+ ) --OR fact_bill.client_code = '00257248'
 AND Narrative IS NOT NULL 
 
 AND IsReversed=0
