@@ -15,9 +15,9 @@ BEGIN
 	SET NOCOUNT ON;
 
 
-SELECT dim_matter_header_current.[client_code] AS [Client Code],
-		dim_matter_header_current.[matter_number] AS [Matter Number],
-		RTRIM(dim_matter_header_current.[client_code])+'-'+dim_matter_header_current.[matter_number] AS [Weightmans Reference],
+SELECT dim_matter_header_current.[master_client_code] AS [Client Code],
+		dim_matter_header_current.[master_matter_number] AS [Matter Number],
+		RTRIM(dim_matter_header_current.[master_client_code])+'-'+dim_matter_header_current.[master_matter_number] AS [Weightmans Reference],
 		dim_matter_header_current.matter_owner_full_name AS [Matter Owner],
 		dim_fed_hierarchy_history.hierarchylevel4hist AS [Team],
 		dim_department.[department_name] AS [Matter Department],

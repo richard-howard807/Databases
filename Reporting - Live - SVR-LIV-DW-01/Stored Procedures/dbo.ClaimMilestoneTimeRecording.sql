@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[ClaimMilestoneTimeRecording]
 (
 @StartDate AS DATE
@@ -36,7 +37,7 @@ INNER JOIN #Department AS Department  ON Department.ListValue COLLATE DATABASE_D
 INNER JOIN #Team AS Team ON Team.ListValue   COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 
 WHERE CONVERT(DATE,transaction_calendar_date,103) BETWEEN @StartDate AND @EndDate
-AND hierarchylevel2hist='Legal Ops - Claims'
+AND hierarchylevel2hist IN ('Legal Ops - Claims','Legal Ops - LTA')
 GROUP BY name
 ,hierarchylevel3hist
 ,hierarchylevel4hist
