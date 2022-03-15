@@ -71,7 +71,20 @@ DECLARE @previous_report_week AS INT = (
 SELECT DISTINCT
 	dim_matter_header_current.ms_fileid
 	, dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number AS ms_ref
-	, COALESCE(pre_lit_catalina.catalina_claim_ref, dim_client_involvement.insurerclient_reference) AS catalina_claim_ref
+	, CASE	
+		WHEN dim_matter_header_current.master_client_code = 'W25984' THEN
+			NULL
+		ELSE 
+			COALESCE(pre_lit_catalina.zurich_claim_ref, dim_client_involvement.insurerclient_reference) 
+	  END											AS zurich_claim_ref
+	, CASE	
+		WHEN dim_matter_header_current.master_client_code = 'W25984' THEN
+			dim_client_involvement.insurerclient_reference
+		ELSE 
+			COALESCE(pre_lit_catalina.catalina_claim_number, cat_claim_no_litigated.catalina_claim_number) 
+	  END											AS catalina_claim_number
+	, pre_lit_catalina.is_this_a_catalina_claim_no
+	, dim_detail_client.is_there_a_catalina_claim_number_on_this_claim
 INTO #catalina_matters
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
@@ -85,12 +98,13 @@ FROM red_dw.dbo.dim_matter_header_current
 							dim_child_detail.client_code
 							, dim_child_detail.matter_number
 							, dim_child_detail.is_this_a_catalina_claim_no
-							, STRING_AGG(CAST(dim_parent_detail.zurich_rsa_claim_number AS NVARCHAR(MAX)), ', ')		AS catalina_claim_ref
+							, STRING_AGG(CAST(dim_child_detail.catalina_claim_number AS NVARCHAR(MAX)), ', ') AS catalina_claim_number
+							, STRING_AGG(CAST(dim_parent_detail.zurich_rsa_claim_number AS NVARCHAR(MAX)), ', ')		AS zurich_claim_ref
 						FROM red_dw.dbo.dim_parent_detail
 							INNER JOIN red_dw.dbo.dim_child_detail
 								ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
 						WHERE
-							dim_child_detail.catalina_claim_number = 'Yes'
+							dim_child_detail.is_this_a_catalina_claim_no = 'Yes'
 						GROUP BY
 							dim_child_detail.client_code
 							, dim_child_detail.matter_number
@@ -98,6 +112,38 @@ FROM red_dw.dbo.dim_matter_header_current
 					) AS pre_lit_catalina
 		ON pre_lit_catalina.client_code = dim_matter_header_current.client_code
 			AND pre_lit_catalina.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN (
+						SELECT 
+							dim_matter_header_current.dim_matter_header_curr_key
+							, catalina_pre_lit.catalina_claim_number
+						FROM red_dw.dbo.dim_matter_header_current
+							INNER JOIN red_dw.dbo.dim_detail_client
+								ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+							INNER JOIN red_dw.dbo.dim_client_involvement
+								ON dim_client_involvement.client_code = dim_matter_header_current.client_code
+									AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
+							INNER JOIN (SELECT DISTINCT
+													dim_child_detail.client_code
+													, dim_child_detail.matter_number
+													, dim_child_detail.is_this_a_catalina_claim_no
+													, STRING_AGG(CAST(dim_child_detail.catalina_claim_number AS NVARCHAR(MAX)), ', ') AS catalina_claim_number
+													, STRING_AGG(CAST(dim_parent_detail.zurich_rsa_claim_number AS NVARCHAR(MAX)), ', ')		AS zurich_claim_ref
+												FROM red_dw.dbo.dim_parent_detail
+													INNER JOIN red_dw.dbo.dim_child_detail
+														ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+												WHERE
+													dim_child_detail.is_this_a_catalina_claim_no = 'Yes'
+													AND dim_child_detail.catalina_claim_number IS NOT NULL
+												GROUP BY
+													dim_child_detail.client_code
+													, dim_child_detail.matter_number
+													, dim_child_detail.is_this_a_catalina_claim_no
+											) AS catalina_pre_lit
+								ON LOWER(RTRIM(dim_client_involvement.insurerclient_reference)) IN (LOWER(catalina_pre_lit.zurich_claim_ref))
+						WHERE 1 = 1
+							AND dim_detail_client.is_there_a_catalina_claim_number_on_this_claim = 'Yes'
+					) AS cat_claim_no_litigated
+		ON cat_claim_no_litigated.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND (
 		dim_matter_header_current.master_client_code = 'W25984'
@@ -107,6 +153,7 @@ WHERE 1 = 1
         dim_detail_client.is_there_a_catalina_claim_number_on_this_claim = 'Yes'
 		)
 	AND dim_matter_header_current.master_matter_number <> '0'
+	--AND COALESCE(pre_lit_catalina.zurich_claim_ref, dim_client_involvement.insurerclient_reference) = 'LEX4532200'
 
 
 --================================================================================================================
@@ -234,7 +281,7 @@ all_data.event_time
 INSERT INTO dbo.catalina_post_snapshot
 (
     ms_ref,
-    catalina_claim_ref,
+    zurich_claim_ref,
     docID,
     doc_received_date,
     doc_allocated_date,
@@ -251,12 +298,13 @@ INSERT INTO dbo.catalina_post_snapshot
     report_tab,
     post_split_by_age,
     outstanding_post,
-	update_time,
-	new_document
+    update_time,
+    new_document,
+    catalina_claim_ref
 )
 SELECT 
 	all_data.ms_ref
-    , all_data.catalina_claim_ref
+    , all_data.zurich_claim_ref
     , all_data.docID
     , all_data.doc_received_date
     , all_data.doc_allocated_date
@@ -309,10 +357,12 @@ SELECT
 	  END						AS outstanding_post
 	, GETDATE() AS update_time
 	, all_data.new_document
+	, all_data.catalina_claim_number
 FROM (	
 		SELECT 
 			#catalina_matters.ms_ref
-			, #catalina_matters.catalina_claim_ref
+			, #catalina_matters.zurich_claim_ref
+			, #catalina_matters.catalina_claim_number
 			, catalina_docs.docID
 			, CAST(#doc_journey.event_time AS DATE)		AS doc_received_date
 			, catalina_docs.doc_allocated_date		
@@ -364,6 +414,9 @@ FROM (
 
 
 END
+
+
+
 
 
 
