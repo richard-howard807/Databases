@@ -52,6 +52,7 @@ SELECT DISTINCT
 	CAST(WPS284 as varchar(250)) + '%' as [Our Proportion % of Costs],
 	rtrim(dim_detail_core_details.[suspicion_of_fraud]) [Fraud Identified],
 	fact_detail_claim.[potential_fraud_saving] as [Potential Fraud Value],
+	UPPER(RTRIM(dim_employee.locationidud))		AS [Location],
 	ClaimDetails.is_this_a_catalina_claim_no	AS [Is This a Catalina Claim Number],
 	CASE
 		WHEN (ISNULL([Defence Cost Reserve], 0) + ISNULL([Claimants Cost Reserve], 0)) <> ISNULL(WPS277, 0) THEN
@@ -75,8 +76,11 @@ from red_dw.dbo.fact_dimension_main
         on fact_dimension_main.client_code = dim_detail_client.client_code
            and dim_detail_client.matter_number = fact_dimension_main.matter_number
     inner join red_dw.dbo.dim_matter_header_current
-        on dim_matter_header_current.client_code = fact_dimension_main.client_code
-           and dim_matter_header_current.matter_number = fact_dimension_main.matter_number
+        ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+	INNER JOIN red_dw.dbo.dim_employee
+		ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
     left outer join red_dw.dbo.dim_detail_core_details
         on dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
     left outer join red_dw.dbo.dim_detail_claim
