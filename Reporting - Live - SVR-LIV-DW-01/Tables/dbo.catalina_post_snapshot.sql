@@ -20,6 +20,7 @@ CREATE TABLE [dbo].[catalina_post_snapshot]
 [outstanding_post] [nvarchar] (10) COLLATE Latin1_General_CI_AS NULL,
 [update_time] [datetime] NULL,
 [new_document] [int] NULL,
-[catalina_claim_ref] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL
+[catalina_claim_ref] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[doc_type] [nvarchar] (15) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

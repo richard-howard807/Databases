@@ -157,7 +157,7 @@ WHERE 1 = 1
 
 
 --================================================================================================================
--- Get get documents and assigned document tasks on Catalina matters
+-- Get documents and assigned document tasks on Catalina matters
 --================================================================================================================
 SELECT
 	doc_tasks.ms_fileid
@@ -166,6 +166,9 @@ SELECT
 	, doc_tasks.tskActive
 	, doc_tasks.docDesc
 	, doc_tasks.tskDesc
+	, doc_tasks.tskType
+	, doc_tasks.docType
+	, doc_tasks.docExtension
 	, IIF(MAX(ISNULL(doc_tasks.doc_completion_date, '9999-12-31')) = '9999-12-31', NULL, MAX(ISNULL(doc_tasks.doc_completion_date, '9999-12-31')))		AS doc_completion_date
 INTO #catalina_docs
 FROM (
@@ -177,6 +180,9 @@ FROM (
 			, dbTasks.tskActive
 			, dbDocument.docDesc
 			, dbTasks.tskDesc
+			, dbTasks.tskType
+			, dbDocument.docType		
+			, dbDocument.docExtension
 		FROM #catalina_matters
 			INNER JOIN MS_Prod.config.dbDocument WITH(NOLOCK)
 				ON dbDocument.fileID = #catalina_matters.ms_fileid
@@ -190,7 +196,7 @@ FROM (
 					CASE
 						WHEN dbDocument.docType <> 'EMAIL' THEN
 							1
-						WHEN dbDocument.docType = 'EMAIL' AND dbTasks.tskType = 'EMAILRECEIPT' THEN
+						WHEN dbDocument.docType = 'EMAIL' AND dbTasks.tskType = 'EMAILRECEIPT' AND CAST(dbDocument.Created AS DATE)	>= '2022-03-14' THEN 
 							1
 						ELSE
 							0
@@ -206,6 +212,9 @@ GROUP BY
 	, doc_tasks.tskActive
 	, doc_tasks.docDesc
 	, doc_tasks.tskDesc
+	, doc_tasks.tskType
+	, doc_tasks.docType
+	, doc_tasks.docExtension
 
 --================================================================================================================
 -- Get document receipt date from PaperRiver
@@ -300,7 +309,8 @@ INSERT INTO dbo.catalina_post_snapshot
     outstanding_post,
     update_time,
     new_document,
-    catalina_claim_ref
+    catalina_claim_ref,
+    doc_type
 )
 SELECT 
 	all_data.ms_ref
@@ -358,6 +368,7 @@ SELECT
 	, GETDATE() AS update_time
 	, all_data.new_document
 	, all_data.catalina_claim_number
+	, all_data.doc_type
 FROM (	
 		SELECT 
 			#catalina_matters.ms_ref
@@ -388,6 +399,7 @@ FROM (
 			, @report_week			AS report_week
 			, @report_week_no		AS report_week_no
 			, IIF(catalina_post_snapshot.docID IS NULL, 1, 0)	 AS new_document
+			, catalina_docs.docExtension	AS doc_type
 		FROM #doc_journey
 			INNER JOIN (
 						SELECT #catalina_docs.*, IIF(completed_tasks.docID IS NULL, 0, 1) AS exclude
@@ -397,6 +409,7 @@ FROM (
 								ON completed_tasks.docID = #catalina_docs.docID
 						WHERE
 							IIF(completed_tasks.docID IS NULL, 0, 1) = 0
+							AND #catalina_docs.docType <> 'EMAIL'
 							--AND #catalina_docs.docID = 38175248
 						)	AS catalina_docs
 				ON #doc_journey.ms_doc_id = CAST(catalina_docs.docID AS NVARCHAR)
@@ -410,6 +423,58 @@ FROM (
 			--AND #catalina_docs.doc_completion_date < @report_week
 			--AND #catalina_docs.doc_allocated_date < '2021-12-01'
 			AND CAST(#doc_journey.event_time AS DATE) < @report_week
+		UNION
+        SELECT 
+			#catalina_matters.ms_ref
+			, #catalina_matters.zurich_claim_ref
+			, #catalina_matters.catalina_claim_number
+			, catalina_docs.docID
+			, catalina_docs.doc_allocated_date		AS doc_received_date
+			, catalina_docs.doc_allocated_date		
+			, catalina_docs.doc_completion_date
+			, IIF(catalina_docs.doc_completion_date IS NULL, 1, 0)		AS outstanding_count
+			, dbo.ReturnElapsedDaysExcludingBankHolidays(catalina_docs.doc_allocated_date, ISNULL(catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))		AS response_time
+			, CASE	
+				WHEN dim_date.cal_week_in_year = @previous_report_week THEN
+					dbo.ReturnElapsedDaysExcludingBankHolidays(catalina_docs.doc_allocated_date, ISNULL(catalina_docs.doc_completion_date, CAST(GETDATE() AS DATE)))
+				ELSE
+					NULL
+			  END				AS prior_weeks_response_time
+			, CASE
+				WHEN catalina_docs.doc_completion_date IS NULL THEN
+					--calendar days
+					DATEDIFF(DAY, catalina_docs.doc_allocated_date, CAST(GETDATE() AS DATE)) 
+				ELSE
+					NULL
+			  END								AS days_post_outstanding
+			, catalina_docs.tskActive
+			, catalina_docs.docDesc
+			, catalina_docs.tskDesc
+			, @report_week			AS report_week
+			, @report_week_no		AS report_week_no
+			, IIF(catalina_post_snapshot.docID IS NULL, 1, 0)	 AS new_document
+			, catalina_docs.docExtension AS doc_type
+		FROM #catalina_matters
+			INNER JOIN (
+						SELECT #catalina_docs.*, IIF(completed_tasks.docID IS NULL, 0, 1) AS exclude
+						FROM #catalina_docs
+							-- exclude documents/tasks  in table already completed
+							LEFT OUTER JOIN (SELECT DISTINCT catalina_post_snapshot.docID FROM dbo.catalina_post_snapshot WHERE catalina_post_snapshot.doc_completion_date IS NOT NULL)	AS completed_tasks
+								ON completed_tasks.docID = #catalina_docs.docID
+						WHERE
+							IIF(completed_tasks.docID IS NULL, 0, 1) = 0
+							AND #catalina_docs.docType = 'EMAIL'
+							--AND #catalina_docs.docID = 38175248
+						)	AS catalina_docs
+				ON catalina_docs.ms_fileid = #catalina_matters.ms_fileid
+			LEFT OUTER JOIN red_dw.dbo.dim_date
+				ON dim_date.calendar_date = catalina_docs.doc_completion_date
+			LEFT OUTER JOIN (SELECT DISTINCT catalina_post_snapshot.docID FROM dbo.catalina_post_snapshot)	AS catalina_post_snapshot
+				ON catalina_post_snapshot.docID = catalina_docs.docID
+		WHERE 1 = 1
+			--AND #catalina_docs.doc_completion_date < @report_week
+			--AND #catalina_docs.doc_allocated_date < '2021-12-01'
+			AND catalina_docs.doc_allocated_date < @report_week
 	) AS all_data
 
 
