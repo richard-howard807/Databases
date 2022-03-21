@@ -50,7 +50,7 @@ SET @Query = '
             FROM OPENQUERY
                         (ADSI, ''             
                               SELECT distinguishedName              
-                              FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+                              FROM ''''LDAP://lb-ldaps:636''''             
                               WHERE                  
                               sAMAccountName = ''''' + @Username
     + '''''         
@@ -66,7 +66,7 @@ EXEC master.sys.SP_EXECUTESQL @Query, N'@Path NVARCHAR(1024) OUTPUT',
       SELECT *          
       FROM OPENQUERY(ADSI,''             
             SELECT  name,  distinguishedName            
-            FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+            FROM ''''LDAP://lb-ldaps:636''''             
             WHERE                  
                   objectClass=''''group'''' 
             AND member=''''' + @Path + '''''         
@@ -77,7 +77,7 @@ EXEC master.sys.SP_EXECUTESQL @Query, N'@Path NVARCHAR(1024) OUTPUT',
       SELECT *          
       FROM OPENQUERY(ADSI,''             
             SELECT  name,  distinguishedName            
-            FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+            FROM ''''LDAP://lb-ldaps:636''''             
             WHERE                  
                   objectClass=''''group'''' 
             AND member=''''' + REPLACE(@Path,'''','''''''''') + '''''         

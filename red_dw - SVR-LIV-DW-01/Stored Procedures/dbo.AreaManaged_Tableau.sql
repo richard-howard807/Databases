@@ -18,7 +18,7 @@ declare @EndDate date set @EndDate = '2019-05-01'
 				FROM OPENQUERY
 							(ADSI, ''             
 									SELECT distinguishedName              
-									FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+									FROM ''''LDAP://lb-ldaps:636''''             
 									WHERE                  
 									sAMAccountName = ''''' + @Username
 		+ '''''         
@@ -33,7 +33,7 @@ declare @EndDate date set @EndDate = '2019-05-01'
 			SELECT *          
 			FROM OPENQUERY(ADSI,''             
 				SELECT  name,  distinguishedName            
-				FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+				FROM ''''LDAP://lb-ldaps:636''''             
 				WHERE                  
 						objectClass=''''group'''' 
 				AND member=''''' + @Path + '''''         
@@ -44,7 +44,7 @@ declare @EndDate date set @EndDate = '2019-05-01'
 			SELECT *          
 			FROM OPENQUERY(ADSI,''             
 				SELECT  name,  distinguishedName            
-				FROM ''''LDAP://DC=SBC,DC=ROOT''''             
+				FROM ''''LDAP://lb-ldaps:636''''             
 				WHERE                  
 						objectClass=''''group'''' 
 				AND member=''''' + REPLACE(@Path,'''','''''''''') + '''''         

@@ -64,7 +64,7 @@ WHERE crm_client_type IN
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PERSON$1] WHERE cm.dim_client_key = MAP_UCI)
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].[IAProcessing].[dbo].[contacts] WHERE DELETED_IND=1 AND cm.dim_client_key = UCI) --Added to stop deletions
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_COMPANY$1] WHERE cm.dim_client_key = MAP_UCI) -- added to stop converted clients coming accross again
-and cm.client_status = 'Active'
+--and cm.client_status = 'Active'
 and cl.address_type = 'CL'
 and isnull(cm.surname,'') <> ''
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
@@ -115,7 +115,7 @@ WHERE crm_client_type IN
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PERSON$1] WHERE cm.dim_client_key = MAP_UCI)
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].[IAProcessing].[dbo].[contacts] WHERE DELETED_IND=1 AND cm.dim_client_key = UCI) --Added to stop deletions
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_COMPANY$1] WHERE cm.dim_client_key = MAP_UCI) -- added to stop converted clients coming accross again
-and cm.client_status = 'Active'
+--and cm.client_status = 'Active'
 and cl.address_type = 'CC'
 and isnull(co.dim_client_key,0) <> 0 
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
@@ -133,7 +133,7 @@ on dim_client_matter_summary.dim_client_matter_summ_key = fc.dim_client_matter_s
 LEFT OUTER JOIN [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1 ON [INT_DTS_COMPANY$1].MAP_UCI = dim_client_matter_summary.dim_client_key AND dim_client_matter_summary.client_name = [INT_DTS_COMPANY$1].COMPANY_NM COLLATE Latin1_General_BIN
 WHERE crm_client_type in ('Contact MK Comp','Company')
 AND dim_client_matter_summary.client_name IS NOT NULL
-and dim_client_matter_summary.client_status = 'Active'
+--and dim_client_matter_summary.client_status = 'Active'
 and (push_to_ia = 0 or push_to_ia is null)
 AND NOT EXISTS (SELECT 1 FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PERSON$1] WHERE dim_client_matter_summary.dim_client_key = MAP_UCI)
 AND [INT_DTS_COMPANY$1].MAP_UCI IS null
@@ -144,7 +144,7 @@ UNION
 SELECT cl.client_name, cl.client_name, cl.dim_client_key FROM dbo.dim_client cl
 inner join dim_client_matter_summary cm on cl.dim_client_key = cm.dim_client_key
 --and cm.client_status <> 'Closed'
-and cm.client_status in ('Active','Prospect')
+--and cm.client_status in ('Active','Prospect')
 WHERE cl.dim_client_key IN (SELECT DISTINCT COMP_UCI FROM [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PERSON$1])
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
 AND cl.dim_client_key = @dim_client_key
@@ -208,7 +208,7 @@ union
 select 'Weightmans People', dim_client_matter_summary.dim_client_key 
 from dim_client_matter_summary
 where crm_client_type = 'Personel' 
-and dim_client_matter_summary.client_status = 'Active'
+--and dim_client_matter_summary.client_status = 'Active'
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND dim_client_key = @dim_client_key
  
