@@ -73,7 +73,7 @@ CROSS APPLY
 			INNER JOIN #office on #office.ListValue = dim_employee.locationidud collate database_default
 		WHERE
 			dim_employee.deleted_from_cascade = 0
-			AND dim_fed_hierarchy_history.windowsusername IS NOT NULL
+			AND dim_fed_hierarchy_history.windowsusername IS NOT null            
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -81,7 +81,7 @@ WHERE 1 = 1
 	AND dim_date.holiday_flag = 'N'
 	AND dim_date.calendar_date BETWEEN @start_cal_date AND @end_cal_date
 	AND employees.employeestartdate <= dim_date.calendar_date
-	AND employees.leaver = 0
+--	AND employees.leaver = 0
 
 
 

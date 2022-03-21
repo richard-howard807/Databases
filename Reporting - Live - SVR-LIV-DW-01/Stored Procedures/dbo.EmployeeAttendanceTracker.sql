@@ -18,6 +18,7 @@ CREATE PROCEDURE [dbo].[EmployeeAttendanceTracker]
 		, @team AS NVARCHAR(MAX)
 		, @employee_id AS NVARCHAR(MAX)
 		, @category AS NVARCHAR(MAX)
+		, @jobrole as nvarchar(max)
 )
 AS
 
@@ -50,14 +51,14 @@ IF OBJECT_ID('tempdb..#department') IS NOT NULL DROP TABLE #department
 IF OBJECT_ID('tempdb..#team') IS NOT NULL DROP TABLE #team
 IF OBJECT_ID('tempdb..#employee_id') IS NOT NULL DROP TABLE #employee_id
 IF OBJECT_ID('tempdb..#category') IS NOT NULL DROP TABLE #category
-
+IF OBJECT_ID('tempdb..#jobrole') IS NOT NULL DROP TABLE #jobrole
 
 SELECT udt_TallySplit.ListValue  INTO #division FROM dbo.udt_TallySplit('|', @division)
 SELECT udt_TallySplit.ListValue  INTO #department FROM dbo.udt_TallySplit('|', @department)
 SELECT udt_TallySplit.ListValue  INTO #team FROM dbo.udt_TallySplit('|', @team)
 SELECT udt_TallySplit.ListValue  INTO #employee_id FROM	dbo.udt_TallySplit('|', @employee_id)
 SELECT udt_TallySplit.ListValue  INTO #category FROM dbo.udt_TallySplit('|', @category)
-
+SELECT udt_TallySplit.ListValue  INTO #jobrole FROM dbo.udt_TallySplit('|', @jobrole)
 
 
 SELECT 
@@ -85,6 +86,7 @@ CROSS APPLY
 			, dim_employee.employeestartdate
 			, dim_employee.leftdate
 			, dim_fed_hierarchy_history.leaver
+			, dim_employee.levelidud job_role
 		FROM red_dw.dbo.dim_employee
 			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 				ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -98,9 +100,12 @@ CROSS APPLY
 				ON dim_fed_hierarchy_history.hierarchylevel4hist COLLATE DATABASE_DEFAULT = #team.ListValue
 			INNER JOIN #employee_id
 				ON dim_employee.employeeid COLLATE DATABASE_DEFAULT = #employee_id.ListValue
+			inner join #jobrole 
+					ON dim_employee.levelidud COLLATE DATABASE_DEFAULT = #jobrole.ListValue 
 		WHERE
 			dim_employee.deleted_from_cascade = 0
-			AND dim_fed_hierarchy_history.windowsusername IS NOT NULL
+			AND dim_fed_hierarchy_history.windowsusername IS NOT null			
+	        and isnull(dim_employee.leftdate, '20990101') >= getdate()
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -150,9 +155,12 @@ CROSS APPLY
 				ON dim_fed_hierarchy_history.hierarchylevel4hist COLLATE DATABASE_DEFAULT = #team.ListValue
 			INNER JOIN #employee_id
 				ON dim_employee.employeeid COLLATE DATABASE_DEFAULT = #employee_id.ListValue
+		   	inner join #jobrole 
+					ON dim_employee.levelidud COLLATE DATABASE_DEFAULT = #jobrole.ListValue 
 		WHERE
 			dim_employee.deleted_from_cascade = 0
 			AND dim_fed_hierarchy_history.windowsusername IS NOT null
+			and isnull(dim_employee.leftdate, '20990101') >= getdate()
             
 	) AS employees
 WHERE 1 = 1

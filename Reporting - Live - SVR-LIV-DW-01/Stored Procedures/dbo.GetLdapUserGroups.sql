@@ -14,7 +14,7 @@ BEGIN
         SELECT @Path = distinguishedName
         FROM OPENQUERY(ADSI, ''
             SELECT distinguishedName 
-            FROM ''''LDAP://DC=SBC,DC=ROOT''''
+            FROM ''''LDAP://lb-ldaps:636''''
             WHERE 
                 objectClass = ''''user'''' AND
                 sAMAccountName = ''''' + @LdapUsername + '''''
@@ -26,7 +26,7 @@ BEGIN
         SELECT name AS LdapGroup 
         FROM OPENQUERY(ADSI,''
             SELECT name 
-            FROM ''''LDAP://DC=SBC,DC=ROOT''''
+            FROM ''''LDAP://lb-ldaps:636''''
             WHERE 
                 objectClass=''''group'''' AND
                 member=''''' + @Path + '''''

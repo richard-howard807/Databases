@@ -9,9 +9,12 @@ GO
 
 
 
+
+
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 (
-@EndDate AS DATE
+@StartDate AS DATE
+,@EndDate AS DATE
 )
 AS 
 
@@ -124,7 +127,7 @@ FROM ms_prod.dbo.dbTasks WHERE tskFilter='tsk_02_010_1270_DateNextFR' AND tskMSS
  ON ms_fileid=[Date of Next File Review].fileID
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details 
 ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-WHERE date_opened_case_management>='2022-01-17' AND CONVERT(DATE,date_opened_case_management,103)<=@EndDate
+WHERE date_opened_case_management>=@StartDate AND CONVERT(DATE,date_opened_case_management,103)<=@EndDate
 AND hierarchylevel2hist='Legal Ops - Claims'
 AND date_closed_case_management IS NULL
 AND ISNULL(red_dw.dbo.dim_matter_header_current.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
@@ -159,6 +162,7 @@ AND dim_matter_worktype.work_type_code NOT IN ('0008'
 ,'1567','1569','1570','1583','1586','1587','1588','1599','2037','2038','9000')
 --AND master_client_code='W20218' AND master_matter_number='517'
 AND name <>'Steve Hassall'
+AND hierarchylevel4hist <>'Niche Costs'
 
 END
 GO

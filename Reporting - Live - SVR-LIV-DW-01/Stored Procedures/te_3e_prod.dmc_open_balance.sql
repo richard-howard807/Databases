@@ -30,7 +30,7 @@ SELECT
 		ON v.Payee = pe.PayeeIndex
 	INNER JOIN [TE_3E_PROD]..vendor as ve 
 		ON ve.VendorIndex = pe.Vendor
-	INNER JOIN [SVR-LIV-3ESQ-01].[TE_3E_PROD].[DBO].[VchrStatus] as vs WITH (NOLOCK) 
+	INNER JOIN [TE_3E_PROD].[DBO].[VchrStatus] as vs WITH (NOLOCK) 
 		ON vs.Code = v.VchrStatus
 	
 	where v.VchrStatus = 'GEN'

@@ -2,7 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE PROCEDURE [dbo].[NHSRMonthlyCostReturn_v2] -- EXEC [dbo].[NHSRMonthlyCostReturn_v2] '2021-12-01','2021-12-30','Costs Settlement'
+CREATE PROCEDURE [dbo].[NHSRMonthlyCostReturn_v2] -- EXEC [dbo].[NHSRMonthlyCostReturn_v2] '2022-01-01','2022-02-28','Costs Settlement'
 (
 @StartDate AS DATE
 ,@EndDate  AS DATE
@@ -45,14 +45,14 @@ SELECT
 	, fact_finance_summary.tp_total_costs_claimed				AS [Claimant Costs Claimed - Certified Bill]
 	, fact_finance_summary.claimants_costs_paid					AS [Overall Settlement Amount]
 	, ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)		AS [Gross Savings]
-	, CASE 
+	, CAST(CASE 
 		WHEN ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) = 0 THEN
 			0
 		WHEN ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)	= 0 THEN
 			0
 		ELSE
 			(ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)) / ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0)
-	 END				AS [Percentage Saving Against Costs Claimed]
+	 END AS DECIMAL(4,4))				AS [Percentage Saving Against Costs Claimed]
 	, fact_detail_claim.data_services_team_interest_paid
 	, ''				AS [Court Level]
 	, fact_detail_cost_budgeting.district_judge_other_side				AS [Court Location]
@@ -97,7 +97,7 @@ SELECT
 	--			+ ISNULL(fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded_other_side, 0)		
 	--  END AS [Percentage Saving on Estimated Costs as Claimed]
 
-	  	, CASE	
+	  	, CAST(CASE	
 		WHEN  ISNULL(fact_detail_cost_budgeting.estimated_disbursements_other_side, 0) 
 		+ ISNULL(fact_detail_cost_budgeting.estimated_profit_costs_other_side, 0) = 0 THEN
 			0
@@ -110,7 +110,7 @@ SELECT
 			  /
 			  CAST(ISNULL(fact_detail_cost_budgeting.total_disbs_budget_agreedrecorded_other_side, 0) AS DECIMAL(22,8)) 
 				+ CAST(ISNULL(fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded_other_side, 0) AS DECIMAL(22,8))		
-	  END																		AS [Percentage Saving on Estimated Costs as Claimed]
+	  END	AS DECIMAL(4,4))																	AS [Percentage Saving on Estimated Costs as Claimed]
 	---------------------------------------------------------------------------------------------------------------------------------------------
 	
 	, 'Manual completion'									AS [Costs Budget Net Saving]
@@ -265,14 +265,14 @@ SELECT
 	, fact_finance_summary.tp_total_costs_claimed				AS [Claimant Costs Claimed - Certified Bill]
 	, fact_finance_summary.claimants_costs_paid					AS [Overall Settlement Amount]
 	, ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)		AS [Gross Savings]
-	, CASE 
+	, CAST(CASE 
 		WHEN ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) = 0 THEN
 			0
 		WHEN ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)	= 0 THEN
 			0
 		ELSE
 			(ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0) - ISNULL(fact_finance_summary.claimants_costs_paid, 0)) / ISNULL(fact_detail_client.claimants_costs_claimed_provisional_bill, 0)
-	 END				AS [Percentage Saving Against Costs Claimed]
+	 END AS DECIMAL(4,4))				AS [Percentage Saving Against Costs Claimed]
 	, fact_detail_claim.data_services_team_interest_paid
 	, ''				AS [Court Level]
 	, fact_detail_cost_budgeting.district_judge_other_side				AS [Court Location]
@@ -302,7 +302,7 @@ SELECT
 	  ISNULL(fact_detail_cost_budgeting.total_disbs_budget_agreedrecorded_other_side, 0) 
 		+ ISNULL(fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded_other_side, 0)			AS [Gross Saving on Estimated Costs as Claimed]
 	---------------------------------------------------------------------------------------------------------------------------------------------
-	, CASE	
+	,CAST( CASE	
 		WHEN  ISNULL(fact_detail_cost_budgeting.estimated_disbursements_other_side, 0) 
 		+ ISNULL(fact_detail_cost_budgeting.estimated_profit_costs_other_side, 0) = 0 THEN
 			0
@@ -315,7 +315,7 @@ SELECT
 			  /
 			  CAST(ISNULL(fact_detail_cost_budgeting.total_disbs_budget_agreedrecorded_other_side, 0) AS DECIMAL(22,8)) 
 				+ CAST(ISNULL(fact_detail_cost_budgeting.total_profit_costs_budget_agreedrecorded_other_side, 0) AS DECIMAL(22,8))		
-	  END																		AS [Percentage Saving on Estimated Costs as Claimed]
+	  END		AS DECIMAL(4,4))																AS [Percentage Saving on Estimated Costs as Claimed]
 	---------------------------------------------------------------------------------------------------------------------------------------------
 	
 	, 'Manual completion'									AS [Costs Budget Net Saving]

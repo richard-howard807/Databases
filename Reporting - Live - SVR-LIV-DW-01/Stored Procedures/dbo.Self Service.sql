@@ -45,6 +45,7 @@ GO
 -- Added as per OK 19/08/2021 - Claimant Costs x 4 - MT
 -- ES 20211208 Added ate details, requested by BH
 -- ES 20220222 added dst isured client name and removed FED from insured client name & reference field, requested by BH
+-- ES 20220309 amended work type label to matter type
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -352,8 +353,8 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
        ,dim_department.[department_code] AS [Department Code]
        ,dim_fed_hierarchy_history.[hierarchylevel2hist] [Division]
-       ,dim_matter_worktype.[work_type_name] AS [Work Type]
-       ,dim_matter_worktype.[work_type_code] AS [Work Type Code]
+       ,dim_matter_worktype.[work_type_name] AS [Matter Type]
+       ,dim_matter_worktype.[work_type_code] AS [Matter Type Code]
        ,CASE
            WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
 				'PL All'
@@ -391,7 +392,7 @@ DROP TABLE IF EXISTS #Disbursements
                'Health and Safety'
            ELSE
                'Other'
-       END [Worktype Group]
+       END [Matter Group]
        ,dim_instruction_type.instruction_type AS [Instruction Type]
        ,dim_client.client_name AS [Client Name]
        ,dim_client.client_group_name AS [Client Group Name]

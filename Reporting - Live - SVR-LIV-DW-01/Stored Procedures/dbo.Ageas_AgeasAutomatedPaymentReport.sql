@@ -22,6 +22,9 @@ SELECT
 ,[Fees] = Bills.Fees
 ,[Disbursements] = Bills.Disbursements
 ,[VAT] = Bills.VAT
+,outcome_of_case
+,work_type_code
+,work_type_name
 INTO #t1
 FROM  red_dw.dbo.fact_bill_detail
 LEFT JOIN red_dw.dbo.dim_matter_header_current 
@@ -36,8 +39,13 @@ LEFT JOIN red_dw.dbo.dim_defendant_involvement
 ON dim_defendant_involvement.dim_defendant_involvem_key = fact_dimension_main.dim_defendant_involvem_key
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+LEFT JOIN red_dw.dbo.dim_detail_outcome
+ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT JOIN red_dw.dbo.fact_finance_summary
 ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN red_dw.dbo.dim_matter_worktype
+ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+
 LEFT JOIN (SELECT
 bill_number,
 [Fees] = SUM(fact_bill.fees_total)
@@ -55,6 +63,7 @@ WHERE 1 = 1
 AND dim_matter_header_current.master_client_code = 'A3003'
 AND reporting_exclusions = 0
 AND hierarchylevel3hist = 'Motor'
+AND ISNULL(outcome_of_case, '') <> 'Exclude from reports'
 
 /*Testing*/
 --AND bill_number = '02073545'
@@ -73,6 +82,10 @@ fact_bill_detail.bill_number
 ,Bills.Fees
 ,Bills.Disbursements
 ,Bills.VAT
+,outcome_of_case
+,work_type_code
+,work_type_name
+
 
 SELECT * FROM #t1
 WHERE [Invoice Date] >GETDATE() -60

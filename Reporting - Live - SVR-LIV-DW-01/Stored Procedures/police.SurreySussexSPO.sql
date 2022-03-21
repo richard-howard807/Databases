@@ -100,7 +100,7 @@ OR udMIPAPolice.dteOrderExpiry IS NOT NULL
 OR udMIPAPolice.txtWithdrawRea IS NOT NULL
 ) AS udmipapolice ON udmipapolice.fileID=dim_matter_header_current.ms_fileid
 
-WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518')
+WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518','817395')
 AND TRIM(work_type_name) ='PL - Pol - Stalking Protection Order'
 AND reporting_exclusions=0
 

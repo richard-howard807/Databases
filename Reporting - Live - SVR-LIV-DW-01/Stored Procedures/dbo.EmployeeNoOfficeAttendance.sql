@@ -90,7 +90,8 @@ CROSS APPLY
 				ON dim_employee.employeeid COLLATE DATABASE_DEFAULT = #employee_id.ListValue
 		WHERE
 			dim_employee.deleted_from_cascade = 0
-			AND dim_fed_hierarchy_history.windowsusername IS NOT NULL
+			AND dim_fed_hierarchy_history.windowsusername IS NOT null            
+	        and isnull(leftdate, '20990101') >= getdate()
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)

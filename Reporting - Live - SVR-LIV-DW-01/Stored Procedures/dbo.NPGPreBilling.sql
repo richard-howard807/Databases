@@ -19,6 +19,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -64,9 +67,11 @@ SELECT dbFile.fileID AS [ms_fileid]
 --,NPGBIlls.[Billed To Other]
 --,NPGBIlls.[Billed To NPG Vat]
 --,NPGBIlls.[Billed To Other Vat]
-,curTPPaying AS [Third Pary Paying]
+,ISNULL(curTPPaying,0) AS [Third Pary Paying]
 ,cboFeeArrang
 ,curFixedFeeAmou
+,LastBillDate
+,usrFullName AS [Matter Owner]
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -74,6 +79,7 @@ LEFT OUTER JOIN (
 SELECT dbfile.fileid
 ,		SUM(TB.billamt) AS [Legal Costs]
 ,		SUM(cbt.chrgamt) AS [VAT on Legal Costs]
+,MAX(ARD.invdate) AS LastBillDate
 FROM red_dw.dbo.ds_sh_3e_armaster ARD WITH(NOLOCK)
 INNER JOIN red_dw.dbo.ds_sh_3e_matter AS m WITH(NOLOCK)
  ON ARD.matter=m.mattindex
@@ -157,6 +163,7 @@ AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','W
 GROUP BY ms_fileid,name,hourly_charge_rate 
 ) AS WIP
  ON dbFile.fileID=WIP.ms_fileid
+LEFT OUTER JOIN ms_prod.dbo.dbUser ON filePrincipleID=usrID
 LEFT OUTER JOIN 
 (
 SELECT 
@@ -251,13 +258,15 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,ISNULL(ms_workstream.workstream,'Other') AS workstream
 ,cboNPGFileType
 ,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
-,curTPPaying AS [Third Pary Paying]
+,ISNULL(curTPPaying,0) AS [Third Pary Paying]
 --,NPGBIlls.[Billed To NPG]
 --,NPGBIlls.[Billed To Other]
 --,NPGBIlls.[Billed To NPG Vat]
 --,NPGBIlls.[Billed To Other Vat]
 ,cboFeeArrang
 ,curFixedFeeAmou
+,LastBillDate
+,usrFullName AS [Matter Owner]
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -265,6 +274,7 @@ LEFT OUTER JOIN (
 SELECT dbfile.fileid
 ,		SUM(TB.billamt) AS [Legal Costs]
 ,		SUM(cbt.chrgamt) AS [VAT on Legal Costs]
+,MAX(ARD.invdate) AS LastBillDate
 FROM red_dw.dbo.ds_sh_3e_armaster ARD WITH(NOLOCK)
 INNER JOIN red_dw.dbo.ds_sh_3e_matter AS m WITH(NOLOCK)
  ON ARD.matter=m.mattindex
@@ -348,6 +358,7 @@ AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','W
 GROUP BY ms_fileid,name,hourly_charge_rate 
 ) AS WIP
  ON dbFile.fileID=WIP.ms_fileid
+ LEFT OUTER JOIN ms_prod.dbo.dbUser ON filePrincipleID=usrID
 LEFT OUTER JOIN 
 (
 SELECT 

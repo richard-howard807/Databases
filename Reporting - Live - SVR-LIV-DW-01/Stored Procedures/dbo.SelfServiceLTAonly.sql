@@ -66,8 +66,8 @@ GROUP BY dim_matter_header_curr_key
            dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department],
            dim_department.[department_code] AS [Department Code],
            dim_fed_hierarchy_history.[hierarchylevel2hist] [Division],
-           dim_matter_worktype.[work_type_name] AS [Work Type],
-           dim_matter_worktype.[work_type_code] AS [Work Type Code],
+           dim_matter_worktype.[work_type_name] AS [Matter Type],
+           dim_matter_worktype.[work_type_code] AS [Matter Type Code],
            CASE
                WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
                    'NHSLA'
@@ -103,7 +103,7 @@ GROUP BY dim_matter_header_curr_key
                    'Health and Safety'
                ELSE
                    'Other'
-           END [Worktype Group],
+           END [Matter Type Group],
            dim_instruction_type.instruction_type AS [Instruction Type],
            dim_client.client_name AS [Client Name],
            dim_client.client_group_name AS [Client Group Name],

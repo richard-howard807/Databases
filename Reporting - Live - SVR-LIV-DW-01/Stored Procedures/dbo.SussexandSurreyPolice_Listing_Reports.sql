@@ -10,6 +10,7 @@ Created Date:		2017-10-12
 Description:		This drives the Police listing report for Sussex and Surrey. Sussex and Surrey use composite billing, but this report looks at the amount on the matter and gives the associated profit costs between bill dates. 
 Current Version:	Initial Create
 ====================================================
+--ES 2022/03/16 #139463, added suffolk client code 817395
 ====================================================
 
 */
@@ -70,7 +71,7 @@ inner join
               
               from red_dw..fact_bill_matter_detail  --
 			  where  bill_date between @StartFY and @EndFY
-              and client_code IN ('00451638' , '00113147') 
+              and client_code IN ('00451638' , '00113147','00817395') 
               
               group by 
               client_code,matter_number, dim_matter_header_curr_key 
@@ -79,7 +80,7 @@ inner join
        on fact_dimension_main.dim_matter_header_curr_key = Billed.dim_matter_header_curr_key
 
 WHERE 
-dim_matter_header_current.client_code IN ('00451638' , '00113147') 
+dim_matter_header_current.client_code IN ('00451638' , '00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
 
 END

@@ -272,6 +272,13 @@ SELECT
            ELSE
                0
        END AS ProceedingsIsuued_2021
+	     ,CASE when
+           date.cal_quarter IN ( '202201', '202202', '202203', '202204')
+		   --AND dim_detail_core_details.date_proceedings_issued>=dim_detail_core_details.date_instructions_received
+		   THEN	 1
+           ELSE
+               0
+       END AS ProceedingsIsuued_2022
 	   ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' THEN 'Litigated'  ELSE 'Pre-lit'  END AS Litigation
        ,CASE WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued >date_instructions_received THEN 'Litigated Post Instructions'
 	         WHEN ISNULL(dim_detail_core_details.proceedings_issued,'')='Yes' AND dim_detail_core_details.date_proceedings_issued <=date_instructions_received THEN'Litigated Pre Instructions' 

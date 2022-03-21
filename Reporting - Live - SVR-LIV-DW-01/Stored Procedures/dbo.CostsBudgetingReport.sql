@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [dbo].[CostsBudgetingReport]
+CREATE PROCEDURE [dbo].[CostsBudgetingReport] --EXEC [dbo].[CostsBudgetingReport]
 
 AS
 
@@ -40,7 +40,9 @@ BEGIN
 		, dim_detail_core_details.[referral_reason] AS [Referral Reason]
 		,dim_detail_core_details.[proceedings_issued] as [Proceedings Issued]
 		,CASE WHEN ms_only=1 THEN cboBudgOSPreLit ELSE COS200.case_text END COLLATE DATABASE_DEFAULT AS [Instructed to Budget with other side in Pre-lit phase?]
-		
+		,[Incurred Disbursements ] = fact_detail_cost_budgeting.incurred_disbursements_other_side
+        ,[Incurred Profit Costs] = fact_detail_cost_budgeting.incurred_profit_costs_other_side
+
 		FROM red_dw.dbo.dim_matter_header_current
 		LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
 		 ON fed_code=fee_earner_code AND dss_current_flag='Y'

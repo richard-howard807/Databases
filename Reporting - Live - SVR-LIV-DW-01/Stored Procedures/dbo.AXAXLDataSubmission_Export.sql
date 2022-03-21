@@ -418,7 +418,7 @@ AND dim_matter_header_current.master_client_code + '-' + master_matter_number NO
 ( 'A1001-6044','A1001-10784','A1001-10789','A1001-10798','A1001-10822','A1001-10877','A1001-10913','A1001-10992','A1001-11026','A1001-11140','A1001-11180','A1001-11237','A1001-11254','A1001-11329','A1001-11363','A1001-11375','A1001-11470','A1001-11547','A1001-11562','A1001-11566','A1001-11567','A1001-11586','A1001-11600','A1001-11616','A1001-11618','A1001-11624','A1001-11699','A1001-11749','A1001-11759','A1001-11832','A1001-11894','A1001-4822','A1001-9272', '207818-2'
 )
 
-AND dim_matter_header_current.date_opened_case_management <= DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1)
+AND COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) <= DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1)
 --AND dim_matter_header_current.master_client_code + '-' + master_matter_number = 'A1001-10819'
 ) x 
 
@@ -515,7 +515,7 @@ SET #AXAXLDataSubmission.Status = 'Create Case'
 FROM #AXAXLDataSubmission 
 LEFT JOIN #MainAPI ON #MainAPI.[Law Firm Matter Number] = #AXAXLDataSubmission.[Law Firm Matter Number] COLLATE DATABASE_DEFAULT
 WHERE #MainAPI.[Law Firm Matter Number] IS NULL 
-AND #AXAXLDataSubmission.[Date Instructed] > (SELECT DISTINCT #MainAPI.dss_load_date FROM #MainAPI)
+AND #AXAXLDataSubmission.[Date Instructed] >= (SELECT DISTINCT DATEADD(day, 1, EOMONTH(DATEADD(month, -1, #MainAPI.dss_load_date)))  FROM #MainAPI)
 
 /* New Tables for API 20211025*/
 --TRUNCATE TABLE [dbo].[AXAXLDataSubmission_Export_Create]

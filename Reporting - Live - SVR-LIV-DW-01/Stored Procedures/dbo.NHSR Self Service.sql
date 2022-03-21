@@ -29,6 +29,7 @@ GO
 -- OK 20210909 #113172 add 2021/2022 years for rev, hours , chrgedhours, disb
 -- JL 20210924 #115469 added in stage of settlement nhsr
 -- ES 20211220 added recovery rate requested by EJ
+-- ES 20220309 amended work type label to matter type, JS
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -204,8 +205,8 @@ GROUP BY dim_matter_header_curr_key
            dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department],
            dim_department.[department_code] AS [Department Code],
            dim_fed_hierarchy_history.[hierarchylevel2hist] [Division],
-           dim_matter_worktype.[work_type_name] AS [Work Type],
-           dim_matter_worktype.[work_type_code] AS [Work Type Code],
+           dim_matter_worktype.[work_type_name] AS [Matter Type],
+           dim_matter_worktype.[work_type_code] AS [Matter Type Code],
            CASE
                WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
 				'PL All'
@@ -243,7 +244,7 @@ GROUP BY dim_matter_header_curr_key
                    'Health and Safety'
                ELSE
                    'Other'
-           END [Worktype Group],
+           END [Matter Type Group],
            dim_detail_health.[nhs_claim_status] [Claim status],
 		   	dim_detail_core_details.[brief_details_of_claim] [Brief Details of Claim], 
            dim_detail_health.[nhs_comments] [Comments],
@@ -274,7 +275,7 @@ dim_detail_health.nhs_scheme IN
 'PES'
 )
 THEN 'Non-Clinical'
-WHEN dim_detail_health.nhs_scheme = 'LOT 3 work' THEN 'Other' END AS [Matter Type],
+WHEN dim_detail_health.nhs_scheme = 'LOT 3 work' THEN 'Other' END AS [Matter Type - NHS],
 
 
 CASE WHEN dim_detail_health.nhs_scheme IN
