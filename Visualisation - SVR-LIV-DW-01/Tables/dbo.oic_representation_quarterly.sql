@@ -1,0 +1,30 @@
+CREATE TABLE [dbo].[oic_representation_quarterly]
+(
+[reporting_period] [nvarchar] (2) COLLATE Latin1_General_CI_AS NULL,
+[reporting_period_start] [datetime] NULL,
+[reporting_period_end] [datetime] NULL,
+[claims_year] [int] NULL,
+[representation] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[claims_submitted] [int] NULL,
+[no_uplift_claimed] [int] NULL,
+[exceptional_circs_uplift_claimed] [int] NULL,
+[exceptional_injury_uplift_claimed] [int] NULL,
+[exceptional_injury_and_circs_claimed] [int] NULL,
+[liability_in_full] [int] NULL,
+[liability_in_part] [int] NULL,
+[liability_denied] [int] NULL,
+[dispute_causation] [int] NULL,
+[removed_from_portal] [int] NULL,
+[withdrawn_from_portal] [int] NULL,
+[rejected_liability] [int] NULL,
+[court] [int] NULL,
+[complex_issues_of_law] [float] NULL,
+[fraud_or_dishonesty] [float] NULL,
+[duplicate_claim] [float] NULL,
+[agreement_outside_portal] [float] NULL,
+[no_longer_wishes_to _claim] [float] NULL,
+[instructed_legal_representative] [float] NULL,
+[additional] [float] NULL,
+[other] [float] NULL
+) ON [PRIMARY]
+GO
