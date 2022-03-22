@@ -9,6 +9,7 @@ GO
 -- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
 -- JL 25-02-2022 #135931, changed the LGSS Handler field 
 -- ES 03-03-2022 amended damages paid, requested by BH
+-- MT 22-03-2022 updated defendant logic with isnulls
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -24,7 +25,7 @@ SELECT
 ,claimant_name AS [Claimant]
 ,dim_detail_core_details.[incident_date] AS  [Date of Loss]
 ,dim_detail_core_details.[incident_location] AS  [Location]
-,defendant_name+' '+dim_client_involvement.insurerclient_reference AS  [Defendant]
+,ISNULL(dim_defendant_involvement.defendant_name, '')+' '+ISNULL(dim_client_involvement.insurerclient_reference,'') AS  [Defendant]
 ,fact_finance_summary.[total_reserve] AS  [Reserve total (gross)]
 ,ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0) AS  [Own costs (exc. VAT)]
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]
@@ -226,6 +227,8 @@ AND work_type_group IN
 )
 
 AND NOT RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) IN ('A1001-11582','A1001-11662','G1001-5826','W21390-2','W19220-21')
+--AND RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) = 'W16648-13'
+
 END
 
 

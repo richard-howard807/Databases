@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE  PROCEDURE [dbo].[RealEstateKPIReports] -- EXEC RealEstateKPIReports '6034'
+CREATE  PROCEDURE [dbo].[RealEstateKPIReports] -- EXEC RealEstateKPIReports '6034','Eccleston Homes Limited'
 (
 @FeeEarner AS NVARCHAR(MAX)
 ,@Client AS NVARCHAR(MAX)
@@ -92,8 +92,8 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 
 
-INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue = CAST(fee_earner_code AS NVARCHAR(MAX)) COLLATE DATABASE_DEFAULT
-INNER JOIN #Client AS Client ON Client.ListValue = CAST(dim_matter_header_current.master_client_code AS NVARCHAR(MAX)) COLLATE DATABASE_DEFAULT
+--INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue = CAST(fee_earner_code AS NVARCHAR(MAX)) COLLATE DATABASE_DEFAULT
+--INNER JOIN #Client AS Client ON Client.ListValue = CAST(dim_matter_header_current.master_client_code AS NVARCHAR(MAX)) COLLATE DATABASE_DEFAULT
 
 
 LEFT OUTER JOIN red_dw.dbo.dim_detail_property
@@ -209,16 +209,20 @@ LEFT JOIN ms_prod.dbo.udPlotSalesExchange ON udPlotSalesExchange.fileID = ms_fil
 WHERE dim_matter_header_current.master_client_code IN ('190593P', '153838M','848629','W15353')
 --AND (completion_date>='2021-01-01' OR completion_date IS NULL)
 --AND (date_closed_case_management>='2021-01-01' OR date_closed_case_management IS NULL)
-AND work_type_name='Plot Sales'
+AND work_type_name LIKE '%Plot Sales%'
 AND date_opened_case_management >= '2015-05-01'
 AND reporting_exclusions = 0
 AND dim_matter_header_current.master_client_code + '-' + master_matter_number <> '190593P-7716'
 
-AND hierarchylevel4hist  <> 'Workflows'
+AND hierarchylevel4hist  NOT IN ( 'Workflows', 'Business Analytics')
 
 END 
 
 --2.	Change the report inclusion logic. 
 --Remove previous criteria and just bring in everything opened on or after 1st May 2021
 
+
+--SELECT work_type_name FROM red_dw.dbo.dim_matter_worktype
+
+--WHERE work_type_name LIKE '%Plot Sales%'
 GO
