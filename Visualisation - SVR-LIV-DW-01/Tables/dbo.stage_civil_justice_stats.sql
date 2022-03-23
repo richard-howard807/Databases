@@ -1,4 +1,4 @@
-CREATE TABLE [dbo].[civil_justice_stats]
+CREATE TABLE [dbo].[stage_civil_justice_stats]
 (
 [year] [float] NULL,
 [quarter] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
@@ -15,7 +15,6 @@ CREATE TABLE [dbo].[civil_justice_stats]
 [total_claims] [float] NULL,
 [total_insolvency_petitions] [float] NULL,
 [total_proceedings_started] [float] NULL,
-[total_completed_civil_proceedings_in_the_magistrates_courts] [float] NULL,
-[update_time] [datetime] NULL
+[total_completed_civil_proceedings_in_the_magistrates_courts] [float] NULL
 ) ON [PRIMARY]
 GO
