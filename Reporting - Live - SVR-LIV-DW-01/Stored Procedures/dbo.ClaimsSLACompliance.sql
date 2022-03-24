@@ -200,7 +200,7 @@ SELECT
 	  END			AS do_clients_require_an_initial_report 
 	, CASE
 		WHEN dim_matter_header_current.master_client_code = 'N1001' THEN
-			IIF(ClientSLAsNHSR.subsequent_report_rule = 'subsequent report not needed', 0, ClientSLAsNHSR.subsequent_report_working_days)
+			IIF(ClientSLAsNHSR.can_sub_report_rule_be_calculated = 'No', 0, ClientSLAsNHSR.subsequent_report_working_days)
 		ELSE
 			ClientSLAs.[Update Report SLA (working days)]
 	  END				AS update_report_sla_working_days
@@ -208,7 +208,7 @@ SELECT
 	Initial Report due date
 	*/
 	, CASE 
-		WHEN ClientSLAsNHSR.nhs_instruction_type IS NOT NULL THEN 
+		WHEN ClientSLAsNHSR.nhs_instruction_type IS NOT NULL AND ClientSLAsNHSR.initial_report_working_days_flag IS NULL THEN 
 			CASE
 				WHEN ClientSLAsNHSR.do_clients_require_initial_report = 'No' THEN
 					NULL
@@ -230,9 +230,9 @@ SELECT
 				WHEN dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report = 'Yes' THEN
 					date_initial_report_due
 				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
-					[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10))
+					[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10))
 				WHEN date_initial_report_due IS NULL THEN 
-					[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),ISNULL(ClientSLAs.[Initial Report SLA (days)], 10)) 
+					[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10)) 
 				ELSE 
 					date_initial_report_due 
 				END
@@ -329,6 +329,7 @@ SELECT
 		ELSE 
 			NULL
 		END									AS [date_subsequent_report_due]
+	, ClientSLAsNHSR.can_sub_report_rule_be_calculated
 INTO #ClientReportDates
 FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -409,6 +410,8 @@ SELECT
 																		'Final bill sent - unpaid',
 																		'To be closed/minor balances to be clear'            
 																	) THEN
+			NULL
+		WHEN ISNULL(#ClientReportDates.can_sub_report_rule_be_calculated, '') = 'No' THEN
 			NULL
 		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
 			NULL
@@ -531,6 +534,8 @@ SELECT
 						NULL
 				END) < 0 THEN
 			'Transparent'
+		WHEN ISNULL(#ClientReportDates.can_sub_report_rule_be_calculated, '') = 'No' THEN
+			NULL
 		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
 			NULL
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
@@ -574,6 +579,8 @@ SELECT
 	  END										AS [Count Initial Report Is Overdue]
 	, #ClientReportDates.date_subsequent_report_due			AS [Date Subsequent Report Due]
 	, CASE 
+		WHEN ISNULL(#ClientReportDates.can_sub_report_rule_be_calculated, '') = 'No' THEN
+			0
 		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
 			0
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
@@ -582,6 +589,8 @@ SELECT
 			0
 	  END				AS [Subsequent Report Due in 10 Working Days]
 	, CASE 
+		WHEN ISNULL(#ClientReportDates.can_sub_report_rule_be_calculated, '') = 'No' THEN
+			0
 		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
 			0
 		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN
@@ -590,7 +599,7 @@ SELECT
 			0
 	  END				AS [Subsequent Report is Overdue]
 	  ,work_type_name 
-
+	, #ClientReportDates.can_sub_report_rule_be_calculated	[nhsr_only_can_sub_report_rule_be_calculated]
 INTO Reporting.dbo.ClaimsSLAComplianceTable
 FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current

@@ -58,6 +58,7 @@ CREATE TABLE [dbo].[ClaimsSLAComplianceTable]
 [Date Subsequent Report Due] [datetime] NULL,
 [Subsequent Report Due in 10 Working Days] [int] NOT NULL,
 [Subsequent Report is Overdue] [int] NOT NULL,
-[work_type_name] [char] (40) COLLATE Latin1_General_BIN NULL
+[work_type_name] [char] (40) COLLATE Latin1_General_BIN NULL,
+[nhsr_only_can_sub_report_rule_be_calculated] [nvarchar] (3) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO
