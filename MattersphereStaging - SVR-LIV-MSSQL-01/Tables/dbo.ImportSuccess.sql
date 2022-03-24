@@ -29,6 +29,7 @@ CREATE TABLE [dbo].[ImportSuccess]
 [errormsg] [varchar] (2000) COLLATE Latin1_General_CI_AS NULL,
 [NewMatterNumber] [int] NULL,
 [BusinessLine] [nvarchar] (15) COLLATE Latin1_General_CI_AS NULL,
-[FEDCode] [nvarchar] (50) COLLATE Latin1_General_CI_AS NULL
+[FEDCode] [nvarchar] (50) COLLATE Latin1_General_CI_AS NULL,
+[LegacyRef] [nvarchar] (50) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

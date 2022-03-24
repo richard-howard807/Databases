@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROC [dbo].[CUR_RunMSMatter]
 
 AS
@@ -154,13 +155,13 @@ INSERT INTO dbo.ImportSuccess
         ( ID , clNo , fileNo , extFileID ,fileDesc ,fileResponsibleID ,filePrincipleID ,fileDept ,
           fileType ,fileFundCode ,fileCurISOCode ,fileStatus ,fileCreated ,fileUpdated ,fileClosed ,
           fileSource ,fileSection ,fileSectionGroup ,MattIndex ,Office ,brID ,[Partner] ,InsertDate ,
-          Imported ,StatusID , FEDCode, error ,errormsg ,NewMatterNumber ,BusinessLine
+          Imported ,StatusID , FEDCode, error ,errormsg ,NewMatterNumber ,BusinessLine,LegacyRef
         )
 SELECT 
 		  ID , clNo , fileNo , extFileID ,fileDesc ,fileResponsibleID ,filePrincipleID ,fileDept ,
           fileType ,fileFundCode ,fileCurISOCode ,fileStatus ,fileCreated ,fileUpdated ,fileClosed ,
           fileSource ,fileSection ,fileSectionGroup ,MattIndex ,Office ,brID ,[Partner] ,InsertDate ,
-          Imported ,StatusID , FEDCode ,error ,errormsg ,NewMatterNumber ,BusinessLine
+          Imported ,StatusID , FEDCode ,error ,errormsg ,NewMatterNumber ,BusinessLine,LegacyRef
 FROM dbo.FileDetailsStage WHERE ID = @ID
 
 DELETE FROM dbo.FileDetailsStage WHERE ID = @ID
@@ -174,13 +175,13 @@ INSERT INTO dbo.ImportFailure
         ( ID , clNo , fileNo , extFileID ,fileDesc ,fileResponsibleID ,filePrincipleID ,fileDept ,
           fileType ,fileFundCode ,fileCurISOCode ,fileStatus ,fileCreated ,fileUpdated ,fileClosed ,
           fileSource ,fileSection ,fileSectionGroup ,MattIndex ,Office ,brID ,[Partner] ,InsertDate ,
-          Imported ,StatusID , FEDCode, error ,errormsg ,NewMatterNumber ,BusinessLine
+          Imported ,StatusID , FEDCode, error ,errormsg ,NewMatterNumber ,BusinessLine,LegacyRef
         )
 SELECT 
 		  ID , clNo , fileNo , extFileID ,fileDesc ,fileResponsibleID ,filePrincipleID ,fileDept ,
           fileType ,fileFundCode ,fileCurISOCode ,fileStatus ,fileCreated ,fileUpdated ,fileClosed ,
           fileSource ,fileSection ,fileSectionGroup ,MattIndex ,Office ,brID ,[Partner] ,InsertDate ,
-          Imported ,StatusID , FEDCode ,error ,errormsg ,NewMatterNumber ,BusinessLine
+          Imported ,StatusID , FEDCode ,error ,errormsg ,NewMatterNumber ,BusinessLine,LegacyRef
 FROM dbo.FileDetailsStage WHERE ID = @ID
 
 END
@@ -190,12 +191,12 @@ END
 
 
 
-end
+END
 
 
 
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
 
 
 

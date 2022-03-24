@@ -4,9 +4,10 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE proc [SBC\6237].[update_ms_udMIMatterExceptions]
 
-as
+CREATE PROC [dbo].[update_ms_udMIMatterExceptions]
+
+AS
 
 
 -- ************************************************************************************
@@ -17,46 +18,46 @@ as
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-begin try
+BEGIN TRY
 
-	begin transaction
+	BEGIN TRANSACTION
 	
 		-- Delete exceptions that are no longer in stage table	
 
-	MERGE MS_DEV.dbo.udMIMatterExceptions as Target
-	using (select distinct staging_exceptions.ms_fileid
+	MERGE MS_PROD.dbo.udMIMatterExceptions AS Target
+	USING (SELECT DISTINCT staging_exceptions.ms_fileid
                           , staging_exceptions.exceptionruleid
                           , staging_exceptions.fieldname
                           , staging_exceptions.narrative
-                          , staging_exceptions.update_time from  staging_exceptions where ms_fileid is not null)	AS Source
-		on Source.ms_fileid = Target.ms_fileid and Source.exceptionruleid  = Target.exceptionruleid
+                          , staging_exceptions.update_time FROM  staging_exceptions WHERE ms_fileid IS NOT NULL)	AS Source
+		ON Source.ms_fileid = Target.ms_fileid AND Source.exceptionruleid  = Target.exceptionruleid
 
-		when NOT MATCHED BY Target THEN
+		WHEN NOT MATCHED BY TARGET THEN
 			INSERT (ms_fileid, exceptionruleid, fieldname, narrative, update_time)
-			values (Source.ms_fileid, Source.exceptionruleid, Source.fieldname, Source.narrative, getdate())
+			VALUES (Source.ms_fileid, Source.exceptionruleid, Source.fieldname, Source.narrative, GETDATE())
 		
 		WHEN MATCHED THEN UPDATE SET
 			Target.narrative	= Source.narrative,
 			Target.fieldname		= Source.fieldname,
-			Target.update_time = getdate()
+			Target.update_time = GETDATE()
 
 	
-		WHEN NOT MATCHED BY Source THEN
+		WHEN NOT MATCHED BY SOURCE THEN
 			 DELETE;
 	
 	   	  
 
-	commit transaction					
+	COMMIT TRANSACTION					
 
-end try
+END TRY
 
-begin catch
+BEGIN CATCH
 	
 	DECLARE @ErrorProcedure AS VARCHAR(8000)
 	DECLARE @ErrorMessage AS VARCHAR(8000)
 
 
-		rollback transaction
+		ROLLBACK TRANSACTION
 	
 
 		SELECT @ErrorProcedure = ERROR_PROCEDURE(), @ErrorMessage = ERROR_MESSAGE()
@@ -65,5 +66,5 @@ begin catch
 
 		RAISERROR (50855, 10, 1 , @ErrorProcedure, @ErrorMessage)
 
-end catch
+END CATCH
 GO
