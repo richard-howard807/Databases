@@ -535,9 +535,9 @@ SELECT
 				END) < 0 THEN
 			'Transparent'
 		WHEN ISNULL(#ClientReportDates.can_sub_report_rule_be_calculated, '') = 'No' THEN
-			NULL
+			'Transparent'
 		WHEN ISNULL(#ClientReportDates.update_report_sla, '') = 'subsequent report not needed' THEN
-			NULL
+			'Transparent'
 		WHEN dbo.ReturnElapsedDaysExcludingBankHolidays(CAST(GETDATE() AS DATE), #ClientReportDates.date_subsequent_report_due) BETWEEN 0 AND 10 THEN
 			'Orange'
 		WHEN #ClientReportDates.date_subsequent_report_due < CAST(GETDATE() AS DATE) THEN 

@@ -50,7 +50,7 @@ CREATE TABLE [dbo].[ClaimsSLAComplianceTable]
 [nhs_sla_instruction_type] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [NEW Initial Report RAG] [varchar] (11) COLLATE Latin1_General_CI_AS NULL,
 [Inverted Initial Report RAG] [varchar] (11) COLLATE Latin1_General_CI_AS NULL,
-[RagWithouthSub] [varchar] (11) COLLATE Latin1_General_CI_AS NULL,
+[RagWithouthSub] [varchar] (11) COLLATE Latin1_General_CI_AS NOT NULL,
 [referral_reason] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [delegated] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Count Initial Report Due In 5 Working Days] [int] NOT NULL,
