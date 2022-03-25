@@ -14,6 +14,8 @@ GO
 --				I will keep the dax dataset in the report so that
 --				we can switch back to it when the issue is resolved
 -- =============================================
+-- Ticket #136643 - JB - added dim_date fields and variable to create subscription version of the report
+-- =============================================
 CREATE PROCEDURE [compliance].[claims_report]
 	@DateFrom DATE 
 	,@DateTo DATE 
@@ -21,9 +23,11 @@ AS
 BEGIN
 	
 	 --For testing purposes
-	--DECLARE @DateFrom DATE = '20180501'
-	--DECLARE @DateTo DATE = '20180831'
+	--DECLARE @DateFrom DATE = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.current_fin_year = 'Current')
+	--DECLARE @DateTo DATE = (SELECT EOMONTH(DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))))
     
+	-- new variable for Claims Subscription report
+	DECLARE @previous_month AS INT = (SELECT DISTINCT dim_date.fin_month FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = EOMONTH(DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))))
 
 
 	SELECT hierarchylevel2 AS Division, *
@@ -75,6 +79,10 @@ BEGIN
             FEDDepartment,
             FEDTeam
            
+		   , dim_date.fin_year
+		   , dim_date.fin_month_no
+		   , dim_date.fin_month
+		   , IIF(dim_date.fin_month = @previous_month, 'Yes', 'No')	AS previous_month
 
             FROM red_dw.dbo.dim_matter_header_current
             INNER JOIN red_dw.dbo.dim_client
@@ -123,7 +131,8 @@ LEFT OUTER JOIN (SELECT case_id,case_text AS FEDDepartment FROM axxia01.dbo.casd
 LEFT OUTER JOIN (SELECT case_id,case_text AS FEDTeam FROM axxia01.dbo.casdet WHERE case_detail_code='RIS051') AS RIS051    
  ON dim_matter_header_current.case_id=RIS051.case_id 
   
- 
+INNER JOIN red_dw.dbo.dim_date
+	ON dim_date.calendar_date = CAST(dim_matter_header_current.date_opened_practice_management AS DATE)
              WHERE        dim_matter_header_current.[reporting_exclusions] = 0
  AND         dim_client.[client_code] = '00006930'             
   AND date_opened_practice_management BETWEEN @DateFrom AND @DateTo
