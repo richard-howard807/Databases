@@ -1,4 +1,4 @@
-CREATE TABLE [dbo].[oic_claims]
+CREATE TABLE [dbo].[stage_oic_claims]
 (
 [reporting_period] [nvarchar] (2) COLLATE Latin1_General_CI_AS NULL,
 [reporting_period_start] [datetime] NULL,
@@ -6,7 +6,6 @@ CREATE TABLE [dbo].[oic_claims]
 [claims_year] [int] NULL,
 [claims_month] [nvarchar] (20) COLLATE Latin1_General_CI_AS NULL,
 [claims_month_no] [int] NULL,
-[claims_submitted] [int] NULL,
-[update_time] [datetime] NULL
+[claims_submitted] [int] NULL
 ) ON [PRIMARY]
 GO

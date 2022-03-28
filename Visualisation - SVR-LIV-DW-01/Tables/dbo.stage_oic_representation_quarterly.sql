@@ -1,4 +1,4 @@
-CREATE TABLE [dbo].[oic_representation_quarterly]
+CREATE TABLE [dbo].[stage_oic_representation_quarterly]
 (
 [reporting_period] [nvarchar] (2) COLLATE Latin1_General_CI_AS NULL,
 [reporting_period_start] [datetime] NULL,
@@ -25,7 +25,6 @@ CREATE TABLE [dbo].[oic_representation_quarterly]
 [no_longer_wishes_to_claim] [float] NULL,
 [instructed_legal_representative] [float] NULL,
 [additional] [float] NULL,
-[other] [float] NULL,
-[update_time] [datetime] NULL
+[other] [float] NULL
 ) ON [PRIMARY]
 GO
