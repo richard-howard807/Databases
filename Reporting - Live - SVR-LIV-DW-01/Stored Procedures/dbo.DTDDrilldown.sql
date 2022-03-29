@@ -74,7 +74,16 @@ WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
 AND (dim_detail_core_details.insured_sector='Digital/New Media'
 OR dim_client.sub_sector='Digital/media'
-OR dim_detail_core_details.is_this_part_of_a_campaign='Digital, Technology and Data (DTD)')
+OR dim_detail_core_details.is_this_part_of_a_campaign='Digital, Technology and Data (DTD)'
+OR dim_matter_worktype.work_type_name IN ('Specialty: Professions: Digital'
+											,'Intellectual property'
+											,'Education - FOIA and DPA'
+											,'Education - IP (Due Diligence)'
+											,'Data Protection'
+											,'Direct Selling'
+											,'GDPR'
+											,'Non-contentious IP & IT Contracts')
+)
 
 AND dim_date.fin_period=@Period
 AND dim_fed_hierarchy_history.hierarchylevel4hist=@Team

@@ -16,6 +16,7 @@ Current Version:	Initial Create
 -- ES 2021-06-16 Added DVPO victim postcode with longitudes and latitudes for dvpo map and additional dvpo details for filters on the map
 -- ES 2021-06-18 Added policing priority field, joined to the work type lookup table
 -- ES 2021-12-02 Amended logic to go back to 2016, requested by BH
+-- ES 2021-03-28 Added new financial year requested by HW
 ====================================================
 
 */
@@ -114,6 +115,7 @@ INNER JOIN
 					WHEN bill_date BETWEEN '2019-04-01' AND '2020-03-31' THEN '2019/20'
 					WHEN bill_date BETWEEN '2020-04-01' AND '2021-03-31' THEN '2020/21'
 					WHEN bill_date BETWEEN '2021-04-01' AND '2022-03-31' THEN '2021/22'
+					WHEN bill_date BETWEEN '2022-04-01' AND '2023-03-31' THEN '2022/23'
 					ELSE NULL END [TFY]
               FROM red_dw..fact_bill_matter_detail  
 			  WHERE  bill_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
@@ -138,6 +140,9 @@ INNER JOIN
                        WHEN bill_date
                        BETWEEN '2021-04-01' AND '2022-03-31' THEN
                        '2021/22'
+					   WHEN bill_date
+                       BETWEEN '2022-04-01' AND '2023-03-31' THEN
+                       '2022/23'
 					   ELSE
                        NULL
                        END,
@@ -158,6 +163,7 @@ LEFT OUTER JOIN (SELECT client_code
 					WHEN transaction_calendar_date BETWEEN '2019-04-01' AND '2020-03-31' THEN '2019/20'
 					WHEN transaction_calendar_date BETWEEN '2020-04-01' AND '2021-03-31' THEN '2020/21'
 					WHEN transaction_calendar_date BETWEEN '2021-04-01' AND '2022-03-31' THEN '2021/22'
+					WHEN transaction_calendar_date BETWEEN '2022-04-01' AND '2023-03-31' THEN '2022/23'
 					ELSE NULL END AS [FY]
 				FROM red_dw.dbo.fact_all_time_activity
 				INNER JOIN red_dw.dbo.dim_transaction_date
@@ -183,7 +189,9 @@ LEFT OUTER JOIN (SELECT client_code
                          WHEN transaction_calendar_date
                          BETWEEN '2021-04-01' AND '2022-03-31' THEN
                          '2021/22'
-
+						 WHEN transaction_calendar_date
+                         BETWEEN '2022-04-01' AND '2023-03-31' THEN
+                         '2022/23'
 
                          ELSE
                          NULL
