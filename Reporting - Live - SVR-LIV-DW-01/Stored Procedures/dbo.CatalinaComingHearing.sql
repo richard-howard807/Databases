@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE  [dbo].[CatalinaComingHearing] --EXEC [dbo].[CatalinaComingHearing] '2019-01-01','2019-12-31'
+CREATE PROCEDURE  [dbo].[CatalinaComingHearing] --EXEC [dbo].[CatalinaComingHearing] '2022-01-01','2022-12-31'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -20,8 +20,13 @@ BEGIN
 
 
 
-SELECT 
-CASE WHEN insurerclient_reference IS NULL THEN red_dw.dbo.dim_detail_client.zurich_insurer_ref ELSE insurerclient_reference END AS [Zurich Claim Number]
+SELECT
+--CASE WHEN insurerclient_reference IS NULL THEN red_dw.dbo.dim_detail_client.zurich_insurer_ref ELSE insurerclient_reference END AS [Zurich Claim Number]
+---IIF( dim_client_involvement.client_name LIKE '%Catalina%' AND insuredclient_reference IS NULL ,client_reference, insuredclient_reference)  AS test
+CASE WHEN insurerclient_reference IS NOT NULL  THEN insurerclient_reference
+	  WHEN insurerclient_reference IS NULL THEN red_dw.dbo.dim_detail_client.zurich_insurer_ref
+	  WHEN dim_client_involvement.client_name LIKE '%Catalina%' THEN client_reference
+	  END AS [Zurich Claim Number]
 ,CASE WHEN dim_claimant_thirdparty_involvement.claimant_name IS NULL THEN red_dw.dbo.dim_detail_claim.zurich_claimants_name ELSE dim_claimant_thirdparty_involvement.claimant_name END  AS [Claimant]
 ,zurich_policy_holdername_of_insured AS [Policy Holder]
 ,branch_name AS [Weightmans Office]
@@ -47,6 +52,11 @@ ELSE  'Deleted/Completed' END AS [Tab Filter]
 		'Closed'
   END					AS [Status]
 ,catalinaClaim.is_this_a_catalina_claim_no
+,insuredclient_reference
+,dim_detail_client.zurich_insurer_ref
+,insurerclient_reference
+,client_reference
+,dim_client_involvement.client_name
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history

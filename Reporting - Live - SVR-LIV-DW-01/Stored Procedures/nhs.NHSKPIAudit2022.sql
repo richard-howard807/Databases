@@ -276,7 +276,13 @@ THEN 0.5 ELSE 0 END AS [Total Points]
 ,[Auditee 2] = dim_child_detail.[nhs_auditee_2]
 ,[Auditor Comments] = dim_detail_compliance.[auditcomments]
 
-
+, CASE WHEN nhsr_steps_to_avoid_litigation = 'Not applicable' THEN 'N/A' ELSE nhsr_steps_to_avoid_litigation END AS [Did NHSR take steps to avoid Litigation?]
+, CASE WHEN panel_steps_to_avoid_litigation = 'Not applicable' THEN 'N/A' ELSE panel_steps_to_avoid_litigation END AS [Did Panel take steps to avoid Litigation?]
+, CASE WHEN who_was_responsible_for_delays = 'Not applicable' THEN 'N/A' ELSE who_was_responsible_for_delays END AS [Who was responsible for the delays?]
+, CASE WHEN covid_direct_reported = 'Not applicable' THEN 'N/A' ELSE covid_direct_reported END AS [Is the case a covid direct case and reported as such?]
+, CASE WHEN covid_indirect_reported = 'Not applicable' THEN 'N/A' ELSE covid_indirect_reported END AS [Does the case have covid indirect elements and reported as such?]
+, CASE WHEN adr_considered = 'Not applicable' THEN 'N/A' ELSE adr_considered END AS [ADR: Has it been considered?]
+, CASE WHEN adr_appropriate_time = 'Not applicable' THEN 'N/A' ELSE adr_appropriate_time END AS [ADR: was it considered at appropriate time?]
 
 
 FROM red_dw.dbo.dim_parent_detail
