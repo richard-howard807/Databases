@@ -21,7 +21,7 @@ SELECT WorkingLists.[Company Name],
        WorkingLists.activity_date,
        WorkingLists.summary,
        WorkingLists.PossibleCompanies,
-	   left([Working List Title], charindex('-', [Working List Title]) - 2) AS Segment
+	  CASE WHEN [Working List Title] LIKE '%-%' THEN LEFT([Working List Title], charindex('-', [Working List Title]) - 2) ELSE NULL END AS Segment
 INTO IA_WorkingLists
 FROM 
 (

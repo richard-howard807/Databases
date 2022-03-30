@@ -53,6 +53,7 @@ SELECT
  , hierarchylevel3hist as Department
  , hierarchylevel2hist as Division
  , dim_detail_core_details.date_instructions_received
+ ,dim_detail_outcome.outcome_of_case
 
  
 FROM red_dw.dbo.fact_dimension_main   
@@ -95,6 +96,8 @@ FROM red_dw.dbo.fact_dimension_main
 WHERE
  dim_matter_header_current.client_code = '00001328'  
  AND dim_matter_header_current.reporting_exclusions = 0  
- 
+ AND  ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
+AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
+AND dim_matter_header_current.matter_number <> 'ML'
 END   
 GO
