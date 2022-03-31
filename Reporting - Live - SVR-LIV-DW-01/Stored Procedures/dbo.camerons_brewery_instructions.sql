@@ -116,14 +116,16 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN #cb_bills
 		ON #cb_bills.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
-	AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
+	AND (
+		dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
+		OR (dim_matter_header_current.master_client_code = '3794'AND dim_matter_header_current.date_closed_practice_management IS NULL)
+		)
 	--AND dim_matter_header_current.master_matter_number = '211'
 	AND dim_matter_header_current.reporting_exclusions = 0
 ORDER BY
 	OpenClosed DESC
 
 END	
-
 
 
 GO
