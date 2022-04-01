@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [Newcastle].[NPGFileOwnershipList] -- [Newcastle].[NPGFileOwnershipList] 'All' 
 (
 @Filter AS NVARCHAR(100)
@@ -142,6 +143,7 @@ INNER JOIN ms_prod.config.dbContact
 'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
 AND assocType='AGENT'
+AND assocActive=1
 GROUP BY dbFile.fileID
 ) AS Agent
  ON Agent.fileID = dbFile.fileID
@@ -281,6 +283,7 @@ INNER JOIN ms_prod.config.dbContact
 'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
 )
 AND assocType='AGENT'
+AND assocActive=1
 GROUP BY dbFile.fileID
 ) AS Agent
  ON Agent.fileID = dbFile.fileID

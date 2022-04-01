@@ -25,6 +25,16 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport_v2]
   [Date fourth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 4 THEN x.transaction_calendar_date END), 
   [Fifth damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 5 THEN x.damages_reserve_rsa END),
   [Date fifth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 5 THEN x.transaction_calendar_date END) ,
+
+  [Sixth damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 6 THEN x.damages_reserve_rsa END),
+  [Date Sixth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 6 THEN x.transaction_calendar_date END) ,
+
+  [Seventh damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 7 THEN x.damages_reserve_rsa END),
+  [Date Seventh damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 7 THEN x.transaction_calendar_date END) ,
+
+  [Eighth damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 8 THEN x.damages_reserve_rsa END),
+  [Date Eighth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 8 THEN x.transaction_calendar_date END) ,
+
   [Damages Reserve Change Count] = MAX(x.RN)
  INTO #DamagesReserveChanges
  FROM 
@@ -43,7 +53,12 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport_v2]
    SELECT 
    fact_dimension_main.master_fact_key,
    transaction_calendar_date,
-   [fact_finance_monthly].[damages_reserve_rsa]
+   date_opened_case_management,
+   [fact_finance_monthly].[damages_reserve_rsa]	,
+  fact_finance_monthly.client_code,
+  fact_finance_monthly.matter_number
+
+   
    ,DATEDIFF(MONTH, date_opened_case_management, transaction_calendar_date)  [Days BETWEEN date opened AND damages]
    ,ROW_NUMBER() OVER (PARTITION BY  fact_dimension_main.master_fact_key, [fact_finance_monthly].[damages_reserve_rsa]  ORDER BY transaction_calendar_date) RN
   
@@ -56,7 +71,8 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport_v2]
   WHERE fact_dimension_main.master_client_code IN ('C1001', 'W24438')
 
   /*Testing*/
- --AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76238'
+ AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76024'
+ 
 
 ) a 
 WHERE a.RN = 1 AND a.damages_reserve_rsa IS NOT NULL  AND a.damages_reserve_rsa <>0
@@ -166,6 +182,12 @@ END,
   [Date fourth damages reserve figure was input into MI], 
   [Fifth damages reserve figure input into MI],
   [Date fifth damages reserve figure was input into MI] ,
+  [Sixth damages reserve figure input into MI] ,
+  [Date Sixth damages reserve figure was input into MI]  ,
+  [Seventh damages reserve figure input into MI] ,
+  [Date Seventh damages reserve figure was input into MI],
+  [Eighth damages reserve figure input into MI] ,
+  [Date Eighth damages reserve figure was input into MI]  ,
 
   /* ADDED BELOW AS PER TICKET #140668 JL*/
   #Damagesat12and24months.[12MONTHS], 
@@ -321,4 +343,5 @@ AND work_type_group IN ('Motor', 'Disease', 'EL', 'PL ALL')
   ORDER BY [Date File Opened]
 
 
+	
 GO

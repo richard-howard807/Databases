@@ -26,7 +26,7 @@ DROP table if exists #Audits
 
 
 	
-	SELECT distinct dim_ac_audits.dim_ac_audits_key,
+	SELECT DISTINCT dim_ac_audits.dim_ac_audits_key,
 				auditor.employeeid
 				, dim_ac_audits.auditee_1_name AS [Auditee Name]
 				, dim_ac_audits.dim_auditee1_hierarchy_history_key AS [Auditee key]
@@ -128,12 +128,20 @@ select distinct #Audits.employeeid
 	 , dim_ac_audit_details.positive_feedback_details
 	 , dim_ac_audit_details.complaint_details
 	 , matter_description
+	 ,jobtitle    AS [Fee Earner Job Title] 
+	 ,name AS [Fee Earner] 
+	 --, CASE WHEN levelidud	 LIKE '%Partner%' THEN 'Partner'
+		--			 WHEN levelidud = 'Legal Director' THEN 'Legal Director'
+		--			 ELSE levelidud END AS JobLevelTitle
 
 from #Audits
 
-inner join red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
-inner join red_dw..dim_fed_hierarchy_history 
+INNER JOIN red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
+INNER JOIN red_dw..dim_fed_hierarchy_history 
 	ON #Audits.[Auditee key] = dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
+ --LEFT JOIN red_dw.dbo.dim_employee 
+-- ON  dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
+ 
 --INNER JOIN #Department
 	--ON dim_fed_hierarchy_history.hierarchylevel3hist = #Department.ListValue COLLATE DATABASE_DEFAULT
 --INNER JOIN #Team

@@ -18,6 +18,7 @@ BEGIN
 SELECT 
   ROW_NUMBER() OVER ( ORDER BY dim_matter_header_current.date_opened_case_management) AS [Nr.]
 , NULL AS [Country]
+, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 , CAST([date_opened].cal_year AS VARCHAR(4)) +' Q'+ CAST([date_opened].cal_quarter_no AS VARCHAR(1)) AS [Year and Quarter]
 , dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Claim number]
 , NULL AS [Nr of PAX]

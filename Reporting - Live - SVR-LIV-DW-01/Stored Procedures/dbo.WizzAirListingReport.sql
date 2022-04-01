@@ -25,7 +25,7 @@ SELECT dim_matter_header_current.client_name AS [Client name]
 	, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
 	, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
 	, dim_matter_worktype.work_type_name AS [Matter type]
-	, NULL AS [Instruction type]
+	, dim_instruction_type.instruction_type AS [Instruction type]
 	, dim_detail_finance.output_wip_fee_arrangement AS [Fee arrangement]
 	, fact_finance_summary.fixed_fee_amount AS [Fixed fee amount]
 	, dim_matter_header_current.billing_arrangement_description AS [Rate arrangement]
@@ -51,6 +51,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 
 WHERE dim_matter_header_current.reporting_exclusions=0

@@ -36,6 +36,8 @@ FROM
             dim_detail_client.[pa_where_claim_arose],
             dim_detail_practice_area.[bcm_name],
             dim_detail_practice_area.[better_supervision_made_a_difference],
+			dim_fed_hierarchy_history.jobtitle AS JobLevelTitle,
+			dim_fed_hierarchy_history.name, 
             dim_detail_practice_area.[case_managers_name],
             dim_detail_practice_area.[cause],
             dim_detail_practice_area.[date_closed],
@@ -92,6 +94,10 @@ FROM
 
 			 LEFT OUTER JOIN red_dw.dbo.dim_date
 			 ON CAST(dim_matter_header_current.date_opened_case_management AS date)=CAST(dim_date.calendar_date AS date)
+
+			 LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK) 
+            ON fed_code=fee_earner_code collate database_default
+           AND dss_current_flag='Y'
          
             LEFT OUTER JOIN red_dw.dbo.dim_detail_client
                ON dim_matter_header_current.client_code=dim_detail_client.client_code
@@ -117,7 +123,7 @@ FROM
 -- ON dim_matter_header_current.case_id=RIS051.case_id 
   
  
-             WHERE        dim_matter_header_current.[reporting_exclusions] = 0
+WHERE        dim_matter_header_current.[reporting_exclusions] = 0
  AND         dim_client.[client_code] = '00006930'             
   AND date_opened_practice_management  BETWEEN '20190501' AND GETDATE()
    AND COALESCE(RTRIM(SectionGroup),RTRIM(dim_detail_practice_area.[practice_area]),'Missing Department')  collate database_default<> 'Missing Department'
@@ -127,7 +133,7 @@ FROM
  --and dim_detail_practice_area.[weightmans_team] is not null 
       ) AS AllData
 	        
-           LEFT OUTER JOIN (SELECT 
+LEFT OUTER JOIN (SELECT 
 hierarchylevel2,hierarchylevel3 
  FROM red_dw..dim_fed_hierarchy_history
 WHERE dss_current_flag='Y'

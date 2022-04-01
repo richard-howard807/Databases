@@ -50,7 +50,7 @@ WHEN work_type_name = 'PL - Pol - Conversion' THEN 'Conversion'
 WHEN work_type_name = 'PL - Pol - Public Enquiries' THEN 'Public Enquiries'
 WHEN work_type_name LIKE '%Discrimination%' THEN 'Discrimination'
 ELSE work_type_name END AS [Matter Type]
-, dim_detail_claim.borough AS [Borough]
+, ISNULL(dim_detail_claim.borough, dim_detail_claim.district) AS [Borough]
 , dim_detail_claim.[source_of_instruction] AS [Source of Instruction]
 , surrey_police_stations [Police Stations]
 , fee_earner_code AS [FEE Eraner Code]
@@ -141,7 +141,7 @@ WHEN work_type_name = 'PL - Pol - Conversion' THEN 'Conversion'
 WHEN work_type_name = 'PL - Pol - Public Enquiries' THEN 'Public Enquiries'
 WHEN work_type_name LIKE '%Discrimination%' THEN 'Discrimination'
 ELSE work_type_name END AS [Matter Type]
-, dim_detail_claim.borough AS [Borough]
+, ISNULL(dim_detail_claim.borough, dim_detail_claim.district) AS [Borough]
 , dim_detail_claim.[source_of_instruction] AS [Source of Instruction]
 , surrey_police_stations [Police Stations]
 , fee_earner_code AS [FEE Eraner Code]
@@ -285,7 +285,7 @@ GROUP BY CASE
          dim_matter_header_current.matter_owner_full_name,
          dim_matter_header_current.date_opened_case_management,
          dim_matter_header_current.date_closed_case_management,
-         dim_detail_claim.borough,
+         ISNULL(dim_detail_claim.borough, dim_detail_claim.district),
          dim_detail_claim.source_of_instruction,
          dim_detail_advice.surrey_police_stations,
          dim_matter_header_current.fee_earner_code,
@@ -336,7 +336,7 @@ WHEN work_type_name = 'PL - Pol - Conversion' THEN 'Conversion'
 WHEN work_type_name = 'PL - Pol - Public Enquiries' THEN 'Public Enquiries'
 WHEN work_type_name LIKE '%Discrimination%' THEN 'Discrimination'
 ELSE work_type_name END AS [Matter Type]
-, dim_detail_claim.borough AS [Borough]
+, ISNULL(dim_detail_claim.borough, dim_detail_claim.district) AS [Borough]
 , dim_detail_claim.[source_of_instruction] AS [Source of Instruction]
 , surrey_police_stations [Police Stations]
 , fee_earner_code AS [FEE Eraner Code]
@@ -479,7 +479,7 @@ GROUP BY  CASE
           dim_matter_header_current.matter_owner_full_name,
           dim_matter_header_current.date_opened_case_management,
           dim_matter_header_current.date_closed_case_management,
-          dim_detail_claim.borough,
+          ISNULL(dim_detail_claim.borough, dim_detail_claim.district),
           dim_detail_claim.source_of_instruction,
           dim_detail_advice.surrey_police_stations,
           dim_matter_header_current.fee_earner_code,
