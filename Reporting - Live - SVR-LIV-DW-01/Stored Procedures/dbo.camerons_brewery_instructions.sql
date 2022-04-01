@@ -58,7 +58,7 @@ FROM (
 			INNER JOIN red_dw.dbo.dim_matter_header_current	
 				ON dim_matter_header_current.ms_fileid = dbFile.fileID
 		WHERE 1 = 1 
-			AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
+			AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107', '3794', 'W26362')
 			AND ARList IN ('Bill','BillRev')
 		GROUP BY
 			dim_matter_header_current.dim_matter_header_curr_key
@@ -118,7 +118,7 @@ FROM red_dw.dbo.fact_dimension_main
 WHERE 1 = 1
 	AND (
 		dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
-		OR (dim_matter_header_current.master_client_code = '3794'AND dim_matter_header_current.date_closed_practice_management IS NULL)
+		OR (dim_matter_header_current.master_client_code IN ('3794', 'W26362') AND dim_matter_header_current.date_closed_practice_management IS NULL)
 		)
 	--AND dim_matter_header_current.master_matter_number = '211'
 	AND dim_matter_header_current.reporting_exclusions = 0
