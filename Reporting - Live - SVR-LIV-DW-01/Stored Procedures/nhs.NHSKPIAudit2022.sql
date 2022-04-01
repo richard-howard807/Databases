@@ -284,6 +284,10 @@ THEN 0.5 ELSE 0 END AS [Total Points]
 , CASE WHEN adr_considered = 'Not applicable' THEN 'N/A' ELSE adr_considered END AS [ADR: Has it been considered?]
 , CASE WHEN adr_appropriate_time = 'Not applicable' THEN 'N/A' ELSE adr_appropriate_time END AS [ADR: was it considered at appropriate time?]
 
+, CASE WHEN appropriate_delegation = 'Not applicable' THEN 'N/A' ELSE appropriate_delegation END AS [Appropriate delegation?]
+, CASE WHEN magic_phone_call = 'Not applicable' THEN 'N/A' ELSE magic_phone_call END AS [Was there a magic phone call?]
+, CASE WHEN proactive_approval_np_sca = 'Not applicable' THEN 'N/A' ELSE proactive_approval_np_sca END AS [Proactive approval by NP / SCA?]
+
 
 FROM red_dw.dbo.dim_parent_detail
 INNER JOIN red_dw.dbo.dim_child_detail ON dim_child_detail.case_id = dim_parent_detail.case_id

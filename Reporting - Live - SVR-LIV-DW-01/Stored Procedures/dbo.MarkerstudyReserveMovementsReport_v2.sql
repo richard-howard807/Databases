@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
+CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport_v2]
 @DateClaimConcluded AS VARCHAR(20), @SettlementMonth AS VARCHAR(20)
   
  AS
@@ -14,6 +14,7 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
  -- , @SettlementMonth AS VARCHAR(20) = NULL
   
   DROP TABLE IF EXISTS #DamagesReserveChanges
+  DROP TABLE IF EXISTS #Damagesat12and24months
  SELECT  x.master_fact_key, 
   [Damages Reserve Set at Initial Report (first damages reserve input into MI)]  = MAX(CASE WHEN x.RN = 1 THEN x.damages_reserve_rsa END) ,
   [Second damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 2 THEN x.damages_reserve_rsa END),
@@ -34,6 +35,7 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
   SELECT a.master_fact_key,
          a.transaction_calendar_date,
          a.damages_reserve_rsa,
+		 a.[Days BETWEEN date opened AND damages],
          ROW_NUMBER() OVER (PARTITION BY  a.master_fact_key  ORDER BY a.transaction_calendar_date) RN
 		 
 		 FROM 
@@ -42,6 +44,7 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
    fact_dimension_main.master_fact_key,
    transaction_calendar_date,
    [fact_finance_monthly].[damages_reserve_rsa]
+   ,DATEDIFF(MONTH, date_opened_case_management, transaction_calendar_date)  [Days BETWEEN date opened AND damages]
    ,ROW_NUMBER() OVER (PARTITION BY  fact_dimension_main.master_fact_key, [fact_finance_monthly].[damages_reserve_rsa]  ORDER BY transaction_calendar_date) RN
   
   FROM [red_dw].[dbo].[fact_finance_monthly]
@@ -60,6 +63,59 @@ WHERE a.RN = 1 AND a.damages_reserve_rsa IS NOT NULL  AND a.damages_reserve_rsa 
 
 ) x 
 GROUP BY x.master_fact_key
+
+
+--------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
+  SELECT  
+x.master_fact_key,
+[12MONTHS] = MAX(CASE WHEN x.RN = 1 THEN x.damages_reserve_rsa END) ,
+[24MONTHS] = MAX(CASE WHEN x.RN = 2 THEN x.damages_reserve_rsa END) 
+
+ INTO #Damagesat12and24months
+ FROM 
+ 
+ (
+  
+  
+  SELECT a.master_fact_key,
+         a.transaction_calendar_date,
+         a.damages_reserve_rsa,
+		 a.[Days BETWEEN date opened AND damages],
+         ROW_NUMBER() OVER (PARTITION BY  a.master_fact_key  ORDER BY a.transaction_calendar_date) RN
+		 
+		 FROM 
+  (
+   SELECT 
+   fact_dimension_main.master_fact_key,
+   transaction_calendar_date,
+   [fact_finance_monthly].[damages_reserve_rsa]
+   ,DATEDIFF(MONTH, date_opened_case_management, transaction_calendar_date)  [Days BETWEEN date opened AND damages]
+   ,ROW_NUMBER() OVER (PARTITION BY  fact_dimension_main.master_fact_key, [fact_finance_monthly].[damages_reserve_rsa]  ORDER BY transaction_calendar_date) RN
+  
+  FROM [red_dw].[dbo].[fact_finance_monthly]
+   JOIN red_dw.dbo.fact_dimension_main
+  ON fact_dimension_main.master_fact_key = fact_finance_monthly.master_fact_key
+
+  JOIN red_dw.dbo.dim_matter_header_current
+  ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+  WHERE fact_dimension_main.master_client_code IN ('C1001', 'W24438')
+
+  /*Testing*/
+ --AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76238'
+
+) a 
+WHERE 
+
+a.[Days BETWEEN date opened AND damages] IN (12,24)
+AND a.damages_reserve_rsa IS NOT NULL  
+AND a.damages_reserve_rsa <>0
+
+) x 
+GROUP BY x.master_fact_key
+
+----------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
 
 
 SELECT 
@@ -95,12 +151,12 @@ ELSE
 dim_detail_outcome.outcome_of_case  
 END,		
   [Date Damages Concluded] = CAST(dim_detail_outcome.[date_claim_concluded] AS DATE),
-  [Total damages paid] = fact_finance_summary.[damages_paid],
+  [Total damages paid] = ISNULL(fact_finance_summary.[damages_paid],0),
   [No.Times Damages Reserve Changed] = ISNULL([Damages Reserve Change Count], 0), --dc.[No. Times Damages Changed],
   
   
   /* Damage Reserve Changes*/
-  [Damages Reserve Set at Initial Report (first damages reserve input into MI)],
+  [Damages Reserve Set at Initial Report (first damages reserve input into MI)]  ,
   [Date of Initial Report] = dim_detail_core_details.[date_initial_report_sent],
   [Second damages reserve figure input into MI],
   [Date second damages reserve figure was input into MI ], 	
@@ -111,9 +167,19 @@ END,
   [Fifth damages reserve figure input into MI],
   [Date fifth damages reserve figure was input into MI] ,
 
-
+  /* ADDED BELOW AS PER TICKET #140668 JL*/
+  #Damagesat12and24months.[12MONTHS], 
+  #Damagesat12and24months.[24MONTHS] ,	
+   NULLIF(fact_finance_summary.[damages_paid],0)/NULLIF([Damages Reserve Set at Initial Report (first damages reserve input into MI)],0)	AS ReservingAccuracy,
+   NULLIF(fact_finance_summary.[damages_paid],0)/NULLIF(#Damagesat12and24months.[12MONTHS],0)	AS [Accuracy of 12 Month Reserve],
+   NULLIF(fact_finance_summary.[damages_paid],0)/NULLIF(#Damagesat12and24months.[24MONTHS],0)	AS [Accuracy of 24 Month Reserve],
+   NULLIF(fact_finance_summary.[damages_paid],0)/NULLIF(fact_finance_summary.damages_reserve,0)	AS [Accuracy of Current Reserve],
+   NULLIF([Damages Reserve Set at Initial Report (first damages reserve input into MI)],0)/NULLIF(fact_finance_summary.damages_reserve,0)	AS [% Diff First Reserve vs Current],
+ ------
   /* Settlement Month */
-  [Settlement Month] = LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4))
+  [Settlement Month] = LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4))	
+ ,fact_finance_summary.damages_reserve AS[Damages Reserve Current] --ADDED JL 
+
 
   FROM  red_dw.dbo.fact_dimension_main
   JOIN red_dw.dbo.dim_matter_header_current
@@ -199,12 +265,15 @@ END,
 	) as dc  
 	ON dc.client_code = red_dw.dbo.fact_dimension_main.client_code  
 		AND dc.matter_number = red_dw.dbo.fact_dimension_main.matter_number  
-		LEFT JOIN #DamagesReserveChanges
-	ON #DamagesReserveChanges.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN #DamagesReserveChanges
+ON #DamagesReserveChanges.master_fact_key = fact_dimension_main.master_fact_key
+LEFT JOIN #Damagesat12and24months
+ON #Damagesat12and24months.master_fact_key = fact_dimension_main.master_fact_key
 
 
  
-  WHERE fact_dimension_main.master_client_code IN ('C1001', 'W24438')
+WHERE 
+fact_dimension_main.master_client_code IN ('C1001', 'W24438')
   AND reporting_exclusions = 0  
   AND LOWER(ISNULL(outcome_of_case, '')) NOT IN ( 'exclude from reports', 'returned to client' )  
   AND dim_client.client_code IN  ('00046018', 'C15332', 'C1001', 'W24438')  
@@ -245,9 +314,11 @@ AND ms_fileid NOT IN
   THEN  ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4)), '')
   ELSE @SettlementMonth END = ISNULL(LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4)),'')
   
-  
+AND work_type_group IN ('Motor', 'Disease', 'EL', 'PL ALL')
   /*Testing*/
--- AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76238'
+ --AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76238'
   --ORDER BY [fact_finance_monthly].[dim_transaction_date_key]
   ORDER BY [Date File Opened]
+
+
 GO

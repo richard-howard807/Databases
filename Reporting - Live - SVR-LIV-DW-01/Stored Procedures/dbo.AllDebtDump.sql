@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 /*
 	20170928 LD Added additional payor columns
 	10-01-2018 JL Added in join for HSD and team manager 1.1
@@ -185,16 +186,17 @@ SELECT
 	, InvPayor.OrgScost
 	, InvPayor.OrgTax
 	, dim_fed_hierarchy_history.worksforname AS [Team Manager] /*1.1*/
-	, hsd.name as HSD /*1.1*/
+	, hsd.name AS HSD /*1.1*/
 	, CASE	
 		WHEN #outsource_mmi_claim_refs.mmi_claim_number IS NOT NULL THEN
 			'Yes'
 		ELSE
 			NULL
-	  END						AS [MMI Outsource Claim Reference]
+	  END						AS [MMI Outsource Claim Reference],
 	
 	-- show total unpaid fees, disbs and VAT on each invoice? 
-
+dim_bill_debt_narrative.udf_modified_by created_by,
+dim_bill_debt_narrative.udf_narrative narrative
 FROM  TE_3E_Prod.dbo.InvPayor  
 INNER JOIN TE_3E_Prod.dbo.InvMaster ON InvMaster.InvIndex = InvPayor.InvMaster
 INNER JOIN TE_3E_Prod.dbo.Matter ON Matter.MattIndex = InvMaster.LeadMatter
@@ -207,7 +209,7 @@ LEFT JOIN red_dw.dbo.dim_matter_header_current ON master_client_code + '-' + mas
 LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code = dim_matter_header_current.fee_earner_code COLLATE DATABASE_DEFAULT
 											   AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
 											   AND dim_fed_hierarchy_history.activeud = 1
-LEFT JOIN (SELECT distinct name, employeeid, hierarchylevel3hist  from red_dw.dbo.dim_fed_hierarchy_history where management_role_one = 'HoSD' AND dss_current_flag='Y' ) as hsd on hsd.hierarchylevel3hist = dim_fed_hierarchy_history.hierarchylevel3hist /*1.1*/
+LEFT JOIN (SELECT DISTINCT name, employeeid, hierarchylevel3hist  FROM red_dw.dbo.dim_fed_hierarchy_history WHERE management_role_one = 'HoSD' AND dss_current_flag='Y' ) AS hsd ON hsd.hierarchylevel3hist = dim_fed_hierarchy_history.hierarchylevel3hist /*1.1*/
 LEFT JOIN red_dw.dbo.fact_dimension_main ON fact_dimension_main.client_code = ISNULL(LEFT(Matter.loadnumber,(CHARINDEX('-',Matter.loadnumber)-1)),Client.altnumber) COLLATE DATABASE_DEFAULT
 										AND fact_dimension_main.matter_number = ISNULL(RIGHT(Matter.loadnumber, LEN(Matter.loadnumber) - CHARINDEX('-',Matter.loadnumber))
 																						,
@@ -226,7 +228,7 @@ LEFT OUTER JOIN #outsource_mmi_claim_refs
 WHERE 
 InvPayor.BalAmt <> 0
 --and InvPayor.InvNumber = '02037226'
-and InvMaster.IsReversed <> 1
+AND InvMaster.IsReversed <> 1
 
 
 ORDER BY ISNULL(LEFT(Matter.loadnumber,(CHARINDEX('-',Matter.loadnumber)-1)),Client.altnumber), 

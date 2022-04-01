@@ -3,6 +3,13 @@ GO
 SET ANSI_NULLS ON
 GO
 
+/*  
+=============================================  
+Author:   Julie Loughlin  
+Create date: 2022-03-30  
+Description: Catalina report to drive SSIS report as per ticket #140825
+=============================================  
+*/
 
 CREATE PROCEDURE  [dbo].[CatalinaComingHearing] --EXEC [dbo].[CatalinaComingHearing] '2022-01-01','2022-12-31'
 (
@@ -23,7 +30,7 @@ BEGIN
 SELECT
 --CASE WHEN insurerclient_reference IS NULL THEN red_dw.dbo.dim_detail_client.zurich_insurer_ref ELSE insurerclient_reference END AS [Zurich Claim Number]
 ---IIF( dim_client_involvement.client_name LIKE '%Catalina%' AND insuredclient_reference IS NULL ,client_reference, insuredclient_reference)  AS test
-CASE WHEN insurerclient_reference IS NOT NULL  THEN insurerclient_reference
+CASE WHEN insurerclient_reference IS NOT NULL AND insurerclient_reference NOT LIKE '%Please Notify%'  THEN insurerclient_reference
 	  WHEN insurerclient_reference IS NULL THEN red_dw.dbo.dim_detail_client.zurich_insurer_ref
 	  WHEN dim_client_involvement.client_name LIKE '%Catalina%' THEN client_reference
 	  END AS [Zurich Claim Number]
@@ -52,6 +59,7 @@ ELSE  'Deleted/Completed' END AS [Tab Filter]
 		'Closed'
   END					AS [Status]
 ,catalinaClaim.is_this_a_catalina_claim_no
+,is_there_a_catalina_claim_number_on_this_claim
 ,insuredclient_reference
 ,dim_detail_client.zurich_insurer_ref
 ,insurerclient_reference
@@ -104,12 +112,17 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 
 
 WHERE 
+ 
+(red_dw.dbo.dim_matter_header_current.client_code = 'W25984')
+OR (dim_matter_header_current.client_code = 'Z1001'
+AND	is_there_a_catalina_claim_number_on_this_claim = 'Yes')
 
-(dim_matter_header_current.client_code='W25984' 
-OR 
-(dim_matter_header_current.master_client_code = 'Z1001'
-AND	
-is_this_a_catalina_claim_no = 'Yes'  ) )
+  
+--is_this_a_catalina_claim_no = 'Yes') 
+
+
+
+
 
 --AND RTRIM(tskDesc) IN 
 --(
