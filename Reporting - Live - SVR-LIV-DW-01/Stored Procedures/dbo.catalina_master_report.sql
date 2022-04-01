@@ -15,7 +15,11 @@ AS
 BEGIN
 
 DROP TABLE IF EXISTS #last_bill_data
+DROP TABLE IF EXISTS #revenue
 
+--=================================================================================================================================
+-- Last bill data
+--=================================================================================================================================
 SELECT *
 INTO #last_bill_data
 FROM (
@@ -45,6 +49,27 @@ WHERE
 	all_data.rw = 1
 
 
+--=================================================================================================================================
+-- Revenue
+--=================================================================================================================================
+SELECT 
+	fact_bill_activity.dim_matter_header_curr_key
+	, SUM(fact_bill_activity.bill_amount) AS revenue
+INTO #revenue
+FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+	INNER JOIN red_dw.dbo.dim_matter_header_current
+		ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_activity.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+WHERE 1 = 1
+	AND (dim_matter_header_current.master_client_code = 'W25984'
+		OR (dim_matter_header_current.master_client_code = 'Z1001' AND dim_detail_client.is_there_a_catalina_claim_number_on_this_claim = 'Yes'))
+GROUP BY
+	fact_bill_activity.dim_matter_header_curr_key
+
+--=================================================================================================================================
+-- Main query
+--=================================================================================================================================
 SELECT 
 	CAST(dim_detail_core_details.date_instructions_received AS DATE)		AS [Receipt of Instruction]
 	, CAST(dim_matter_header_current.date_opened_case_management AS DATE)	AS [Date Opened]
@@ -65,7 +90,7 @@ SELECT
 	, dim_matter_header_current.billing_arrangement		AS [Billing Arrangement Code]
 	, fact_finance_summary.client_account_balance_of_matter		AS [Client Account Balance]
 	, fact_finance_summary.total_amount_billed			AS [Total Amount Billed]
-	, fact_finance_summary.defence_costs_billed			AS [Defence Costs Billed]
+	, #revenue.revenue			AS [Revenue Costs Billed]
 	, fact_finance_summary.disbursements_billed			AS [Disbursements Billed]
 	, fact_finance_summary.vat_billed					AS [VAT Billed]
 	, fact_finance_summary.wip							AS [WIP]
@@ -95,6 +120,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN #last_bill_data
 		ON #last_bill_data.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN #revenue
+		ON #revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND (dim_matter_header_current.master_client_code = 'W25984'
