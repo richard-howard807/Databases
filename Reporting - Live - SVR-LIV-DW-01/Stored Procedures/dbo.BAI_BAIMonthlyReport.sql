@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022 - 02 - 03
@@ -11,9 +12,9 @@ GO
 -- =============================================
 
 -- =============================================
-CREATE PROCEDURE [dbo].[BAI_BAIMonthlyReport]
+CREATE PROCEDURE [dbo].[BAI_BAIMonthlyReport]--[dbo].[BAI_BAIMonthlyReport] 'Mar 2022'
 (
-@Period AS NVARCHAR(5)
+@Period AS NVARCHAR(20)
 )
 
 AS		
@@ -24,7 +25,9 @@ DECLARE @EndDate AS DATE
 
 SET @StartDate=(SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month_name + ' ' + CAST(cal_year AS NVARCHAR(5))=@Period)
 SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month_name + ' ' + CAST(cal_year AS NVARCHAR(5))=@Period)
-		 
+	
+	PRINT @StartDate
+	PRINT @EndDate
 		 SELECT   
 		    [BAICS ref] = COALESCE(dim_client_involvement.[insurerclient_reference],dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference),
             [Weightmans ref] = dim_client.client_code + ' ' + dim_matter_header_current.matter_number,
