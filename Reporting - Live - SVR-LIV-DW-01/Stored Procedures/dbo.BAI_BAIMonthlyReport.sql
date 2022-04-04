@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022 - 02 - 03
@@ -11,8 +12,18 @@ GO
 
 -- =============================================
 CREATE PROCEDURE [dbo].[BAI_BAIMonthlyReport]
+(
+@Period AS NVARCHAR(5)
+)
 
-AS		 
+AS		
+
+
+DECLARE @StartDate AS DATE
+DECLARE @EndDate AS DATE
+
+SET @StartDate=(SELECT MIN(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month_name + ' ' + CAST(cal_year AS NVARCHAR(5))=@Period)
+SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month_name + ' ' + CAST(cal_year AS NVARCHAR(5))=@Period)
 		 
 		 SELECT   
 		    [BAICS ref] = COALESCE(dim_client_involvement.[insurerclient_reference],dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference),
@@ -72,7 +83,8 @@ AS
 							   END
 			,final_bill_date
 			,dim_detail_core_details.capita_category_position_code
-		
+		,CASE WHEN CONVERT(DATE,date_closed_practice_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileClosedPeriod]
+		,CASE WHEN CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileOpenedPeriod]
 		--00516705 00000696
 		FROM  red_dw.dbo.fact_dimension_main
 		JOIN red_dw.dbo.dim_matter_header_current
