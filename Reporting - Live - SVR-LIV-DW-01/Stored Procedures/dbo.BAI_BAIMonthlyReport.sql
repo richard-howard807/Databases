@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022 - 02 - 03
@@ -50,7 +51,8 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 			[Claimant] = dim_claimant_thirdparty_involvement.claimant_name,
 			[Policyholder] = COALESCE(insuredclient_name, dim_defendant_involvement.[defendant_name]),
 			[Claimant Solicitor] = COALESCE(dim_detail_claim.dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name),
-			[Gross Reserve] = fact_detail_reserve_detail.[total_current_reserve],
+			[Gross Reserve] = ISNULL(fact_finance_summary.[damages_reserve],0) + ISNULL(fact_detail_reserve_detail.[claimant_costs_reserve_current],0) + ISNULL(fact_finance_summary.[defence_costs_reserve],0),
+		--fact_detail_reserve_detail.[total_current_reserve],
 		    [FSCS Protected] = CASE WHEN ISNUMERIC(capita_fscs_protected_yes_enter_percent_no_leave_blank)=1 THEN CAST(capita_fscs_protected_yes_enter_percent_no_leave_blank AS NVARCHAR(4)) +'%'
 			WHEN capita_fscs_protected_yes_enter_percent_no_leave_blank='Yes-100%' THEN '100%'
 			                WHEN ISNULL(dim_detail_core_details.[capita_fscs_protected_yes_enter_percent_no_leave_blank], '') ='' THEN '0%' 
@@ -86,7 +88,7 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 							   END
 			,final_bill_date
 			,dim_detail_core_details.capita_category_position_code
-		,CASE WHEN CONVERT(DATE,date_closed_practice_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileClosedPeriod]
+		,CASE WHEN CONVERT(DATE,final_bill_date,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileClosedPeriod]
 		,CASE WHEN CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileOpenedPeriod]
 		--00516705 00000696
 		FROM  red_dw.dbo.fact_dimension_main

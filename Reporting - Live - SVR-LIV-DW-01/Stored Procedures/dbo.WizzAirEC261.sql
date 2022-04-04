@@ -31,7 +31,7 @@ SELECT
 , NULL AS [Actual Arrival AP]
 , NULL AS [DHC/DLC]
 , NULL AS [Main Reason]
-, NULL AS [Comments (if any)]
+, wizz_reason_comments AS [Comments (if any)]
 , NULL AS [OTA involved (1/0)]
 , NULL AS [Claim farm (1/0)]
 , NULL AS [Withdrawn (1/0)]
@@ -43,7 +43,7 @@ SELECT
 , NULL AS [Appealed by Wizz]
 , NULL AS [Appealed by Claimant]
 , NULL AS [Reason for loosing]
-, NULL AS [Comment (if any)]
+, wizz_lose_comments AS [Comment (if any)]
 , fact_finance_summary.defence_costs_billed AS [Own attorney fee (GBP)]
 , fact_finance_summary.disbursements_billed AS [Other expenses (GBP)]
 , NULL AS [Claimed amount (EUR)]
@@ -52,7 +52,7 @@ SELECT
 , NULL AS [Refund (EUR)]
 , NULL AS [Other claims (EUR)]
 , NULL AS [Litigation cost (EUR)]
-, NULL AS [PNR]
+, wizz_pnr AS [PNR]
 , NULL AS [Claim for Article 9 Right to Care costs]
 , NULL AS [Extraordinary Circumstances]
 , NULL AS [Status]
@@ -73,6 +73,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+LEFT OUTER JOIN red_dw.dbo.dim_file_notes
+ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
