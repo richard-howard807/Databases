@@ -71,11 +71,13 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
 ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
+ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
 AND dim_matter_header_current.master_client_code='W21757'
-
+AND dim_instruction_type.instruction_type='EC261'
 
 END
 GO

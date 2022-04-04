@@ -12,7 +12,7 @@ Created Date:		2022-02-03
 Description:		Sussex and Surrey MI to drive the Tableau Dashboards, all years
 Current Version:	amended previous version as it was duplicating matters based on the financial years
 ====================================================
-
+--ES 2022-04-04 #141849, added suffolk police
 ====================================================
 
 */
@@ -85,7 +85,8 @@ ELSE work_type_name END AS [Matter Type]
 , dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
 , dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
 , dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
-,[ClientOrder] = CASE WHEN client_name = 'Surrey Police' THEN 2
+,[ClientOrder] = CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
       WHEN client_name = 'Sussex Police' THEN 1 END 
 , 'Matter' AS [Level]
 
@@ -102,7 +103,7 @@ LEFT JOIN reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.wo
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] ON [DVPO_Victim_Postcode].Postcode=dim_detail_advice.dvpo_victim_postcode
 			  
 WHERE 
-dim_matter_header_current.client_code IN( '00451638','00113147') 
+dim_matter_header_current.client_code IN( '00451638','00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
 AND CAST(dim_matter_header_current.date_opened_case_management AS DATE) BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
 --AND dim_matter_header_current.client_code='00113147'
@@ -176,8 +177,9 @@ ELSE work_type_name END AS [Matter Type]
 , dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
 , dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
 , dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
-,[ClientOrder] = CASE WHEN client_name = 'Surrey Police' THEN 2
-      WHEN client_name = 'Sussex Police' THEN 1 END 
+,[ClientOrder] = CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END
 , 'Bill' AS [Level]
 
 
@@ -196,7 +198,7 @@ LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] ON [DVPO_Victim_Post
 
 			  
 WHERE 
-dim_matter_header_current.client_code IN( '00451638','00113147') 
+dim_matter_header_current.client_code IN( '00451638','00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
 AND CAST(dim_bill_date.bill_date AS DATE) BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
 --AND dim_matter_header_current.client_code='00113147'
@@ -272,12 +274,9 @@ GROUP BY CASE
          END,
          CAST(CAST([DVPO_Victim_Postcode].Latitude AS FLOAT) AS DECIMAL(8, 6)),
          CAST(CAST([DVPO_Victim_Postcode].Longitude AS FLOAT) AS DECIMAL(9, 6)),
-         CASE
-         WHEN client_name = 'Surrey Police' THEN
-         2
-         WHEN client_name = 'Sussex Police' THEN
-         1
-         END,
+         CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END,
          fact_dimension_main.client_code,
          fact_dimension_main.matter_number,
          dim_matter_header_current.client_name,
@@ -371,8 +370,9 @@ ELSE work_type_name END AS [Matter Type]
 , dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
 , dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
 , dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
-,[ClientOrder] = CASE WHEN client_name = 'Surrey Police' THEN 2
-      WHEN client_name = 'Sussex Police' THEN 1 END 
+,[ClientOrder] = CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END
 , 'Time' AS [Level]
 
 
@@ -390,7 +390,7 @@ LEFT JOIN reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.wo
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [DVPO_Victim_Postcode] ON [DVPO_Victim_Postcode].Postcode=dim_detail_advice.dvpo_victim_postcode
 			  
 WHERE 
-dim_matter_header_current.client_code IN( '00451638','00113147') 
+dim_matter_header_current.client_code IN( '00451638','00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
 AND CAST(transaction_calendar_date AS DATE) BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
 --AND dim_matter_header_current.client_code='00113147'
@@ -466,12 +466,9 @@ GROUP BY  CASE
           END,
           CAST(CAST([DVPO_Victim_Postcode].Latitude AS FLOAT) AS DECIMAL(8, 6)),
           CAST(CAST([DVPO_Victim_Postcode].Longitude AS FLOAT) AS DECIMAL(9, 6)),
-          CASE
-          WHEN client_name = 'Surrey Police' THEN
-          2
-          WHEN client_name = 'Sussex Police' THEN
-          1
-          END,
+          CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END,
           fact_dimension_main.client_code,
           fact_dimension_main.matter_number,
           dim_matter_header_current.client_name,

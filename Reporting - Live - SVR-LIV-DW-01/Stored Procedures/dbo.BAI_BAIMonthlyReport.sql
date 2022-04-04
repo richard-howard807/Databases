@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022 - 02 - 03
@@ -36,9 +37,11 @@ AS
 			[Policyholder] = COALESCE(insuredclient_name, dim_defendant_involvement.[defendant_name]),
 			[Claimant Solicitor] = COALESCE(dim_detail_claim.dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name),
 			[Gross Reserve] = fact_detail_reserve_detail.[total_current_reserve],
-		    [FSCS Protected] = CASE 
-			                WHEN ISNULL(dim_detail_core_details.[capita_fscs_protected_yes_enter_percent_no_leave_blank], '') ='' THEN 'No' 
+		    [FSCS Protected] = CASE WHEN ISNUMERIC(capita_fscs_protected_yes_enter_percent_no_leave_blank)=1 THEN CAST(capita_fscs_protected_yes_enter_percent_no_leave_blank AS NVARCHAR(4)) +'%'
+			WHEN capita_fscs_protected_yes_enter_percent_no_leave_blank='Yes-100%' THEN '100%'
+			                WHEN ISNULL(dim_detail_core_details.[capita_fscs_protected_yes_enter_percent_no_leave_blank], '') ='' THEN '0%' 
 			                ELSE dim_detail_core_details.[capita_fscs_protected_yes_enter_percent_no_leave_blank] END,
+
             [Cause of Litigation] = dim_detail_core_details.[referral_reason],
 			[Damages Reserve] = fact_finance_summary.[damages_reserve],
 			[Damages Agreed] = fact_finance_summary.[damages_paid],
@@ -55,15 +58,15 @@ AS
 			 WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 'Closed'
              WHEN dim_detail_core_details.[capita_category_position_code] = '15' THEN 'Recovery'
              WHEN dim_detail_core_details.[capita_category_position_code] = '14' AND ISNULL(fact_detail_client.[nhsla_spend], 0) = 0 THEN  'Repudiated'
-             WHEN dim_detail_core_details.[capita_category_position_code] = '13' OR fact_finance_summary.[claimants_total_costs_paid_by_all_parties] > 0 or fact_finance_summary.[claimants_costs_paid] > 0 or dim_detail_outcome.[date_costs_settled] IS NOT NULL THEN 'Costs Settled'
-             WHEN dim_detail_core_details.[capita_category_position_code] = '12' OR  dim_detail_outcome.[outcome_of_case] IS NOT NULL  OR  dim_detail_outcome.[date_claim_concluded] IS NOT null OR  fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] > 0 OR fact_finance_summary.[damages_paid] > 0 THEN  'Damages Paid'
+             WHEN dim_detail_core_details.[capita_category_position_code] = '13' OR fact_finance_summary.[claimants_total_costs_paid_by_all_parties] > 0 OR fact_finance_summary.[claimants_costs_paid] > 0 OR dim_detail_outcome.[date_costs_settled] IS NOT NULL THEN 'Costs Settled'
+             WHEN dim_detail_core_details.[capita_category_position_code] = '12' OR  dim_detail_outcome.[outcome_of_case] IS NOT NULL  OR  dim_detail_outcome.[date_claim_concluded] IS NOT NULL OR  fact_detail_paid_detail.[total_settlement_value_of_the_claim_paid_by_all_the_parties] > 0 OR fact_finance_summary.[damages_paid] > 0 THEN  'Damages Paid'
 			   ELSE 'Live' END,
 			   dim_detail_core_details.present_position,
 
 			   date_closed_case_management ,
 
 			Open_closed = CASE WHEN date_closed_case_management IS NOT NULL  AND final_bill_date >= '2022-01-01'  THEN 'Closed' 
-			                   WHEN (dim_detail_core_details.present_position  LIKE '%Final bill sent%' or dim_detail_core_details.present_position LIKE '%To be closed%') AND final_bill_date >= '2022-01-01' THEN 'Closed'
+			                   WHEN (dim_detail_core_details.present_position  LIKE '%Final bill sent%' OR dim_detail_core_details.present_position LIKE '%To be closed%') AND final_bill_date >= '2022-01-01' THEN 'Closed'
 							   WHEN date_closed_case_management IS NULL AND CAST(date_opened_case_management AS DATE) >='2022-01-01' THEN 'Open'
 			                   WHEN date_closed_case_management IS NULL AND (dim_detail_core_details.present_position NOT LIKE '%Final bill sent%' AND  dim_detail_core_details.present_position NOT LIKE '%To be closed%') THEN  'Current caseload' 
 							   END
@@ -116,7 +119,7 @@ AS
         AND dim_matter_header_current.[master_client_code] = 'W15349'
         AND 
 		CASE WHEN date_closed_case_management IS NOT NULL  AND final_bill_date >= '2022-01-01'  THEN 'Closed' 
-			                   WHEN (dim_detail_core_details.present_position  LIKE '%Final bill sent%' or dim_detail_core_details.present_position LIKE '%To be closed%') AND final_bill_date >= '2022-01-01' THEN 'Closed'
+			                   WHEN (dim_detail_core_details.present_position  LIKE '%Final bill sent%' OR dim_detail_core_details.present_position LIKE '%To be closed%') AND final_bill_date >= '2022-01-01' THEN 'Closed'
 							   WHEN date_closed_case_management IS NULL AND CAST(date_opened_case_management AS DATE) >='2022-01-01' THEN 'Open'
 			                   WHEN date_closed_case_management IS NULL AND (dim_detail_core_details.present_position NOT LIKE '%Final bill sent%' AND  dim_detail_core_details.present_position NOT LIKE '%To be closed%') THEN  'Current caseload' 
 							   END IS NOT NULL

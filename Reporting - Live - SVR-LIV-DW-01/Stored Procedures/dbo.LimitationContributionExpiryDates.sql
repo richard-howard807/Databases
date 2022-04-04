@@ -37,13 +37,20 @@ dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.maste
 --,DATEADD(YEAR, 1, dim_key_dates.key_date)
 --, CASE WHEN DATEADD(YEAR, 1, dim_key_dates.key_date)>GETDATE() AND DATEDIFF(MONTH, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date))<=12 THEN 12 ELSE 0 END AS [Limitations Due Within 12 Months]
 --,DATEADD(MONTH,12,dim_key_dates.key_date) AS [12 months from KeyDate]
-,DATEADD(YEAR, 1, dim_key_dates.key_date)	AS [DATEADD]   -- adds a year on to the key date ('LIMITATION')
-,CASE WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 0 AND 21 THEN 21
-WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 22 AND 183 THEN 6
-WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 184 AND 365 THEN 12
+		  --,DATEADD(YEAR, 1, dim_key_dates.key_date)	AS [DATEADD]   -- adds a year on to the key date ('LIMITATION')
+--,CASE WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 0 AND 21 THEN 21
+--	  WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 22 AND 183 THEN 6
+--WHEN DATEDIFF(DAY, GETDATE(), DATEADD(YEAR, 1, dim_key_dates.key_date)) BETWEEN 184 AND 365 THEN 12
+--ELSE 0
+--END 
+--AS [No of days between today and SLA (DATEDIFF)]
+,CASE WHEN DATEDIFF(DAY, GETDATE(), dim_key_dates.key_date) BETWEEN 0 AND 21 THEN 21
+WHEN DATEDIFF(DAY, GETDATE(), dim_key_dates.key_date) BETWEEN 22 AND 183 THEN 6
+WHEN DATEDIFF(DAY, GETDATE(), dim_key_dates.key_date) BETWEEN 184 AND 365 THEN 12
 ELSE 0
-END 
+END
 AS [No of days between today and SLA (DATEDIFF)]
+
 
 
 FROM red_dw.dbo.dim_key_dates  WITH(NOLOCK)
