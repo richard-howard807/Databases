@@ -17,6 +17,7 @@ Current Version:	Initial Create
 -- ES 2021-06-18 Added policing priority field, joined to the work type lookup table
 -- ES 2021-12-02 Amended logic to go back to 2016, requested by BH
 -- ES 2021-03-28 Added new financial year requested by HW
+-- ES 2022-04-04 #141849, added suffolk police
 ====================================================
 
 */
@@ -87,8 +88,9 @@ ELSE work_type_name END AS [Work Type]
 , dim_detail_advice.dvpo_legal_costs_sought AS [DVPO Legal Costs Sought?]
 , dim_detail_advice.dvpo_court_fee_awarded AS [DVPO Court Fee Awarded?]
 , dim_detail_advice.dvpo_own_fees_awarded AS [DVPO Own Fees Awarded?]
-,[ClientOrder] = CASE WHEN client_name = 'Surrey Police' THEN 2
-      WHEN client_name = 'Sussex Police' THEN 1 END 
+,[ClientOrder] = CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
+      WHEN client_name = 'Sussex Police' THEN 1 END
 --into dbo.PoliceExtract
 FROM red_dw..fact_dimension_main
 LEFT JOIN red_dw..dim_matter_header_current ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -119,7 +121,7 @@ INNER JOIN
 					ELSE NULL END [TFY]
               FROM red_dw..fact_bill_matter_detail  
 			  WHERE  bill_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
-              AND  client_code IN ( '00451638','00113147') 
+              AND  client_code IN ( '00451638','00113147','00817395') 
               --AND client_code='00451638' AND matter_number='00000190'
               GROUP BY CASE
                        WHEN bill_date
@@ -169,7 +171,7 @@ LEFT OUTER JOIN (SELECT client_code
 				INNER JOIN red_dw.dbo.dim_transaction_date
 				ON dim_transaction_date.dim_transaction_date_key = fact_all_time_activity.dim_transaction_date_key
 				AND transaction_calendar_date BETWEEN DATEADD(MONTH,3,DATEADD(yy, DATEDIFF(yy,1,GETDATE())-5,0)) AND DATEADD(MONTH,3,DATEADD(dd,-1,DATEADD(yy, DATEDIFF(yy,0,GETDATE())+1,0)))
-				WHERE client_code IN ( '00451638','00113147') 
+				WHERE client_code IN ( '00451638','00113147','00817395') 
 				GROUP BY CASE
                          WHEN transaction_calendar_date
                          BETWEEN '2016-04-01' AND '2017-03-31' THEN
@@ -204,7 +206,7 @@ LEFT OUTER JOIN (SELECT client_code
 
 			  
 WHERE 
-dim_matter_header_current.client_code IN( '00451638','00113147') 
+dim_matter_header_current.client_code IN( '00451638','00113147','00817395') 
 --and date_opened_case_management >= '2016-03-19'
 AND dim_matter_header_current.matter_number <>'ML'
 --AND dim_matter_header_current.client_code='00451638'
@@ -284,7 +286,8 @@ GROUP BY CASE
          dim_detail_advice.dvpo_legal_costs_sought,
          dim_detail_advice.dvpo_court_fee_awarded,
          dim_detail_advice.dvpo_own_fees_awarded
-		 ,CASE WHEN client_name = 'Surrey Police' THEN 2
+		 ,CASE WHEN client_name = 'Suffolk Constabulary' THEN 3
+		WHEN client_name = 'Surrey Police' THEN 2
       WHEN client_name = 'Sussex Police' THEN 1 END 
 
 END
