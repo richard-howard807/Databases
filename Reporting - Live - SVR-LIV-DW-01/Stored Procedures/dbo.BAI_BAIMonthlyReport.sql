@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022 - 02 - 03
@@ -29,7 +30,7 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 	
 	PRINT @StartDate
 	PRINT @EndDate
-		 SELECT   
+		 SELECT  ms_fileid,ms_only,
 		    [BAICS ref] = COALESCE(dim_client_involvement.[insurerclient_reference],dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference),
             [Weightmans ref] = dim_client.client_code + ' ' + dim_matter_header_current.matter_number,
 			[Disease Type] = CASE  

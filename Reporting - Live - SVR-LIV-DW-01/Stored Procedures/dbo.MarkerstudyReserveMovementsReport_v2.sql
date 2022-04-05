@@ -71,7 +71,7 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport_v2]
   WHERE fact_dimension_main.master_client_code IN ('C1001', 'W24438')
 
   /*Testing*/
- AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76024'
+ --AND fact_dimension_main.master_client_code +'-'+master_matter_number = 'C1001-76024'
  
 
 ) a 

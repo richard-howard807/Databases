@@ -17,32 +17,34 @@ BEGIN
 
 SELECT 
   ROW_NUMBER() OVER ( ORDER BY dim_matter_header_current.date_opened_case_management) AS [Nr.]
-, NULL AS [Country]
+, wizz_country AS [Country]
 , dim_matter_header_current.date_opened_case_management AS [Date Opened]
 , CAST([date_opened].cal_year AS VARCHAR(4)) +' Q'+ CAST([date_opened].cal_quarter_no AS VARCHAR(1)) AS [Year and Quarter]
+, [date_opened].cal_year AS [Year]
+, [date_opened].cal_quarter_no AS [Quarter]
 , dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Claim number]
 , NULL AS [Nr of PAX]
-, NULL AS [AOC]
-, NULL AS [Flight number]
-, NULL AS [Operation (Original) day]
-, NULL AS [Original Departure AP]
-, NULL AS [Actual Departure AP]
-, NULL AS [Original Arrival AP]
-, NULL AS [Actual Arrival AP]
-, NULL AS [DHC/DLC]
-, NULL AS [Main Reason]
+, wizz_aoc AS [AOC]
+, wizz_flight_number AS [Flight number]
+, wizz_operation_original_day AS [Operation (Original) day]
+, wizz_original_departure_airport AS [Original Departure AP]
+, wizz_actual_departure_airport AS [Actual Departure AP]
+, wizz_original_arrival_airport AS [Original Arrival AP]
+, wizz_actual_arrival_airport AS [Actual Arrival AP]
+, wizz_dhc_dlc AS [DHC/DLC]
+, wizz_main_reason AS [Main Reason]
 , wizz_reason_comments AS [Comments (if any)]
-, NULL AS [OTA involved (1/0)]
-, NULL AS [Claim farm (1/0)]
-, NULL AS [Withdrawn (1/0)]
-, NULL AS [Admitted/immediate payment (1/0)]
-, NULL AS [Defended and Won (1/0)]
-, NULL AS [Settled (1/0)]
-, NULL AS [Defended and lost (1/0)]
-, NULL AS [Default judgement]
-, NULL AS [Appealed by Wizz]
-, NULL AS [Appealed by Claimant]
-, NULL AS [Reason for loosing]
+, wizz_ota_involved AS [OTA involved (1/0)]
+, wizz_claim_form AS [Claim farm (1/0)]
+, wizz_withdrawn AS [Withdrawn (1/0)]
+, wizz_admitted_immediate_payment AS [Admitted/immediate payment (1/0)]
+, wizz_defended_and_won AS [Defended and Won (1/0)]
+, wizz_settled AS [Settled (1/0)]
+, wizz_defended_and_lost AS [Defended and lost (1/0)]
+, wizz_default_judgment AS [Default judgement]
+, wizz_appealed_by_wizz AS [Appealed by Wizz]
+, wizz_appealed_by_claimant AS [Appealed by Claimant]
+, wizz_reason_for_losing AS [Reason for loosing]
 , wizz_lose_comments AS [Comment (if any)]
 , fact_finance_summary.defence_costs_billed AS [Own attorney fee (GBP)]
 , fact_finance_summary.disbursements_billed AS [Other expenses (GBP)]
@@ -53,11 +55,12 @@ SELECT
 , NULL AS [Other claims (EUR)]
 , NULL AS [Litigation cost (EUR)]
 , wizz_pnr AS [PNR]
-, NULL AS [Claim for Article 9 Right to Care costs]
-, NULL AS [Extraordinary Circumstances]
-, NULL AS [Status]
+, wizz_claim_for_article_nine AS [Claim for Article 9 Right to Care costs]
+, wizz_extraordinary_circumstances AS [Extraordinary Circumstances]
+, wizz_status AS [Status]
 , dim_detail_finance.output_wip_fee_arrangement AS [Fee Arrangement] 
 , fact_finance_summary.fixed_fee_amount AS [Fixed fee amount]
+, 1 AS [Number of cases]
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -75,6 +78,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 LEFT OUTER JOIN red_dw.dbo.dim_file_notes
 ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'

@@ -611,7 +611,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON #witness_list_table.client_code = dim_matter_header_current.client_code
 			AND	#witness_list_table.matter_number = dim_matter_header_current.matter_number
 	INNER JOIN #defendant_trust
-		ON (CASE WHEN RTRIM(dim_detail_claim.defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_claim.defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT 
+		ON (CASE WHEN RTRIM(dim_detail_claim.defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_claim.defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
+		AND (CASE WHEN RTRIM(dim_detail_health.nhs_second_defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_second_defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
 	INNER JOIN #specialty
 		--lengthy ltrim(rtrim(replace())) to account for extra chars not dealt with just with a trim		
 		ON (CASE WHEN dim_detail_health.nhs_speciality IS NULL THEN 'Missing' ELSE LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(dim_detail_health.nhs_speciality, CHAR(10), CHAR(32)),CHAR(13), CHAR(32)),CHAR(160), CHAR(32)),CHAR(9),CHAR(32))))  END) = #specialty.ListValue COLLATE DATABASE_DEFAULT
