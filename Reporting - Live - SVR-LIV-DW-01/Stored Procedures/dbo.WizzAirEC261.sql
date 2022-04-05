@@ -19,6 +19,7 @@ SELECT
   ROW_NUMBER() OVER ( ORDER BY dim_matter_header_current.date_opened_case_management) AS [Nr.]
 , wizz_country AS [Country]
 , dim_matter_header_current.date_opened_case_management AS [Date Opened]
+, dim_matter_header_current.date_closed_case_management AS [Date Closed]
 , CAST([date_opened].cal_year AS VARCHAR(4)) +' Q'+ CAST([date_opened].cal_quarter_no AS VARCHAR(1)) AS [Year and Quarter]
 , [date_opened].cal_year AS [Year]
 , [date_opened].cal_quarter_no AS [Quarter]
