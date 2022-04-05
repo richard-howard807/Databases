@@ -80,6 +80,7 @@ SELECT
 	, dim_matter_header_current.matter_owner_full_name			AS [Matter Owner]
 	, dim_employee.locationidud					AS [Office]
 	, dim_detail_core_details.present_position			AS [Present Position]
+	, dim_detail_core_details.injury_type_code			AS [Injury Type]
 	, CAST(dim_detail_core_details.date_initial_report_due AS DATE)		AS [Date Initial Report Due]
 	, CAST(dim_detail_core_details.date_initial_report_sent AS DATE)		AS [Date Initial Report Sent]
 	, dim_detail_outcome.outcome_of_case			AS [Outcome of Claim]

@@ -24,7 +24,7 @@ SELECT
 , [date_opened].cal_year AS [Year]
 , [date_opened].cal_quarter_no AS [Quarter]
 , dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Claim number]
-, NULL AS [Nr of PAX]
+, wizz_num_of_pax AS [Nr of PAX]
 , wizz_aoc AS [AOC]
 , wizz_flight_number AS [Flight number]
 , wizz_operation_original_day AS [Operation (Original) day]
@@ -35,13 +35,16 @@ SELECT
 , wizz_dhc_dlc AS [DHC/DLC]
 , wizz_main_reason AS [Main Reason]
 , wizz_reason_comments AS [Comments (if any)]
-, wizz_ota_involved AS [OTA involved (1/0)]
-, wizz_claim_form AS [Claim farm (1/0)]
-, wizz_withdrawn AS [Withdrawn (1/0)]
-, wizz_admitted_immediate_payment AS [Admitted/immediate payment (1/0)]
-, wizz_defended_and_won AS [Defended and Won (1/0)]
-, wizz_settled AS [Settled (1/0)]
-, wizz_defended_and_lost AS [Defended and lost (1/0)]
+, CASE WHEN wizz_ota_involved ='Yes' THEN 1 ELSE 0 END AS [OTA involved (1/0)]
+, CASE WHEN wizz_claim_form ='Yes' THEN 1 ELSE 0 END AS [Claim farm (1/0)]
+, CASE WHEN wizz_withdrawn ='Yes' THEN 1 ELSE 0 END AS [Withdrawn (1/0)]
+, CASE WHEN wizz_admitted_immediate_payment ='Yes' THEN 1 ELSE 0 END AS [Admitted/immediate payment (1/0)]
+, CASE WHEN wizz_defended_and_won ='Yes' THEN 1 ELSE 0 END AS [Defended and Won (1/0)]
+, CASE WHEN wizz_settled ='Yes' THEN 1 ELSE 0 END AS [Settled (1/0)]
+, CASE WHEN wizz_defended_and_lost ='Yes' THEN 1 ELSE 0 END AS [Defended and lost (1/0)]
+, CASE WHEN wizz_default_judgment ='Yes' THEN 1 ELSE 0 END AS [Default judgement (1/0)]
+, CASE WHEN wizz_appealed_by_wizz ='Yes' THEN 1 ELSE 0 END AS [Appealed by Wizz (1/0)]
+, CASE WHEN wizz_appealed_by_claimant ='Yes' THEN 1 ELSE 0 END AS [Appealed by Claimant (1/0)]
 , wizz_default_judgment AS [Default judgement]
 , wizz_appealed_by_wizz AS [Appealed by Wizz]
 , wizz_appealed_by_claimant AS [Appealed by Claimant]
@@ -49,12 +52,12 @@ SELECT
 , wizz_lose_comments AS [Comment (if any)]
 , fact_finance_summary.defence_costs_billed AS [Own attorney fee (GBP)]
 , fact_finance_summary.disbursements_billed AS [Other expenses (GBP)]
-, NULL AS [Claimed amount (EUR)]
-, NULL AS [Rendered amount (without interest, EUR)]
-, NULL AS [EU261 (EUR)]
-, NULL AS [Refund (EUR)]
-, NULL AS [Other claims (EUR)]
-, NULL AS [Litigation cost (EUR)]
+, wizz_claim_amount_eur AS [Claimed amount (EUR)]
+, wizz_render_amount_eur AS [Rendered amount (without interest, EUR)]
+, wizz_ec_two_six_one_eur AS [EC261 (EUR)]
+, wizz_refund_eur AS [Refund (EUR)]
+, wizz_other_claims_eur AS [Other claims (EUR)]
+, wizz_lit_cost_eur AS [Litigation cost (EUR)]
 , wizz_pnr AS [PNR]
 , wizz_claim_for_article_nine AS [Claim for Article 9 Right to Care costs]
 , wizz_extraordinary_circumstances AS [Extraordinary Circumstances]
@@ -81,6 +84,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_file_notes
 ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.fact_detail_client
+ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
