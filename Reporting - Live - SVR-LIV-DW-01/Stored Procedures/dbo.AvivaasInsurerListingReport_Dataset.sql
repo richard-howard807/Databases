@@ -135,7 +135,11 @@ SELECT
 	 [Open_Closed] = CASE WHEN date_closed_case_management  IS NOT NULL THEN 'Closed' ELSE 'Open' END,
 	 [Last Bill Date] = final_bill_date,
 	 [Weightmans Ref] = dim_matter_header_current.master_client_code + '-' + master_matter_number 
-	 ,ms_fileid
+	 ,[Date Concluded] = CASE WHEN TRIM(dim_detail_core_details.[present_position]) IN ('To be closed/minor balances to be clear','Final bill sent - unpaid') THEN final_bill_date END
+	 ,[File Type] = CASE WHEN hierarchylevel2hist ='Legal Ops - Claims' THEN 'Claims' ELSE 'Non-Claims' END
+	 ,[Defence Cost Reserve] = fact_finance_summary.[defence_costs_reserve]
+   	 ,[Total damages paid] = fact_detail_claim.damages_paid_by_client
+     ,ms_fileid
 	 ,hierarchylevel3hist
 	 ,hierarchylevel2hist
 FROM red_dw..fact_dimension_main

@@ -14,7 +14,7 @@ CREATE PROCEDURE [dbo].[Midland_Heart_Social_Housing_Weekly_Report]
 AS
 BEGIN
 
-	SET NOCOUNT ON;
+SET NOCOUNT ON;
 SELECT 
 	RTRIM(fact_dimension_main.client_code)+'/'+fact_dimension_main.matter_number AS [Weightmans Reference]
 	,dim_matter_header_current.[matter_description] AS [Matter Description]
@@ -88,10 +88,10 @@ WHERE
 dim_matter_header_current.matter_number <> 'ML'
 AND dim_matter_header_current.reporting_exclusions=0
 AND fact_dimension_main.client_code = 'W23552'
-AND TRIM(dim_matter_worktype.[work_type_name]) = 'Social Housing - Property'
-
+AND TRIM(dim_matter_worktype.[work_type_name]) IN ('Social Housing Staircasing', 'Social Housing - Property')
 
 
 END
+
 
 GO
