@@ -45,6 +45,7 @@ SELECT
 
 	,[TabFilter] = 
 	CASE WHEN cboMHInsType.cdDesc IN ('Final Staircasing','Partial Staircasing', 'RTA', 'Lease Extension') THEN 'Tab1'
+		WHEN cboMHInsType.cdDesc IN ('LSE') THEN 'TabLSE'
 	ELSE 'Tab2' END
 
 	,revenue.Revenue
