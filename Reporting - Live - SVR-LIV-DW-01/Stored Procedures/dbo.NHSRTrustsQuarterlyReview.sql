@@ -15,13 +15,15 @@ GO
 --		   JL as per ticket #122283 and corrected duplication by adding row_number
 --		   JL Change of name to report, added new RAG logic for 'Safety & Learning Factor identified'
 --			#125557, ES added additional details
+--		   JL 07-04-22 added join for def_trust param for second defend trust #141539
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
 		@def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)
 		, @instruction_type AS VARCHAR(MAX)
-		, @referral_reason AS VARCHAR(MAX)	
+		, @referral_reason AS VARCHAR(MAX)
+		--, @case_handler AS VARCHAR(MAX)
 )
 AS
 
@@ -33,7 +35,7 @@ BEGIN
 --		, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
 --		, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1'
 --		, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
-
+--		, @case_handler AS VARCHAR(MAX)	 =
 --==========================================================================================================================================================================================
 -- Parameter queries
 --==========================================================================================================================================================================================
@@ -72,12 +74,14 @@ IF OBJECT_ID('tempdb..#referral_reason') IS NOT NULL   DROP TABLE #referral_reas
 IF OBJECT_ID('tempdb..#rag_status') IS NOT NULL DROP TABLE #rag_status
 IF OBJECT_ID('tempdb..#witness_list_table') IS NOT NULL	 DROP TABLE #witness_list_table
 IF OBJECT_ID('tempdb..#key_date_list_table') IS NOT NULL	 DROP TABLE #key_date_list_table
+--IF OBJECT_ID('tempdb..#case_handler') IS NOT NULL DROP TABLE #case_handler
                
 
 SELECT udt_TallySplit.ListValue  INTO #defendant_trust FROM 	dbo.udt_TallySplit('|', @def_trust)
 SELECT udt_TallySplit.ListValue  INTO #specialty FROM 	dbo.udt_TallySplit('|', @nhs_specialty)
 SELECT udt_TallySplit.ListValue  INTO #instruction_type FROM 	dbo.udt_TallySplit('|', @instruction_type)
 SELECT udt_TallySplit.ListValue  INTO #referral_reason FROM 	dbo.udt_TallySplit('|', @referral_reason)
+--SELECT udt_TallySplit.ListValue  INTO #case_handler FROM 	dbo.udt_TallySplit('|', @case_handler)
 
 
 --==============================================================================================================================================================
@@ -612,7 +616,7 @@ FROM red_dw.dbo.fact_dimension_main
 			AND	#witness_list_table.matter_number = dim_matter_header_current.matter_number
 	INNER JOIN #defendant_trust
 		ON (CASE WHEN RTRIM(dim_detail_claim.defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_claim.defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
-		AND (CASE WHEN RTRIM(dim_detail_health.nhs_second_defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_second_defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
+		or (CASE WHEN RTRIM(dim_detail_health.nhs_second_defendant_trust) IS NULL THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_second_defendant_trust) END) = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
 	INNER JOIN #specialty
 		--lengthy ltrim(rtrim(replace())) to account for extra chars not dealt with just with a trim		
 		ON (CASE WHEN dim_detail_health.nhs_speciality IS NULL THEN 'Missing' ELSE LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(dim_detail_health.nhs_speciality, CHAR(10), CHAR(32)),CHAR(13), CHAR(32)),CHAR(160), CHAR(32)),CHAR(9),CHAR(32))))  END) = #specialty.ListValue COLLATE DATABASE_DEFAULT
@@ -620,6 +624,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON RTRIM(#instruction_type.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN dim_detail_health.nhs_instruction_type = '' THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_instruction_type) END, 'Missing')
 	INNER JOIN #referral_reason
 		ON RTRIM(#referral_reason.ListValue) COLLATE DATABASE_DEFAULT = ISNULL(CASE WHEN LOWER(dim_detail_core_details.referral_reason) = '' THEN 'missing' ELSE LOWER(RTRIM(dim_detail_core_details.referral_reason)) END, 'missing')
+	--INNER JOIN #case_handler
+		--ON #case_handler.ListValue COLLATE DATABASE_DEFAULT = dim_fed_hierarchy_history.employeeid
 	LEFT OUTER JOIN #key_date_list_table
 		ON #key_date_list_table.client_code = dim_matter_header_current.client_code
 			AND #key_date_list_table.matter_number = dim_matter_header_current.matter_number
