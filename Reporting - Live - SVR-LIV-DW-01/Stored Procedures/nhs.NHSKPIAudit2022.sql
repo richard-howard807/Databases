@@ -287,6 +287,8 @@ THEN 0.5 ELSE 0 END AS [Total Points]
 , CASE WHEN appropriate_delegation = 'Not applicable' THEN 'N/A' ELSE appropriate_delegation END AS [Appropriate delegation?]
 , CASE WHEN magic_phone_call = 'Not applicable' THEN 'N/A' ELSE magic_phone_call END AS [Was there a magic phone call?]
 , CASE WHEN proactive_approval_np_sca = 'Not applicable' THEN 'N/A' ELSE proactive_approval_np_sca END AS [Proactive approval by NP / SCA?]
+,[Naming conventions used?] = cboNameConvUsed.cdDesc	
+,[Misfiled / inappropriate content?] = cboMisfiledInap.cdDesc
 
 
 FROM red_dw.dbo.dim_parent_detail
@@ -352,6 +354,19 @@ LEFT OUTER JOIN red_dw.dbo.dim_child_detail
 				 AND AuditComments.matter_number = dim_matter_header_current.matter_number
 LEFT JOIN red_dw.dbo.dim_detail_compliance
 ON dim_detail_compliance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT JOIN [MS_PROD].[dbo].[udMIAuditNHSSearchList] 
+	ON ms_fileid = fileID
+  
+/*cboNameConvUsed - Naming Convention Used*/
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboNameConvUsed' AND txtMSTable = 'udMIAuditNHSSearchList') cboNameConvUsed ON cboNameConvUsed.cdCode = [udMIAuditNHSSearchList].cboNameConvUsed
+
+/*cboMisfiledInap Misfiled / inappropriate content? */
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboMisfiledInap' AND txtMSTable = 'udMIAuditNHSSearchList') cboMisfiledInap ON cboMisfiledInap.cdCode = [udMIAuditNHSSearchList].cboMisfiledInap
 
 
 WHERE master_client_code='N1001'
