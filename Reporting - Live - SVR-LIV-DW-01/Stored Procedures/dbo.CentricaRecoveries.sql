@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -13,6 +15,9 @@ AS
 BEGIN 
 
 SELECT 'Centrica' AS Client,
+work_type_code,
+work_type_name,
+matter_owner_full_name,
 red_dw.dbo.dim_matter_worktype.work_type_name,
 red_dw.dbo.dim_matter_worktype.work_type_group ,
 client_balance,
@@ -124,7 +129,11 @@ WHEN PostLitFee.PostLitFeeType='SCT Fixed Costs' AND amount_recovery_sought >500
 WHEN PostLitFee.PostLitFeeType='FT- Non Fixed Costs' THEN curFTNonFix
 END AS PostLitFee
 ,PostLitFee.PostLitFeeType
-
+,CASE WHEN ISNULL(amount_recovery_sought,0) BETWEEN 0 AND 500.00 THEN amount_recovery_sought *0.20
+WHEN amount_recovery_sought BETWEEN 500.01 AND 2500.00 THEN amount_recovery_sought *0.15
+WHEN amount_recovery_sought BETWEEN 2500.01 AND 5000.00 THEN amount_recovery_sought *0.10
+WHEN amount_recovery_sought BETWEEN 5000.01 AND 10000.00 THEN amount_recovery_sought *0.5 END  +60.00
+AS [PreLitFee]
 FROM 
 red_dw.dbo.fact_dimension_main 
 LEFT JOIN  red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -248,5 +257,6 @@ AND reporting_exclusions = 0
 AND dim_detail_core_details.referral_reason='Recovery'
 --AND ms_only= 1 
 
+ORDER BY master_matter_number
 END 
 GO
