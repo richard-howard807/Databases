@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[STWThirdPartyRecoveriesReport]
 AS 
 BEGIN 
@@ -38,6 +39,8 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Reference]
 ,CASE WHEN date_claim_concluded IS NOT NULL THEN 
 DATEDIFF(DAY, date_instructions_received,dteTPAgreeComp)
 ELSE DATEDIFF(DAY, date_instructions_received,CONVERT(DATE, DATEADD(d, -( DAY(GETDATE()) ), GETDATE()))) END AS [Elapsed days]
+,wip AS [WIP]
+,disbursement_balance AS [Unbilled Disbursements]
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
