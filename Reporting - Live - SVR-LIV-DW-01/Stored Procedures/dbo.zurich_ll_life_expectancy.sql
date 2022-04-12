@@ -58,6 +58,10 @@ SELECT
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	INNER JOIN red_dw.dbo.fact_dimension_main
+		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 	INNER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
@@ -76,7 +80,8 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'Z1001'
-	AND dim_detail_claim.cit_claim = 'Yes'
+	--AND dim_detail_claim.cit_claim = 'Yes'
+	AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Large Loss'
 	AND ISNULL(dim_date.cal_year, 9999) >= 2019
 	AND ISNULL(dim_detail_core_details.injury_type_code, '') <> 'A00'
 	AND RTRIM(dim_detail_core_details.zurich_line_of_business) IN ('PUB', 'EMP', 'MOT')
