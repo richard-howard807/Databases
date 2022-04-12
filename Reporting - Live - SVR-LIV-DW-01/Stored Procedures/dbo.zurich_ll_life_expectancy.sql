@@ -24,7 +24,7 @@ SELECT
 	, dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number		AS [Weightmans ref]
 	, COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference)			AS [Zurich Ref]
 	, dim_matter_worktype.work_type_name			AS [Matter Type]
-	, dim_detail_core_details.injury_type_code + '-' + dim_detail_core_details.injury_type		AS [Injury Type]
+	, RTRIM(dim_detail_core_details.injury_type_code) + '-' + RTRIM(dim_detail_core_details.injury_type)		AS [Injury Type]
 	, dim_detail_outcome.outcome_of_case			AS [Settlement Type]
 	, dim_detail_core_details.claimants_date_of_birth		AS [Claimant DOB]
 	, CAST(dim_detail_core_details.ll05_capita_likely_settlement_date AS DATE)			AS [Anticipated Date of Settlement]
@@ -58,11 +58,11 @@ SELECT
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+	INNER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+	INNER JOIN red_dw.dbo.dim_detail_claim
 		ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
