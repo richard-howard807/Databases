@@ -375,6 +375,38 @@ Debt AS (
 			) AS PivotTable
 	),
 
+Debt_90 AS (
+	SELECT 'YTD' fin_month, fed_code,
+		PivotTable.Debt_90_Days,
+		PivotTable.Debt_31_90_Days
+	FROM (
+
+			SELECT dim_fed_hierarchy_history.fed_code,	
+			 CASE WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) BETWEEN 0 AND 30 THEN 'Debt_0_30_Days'  
+			 WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) BETWEEN 31 AND 90     THEN 'Debt_31_90_Days'  
+			 WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) > 90                  THEN 'Debt_90_Days' 
+			 END  AS [Days_Banding],	 
+			 SUM(f.amount_outstanding) Debt
+			FROM red_dw.dbo.fact_bill f
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = f.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK) ON dim_matter_header_current.fee_earner_code= fed_code collate database_default AND dss_current_flag='Y'   
+			WHERE f.bill_number != 'PURGE'
+			-- and dim_fed_hierarchy_history.fed_code = '4664'
+			AND f.amount_outstanding > 0
+			GROUP BY dim_fed_hierarchy_history.fed_code,  
+			 CASE WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) BETWEEN 0 AND 30 THEN 'Debt_0_30_Days'  
+			 WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) BETWEEN 31 AND 90     THEN 'Debt_31_90_Days'  
+			 WHEN DATEDIFF(DAY,cast(cast(f.dim_bill_date_key as varchar(10)) as date),GETDATE()) > 90                  THEN 'Debt_90_Days'  
+			 END
+		 
+		 ) x
+	PIVOT
+			(
+			MAX(Debt)
+			FOR [Days_Banding] IN ([Debt_0_30_Days], [Debt_31_90_Days], [Debt_90_Days]) 
+			) AS PivotTable
+	),
+
 DebtTarget AS (
 	SELECT  'YTD' fin_month, team, fact_team_debt_target.debt_target_ytd
 	FROM dbo.fact_team_debt_target
@@ -612,7 +644,11 @@ SELECT
 	Matterscapableofclosurelta.client_and_bill_balance client_and_bill_balance_lta, 
 	Matterscapableofclosurelta.client_balance client_balance_lta, 
 	Matterscapableofclosurelta.to_be_closed to_be_closed_lta,
-	main.Utilisation_Percent
+	main.Utilisation_Percent,
+	Debt_90.Debt_31_90_Days,
+	Debt_90.Debt_90_Days,
+	main.Utilisation_Percent,
+	main.Actaul_chargable_hours
 
 FROM (
 
@@ -686,6 +722,7 @@ LEFT OUTER JOIN RR_PY ON RR_PY.fed_code = main.fed_code AND Median_Fixed_Fee.fin
 LEFT OUTER JOIN LTA_Exceptions ON LTA_Exceptions.fed_code = main.fed_code AND LTA_Exceptions.fin_month = ISNULL(main.fin_month,'YTD')
 INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code = main.fed_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.activeud = 1
 LEFT OUTER JOIN DebtTarget ON DebtTarget.team = dim_fed_hierarchy_history.hierarchylevel4hist AND DebtTarget.fin_month = ISNULL(main.fin_month,'YTD') 
+LEFT OUTER JOIN Debt_90 ON Debt_90.fed_code = main.fed_code AND Debt_90.fin_month = ISNULL(main.fin_month,'YTD')
 WHERE ISNULL(main.fin_month,'YTD') IN ('YTD',CAST(@fin_month AS VARCHAR(2)))
 
 ORDER BY 3, 2
