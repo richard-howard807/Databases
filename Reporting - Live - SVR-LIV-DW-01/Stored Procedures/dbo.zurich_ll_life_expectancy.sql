@@ -22,6 +22,8 @@ SET NOCOUNT ON;
 SELECT 
 	dim_matter_header_current.matter_description			AS [Matter Description]
 	, dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number		AS [Weightmans ref]
+	, dim_fed_hierarchy_history.name			AS [Matter Owner]
+	, dim_fed_hierarchy_history.hierarchylevel4hist			AS [Matter Owner Team]
 	, COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference)			AS [Zurich Ref]
 	, dim_matter_worktype.work_type_name			AS [Matter Type]
 	, RTRIM(dim_detail_core_details.injury_type_code) + '-' + RTRIM(dim_detail_core_details.injury_type)		AS [Injury Type]
@@ -32,6 +34,7 @@ SELECT
 	, dim_detail_core_details.ll18_is_there_a_reduced_life_expectancy			AS [Is There a Reduced Life Expectancy]
 	, fact_detail_client.claimants_life_expectancy_estimate			AS [Claimant's Life Expectancy Prior to Injury]
 	, fact_detail_client.agreed_life_expectancy_estimate			AS [Agreed Life Expectancy After Injury]
+	, fact_detail_client.claimants_life_expectancy_estimate - fact_detail_client.agreed_life_expectancy_estimate		AS [Reduction in Life Expectancy]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.zurich_line_of_business) = 'PUB' THEN
 			'Public Liability'
@@ -80,7 +83,7 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'Z1001'
-	--AND dim_detail_claim.cit_claim = 'Yes'
+	AND dim_detail_claim.cit_claim = 'Yes'
 	AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Large Loss'
 	AND ISNULL(dim_date.cal_year, 9999) >= 2019
 	AND ISNULL(dim_detail_core_details.injury_type_code, '') <> 'A00'
