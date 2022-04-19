@@ -28,7 +28,7 @@ as
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS NVARCHAR(50)
 --, @hsd_director AS NVARCHAR(MAX);
---SET @Template='Claims Audit|NHSR';
+--SET @Template='NHSR';
 --SET @AuditYear='2021/2022';
 --SET @hsd_director = '';-- '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
 
@@ -106,57 +106,126 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 		UNPIVOT (auditeekey FOR akey IN ([Auditee Key 1], [Auditee Key 2], [Auditee Key 3]))pvt2
 		UNPIVOT (auditee_emp_key FOR empkey IN ([Auditee_Emp_key_1], [Auditee_Emp_key_2], [Auditee_Emp_key_3]))pvt3
 
-
 		WHERE  RIGHT(akey,1)=RIGHT(position,1)
 		and  RIGHT(empkey,1)=RIGHT(position,1)
 		
 		UNION	
 
 		--NHSR audits
-		select dim_matter_header_current.dim_matter_header_curr_key auditid,
-			dim_fed_hierarchy_history.employeeid		AS employeeid
-			, dim_matter_header_current.matter_owner_full_name		AS [Auditee Name]
-			, dim_fed_hierarchy_history.dim_fed_hierarchy_history_key		AS [Auditee key]
-			, dim_fed_hierarchy_history.employeeid		AS auditee_emp_key
-			, 1			AS [Auditee Position]
-			, dim_matter_header_current.client_code		AS [Client Code]
-			, dim_matter_header_current.matter_number		AS [Matter Number]
-			, dim_date.calendar_date		AS [Date]
-		--------------------------------MS team changing score logic------------------------------------------
-			, CASE
-				WHEN fact_child_detail.nhs_audit_score >= 90 THEN
-					'Pass'
-				WHEN fact_child_detail.nhs_audit_score BETWEEN 70 AND 90 THEN
-					'Warning'
-				ELSE
-					'Fail'
-			  END				AS [Status]	
-		------------------------------------------------------------------------------------------------------
-			, 'NHSR'		AS [Template]
-			, NULL		AS [Auditor]
-			, dim_date.fin_quarter		AS fin_quarter
-			, dim_date.fin_quarter_no		AS fin_quarter_no
-			, dim_date.fin_year		AS fin_year
-		--	SELECT DISTINCT dim_child_detail.*
-		FROM red_dw.dbo.dim_matter_header_current
-			INNER JOIN red_dw.dbo.fact_dimension_main
-				ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
-				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-			INNER JOIN red_dw.dbo.dim_parent_detail
-				ON dim_parent_detail.client_code = dim_matter_header_current.client_code
-					AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
-			INNER JOIN red_dw.dbo.fact_child_detail
-				ON fact_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
-			INNER JOIN red_dw.dbo.dim_date
-				ON dim_date.calendar_date = CAST(dim_parent_detail.nhs_audit_date AS DATE)
+		SELECT 
+			upvt3.auditid
+			,upvt3.employeeid
+			,upvt3.name AS [Auditee Name]
+			,auditee_key AS [Auditee key]
+			,auditee_emp_id
+			,CASE
+				WHEN position LIKE '%1%' THEN
+					1
+				WHEN position LIKE '%2%' THEN
+					2
+			 END					AS [Auditee Poistion]
+			,upvt3.[Client Code]
+			,upvt3.[Matter Number]
+			,upvt3.Date
+			,upvt3.Status
+			,upvt3.Template
+			,upvt3.Auditor
+			,upvt3.fin_quarter
+			,upvt3.fin_quarter_no
+			,upvt3.fin_year
+		FROM
+		(
+			SELECT dim_parent_detail.dim_parent_key auditid,
+				   dim_fed_hierarchy_history.employeeid AS employeeid,
+				   COALESCE(
+							   dim_child_detail.nhs_auditee_1,
+							   CAST(dim_matter_header_current.matter_owner_full_name AS NVARCHAR(255))
+						   ) AS [Auditee Name 1],
+				   dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS [Auditee Key 1],
+				   dim_fed_hierarchy_history.employeeid AS [Auditee Emp ID 1],
+				   auditee_2.nhs_auditee_2  AS [Auditee Name 2],
+				   auditee_2.auditee_two_key	AS [Auditee Key 2],
+				   auditee_2.auditee_two_emp_id		AS [Auditee Emp ID 2],
+				   dim_matter_header_current.client_code AS [Client Code],
+				   dim_matter_header_current.matter_number AS [Matter Number],
+				   dim_date.calendar_date AS [Date],
+				   --------------------------------MS team changing score logic------------------------------------------
+				   CASE
+					   WHEN fact_child_detail.nhs_audit_score >= 90 THEN
+						   'Pass'
+					   WHEN fact_child_detail.nhs_audit_score
+							BETWEEN 70 AND 90 THEN
+						   'Warning'
+					   ELSE
+						   'Fail'
+				   END AS [Status],
+				   ------------------------------------------------------------------------------------------------------
+				   'NHSR' AS [Template],
+				   NULL AS [Auditor],
+				   dim_date.fin_quarter AS fin_quarter,
+				   dim_date.fin_quarter_no AS fin_quarter_no,
+				   dim_date.fin_year AS fin_year
+			--	SELECT DISTINCT dim_child_detail.*
+			FROM red_dw.dbo.dim_matter_header_current
+				INNER JOIN red_dw.dbo.fact_dimension_main
+					ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+				INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+					ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+				INNER JOIN red_dw.dbo.dim_parent_detail
+					ON dim_parent_detail.client_code = dim_matter_header_current.client_code
+					   AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
+				INNER JOIN red_dw.dbo.dim_child_detail
+					ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+				INNER JOIN red_dw.dbo.fact_child_detail
+					ON fact_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+				INNER JOIN red_dw.dbo.dim_date
+					ON dim_date.calendar_date = CAST(dim_parent_detail.nhs_audit_date AS DATE)
+				LEFT OUTER JOIN
+				(
+					SELECT dim_parent_detail.dim_parent_key,
+						   dim_child_detail.nhs_auditee_2,
+						   ds_sh_ms_udmiauditnhssearchlist.cboauditee2,
+						   dim_fed_hierarchy_history.employeeid AS auditee_two_emp_id,
+						   dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS auditee_two_key
+					FROM red_dw.dbo.ds_sh_ms_udmiauditnhssearchlist
+						INNER JOIN red_dw.dbo.dim_parent_detail
+							ON dim_parent_detail.sequence_no = ds_sh_ms_udmiauditnhssearchlist.dim_child_parent_seq
+						INNER JOIN red_dw.dbo.dim_child_detail
+							ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+						INNER JOIN MS_Prod..dbUser
+							ON ds_sh_ms_udmiauditnhssearchlist.cboauditee2 = dbUser.usrID
+						LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+							ON dim_fed_hierarchy_history.windowsusername COLLATE DATABASE_DEFAULT = REPLACE(dbUser.usrADID, 'SBC\', '')
+							   AND dim_fed_hierarchy_history.activeud = 1
+							   AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
+					WHERE ds_sh_ms_udmiauditnhssearchlist.cboauditee2 IS NOT NULL
+				) AS auditee_2
+					ON auditee_2.dim_parent_key = dim_parent_detail.dim_parent_key
 			INNER JOIN #Template
 				ON #Template.ListValue = 'NHSR'
-		WHERE
-			dim_parent_detail.nhs_audit_date IS NOT NULL
-			AND fact_child_detail.nhs_audit_score IS NOT NULL
-			AND dim_matter_header_current.master_client_code <> '30645'
-			AND dim_date.calendar_date >= '2021-09-01'
+			WHERE dim_parent_detail.nhs_audit_date IS NOT NULL
+				  AND fact_child_detail.nhs_audit_score IS NOT NULL
+				  AND dim_matter_header_current.master_client_code <> '30645'
+				  AND dim_date.calendar_date >= '2021-09-01'
+				  --AND dim_parent_detail.dim_parent_key = 471917
+		) AS nhs_audits
+			UNPIVOT
+			(
+				name
+				FOR position IN ([Auditee Name 1], [Auditee Name 2])
+			)   AS upvt1 
+			UNPIVOT
+			(
+				auditee_key
+				FOR akey IN ([Auditee Key 1], [Auditee Key 2])
+			)   AS upvt2 
+			UNPIVOT
+			(
+				auditee_emp_id
+				FOR empkey IN ([Auditee Emp ID 1], [Auditee Emp ID 2])
+			) AS upvt3
+		WHERE RIGHT(akey, 1) = RIGHT(position, 1)
+			  AND RIGHT(empkey, 1) = RIGHT(position, 1)
 
 		UNION	
 
