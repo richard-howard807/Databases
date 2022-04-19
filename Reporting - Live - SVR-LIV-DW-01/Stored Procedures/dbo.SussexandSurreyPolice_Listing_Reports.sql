@@ -11,6 +11,7 @@ Description:		This drives the Police listing report for Sussex and Surrey. Susse
 Current Version:	Initial Create
 ====================================================
 --ES 2022/03/16 #139463, added suffolk client code 817395
+--JL 2022/04/19 #143521, added new field for area column 
 ====================================================
 
 */
@@ -48,6 +49,7 @@ SELECT
 ,Billed.TotalBilled as [Total Billed]
 ,Billed.ProfitCostsBilled as [Profit Costs]
 ,Billed.[Disbursementsincvat] AS Disbursements
+,dim_detail_core_details.suffolk_police_area
 
 
 
@@ -58,6 +60,7 @@ left join red_dw..fact_bill_matter on fact_dimension_main.master_fact_key = fact
 left join red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key 
 left join red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 left join red_dw.dbo.dim_detail_advice ON red_dw.dbo.dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
+left join red_dw.dbo. dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 left join reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.work_type_name = [dbo].[PoliceWorkTypes].[Work Type] COLLATE DATABASE_DEFAULT
 inner join 
        (                       
@@ -85,4 +88,5 @@ AND dim_matter_header_current.matter_number <>'ML'
 
 END
 
+  
 GO
