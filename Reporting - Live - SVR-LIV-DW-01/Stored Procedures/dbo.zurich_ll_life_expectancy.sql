@@ -8,6 +8,8 @@ GO
 -- Create date: 2022-04-12
 -- Description:	Ticket 143331 New report for Zurich Large loss matters showing life expectancy at (anticipated) settlement date 
 -- =============================================
+-- Ticket #144151 - columns added
+-- =============================================
 
 CREATE PROCEDURE [dbo].[zurich_ll_life_expectancy] --EXEC [dbo].[zurich_ll_life_expectancy]
 
@@ -30,11 +32,16 @@ SELECT
 	, dim_detail_outcome.outcome_of_case			AS [Settlement Type]
 	, dim_detail_core_details.claimants_date_of_birth		AS [Claimant DOB]
 	, CAST(dim_detail_core_details.ll05_capita_likely_settlement_date AS DATE)			AS [Anticipated Date of Settlement]
-	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)			AS [Date of Settlement]
+	, CAST(dim_detail_outcome.zurich_result_date AS DATE)			AS [Date of Settlement]
 	, dim_detail_core_details.ll18_is_there_a_reduced_life_expectancy			AS [Is There a Reduced Life Expectancy]
 	, fact_detail_client.claimants_life_expectancy_estimate			AS [Claimant's Life Expectancy Prior to Injury]
 	, fact_detail_client.agreed_life_expectancy_estimate			AS [Agreed Life Expectancy After Injury]
 	, fact_detail_client.claimants_life_expectancy_estimate - fact_detail_client.agreed_life_expectancy_estimate		AS [Reduction in Life Expectancy]
+	, fact_detail_client.defendants_life_expectancy_estimate			AS [Defendant's Life Expectancy Estimate (Age)]
+	, dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000			AS [Will Total Gross Damages Reserve Exceed £350,000]
+	, dim_detail_claim.future_loss_claim			AS [Is There a Future Loss Claim?]
+	, dim_detail_outcome.ll00_settlement_basis		AS [Settlement Basis]
+	, dim_detail_outcome.global_settlement			AS [Global Settlement]
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.zurich_line_of_business) = 'PUB' THEN
 			'Public Liability'
