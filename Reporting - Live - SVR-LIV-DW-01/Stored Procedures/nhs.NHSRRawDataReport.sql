@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -24,7 +25,7 @@ DECLARE @GraphStart AS DATE
 DECLARE @GraphEnd AS DATE
 
 SET @GraphStart='2021-04-01'
-SET @GraphEnd='2022-04-30'
+SET @GraphEnd='2022-03-31'
 
 
 

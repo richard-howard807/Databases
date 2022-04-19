@@ -17,7 +17,7 @@ GO
 --			#125557, ES added additional details
 --		   JL 07-04-22 added join for def_trust param for second defend trust #141539
 -- =============================================
-CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
+CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview_testversion]
 (
 		@def_trust AS VARCHAR(MAX)
 		, @nhs_specialty AS VARCHAR(MAX)

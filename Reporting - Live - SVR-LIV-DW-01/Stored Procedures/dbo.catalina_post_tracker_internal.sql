@@ -156,6 +156,7 @@ SELECT
 	, #catalina_docs.docDesc			AS [Document Description]
 	, #catalina_docs.tskDesc			AS [Task Description]
 	, #catalina_docs.docExtension	AS [Document Type]
+	,dim_detail_claim.[lead_or_follow] AS [Lead/Follow] 
 FROM #catalina_docs
 	LEFT OUTER JOIN #doc_journey
 		ON CAST(#catalina_docs.docID AS NVARCHAR) = #doc_journey.ms_doc_id
@@ -163,6 +164,8 @@ FROM #catalina_docs
 		ON #catalina_matters.ms_fileid = #catalina_docs.ms_fileid
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = #catalina_matters.dim_matter_header_curr_key
+	LEFT JOIN red_dw.dbo.dim_detail_claim
+	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 
 

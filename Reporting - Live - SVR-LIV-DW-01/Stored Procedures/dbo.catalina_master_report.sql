@@ -98,6 +98,7 @@ SELECT
 	, fact_finance_summary.disbursement_balance			AS [Unbilled Disbursements]
 	, #last_bill_data.last_bill_date				AS [Last Bill Date]
 	, CAST(fact_matter_summary_current.last_time_transaction_date AS DATE)				AS [Last Time Transaction Date]
+	,dim_detail_claim.[lead_or_follow] AS [Lead/Follow] 
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.fact_dimension_main
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -123,6 +124,9 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON #last_bill_data.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #revenue
 		ON #revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+   LEFT JOIN red_dw.dbo.dim_detail_claim
+	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND (dim_matter_header_current.master_client_code = 'W25984'

@@ -12,6 +12,8 @@ GO
 -- Description:	Took the code out of the report and put it into a sp
 -- =============================================
 -- 20190424 LD Amended so that people with leaver dates in the future still appear on the report.
+
+
 CREATE PROCEDURE [dbo].[MI_Exception_Summary_firm_wide]
 (
 @FeeEarners AS NVARCHAR(MAX)
@@ -46,6 +48,9 @@ WHERE dim_fed_hierarchy_history_key IN ('+@FeeEarners+')'
 INSERT into #tempfeearners 
 exec sp_executesql @sql
 
+
+
+
 SELECT dim_fed_hierarchy_history.employeeid,
 		CASE WHEN date_closed_case_management IS NULL THEN 0 ELSE 1 END open_closed,
        --COUNT(dim_matter_header_current.case_id) cases
@@ -59,7 +64,7 @@ FROM red_dw.dbo.fact_dimension_main
     LEFT JOIN red_dw.dbo.dim_detail_outcome
         ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
     LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history
-        ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+        ON dim_fed_hierarchy_history.fed_code = dim_matter_header_current.fee_earner_code and dim_fed_hierarchy_history.dss_current_flag = 'Y'
 	LEFT JOIN red_Dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE fact_dimension_main.client_code <> 'ml'
       AND 1 = 1
@@ -83,6 +88,9 @@ employeeid NOT IN
 AND hierarchylevel2hist = 'Legal Ops - Claims' AND work_type_code <> '0032'
 
 GROUP BY dim_fed_hierarchy_history.employeeid,date_closed_case_management
+
+
+
 
 SELECT hir.employeeid,
        hir.hierarchylevel2hist buisnessline,

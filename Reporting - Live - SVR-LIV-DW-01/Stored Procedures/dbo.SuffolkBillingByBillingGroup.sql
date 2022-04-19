@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[SuffolkBillingByBillingGroup] 
 (
 @NMI1056 AS VARCHAR(MAX)
@@ -48,10 +49,11 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
  ON fact_dimension_main.dim_claimant_thirdpart_key=dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key
 LEFT OUTER JOIN red_dw.dbo.dim_defendant_involvement
  ON fact_dimension_main.dim_defendant_involvem_key=dim_defendant_involvement.dim_defendant_involvem_key
-
+LEFT OUTER JOIN ms_prod.dbo.udMIClientSuffolkPolice 
+ ON a.ms_fileid=fileID
  
  
-WHERE billing_group = RTRIM(@NMI1056)
+WHERE cboBillGroup = RTRIM(@NMI1056)
 AND a.master_client_code='817395'
 
 SELECT Matters.Client,Matters.Matter,WorkRate AS ChargeRate
