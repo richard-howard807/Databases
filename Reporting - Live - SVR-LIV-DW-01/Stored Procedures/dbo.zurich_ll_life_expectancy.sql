@@ -95,7 +95,7 @@ WHERE 1 = 1
 	AND ISNULL(dim_date.cal_year, 9999) >= 2019
 	AND ISNULL(dim_detail_core_details.injury_type_code, '') <> 'A00'
 	AND RTRIM(dim_detail_core_details.zurich_line_of_business) IN ('PUB', 'EMP', 'MOT')
-
+	AND dim_matter_header_current.ms_only = 1
 
 END	
 GO
