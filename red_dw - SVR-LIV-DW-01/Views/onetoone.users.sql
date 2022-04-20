@@ -40,6 +40,9 @@ AND emp.windowsusername IS NOT NULL
 AND ISNULL(dim_employee.deleted_from_cascade,0) <> 1
 
 
+
 GO
 GRANT SELECT ON  [onetoone].[users] TO [SBC\People - Team - Development]
+GO
+GRANT SELECT ON  [onetoone].[users] TO [SBC\SQL - DataReader access to DW-01 For Software Tester]
 GO

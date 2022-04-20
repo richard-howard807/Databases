@@ -75,5 +75,7 @@ CREATE TABLE [onetoone].[user_stats]
 [Actual_chargable_hours] [numeric] (38, 6) NULL
 ) ON [WRK_TAB]
 GO
+GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL - DataReader access to DW-01 For Software Tester]
+GO
 GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL ROLE - DS_MI_ANALYST]
 GO
