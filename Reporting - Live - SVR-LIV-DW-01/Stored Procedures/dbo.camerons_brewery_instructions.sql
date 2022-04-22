@@ -12,6 +12,7 @@ GO
 				Shows number of instructions received, split by Current Status
 -- Update: #91950 change of columns needed by client
 -- JB ticket #136881 - changed revenue/disb figures to look at 3E due to WB matters revenue not being in warehouse pre merger 
+-- JB ticket #144184 - added W26368 client code
 -- =============================================
 */
 
@@ -58,7 +59,7 @@ FROM (
 			INNER JOIN red_dw.dbo.dim_matter_header_current	
 				ON dim_matter_header_current.ms_fileid = dbFile.fileID
 		WHERE 1 = 1 
-			AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107', '3794', 'W26362')
+			AND dim_matter_header_current.master_client_code IN ('W22555', 'W24107', '3794', 'W26362', 'W26368')
 			AND ARList IN ('Bill','BillRev')
 		GROUP BY
 			dim_matter_header_current.dim_matter_header_curr_key
@@ -117,7 +118,7 @@ FROM red_dw.dbo.fact_dimension_main
 		ON #cb_bills.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND (
-		dim_matter_header_current.master_client_code IN ('W22555', 'W24107')
+		dim_matter_header_current.master_client_code IN ('W22555', 'W24107', 'W26368')
 		OR (dim_matter_header_current.master_client_code IN ('3794', 'W26362') AND dim_matter_header_current.date_closed_practice_management IS NULL)
 		)
 	--AND dim_matter_header_current.master_matter_number = '211'
