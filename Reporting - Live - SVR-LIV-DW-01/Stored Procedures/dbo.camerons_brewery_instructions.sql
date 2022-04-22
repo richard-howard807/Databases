@@ -73,6 +73,7 @@ GROUP BY
 SELECT 
 	dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number			AS [MatterSphere Client/Matter Number]
 	, dim_matter_header_current.matter_owner_full_name			AS [Case Handler]
+	, dim_matter_header_current.client_name					AS [Client Name]
 	, dim_matter_header_current.matter_description			AS [Matter Description]
 	, dim_file_notes.external_file_notes					AS [Present Position]
 	, CASE
