@@ -15,18 +15,18 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Reference]
 ,dim_detail_incident.[sap_code] AS [SAP Order number]
 ,txtInvoiceNum AS [Invoice Number - Legacy Claims]
 ,dim_detail_client.[subsidiary] AS [Subsidiary]
-,cboCountyDiv AS [County/ Division]
+,cboCountyDiv.cdDesc  AS [County/ Division]  -- udMICoreSTW.cboCountyDiv--
 ,dim_detail_claim.[stw_waste_or_water] AS [Water/Waste]
-,cboDamagedInfr AS [Damaged Infrastructure]
-,dteCompPackRec AS [Date Complete Pack Received]
+,cboDamagedInfr.cdDesc AS [Damaged Infrastructure] --udMICoreSTW.cboDamagedInfr--
+,red_dw.dbo.datetimelocal(dteCompPackRec) AS [Date Complete Pack Received]
 ,fact_detail_reserve_detail.[recovery_reserve] AS [ST Claim Costs submitted]
 ,curRealExpecRec AS [Realistic expected recovery amount]
-,cboCurrentPos AS [Present position ]
-,cboLiabPos AS [Liability Position]
-,cboReasDenyLiab AS [Reason for denying liability]
-,dteTPAgreeComp AS [TP Agreement date / date completed]
+,cboCurrentPos.cdDesc AS [Present position ] --udMICoreSTW.cboCurrentPos
+,cboLiabPos.cdDesc AS [Liability Position] --udMICoreSTW.cboLiabPos 
+,cboReasDenyLiab.cdDesc AS [Reason for denying liability] --udMICoreSTW.cboReasDenyLiab
+,red_dw.dbo.datetimelocal(dteTPAgreeComp) AS [TP Agreement date / date completed]
 ,curTotAmountRec AS [Costs Recovered]
-,cboReasRedRec AS [Reason for Reduced Recovery]
+,cboReasRedRec.cdDesc AS [Reason for Reduced Recovery] --udMICoreSTW.cboReasRedRec
 ,curInstalPayPM AS [Instalment Payments per month]
 ,client_account_balance_of_matter AS [Client account balance]
 ,defence_costs_billed AS [Revenue Billed]
@@ -37,7 +37,7 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Reference]
 ,ISNULL(curTotAmountRec,0) - ISNULL(defence_costs_billed,0) AS [Net amount recovered]
 ,LastBill.LastNonDisbBill AS [Fee billing month and year]
 ,CASE WHEN date_claim_concluded IS NOT NULL THEN 
-DATEDIFF(DAY, date_instructions_received,dteTPAgreeComp)
+DATEDIFF(DAY, date_instructions_received,red_dw.dbo.datetimelocal(dteTPAgreeComp))
 ELSE DATEDIFF(DAY, date_instructions_received,CONVERT(DATE, DATEADD(d, -( DAY(GETDATE()) ), GETDATE()))) END AS [Elapsed days]
 ,wip AS [WIP]
 ,disbursement_balance AS [Unbilled Disbursements]
@@ -54,6 +54,42 @@ LEFT JOIN red_dw.dbo.dim_detail_claim
  ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN MS_Prod.dbo.udMICoreSTW
  ON ms_fileid=udMICoreSTW.fileID
+
+ /*County/ Division --udMICoreSTW.cboCountyDiv */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboCountyDiv' AND txtMSTable = 'udMICoreSTW') cboCountyDiv ON cboCountyDiv.cdCode = udMICoreSTW.cboCountyDiv
+
+ /*[Damaged Infrastructure] --udMICoreSTW.cboDamagedInfr */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboDamagedInfr' AND txtMSTable = 'udMICoreSTW') cboDamagedInfr ON cboDamagedInfr.cdCode = udMICoreSTW.cboDamagedInfr
+--
+ /*[Present position ] --udMICoreSTW.cboCurrentPos */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboCurrentPos' AND txtMSTable = 'udMICoreSTW') cboCurrentPos ON cboCurrentPos.cdCode = udMICoreSTW.cboCurrentPos
+
+ /*--[Liability Position] --udMICoreSTW.cboLiabPos  */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboLiabPos' AND txtMSTable = 'udMICoreSTW') cboLiabPos ON cboLiabPos.cdCode = udMICoreSTW.cboLiabPos
+--
+ /*[Reason for denying liability] --udMICoreSTW.cboReasDenyLiab */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboReasDenyLiab' AND txtMSTable = 'udMICoreSTW') cboReasDenyLiab ON cboReasDenyLiab.cdCode = udMICoreSTW.cboReasDenyLiab
+ 
+ /*[Reason for Reduced Recovery] --udMICoreSTW.cboReasRedRec */ 
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboReasRedRec' AND txtMSTable = 'udMICoreSTW') cboReasRedRec ON cboReasRedRec.cdCode = udMICoreSTW.cboReasRedRec
+
+
+
+
+
+
 LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.client_code = dim_matter_header_current.client_code
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
@@ -75,6 +111,8 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS LastBill
  ON LastBill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE master_client_code='257248'
 AND  dim_detail_claim.[stw_work_type] ='Third Party Recoveries'
+
+ORDER BY master_matter_number
 
 END
 
