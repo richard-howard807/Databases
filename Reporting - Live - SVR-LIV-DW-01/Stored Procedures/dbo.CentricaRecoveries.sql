@@ -8,6 +8,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -16,7 +17,6 @@ BEGIN
 
 SELECT 'Centrica' AS Client,
 work_type_code,
-work_type_name,
 matter_owner_full_name,
 red_dw.dbo.dim_matter_worktype.work_type_name,
 red_dw.dbo.dim_matter_worktype.work_type_group ,
@@ -74,7 +74,7 @@ red_dw.dbo.dim_detail_core_details.incident_date,
 red_dw.dbo.dim_matter_header_current.matter_owner_full_name  [Matter Owner],
 red_dw..dim_detail_finance.output_wip_fee_arrangement  [Fee Type],
 dim_detail_claim.[dst_insured_client_name] AS [Insured Client Name],
-red_dw.dbo.fact_detail_recovery_detail.amount_recovery_sought AS [Recovery Sought],
+--red_dw.dbo.fact_detail_recovery_detail.amount_recovery_sought AS [Recovery Sought],
 red_dw.dbo.fact_finance_summary.wip,
 ISNULL(red_dw.dbo.fact_detail_recovery_detail.recovery_claimants_our_client_damages,0) + ISNULL(recovery_claimants_our_client_costs,0) AS [Total Recovery],
 
