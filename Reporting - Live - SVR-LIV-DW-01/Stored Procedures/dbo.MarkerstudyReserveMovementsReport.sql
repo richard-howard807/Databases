@@ -16,6 +16,7 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
   DROP TABLE IF EXISTS #DamagesReserveChanges
  SELECT  x.master_fact_key, 
   [Damages Reserve Set at Initial Report (first damages reserve input into MI)]  = MAX(CASE WHEN x.RN = 1 THEN x.damages_reserve_rsa END) ,
+  [Date 1st damages reserve figure was input into MI ] = MAX(CASE WHEN x.RN = 1 THEN x.transaction_calendar_date END),
   [Second damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 2 THEN x.damages_reserve_rsa END),
   [Date second damages reserve figure was input into MI ] = MAX(CASE WHEN x.RN = 2 THEN x.transaction_calendar_date END), 	
   [Third damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 3 THEN x.damages_reserve_rsa END), 
@@ -24,7 +25,8 @@ CREATE PROCEDURE [dbo].[MarkerstudyReserveMovementsReport]
   [Date fourth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 4 THEN x.transaction_calendar_date END), 
   [Fifth damages reserve figure input into MI] = MAX(CASE WHEN x.RN = 5 THEN x.damages_reserve_rsa END),
   [Date fifth damages reserve figure was input into MI] = MAX(CASE WHEN x.RN = 5 THEN x.transaction_calendar_date END) ,
-  [Damages Reserve Change Count] = MAX(x.RN)
+  [Damages Reserve Change Count] = MAX(x.RN),
+  [Max Transaction Date] = MAX(x.transaction_calendar_date)
  INTO #DamagesReserveChanges
  FROM 
  
@@ -60,6 +62,10 @@ WHERE a.RN = 1 AND a.damages_reserve_rsa IS NOT NULL  AND a.damages_reserve_rsa 
 
 ) x 
 GROUP BY x.master_fact_key
+
+
+
+
 
 
 SELECT 
@@ -111,6 +117,12 @@ END,
   [Fifth damages reserve figure input into MI],
   [Date fifth damages reserve figure was input into MI] ,
 
+  [Date Latest Total Damages Reserve] = CASE WHEN [Damages Reserve Change Count] = 1 THEN [Date 1st damages reserve figure was input into MI ]
+	 WHEN [Damages Reserve Change Count] = 2 THEN [Date second damages reserve figure was input into MI ]
+	 WHEN [Damages Reserve Change Count] = 3 THEN [Date third damages reserve figure was input into MI]
+	 WHEN [Damages Reserve Change Count] = 4 THEN [Date fourth damages reserve figure was input into MI]
+	 WHEN [Damages Reserve Change Count] = 5 THEN [Date fifth damages reserve figure was input into MI]
+	 WHEN [Damages Reserve Change Count] >5 THEN [Max Transaction Date] END,
 
   /* Settlement Month */
   [Settlement Month] = LEFT(DATENAME(MONTH, dim_detail_outcome.[date_costs_settled]), 3) +'-'+CAST(YEAR(dim_detail_outcome.[date_costs_settled]) AS VARCHAR(4))
