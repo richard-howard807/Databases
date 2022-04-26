@@ -71,7 +71,7 @@ SELECT
 	 hierarchylevel2hist AS [Division]
 	, hierarchylevel3hist AS [Department]
 	, hierarchylevel4hist AS [Team]
-	, name AS [Name]
+	, dim_fed_hierarchy_history.display_name AS [Name]
 	, remaining_fte_working_days_year AS [Annual Working Days]
 	, CASE WHEN ROW_NUMBER() OVER (PARTITION BY name ORDER BY #MonthlyHolidays.fin_month_no)=1 THEN totalentitlementdays ELSE 0 END AS [Annual Holiday Allowance]
 	, #MonthlyHolidays.taken AS [Holidays Taken in Month]
