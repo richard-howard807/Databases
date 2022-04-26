@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[MatterFeedbackDataQualityReport] 
 AS 
 
@@ -26,6 +27,14 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,wip AS [WIP Balance]
 ,last_time_transaction_date AS [Date of last time posting]
 ,DATEDIFF(DAY,last_time_transaction_date,GETDATE()) AS [Days since last time posting]
+,ClientAssoc.[Client AssocEmail]
+,ClientAssoc.[Client ContactDefault]
+,InsurerClientAssoc.[Insurer AssocEmail]
+,InsurerClientAssoc.[Insurer ContactDefault]
+,dim_matter_header_current.fixed_fee_amount AS [Fixed Fee Amount]
+,clients_claims_handler_surname_forename
+,matter_category
+,work_type_name
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -70,7 +79,53 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
  AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
- WHERE dim_matter_header_current.date_closed_case_management IS NULL
+LEFT OUTER JOIN
+(
+SELECT fileID,STRING_AGG(assocEmail,',') AS [Insurer AssocEmail]
+,STRING_AGG(DefaultEmail,',') AS [Insurer ContactDefault]
+FROM ms_prod.config.dbAssociates
+LEFT JOIN(SELECT 
+    Email.contID,
+    Email.Email AS DefaultEmail
+FROM 
+(
+SELECT contID,contEmail AS Email ,ROW_NUMBER() OVER (PARTITION BY contID ORDER BY contDefaultOrder ASC)  AS xorder
+FROM MS_Prod.dbo.dbContactEmails WHERE   contActive=1
+) AS Email
+WHERE Email.xorder=1
+) AS DefaultEmail
+ ON DefaultEmail.contID = dbAssociates.contID
+WHERE assocType='INSURERCLIENT'
+AND dbAssociates.assocActive=1
+AND (DefaultEmail IS NOT NULL OR assocEmail IS NOT NULL)
+GROUP BY fileID
+) AS InsurerClientAssoc
+ ON ms_fileid=InsurerClientAssoc.fileID
+LEFT OUTER JOIN 
+(
+SELECT fileID,STRING_AGG(assocEmail,',') AS [Client AssocEmail]
+,STRING_AGG(DefaultEmail,',') AS [Client ContactDefault]
+FROM ms_prod.config.dbAssociates
+LEFT JOIN(SELECT 
+    Email.contID,
+    Email.Email AS DefaultEmail
+FROM 
+(
+SELECT contID,contEmail AS Email ,ROW_NUMBER() OVER (PARTITION BY contID ORDER BY contDefaultOrder ASC)  AS xorder
+FROM MS_Prod.dbo.dbContactEmails WHERE   contActive=1
+) AS Email
+WHERE Email.xorder=1
+) AS DefaultEmail
+ ON DefaultEmail.contID = dbAssociates.contID
+WHERE assocType='CLIENT'
+AND dbAssociates.assocActive=1
+AND (DefaultEmail IS NOT NULL OR assocEmail IS NOT NULL)
+GROUP BY fileID
+) AS ClientAssoc
+ ON ms_fileid=ClientAssoc.fileID
+LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+WHERE dim_matter_header_current.date_closed_case_management IS NULL
  AND master_matter_number <>'0'
  AND hierarchylevel2hist IN ('Legal Ops - LTA','Legal Ops - Claims')
 
