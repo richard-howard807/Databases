@@ -65,6 +65,8 @@ SELECT
 , dim_detail_finance.output_wip_fee_arrangement AS [Fee Arrangement] 
 , fact_finance_summary.fixed_fee_amount AS [Fixed fee amount]
 , 1 AS [Number of cases]
+, [OriginalDeparture].Longitude AS [Original Departure Longitude]
+, [OriginalDeparture].Latitude AS [Original Departure Latitude]
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -86,6 +88,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_client
 ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
+LEFT OUTER JOIN Reporting.dbo.Airports AS [OriginalDeparture]
+ON dim_detail_client.wizz_original_departure_airport=[OriginalDeparture].Airport COLLATE DATABASE_DEFAULT
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
