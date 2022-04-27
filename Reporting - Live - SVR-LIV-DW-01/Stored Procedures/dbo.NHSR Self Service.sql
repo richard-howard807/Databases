@@ -10,6 +10,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -1241,23 +1242,35 @@ GROUP BY fact_bill_activity.master_fact_key) [RevenueAmount] ON [RevenueAmount].
 LEFT OUTER JOIN 
 (
 SELECT dim_matter_header_curr_key
-,iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Opened]
+,IIF(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Opened]
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_bill_date
  ON CONVERT(DATE,date_opened_case_management,103)=
  CONVERT(DATE,bill_date,103)
-WHERE client_group_name = 'NHS Resolution'
+WHERE client_group_name = 'NHS Resolution' OR client_code IN 
+(
+'00043006','00013994','00043006','00195691','00334312','00451649','00452904','00468733',
+'00516358','00658192','00707938','00720451','00742694','00866428','09008761','125409T',
+'51130A','TR00006','TR00010','TR00023','TR00024','W15380','W15414','W15508','W15524',
+'W15602','W15605','W18173','W18543','W18697','W18762','W19835','W19836','W20891',
+'W21443','W21617')
 )  AS NHSFinYearOpened
  ON NHSFinYearOpened.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN 
 (
 SELECT dim_matter_header_curr_key
-,iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Closed]
+,IIF(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Closed]
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.dim_bill_date
  ON CONVERT(DATE,date_closed_case_management,103)=
  CONVERT(DATE,bill_date,103)
-WHERE client_group_name = 'NHS Resolution'
+WHERE client_group_name = 'NHS Resolution' OR client_code IN 
+(
+'00043006','00013994','00043006','00195691','00334312','00451649','00452904','00468733',
+'00516358','00658192','00707938','00720451','00742694','00866428','09008761','125409T',
+'51130A','TR00006','TR00010','TR00023','TR00024','W15380','W15414','W15508','W15524',
+'W15602','W15605','W18173','W18543','W18697','W18762','W19835','W19836','W20891',
+'W21443','W21617')
 )  AS NHSFinYearClosed
  ON NHSFinYearClosed.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 

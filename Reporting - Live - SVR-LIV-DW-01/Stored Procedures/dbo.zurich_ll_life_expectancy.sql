@@ -41,7 +41,8 @@ SELECT
 	, dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000			AS [Will Total Gross Damages Reserve Exceed £350,000]
 	, dim_detail_claim.future_loss_claim			AS [Is There a Future Loss Claim?]
 	, dim_detail_outcome.ll00_settlement_basis		AS [Settlement Basis]
-	, dim_detail_outcome.global_settlement			AS [Global Settlement]
+	--, dim_detail_outcome.global_settlement			AS [Global Settlement]--REMOVED AS PER TICKET #145305
+	, dim_detail_future_care.[global_settlement]  AS [Global Settlement]   --ADDDE AS PER TICKET #145305
 	, CASE
 		WHEN RTRIM(dim_detail_core_details.zurich_line_of_business) = 'PUB' THEN
 			'Public Liability'
@@ -65,6 +66,8 @@ SELECT
 						0 
 				END				AS [Claimant's Age at Settlement]
 	, IIF(dim_detail_outcome.date_claim_concluded IS NULL, 'Live', 'Settled')			AS claim_status
+	,dim_detail_core_details.[ll01_sex]	 AS [Claimant Sex]
+	
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
@@ -87,6 +90,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_date.calendar_date = CAST(dim_detail_outcome.date_claim_concluded AS DATE)
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_client
 		ON fact_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_future_care
+		ON dim_detail_future_care.dim_detail_future_care_key = fact_dimension_main.dim_detail_future_care_key
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'Z1001'
