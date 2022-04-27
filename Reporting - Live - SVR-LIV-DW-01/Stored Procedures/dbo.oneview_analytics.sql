@@ -33,7 +33,7 @@ SELECT
 	, ISNULL(ds_sh_matomo_log_link_visit_action.time_spent, 0)		AS [Time Spent Seconds]
 	, ds_sh_matomo_log_visit.visit_first_action_time
 	, ds_sh_matomo_log_visit.visit_last_action_time
-	--, ds_sh_matomo_log_link_visit_action.server_time
+	, ds_sh_matomo_log_link_visit_action.server_time
 	, CAST(ds_sh_matomo_log_action.name AS VARCHAR(255))				AS [URL Visited]	
 	, CASE
 		WHEN RIGHT(CAST(ds_sh_matomo_log_action.name AS VARCHAR(400)), 1) = '/' THEN
@@ -48,7 +48,7 @@ FROM red_dw.dbo.ds_sh_matomo_log_visit
 	INNER JOIN red_dw.dbo.ds_sh_matomo_log_action
 		ON ds_sh_matomo_log_action.idaction = ds_sh_matomo_log_link_visit_action.idaction_url
 	INNER JOIN #client
-		ON #client.ListValue COLLATE DATABASE_DEFAULT = ds_sh_matomo_log_link_visit_action.custom_dimension_2
+		ON #client.ListValue COLLATE DATABASE_DEFAULT = ds_sh_matomo_log_visit.custom_dimension_2
 WHERE
 	ds_sh_matomo_log_visit.idsite = 4
 	AND ds_sh_matomo_log_visit.user_id IS NOT NULL
@@ -56,7 +56,7 @@ WHERE
 	AND (@end_date IS NULL OR CAST(ds_sh_matomo_log_link_visit_action.server_time AS DATE) <= @end_date)
 ORDER BY
 	ds_sh_matomo_log_visit.idvisit
-	, [Date Logged on]
+	, ds_sh_matomo_log_link_visit_action.server_time
 END	
 
 GO
