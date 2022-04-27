@@ -9,6 +9,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -467,7 +468,9 @@ dim_detail_health.nhs_scheme IN
            dim_detail_core_details.[insured_departmentdepot] AS [Insured Department],
            dim_detail_core_details.insured_departmentdepot_postcode AS [Insured Department Depot Postcode],
            dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
+		   [FY Opened],
            dim_matter_header_current.date_closed_case_management AS [Date Case Closed],
+		   [FY Closed],
           -- dim_detail_critical_mi.date_closed AS [Converge Date Closed],
            RTRIM(dim_detail_core_details.present_position) AS [Present Position],
             --dim_detail_critical_mi.claim_status AS [Converge Claim Status],
@@ -1234,6 +1237,29 @@ LEFT OUTER JOIN (SELECT fact_bill_billed_time_activity.master_fact_key, SUM(fact
 				GROUP BY fact_bill_billed_time_activity.master_fact_key) AS [BilledHours] ON [BilledHours].master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN (SELECT master_fact_key, SUM(bill_amount) bill_amount FROM red_dw.dbo.fact_bill_activity
 GROUP BY fact_bill_activity.master_fact_key) [RevenueAmount] ON [RevenueAmount].master_fact_key = fact_dimension_main.master_fact_key
+
+LEFT OUTER JOIN 
+(
+SELECT dim_matter_header_curr_key
+,iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Opened]
+FROM red_dw.dbo.dim_matter_header_current
+LEFT OUTER JOIN red_dw.dbo.dim_bill_date
+ ON CONVERT(DATE,date_opened_case_management,103)=
+ CONVERT(DATE,bill_date,103)
+WHERE client_group_name = 'NHS Resolution'
+)  AS NHSFinYearOpened
+ ON NHSFinYearOpened.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN 
+(
+SELECT dim_matter_header_curr_key
+,iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) [FY Closed]
+FROM red_dw.dbo.dim_matter_header_current
+LEFT OUTER JOIN red_dw.dbo.dim_bill_date
+ ON CONVERT(DATE,date_closed_case_management,103)=
+ CONVERT(DATE,bill_date,103)
+WHERE client_group_name = 'NHS Resolution'
+)  AS NHSFinYearClosed
+ ON NHSFinYearClosed.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
     WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )

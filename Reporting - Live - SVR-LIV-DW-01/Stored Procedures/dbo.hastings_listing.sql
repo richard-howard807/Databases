@@ -208,23 +208,23 @@ GROUP BY
 --==============================================================================================================================================
 SELECT
 	NULL		AS [Exposure Number]
-	, COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference)		AS [Claim Reference]
-	, dim_instruction_type.instruction_type					AS [Instruction Type]
-	, dim_detail_core_details.clients_claims_handler_surname_forename		AS [Hastings Handler]
+	, CAST(COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference) AS NVARCHAR(2000))	COLLATE Latin1_General_BIN	AS [Claim Reference]
+	, CAST(dim_instruction_type.instruction_type AS NVARCHAR(60)) COLLATE Latin1_General_BIN					AS [Instruction Type]
+	, CAST(dim_detail_core_details.clients_claims_handler_surname_forename AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Hastings Handler]
 	, dim_matter_header_current.matter_owner_full_name			AS [Supplier Handler]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number		AS [Supplier Reference]
-	, dim_matter_header_current.matter_description		AS [Case Description - DELETE BEFORE SENDING]
-	, dim_detail_core_details.present_position			AS [Present Position - DELETED BEFORE SENDING]
-	, dim_detail_core_details.referral_reason		AS [Referral Reason - DELETE BEFORE SENDING]
-	, dim_matter_worktype.work_type_name
-	, dim_matter_header_current.branch_name			AS [Supplier Branch]
-	, claimant_names.claimant_forenames			AS [Claimant First Name]
-	, claimant_names.claimant_surnames			AS [Claimant Surname]
-	, claimant_names.claimant_postcode			AS [Claimant Postcode]
+	, CAST(dim_matter_header_current.matter_description AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Case Description - DELETE BEFORE SENDING]
+	, CAST(dim_detail_core_details.present_position AS NVARCHAR(255)) COLLATE Latin1_General_BIN			AS [Present Position - DELETED BEFORE SENDING]
+	, CAST(dim_detail_core_details.referral_reason AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Referral Reason - DELETE BEFORE SENDING]
+	, CAST(dim_matter_worktype.work_type_name AS NVARCHAR(50)) COLLATE Latin1_General_BIN AS work_type_name	
+	, CAST(dim_matter_header_current.branch_name AS NVARCHAR(50)) COLLATE Latin1_General_BIN			AS [Supplier Branch]
+	, CAST(claimant_names.claimant_forenames AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN			AS [Claimant First Name]
+	, CAST(claimant_names.claimant_surnames AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN			AS [Claimant Surname]
+	, CAST(claimant_names.claimant_postcode AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN			AS [Claimant Postcode]
 	, dim_detail_claim.hastings_claimant_adult_or_minor			AS [Adult or Minor]
-	, dim_detail_core_details.ll01_sex				AS [Male or Female]
+	, CAST(dim_detail_core_details.ll01_sex	AS NVARCHAR(15)) COLLATE Latin1_General_BIN			AS [Male or Female]
 	, dim_detail_claim.hastings_injury_type				AS [Injury Type]
-	, dim_detail_core_details.injury_type				AS [Firm Injury Type - DELETE BEFORE SENDING]
+	, CAST(dim_detail_core_details.injury_type AS NVARCHAR(255)) COLLATE Latin1_General_BIN				AS [Firm Injury Type - DELETE BEFORE SENDING]
 	, dim_detail_client.hastings_policyholder_first_name		AS [Policyholder First Name]
 	, dim_detail_client.hastings_policyholder_last_name			AS [Policyholder Last Name]
 	, dim_detail_client.hastings_policyholder_postcode			AS [Policyholder Postcode]
@@ -241,54 +241,54 @@ SELECT
 	, dim_detail_claim.hastings_jurisdiction			AS [Jurisdiction]
 	, dim_detail_claim.hastings_fault_rating			AS [Fault Rating]
 	, dim_detail_core_details.hastings_fault_liability_percent		AS [Fault Liability %]
-	, COALESCE(dim_detail_claim.dst_claimant_solicitor_firm, dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name)		AS [Claimant Solicitor Firm]
-	, dim_detail_core_details.name_of_claimants_solicitor_surname_forename			AS [Claimant Solicitor Handler]
-	, clm_sols_town.town				AS [Claimant Solicitor Branch]
-	, CASE
+	, CAST(COALESCE(dim_detail_claim.dst_claimant_solicitor_firm, dim_claimant_thirdparty_involvement.claimantsols_name, dim_claimant_thirdparty_involvement.claimantrep_name) AS NVARCHAR(2000)) COLLATE Latin1_General_BIN		AS [Claimant Solicitor Firm]
+	, CAST(dim_detail_core_details.name_of_claimants_solicitor_surname_forename	AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Claimant Solicitor Handler]
+	, CAST(clm_sols_town.town AS NVARCHAR(50)) COLLATE Latin1_General_BIN				AS [Claimant Solicitor Branch]
+	, CAST(CASE
 		WHEN dim_detail_claim.hastings_fundamental_dishonesty IN ('Fundamental dishonesty identified and intend to plead', 'Fundamental dishonesty identified and pleaded') THEN
 			'Y'
 		WHEN dim_detail_claim.hastings_fundamental_dishonesty IN ('Fundamental dishonesty identified but do not intend to plead', 'No fundamental dishonesty') THEN
 			'N'
-	  END									AS [Fundamental Dishonesty]
-	, CASE	
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN									AS [Fundamental Dishonesty]
+	, CAST(CASE	
 		WHEN RTRIM(LOWER(dim_detail_core_details.proceedings_issued)) = 'yes' THEN
 			'Y'
 		WHEN RTRIM(LOWER(proceedings_issued)) = 'no' THEN
 			'N'
-	  END													AS [Litigated]
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN													AS [Litigated]
 	, CAST(dim_detail_core_details.date_proceedings_issued AS DATE)		AS [Date Litigated]
 	, dim_detail_claim.hastings_claim_status				AS [Claim Status]
-	, allocated_courts.court_names				AS [Allocated Courts]
-	, CASE
+	, CAST(allocated_courts.court_names AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN				AS [Allocated Courts]
+	, CAST(CASE
 		WHEN RTRIM(LOWER(dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable)) = 'yes' THEN
 			'Y'
 		WHEN RTRIM(LOWER(dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable)) = 'no' THEN 
 			'N'
-	  END																	AS [Was Litigation Avoidable?]
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN														AS [Was Litigation Avoidable?]
 	, dim_detail_claim.hastings_reason_for_litigation			AS [Reason for Litigation]
 	, #hastings_financials.amount_recovery_sought		AS [Recovery to be Made?]
 	, dim_detail_client.hastings_recovery_from				AS [Recovery from]
 	, #hastings_financials.damages_reserve				AS [Current Damages Reserve - DELETE BEFORE SENDING]
 	, #hastings_financials.hastings_claimant_schedule_value				AS [Claimant Schedule of Loss Value]
-	, CASE
+	, CAST(CASE
 		WHEN dim_detail_claim.hastings_ppo_claimed = 'Yes' THEN
 			'Y'
 		WHEN dim_detail_claim.hastings_ppo_claimed = 'No' THEN 
 			'N'
-	  END						AS [PPO Claimed]
-	, CASE	
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN						AS [PPO Claimed]
+	, CAST(CASE	
 		WHEN dim_detail_claim.hastings_provisional_damages_claimed = 'Yes' THEN
 			'Y'
 		WHEN dim_detail_claim.hastings_provisional_damages_claimed = 'No' THEN
 			'N'
-	  END 								AS [Provisional Damages Claimed]
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN								AS [Provisional Damages Claimed]
 	, #hastings_financials.hastings_counter_schedule_of_loss_value			AS [Counter Schedule of Loss Value]
-	, CASE
+	, CAST(CASE
 		WHEN dim_detail_outcome.hastings_settlement_achieved = 'Yes' THEN
 			'Y' 
 		WHEN dim_detail_outcome.hastings_settlement_achieved = 'No' THEN
 			'N'
-	  END										AS [Settlement Achieved]
+	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN										AS [Settlement Achieved]
 	, #hastings_financials.damages_paid						AS [Total Settlement]
 	, CAST(dim_detail_outcome.date_claim_concluded AS DATE)			AS [Date of Settlement]
 	, #hastings_financials.damages_savings_currency											AS [Damages Settlement Saving (money)]
@@ -302,19 +302,19 @@ SELECT
 	, CAST(dim_detail_outcome.hastings_date_costs_paid AS DATE)					AS [Date Costs Paid]
 	, CAST(dim_detail_outcome.date_costs_settled AS DATE)					AS [Date Costs Settled - DELETED BEFORE SENDING]
 	, #hastings_financials.tp_total_costs_claimed					AS [Total Costs Claimed - DELETE BEFORE SENDING]
-	, CASE
+	, CAST(CASE
 		WHEN #hastings_financials.costs_claimed_sum_check <> ISNULL(#hastings_financials.tp_total_costs_claimed, 0) THEN
 			'Red'
 		ELSE
 			'Transparent'
-	  END							AS [total_costs_claimed_rag_status]
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN							AS [total_costs_claimed_rag_status]
 	, #hastings_financials.claimants_costs_paid			AS [Total Costs Paid - DELETE BEFORE SENDING]
-	, CASE	
+	, CAST(CASE	
 		WHEN #hastings_financials.costs_paid_sum_check <> ISNULL(#hastings_financials.claimants_costs_paid, 0) THEN
 			'Red'
 		ELSE
 			'Transparent'
-	  END								AS [total_costs_paid_rag_status]
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN								AS [total_costs_paid_rag_status]
 	, #hastings_financials.costs_savings_currency						AS [Total Costs Savings (money)]
 	, #hastings_financials.costs_savings_percent						 AS [Total Costs Savings (percent)]
 	--, 'TBC'		AS [Total Costs Savings (money)]
@@ -355,8 +355,8 @@ SELECT
 	, CAST(dim_matter_header_current.date_opened_practice_management AS DATE)		AS [Date Opened on MS]
 	, CAST(dim_detail_core_details.date_instructions_received AS DATE)		AS [Date Instructions Received]
 	, dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers		AS [Date Full File of Papers Received]
-	, dim_detail_core_details.do_clients_require_an_initial_report		AS [Initial Report Required?]
-	, dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report			AS [Extension for Initial Report Agreed]
+	, CAST(dim_detail_core_details.do_clients_require_an_initial_report AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Initial Report Required?]
+	, CAST(dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report AS NVARCHAR(255)) COLLATE Latin1_General_BIN			AS [Extension for Initial Report Agreed]
 	, CAST(dim_detail_core_details.date_initial_report_due AS DATE)					AS [Date Initial Report Due]
 	, CAST(dim_detail_core_details.date_initial_report_sent AS DATE)				AS [Date Initial Report Sent]
 	, fact_detail_elapsed_days.days_to_first_report_lifecycle			AS [Number of Business Days to Initial Report Sent]
@@ -364,19 +364,19 @@ SELECT
 	, defence_due_key_date.defence_due_date					AS [Date Defence Due - Key Date]
 	, CAST(dim_detail_court.defence_due_date AS DATE)			AS [Date Defence Due - MI Field]
 	, CAST(dim_detail_core_details.date_defence_served AS DATE)			AS [Date Defence Filed]
-	, dim_detail_core_details.suspicion_of_fraud			AS [Suspicion of Fraud?]
+	, CAST(dim_detail_core_details.suspicion_of_fraud AS NVARCHAR(255)) COLLATE Latin1_General_BIN			AS [Suspicion of Fraud?]
 	, dim_detail_outcome.hastings_type_of_settlement			AS [Type of Settlement]
 	, dim_detail_outcome.hastings_stage_of_settlement			AS [Stage of Settlement]
-	, dim_detail_outcome.outcome_of_case					AS [Outcome of Case]
+	, CAST(dim_detail_outcome.outcome_of_case AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [Outcome of Case]
 	, dim_detail_claim.hastings_offers_made_with_the_intention_to_rely_on_at_trial			AS [Offers Made with Intention to Rely on at Trial?]
 	, CAST(dim_detail_core_details.target_settlement_date AS DATE)				AS [Target Settlement Date]
 	, dim_detail_claim.hastings_is_indemnity_an_issue				AS [Is Indemnity an Issue?]
 	, dim_detail_claim.hastings_contribution_proceedings_issued			AS [Contribution Proceedings Issued?]
-	, dim_detail_outcome.are_we_pursuing_a_recovery				AS [Are we Pursuing a Recovery]
+	, CAST(dim_detail_outcome.are_we_pursuing_a_recovery AS NVARCHAR(255)) COLLATE Latin1_General_BIN				AS [Are we Pursuing a Recovery]
 	, CAST(dim_detail_claim.date_recovery_concluded AS DATE)			AS [Date Recovery Concluded]
 	, #hastings_financials.recovery_amout			AS [Amount Recovered]
-	, dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000		AS [Gross Damages Reserve Exceed £350,000?]
-	, dim_detail_core_details.does_claimant_have_personal_injury_claim			AS [Does the Claimant have a PI Claim?]
+	, CAST(dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Gross Damages Reserve Exceed £350,000?]
+	, CAST(dim_detail_core_details.does_claimant_have_personal_injury_claim	AS NVARCHAR(255)) COLLATE Latin1_General_BIN		AS [Does the Claimant have a PI Claim?]
 	, #hastings_financials.hastings_predict_damages_meta_model_value		AS [PREDICT Damages Meta-model Value]
 	, #hastings_financials.predict_rec_damages_reserve_current				AS [PREDICT Recommended Damages Reserve (Current)]
 	, 'TBC'			AS [Damages Paid 100%]
@@ -392,9 +392,9 @@ SELECT
 	, IIF(ISNULL(dim_detail_compliance.hastings_initial_contact_with_claimant_solicitors, '')='Not applicable', 'N/A', hastings_initial_contact_with_claimant_solicitors)				AS [SLA.A2 Initial Contact with Claimant Sols]
 	, IIF(ISNULL(dim_detail_compliance.hastings_initial_report_sent_within_ten_days, '')='Not applicable', 'N/A', hastings_initial_report_sent_within_ten_days)					AS [SLA.A3 Initial Report 10 Days]
 	, IIF(ISNULL(dim_detail_compliance.hastings_defences_submitted_to_hastings, '')='Not applicable', 'N/A', hastings_defences_submitted_to_hastings) 							AS [SLA.A4 Defencese Submitted 7 Days]
-	, IIF(ISNULL(dim_detail_compliance.hastings_court_directions_provided_to_hastings, '')='Not applicable', 'N/A', hastings_court_directions_provided_to_hastings)					AS [SLA.A5 Court Directions Provided to Hastings 2 Days]
+	, CAST(IIF(ISNULL(dim_detail_compliance.hastings_court_directions_provided_to_hastings, '')='Not applicable', 'N/A', hastings_court_directions_provided_to_hastings) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A5 Court Directions Provided to Hastings 2 Days]
 	, IIF(ISNULL(dim_detail_compliance.hastings_defence_submitted_to_court_within_direction_timetable, '')='Not applicable', 'N/A', hastings_defence_submitted_to_court_within_direction_timetable)		AS [SLA.A6 Defence Submitted to Court]
-	, IIF(ISNULL(dim_detail_compliance.hastings_compliance_with_all_other_court_dates, '')='Not applicable', 'N/A', hastings_compliance_with_all_other_court_dates)					AS [SLA.A7 Compliance with Court Dates]
+	, CAST(IIF(ISNULL(dim_detail_compliance.hastings_compliance_with_all_other_court_dates, '')='Not applicable', 'N/A', hastings_compliance_with_all_other_court_dates) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A7 Compliance with Court Dates]
 	, IIF(ISNULL(dim_detail_compliance.hastings_brought_other_parties_into_litigation, '')='Not applicable', 'N/A', hastings_brought_other_parties_into_litigation)					AS [SLA.A8 Identified Other Parties]
 	, IIF(ISNULL(dim_detail_compliance.hastings_urgent_developments_reported_two_days, '')='Not applicable', 'N/A', hastings_urgent_developments_reported_two_days)					AS [SLA.A9 Urgent Developments Reported]
 	, IIF(ISNULL(dim_detail_compliance.hastings_update_reports_submitted_every_three_months, '')='Not applicable', 'N/A', hastings_update_reports_submitted_every_three_months)			AS [SLA.A9 Update Reports Submitted]
@@ -411,25 +411,25 @@ SELECT
 	, IIF(ISNULL(dim_detail_compliance.hastings_reports_and_advice_to_be_provided_to_hastings, '')='Not applicable', 'N/A', hastings_reports_and_advice_to_be_provided_to_hastings)			AS [SLA.A17 Experts Reports Provided to Hastings]
 	, IIF(ISNULL(dim_detail_compliance.hastings_instructions_and_reports_agreed_with_hastings, '')='Not applicable', 'N/A', hastings_instructions_and_reports_agreed_with_hastings)			AS [SLA.A17 Experts Reports Agreed with Hastings]
 	, IIF(ISNULL(dim_detail_compliance.hastings_accurate_reserves_held_on_file_at_all_times, '')='Not applicable', 'N/A', hastings_accurate_reserves_held_on_file_at_all_times)			AS [SLA.A19 Accurate Reserves Held]
-	, CASE 
+	, CAST(CASE 
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Justified complaint made' THEN 
 			'Yes'
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
 		ELSE 
 			NULL
-	  END																	AS [SLA.A20 Justified Complaints Made]
-	, CASE 
+	  END AS NVARCHAR(255)) COLLATE Latin1_General_BIN																	AS [SLA.A20 Justified Complaints Made]
+	, CAST(CASE 
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Non-justified complaint made' THEN 
 			'Yes'
 		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
 		ELSE 
 			NULL
-	  END																	AS [SLA.A20 Non-Justified Complaints Made]
+	  END AS NVARCHAR(255)) COLLATE Latin1_General_BIN																	AS [SLA.A20 Non-Justified Complaints Made]
 	, IIF(ISNULL(dim_detail_compliance.hastings_any_leakage_identified, '')='Not applicable', 'N/A', hastings_any_leakage_identified)				AS [SLA.A21 Any Leakage Identified]
 	, CAST(dim_detail_compliance.hastings_date_of_sla_review AS DATE)				AS [Date of Last Review]
-	, CASE
+	, CAST(CASE
 		WHEN ISNULL(dim_detail_core_details.do_clients_require_an_initial_report, '') = 'No' THEN	
 			'N/A'
 		WHEN ISNULL(dim_detail_core_details.referral_reason, '') = 'Nomination only' AND dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NULL THEN
@@ -451,8 +451,8 @@ SELECT
 			'Not Achieved'
 		ELSE 
 			'N/A' 
-	  END													AS [KPI A.1 Initial Advice]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN													AS [KPI A.1 Initial Advice]
+	, CAST(CASE
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'Yes' AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN	
 			'Achieved'
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'Yes' AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified but do not intend to plead' THEN
@@ -461,8 +461,8 @@ SELECT
 			'N/A'
 		ELSE
 			NULL
-	  END 											AS [KPI A.2 Fundamental Dishonesty Pleaded]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN 											AS [KPI A.2 Fundamental Dishonesty Pleaded]
+	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
 		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
 			CASE 
@@ -471,8 +471,8 @@ SELECT
 			END
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
-	  END										AS [KPI A.2 Fundamental Dishonesty Success - Withdrawn]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Withdrawn]
+	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
 		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
 			CASE 
@@ -481,8 +481,8 @@ SELECT
 			END
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
-	  END										AS [KPI A.2 Fundamental Dishonesty Success - Compromised]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Compromised]
+	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
 		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
 			CASE
@@ -491,8 +491,8 @@ SELECT
 			END
 		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
-	  END										AS [KPI A.2 Fundamental Dishonesty Success - Failed]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Failed]
+	, CAST(CASE
 		WHEN dim_detail_claim.hastings_contribution_proceedings_issued = 'Yes' AND dim_detail_claim.date_recovery_concluded IS NOT NULL 
 		AND #hastings_financials.recovery_amout >= 1 THEN
 			'Achieved'
@@ -501,8 +501,8 @@ SELECT
 			'Not Achieved'
 		WHEN dim_detail_claim.hastings_contribution_proceedings_issued = 'No' OR dim_detail_claim.date_recovery_concluded IS NULL THEN
 			'N/A'
-	  END															AS [KPI A.2 Contribution Proceedings]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN															AS [KPI A.2 Contribution Proceedings]
+	, CAST(CASE
 		WHEN dim_detail_core_details.referral_reason LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_claim.hastings_is_indemnity_an_issue = 'Yes'
 		AND dim_detail_claim.date_recovery_concluded IS NOT NULL AND LOWER(dim_detail_client.hastings_recovery_from) IN ('policyholder', 'policy holder') THEN
 			CASE
@@ -514,8 +514,8 @@ SELECT
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' OR dim_detail_outcome.date_claim_concluded IS NULL OR dim_detail_claim.hastings_is_indemnity_an_issue = 'No'
 		OR dim_detail_claim.date_recovery_concluded IS NULL THEN
 			'N/A'
-	  END									AS [KPI A.3 Indemnity Recoveries]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN									AS [KPI A.3 Indemnity Recoveries]
+	, CAST(CASE
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL
 		AND dim_detail_claim.hastings_offers_made_with_the_intention_to_rely_on_at_trial = 'Yes' AND dim_detail_outcome.hastings_stage_of_settlement = 'Trial' THEN
 			CASE
@@ -526,8 +526,8 @@ SELECT
 			END
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' OR dim_detail_outcome.date_claim_concluded IS NULL THEN
 			'N/A'
-	  END									AS [KPI A.4 Offers and Outcomes]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN									AS [KPI A.4 Offers and Outcomes]
+	, CAST(CASE
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL THEN
 			CASE	
 				WHEN dim_detail_core_details.target_settlement_date >= dim_detail_outcome.date_claim_concluded THEN
@@ -537,15 +537,15 @@ SELECT
 			END
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%'OR dim_detail_outcome.date_claim_concluded IS NULL THEN
 			'N/A'
-	  END											AS [KPI A.5 Lifecycle]
-	, CASE
+	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN											AS [KPI A.5 Lifecycle]
+	, CAST(CASE
 		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' OR dim_detail_core_details.will_total_gross_reserve_on_the_claim_exceed_500000 = 'No'
 		OR dim_detail_core_details.does_claimant_have_personal_injury_claim = 'No' OR dim_detail_core_details.injury_type = 'Fatal injury' 
 		OR dim_matter_worktype.work_type_code = '1597' THEN
 			'N/A'
 		--logic to be added for Achieved/Not Achieved 
-	 END									AS [KPI A.6 PREDICT]
-	, 'TBC'			AS [KPI A.7 Internal Monthly Audits]	--logic to be confirmed
+	 END AS NVARCHAR(15)) COLLATE Latin1_General_BIN									AS [KPI A.6 PREDICT]
+	, CAST('TBC' AS NVARCHAR(15)) COLLATE Latin1_General_BIN			AS [KPI A.7 Internal Monthly Audits]	--logic to be confirmed
 INTO Reporting.dbo.hastings_listing_table
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
