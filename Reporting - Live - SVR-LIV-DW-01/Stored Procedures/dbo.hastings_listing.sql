@@ -250,6 +250,7 @@ SELECT
 		WHEN dim_detail_claim.hastings_fundamental_dishonesty IN ('Fundamental dishonesty identified but do not intend to plead', 'No fundamental dishonesty') THEN
 			'N'
 	  END AS NVARCHAR(1)) COLLATE Latin1_General_BIN									AS [Fundamental Dishonesty]
+	, dim_detail_claim.hastings_fundamental_dishonesty COLLATE Latin1_General_BIN		AS hastings_fundamental_dishonesty
 	, CAST(CASE	
 		WHEN RTRIM(LOWER(dim_detail_core_details.proceedings_issued)) = 'yes' THEN
 			'Y'
@@ -464,32 +465,25 @@ SELECT
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN 											AS [KPI A.2 Fundamental Dishonesty Pleaded]
 	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
-		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
-			CASE 
-				WHEN dim_detail_outcome.hastings_type_of_settlement = 'Withdrawn' THEN
-					'Achieved'
-			END
-		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
+		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' AND dim_detail_outcome.hastings_type_of_settlement = 'Withdrawn' THEN 
+			'Achieved'
+		WHEN (dim_detail_claim.hastings_fundamental_dishonesty = 'No fundamental dishonesty' OR dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Withdrawn]
 	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
-		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
-			CASE 
-				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Calderbank', 'P36', 'Time limited') THEN
-					'Achieved'
-			END
-		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
+		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' 
+		AND dim_detail_outcome.hastings_type_of_settlement IN ('Calderbank', 'P36', 'Time limited') THEN 
+			'Achieved'
+		WHEN (dim_detail_claim.hastings_fundamental_dishonesty = 'No fundamental dishonesty' OR dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Compromised]
 	, CAST(CASE
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND dim_detail_core_details.suspicion_of_fraud = 'Yes'
-		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' THEN 
-			CASE
-				WHEN dim_detail_outcome.hastings_type_of_settlement IN ('Fundamental dishonesty defence', 'Other successful full defence') THEN
-					'Achieved'
-			END
-		WHEN dim_detail_core_details.suspicion_of_fraud = 'No' OR (dim_detail_outcome.hastings_type_of_settlement = 'No fundamental dishonesty' AND dim_detail_outcome.date_claim_concluded IS NULL) THEN
+		AND dim_detail_claim.hastings_fundamental_dishonesty = 'Fundamental dishonesty identified and pleaded' 
+		AND dim_detail_outcome.hastings_type_of_settlement IN ('Fundamental dishonesty defence', 'Other successful full defence')THEN 
+			'Achieved'
+		WHEN (dim_detail_claim.hastings_fundamental_dishonesty = 'No fundamental dishonesty' OR dim_detail_outcome.date_claim_concluded IS NULL) THEN
 			'N/A'
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN										AS [KPI A.2 Fundamental Dishonesty Success - Failed]
 	, CAST(CASE
@@ -516,7 +510,7 @@ SELECT
 			'N/A'
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN									AS [KPI A.3 Indemnity Recoveries]
 	, CAST(CASE
-		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL
+		WHEN dim_detail_core_details.referral_reason LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL
 		AND dim_detail_claim.hastings_offers_made_with_the_intention_to_rely_on_at_trial = 'Yes' AND dim_detail_outcome.hastings_stage_of_settlement = 'Trial' THEN
 			CASE
 				WHEN dim_detail_outcome.outcome_of_case IN ('Won at trial', 'Assessment of damages (claimant fails to beat P36 offer)') THEN 
@@ -524,11 +518,16 @@ SELECT
 				WHEN dim_detail_outcome.outcome_of_case = 'Lost at trial' THEN 
 					'Not Achieved'
 			END
-		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' OR dim_detail_outcome.date_claim_concluded IS NULL THEN
+		WHEN dim_detail_core_details.referral_reason LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NULL THEN
+			'N/A'
+		WHEN dim_detail_core_details.referral_reason LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL 
+		AND dim_detail_claim.hastings_offers_made_with_the_intention_to_rely_on_at_trial = 'Not applicable' THEN
+			'N/A'
+		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' THEN
 			'N/A'
 	  END AS NVARCHAR(15)) COLLATE Latin1_General_BIN									AS [KPI A.4 Offers and Outcomes]
 	, CAST(CASE
-		WHEN dim_detail_core_details.referral_reason NOT LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL THEN
+		WHEN dim_detail_core_details.referral_reason LIKE 'Dispute%' AND dim_detail_outcome.date_claim_concluded IS NOT NULL THEN
 			CASE	
 				WHEN dim_detail_core_details.target_settlement_date >= dim_detail_outcome.date_claim_concluded THEN
 					'Achieved'
