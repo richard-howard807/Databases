@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[EmergencyServicesSectorDashboard]
 
 AS 
@@ -38,6 +39,7 @@ LEFT OUTER JOIN dbo.EmergencyServicesCategorisation
  ON RTRIM(work_type_name)=EmergencyServicesCategorisation.[Mattersphere Matter Type] COLLATE DATABASE_DEFAULT
 WHERE sector='Emergency Services'
 AND bill_fin_year >='2017'
+AND CASE WHEN ISNULL(dim_client.client_group_name,'')='' THEN dim_client.client_name ELSE dim_client.client_group_name END <>'Palmtree'
 
 END 
 GO

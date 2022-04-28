@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[EmergencyServicesSectorInstructions]
 
 AS 
@@ -32,6 +33,7 @@ LEFT OUTER JOIN dbo.EmergencyServicesCategorisation
 
 WHERE sector='Emergency Services'
 AND date_opened_case_management>='2017-05-01'
+AND CASE WHEN ISNULL(dim_client.client_group_name,'')='' THEN dim_client.client_name ELSE dim_client.client_group_name END <>'Palmtree'
 
 END
 GO
