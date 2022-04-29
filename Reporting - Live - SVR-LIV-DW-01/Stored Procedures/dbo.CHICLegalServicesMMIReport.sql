@@ -117,7 +117,7 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 LEFT OUTER JOIN ms_prod.config.dbFile
  ON fileID=ms_fileid
 WHERE dim_matter_header_current.client_code IN ('W16939','00756630','W15410','00163012'
-,'09010229','00013886','00122326','W15586','00779816','00459836','W21685', 'W16722')
+,'09010229','00013886','00122326','W15586','00779816','00459836','W21685', 'W16722','W15498')
 AND dim_bill.bill_number <>'PURGE'
 AND date_opened_case_management >='2020-07-01'
 AND bill_date BETWEEN @StartDate AND @EndDate
