@@ -12,7 +12,7 @@ CREATE TABLE [dbo].[selfservice]
 [Mattersphere Client Code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Mattersphere Matter Number] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Mattersphere Weightmans Reference] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
-[Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Matter Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Case Manager] [nvarchar] (100) COLLATE Latin1_General_BIN NULL,
 [Matter Owner Full Name] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
 [Matter Partner] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,

@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[OutstandingPreClients] -- EXEC [dbo].[OutstandingPreClients]'Corp-Comm'	,'Wills, Trusts and Estates '
 (
 @Department AS NVARCHAR(MAX)
@@ -102,7 +103,7 @@ LEFT OUTER JOIN  red_dw.dbo.dim_fed_hierarchy_history
 WHERE matter_number ='00000001') AS MatterOne
  ON MatterOne.client_code = dim_client.client_code
 INNER JOIN #Department AS Department  ON Department.ListValue COLLATE DATABASE_DEFAULT = MatterOne.department COLLATE DATABASE_DEFAULT
-INNER JOIN #Team AS Team ON Team.ListValue   COLLATE DATABASE_DEFAULT = MatterOne.Team COLLATE DATABASE_DEFAULT
+--INNER JOIN #Team AS Team ON Team.ListValue   COLLATE DATABASE_DEFAULT = MatterOne.Team COLLATE DATABASE_DEFAULT
 
 WHERE (client_status='PENDING' OR cboBilling='Y')
 AND dim_client.[aml_client_type] <>'ERROR'

@@ -2,7 +2,7 @@ CREATE TABLE [dbo].[AIGShortFormData]
 (
 [Client] [char] (8) COLLATE Latin1_General_BIN NULL,
 [Matter] [char] (8) COLLATE Latin1_General_BIN NULL,
-[Case Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Case Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Fee Earner] [nvarchar] (100) COLLATE Latin1_General_BIN NULL,
 [Team] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
 [AIG Reference] [varchar] (255) COLLATE Latin1_General_BIN NULL,

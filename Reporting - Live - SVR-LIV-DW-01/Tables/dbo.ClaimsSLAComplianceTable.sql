@@ -6,7 +6,7 @@ CREATE TABLE [dbo].[ClaimsSLAComplianceTable]
 [master_matter_number] [nvarchar] (20) COLLATE Latin1_General_BIN NULL,
 [Client Code] [char] (8) COLLATE Latin1_General_BIN NULL,
 [Matter Number] [char] (8) COLLATE Latin1_General_BIN NULL,
-[Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Matter Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Matter Owner] [nvarchar] (100) COLLATE Latin1_General_BIN NULL,
 [employeeid] [char] (36) COLLATE Latin1_General_BIN NULL,
 [fee_earner_code] [nvarchar] (30) COLLATE Latin1_General_BIN NULL,

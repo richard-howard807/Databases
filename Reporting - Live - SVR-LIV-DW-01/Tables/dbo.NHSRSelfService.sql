@@ -7,7 +7,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Mattersphere Client Code] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Mattersphere Matter Number] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
 [Mattersphere Weightmans Reference] [nvarchar] (4000) COLLATE Latin1_General_BIN NULL,
-[Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Matter Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Case Manager] [nvarchar] (100) COLLATE Latin1_General_BIN NULL,
 [Grade] [nvarchar] (200) COLLATE Latin1_General_BIN NULL,
 [Leaver?] [varchar] (3) COLLATE Latin1_General_CI_AS NOT NULL,
