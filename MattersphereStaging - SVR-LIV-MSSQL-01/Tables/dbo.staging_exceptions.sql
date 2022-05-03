@@ -4,6 +4,7 @@ CREATE TABLE [dbo].[staging_exceptions]
 [exceptionruleid] [int] NULL,
 [fieldname] [varchar] (200) COLLATE Latin1_General_CI_AS NULL,
 [narrative] [nvarchar] (max) COLLATE Latin1_General_CI_AS NULL,
-[update_time] [datetime] NULL
+[update_time] [datetime] NULL,
+[dataset] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

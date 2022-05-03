@@ -29,18 +29,20 @@ BEGIN TRY
                           , staging_exceptions.exceptionruleid
                           , staging_exceptions.fieldname
                           , staging_exceptions.narrative
-                          , staging_exceptions.update_time FROM  staging_exceptions WHERE ms_fileid IS NOT NULL)	AS Source
-		ON Source.ms_fileid = Target.ms_fileid AND Source.exceptionruleid  = Target.exceptionruleid
+                          , staging_exceptions.update_time
+						  , staging_exceptions.dataset
+						  from  staging_exceptions WHERE ms_fileid IS NOT NULL)	AS Source
+		ON Source.ms_fileid = Target.ms_fileid AND Source.exceptionruleid  = Target.exceptionruleid and Source.dataset = Target.dataset
 
 		WHEN NOT MATCHED BY TARGET THEN
-			INSERT (ms_fileid, exceptionruleid, fieldname, narrative, update_time)
-			VALUES (Source.ms_fileid, Source.exceptionruleid, Source.fieldname, Source.narrative, GETDATE())
+			INSERT (ms_fileid, exceptionruleid, fieldname, narrative, update_time, dataset)
+			VALUES (Source.ms_fileid, Source.exceptionruleid, Source.fieldname, Source.narrative, GETDATE(), dataset)
 		
 		WHEN MATCHED THEN UPDATE SET
 			Target.narrative	= Source.narrative,
 			Target.fieldname		= Source.fieldname,
-			Target.update_time = GETDATE()
-
+			Target.update_time = GETDATE(),
+			target.dataset = source.dataset
 	
 		WHEN NOT MATCHED BY SOURCE THEN
 			 DELETE;

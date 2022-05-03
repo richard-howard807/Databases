@@ -8,6 +8,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[TransferDocsMStoMS] --EXEC  [dbo].[TransferDocsMStoMS] 4987369,5010941
 (
 @OldID  BIGINT
@@ -49,8 +51,8 @@ WHERE cdType='WALLET') AS Wallets
  ON docWallet=cdCode
 WHERE dbDocument.fileID=@OldID
 AND docDeleted <>1
---AND CONVERT(DATE,dbDocument.Created,103)>='2022-01-06'
---AND CONVERT(DATE,dbDocument.Created,103)<='2021-06-17'
+--AND CONVERT(DATE,dbDocument.Created,103)>='2020-12-16'
+--AND CONVERT(DATE,dbDocument.Created,103)<='2021-03-17'
 ORDER BY docID
 
 EXEC [dbo].[CUR_RunThirdPartyDocs]
