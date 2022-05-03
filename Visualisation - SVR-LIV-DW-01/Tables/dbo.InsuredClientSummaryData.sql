@@ -2,7 +2,7 @@ CREATE TABLE [dbo].[InsuredClientSummaryData]
 (
 [Weightmans Client/Matter No] [varchar] (17) COLLATE Latin1_General_BIN NULL,
 [MatterSphere Client/Matter No] [nvarchar] (33) COLLATE Latin1_General_BIN NULL,
-[Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Matter Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Work Type] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Date Opened] [datetime] NULL,
 [Date Closed] [datetime] NULL,

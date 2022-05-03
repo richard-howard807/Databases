@@ -3,7 +3,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Weightmans Reference] [nvarchar] (33) COLLATE Latin1_General_BIN NULL,
 [Client Code] [char] (8) COLLATE Latin1_General_BIN NULL,
 [Matter Number] [char] (8) COLLATE Latin1_General_BIN NULL,
-[Matter Description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[Matter Description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [Date Case Opened] [datetime] NULL,
 [Date Case Closed] [datetime] NULL,
 [Open/Closed Case Status] [varchar] (6) COLLATE Latin1_General_CI_AS NOT NULL,
