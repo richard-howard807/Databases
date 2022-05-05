@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2022-04-01
@@ -50,6 +51,7 @@ BEGIN
 		,fact_finance_summary.[claimants_costs_paid] AS [TP Costs Paid]
 		,fact_finance_summary.defence_costs_billed AS [Revenue Billed]
 		,fact_finance_summary.disbursements_billed AS [Disbursements Billed]
+		,CASE WHEN clients_claims_handler_surname_forename LIKE '%,%' THEN 0 ELSE 1 END AS ClientClaimHandlerException
 
 
 	FROM red_dw.dbo.fact_dimension_main

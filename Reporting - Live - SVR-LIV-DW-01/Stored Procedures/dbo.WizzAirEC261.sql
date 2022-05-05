@@ -24,6 +24,7 @@ SELECT
 , [date_opened].cal_year AS [Year]
 , [date_opened].cal_quarter_no AS [Quarter]
 , dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Claim number]
+, dim_claimant_thirdparty_involvement.claimantsols_name AS [Claimant Solicitor]
 , wizz_num_of_pax AS [Nr of PAX]
 , wizz_aoc AS [AOC]
 , wizz_flight_number AS [Flight number]
@@ -53,11 +54,13 @@ SELECT
 , fact_finance_summary.defence_costs_billed AS [Own attorney fee (GBP)]
 , fact_finance_summary.disbursements_billed AS [Other expenses (GBP)]
 , wizz_claim_amount_eur AS [Claimed amount (EUR)]
+, fact_detail_client.wizz_claim_amount_gbp AS [Claimed amount (GBP)]
 , wizz_render_amount_eur AS [Rendered amount (without interest, EUR)]
 , wizz_ec_two_six_one_eur AS [EC261 (EUR)]
 , wizz_refund_eur AS [Refund (EUR)]
 , wizz_other_claims_eur AS [Other claims (EUR)]
 , wizz_lit_cost_eur AS [Litigation cost (EUR)]
+, fact_detail_client.wizz_lit_cost_gbp AS [Litigation cost (GBP)]
 , wizz_pnr AS [PNR]
 , wizz_claim_for_article_nine AS [Claim for Article 9 Right to Care costs]
 , wizz_extraordinary_circumstances AS [Extraordinary Circumstances]
@@ -67,6 +70,7 @@ SELECT
 , 1 AS [Number of cases]
 , [OriginalDeparture].Longitude AS [Original Departure Longitude]
 , [OriginalDeparture].Latitude AS [Original Departure Latitude]
+
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -90,6 +94,8 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_client
 ON fact_detail_client.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN Reporting.dbo.Airports AS [OriginalDeparture]
 ON dim_detail_client.wizz_original_departure_airport=[OriginalDeparture].Airport COLLATE DATABASE_DEFAULT
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
