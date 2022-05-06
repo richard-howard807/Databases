@@ -26,10 +26,10 @@ BEGIN
 
 -- For testing
 --==============================================================================================================================================
---DECLARE @def_trust AS VARCHAR(MAX) = 'Missing|Derbyshire Healthcare NHS Foundation Trust|University Hospitals of North Midlands NHS Trust|Tameside and Glossop Integrated Care NHS Foundation Trust|Maidstone and Tunbridge Wells NHS Trust|Other'
---	, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery|Maidstone and Tunbridge Wells NHS Trust|Other' 
---	, @instruction_type AS VARCHAR(MAX) = 'Clinical - Non DA|EL/PL DA|Expert Report - Limited|Schedule 1|Schedule 2'
---	, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
+--DECLARE @def_trust AS VARCHAR(MAX) = 'University Hospitals Birmingham NHS Foundation Trust'
+--	, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
+--	, @instruction_type AS VARCHAR(MAX) = 'ISS Plus|Expert Report + LoR - Limited|2022: LIQ100|Schedule 5 (ENS)|HIV Recall Group|Letter of Response - Limited|2022: CDI|Mediation - capped fee|Inquests|CFF 250 (PA)|2022: C500|Full Investigation - Limited|2022: SCH5|OSINT - Sch 1 FF|CFF 250 (Non-PA)|2022: NCDI|OSINT & Claims Validation|EL/PL - old delegated matters|GPI - Advice|ISS 250 Advisory|CFF 50 (PA)|CFF 50 (Non-PA)|Clinical - Non DA - FF|Inquest - NC|Expert Report - Limited|2022: LI250|2022: C500+|Clinical - Non DA|EL/PL DA|OSINT - Sch 2 - FF|EL/PL Non DA|2022: C100|EL/PL - PADs|Breast screenings - group action|2022: INQ NC|DPA/Defamation etc|Worcester Group Action|MTW Group Action|Mid Staffs Group Action|UHNS Group Action|C&W Group Action|2022: AOS|Lot 3 work|2022: LI100|2022: CDI (ENS)|C-Difficile|East Lancs Group Action|Clinical - Delegated, FF|Schedule 3|Clinical - Non DA (ENS)|2022: C250|2022: INC C|Schedule 4|ELS - Non DA|Other|East Sussex Group Action|NCFF 25|CFF 100 (Non-PA)|TB Group Midlands Partnership|Inquest - C|RG - UHNM Group Action|ISS 250|Schedule 4 (ENS)|Sodium Valproate claims|Derbyshire Healthcare Group Action|2022: NC100|Schedule 1|CFF 100 (PA)|Inquest - associated claim|ISS Plus Advisory|OSINT - Sch 2 - HR|Buckinghamshire Data Breach - Group Action|2022: INQ AC|Schedule 2|Missing|2022: LI250+'
+--	, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|in house|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
 
 --==========================================================================================================================================================================================
 -- Parameter queries
@@ -39,24 +39,31 @@ BEGIN
 --ORDER BY
 --	def_trust
 
+--SELECT STRING_AGG(CAST(specialty.specialty AS NVARCHAR(MAX)),'|') AS all_specialties
+--FROM (
 --SELECT DISTINCT ISNULL(LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(dim_detail_health.nhs_speciality, CHAR(10), CHAR(32)),CHAR(13), CHAR(32)),CHAR(160), CHAR(32)),CHAR(9),CHAR(32)))), 'Missing')  AS [specialty]
 --FROM red_dw.dbo.dim_detail_health
---ORDER BY
---	specialty
+--) AS specialty
 
+--SELECT STRING_AGG(CAST(instruction_type.inst_type AS NVARCHAR(MAX)), '|')	AS  all_inst_types
+--FROM (
 --SELECT DISTINCT ISNULL(CASE WHEN dim_detail_health.nhs_instruction_type = '' THEN 'Missing' ELSE RTRIM(dim_detail_health.nhs_instruction_type) END, 'Missing') AS [inst_type]
 --FROM red_dw.dbo.dim_detail_health
---ORDER BY
---	inst_type
+--) AS instruction_type
 
+--SELECT STRING_AGG(CAST(referral_reason.ref_reason AS NVARCHAR(MAX)), '|')	AS all_ref_reasons
+--FROM (
 --SELECT DISTINCT ISNULL(CASE WHEN LOWER(dim_detail_core_details.referral_reason) = '' THEN 'missing' ELSE LOWER(RTRIM(dim_detail_core_details.referral_reason)) END, 'missing') AS [ref_reason]
 --FROM red_dw.dbo.dim_detail_core_details 
---ORDER BY 
---	ref_reason
+--) AS referral_reason
+
 --============================================================================================================================================================================================
 
 DECLARE @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
 DECLARE @last_year AS DATE = DATEADD(MONTH, -11, GETDATE()+1)-DAY(GETDATE())
+
+
+--SELECT @last_year
 
 -- SET NOCOUNT ON added to prevent extra result sets from
 -- interfering with SELECT statements.
@@ -105,16 +112,16 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 
 	, dim_detail_health.nhs_scheme					AS [NHS Scheme]
 	, CASE
-		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') THEN 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS', 'LTPS') THEN 
 			'Non-Clinical'
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') THEN
 			'Clinical'
 	  END					AS [Clinical/Non-Clinical]
 	, ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client)		AS [Date Claim Concluded]
-	, LEFT(DATENAME(MONTH, dim_detail_outcome.date_claim_concluded), 3) + '-' + FORMAT(dim_detail_outcome.date_claim_concluded, 'yy')	AS [chart_date_claim_concluded]
+	, LEFT(DATENAME(MONTH, ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client)), 3) + '-' + FORMAT(ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client), 'yy')	AS [chart_date_claim_concluded]
 	, CASE
 		--non-clinical
-		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client) BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
 			1
 		ELSE
 			0
@@ -122,7 +129,7 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 	, CASE
 		--clinical
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') 
-		AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
+		AND ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client) BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
 			1
 		ELSE	
 			0
@@ -201,7 +208,7 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 	END							AS [Damages Tranche]
 	, CASE
 		--non-clinical
-		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
+		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('DH Liab', 'PES', 'LTPS') AND ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client) BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN 
 			fact_finance_summary.damages_paid		
 		ELSE
 			0
@@ -209,7 +216,7 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 	, CASE
 		--clinical
 		WHEN RTRIM(dim_detail_health.nhs_scheme) IN ('CNST', 'ELS', 'DH CL', 'CNSGP', 'ELSGP', 'Inquest funding', 'Inquest Funding') 
-		AND dim_detail_outcome.date_claim_concluded BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
+		AND ISNULL(CAST(dim_detail_outcome.date_claim_concluded AS DATE),dim_detail_health.zurichnhs_date_final_bill_sent_to_client) BETWEEN @last_year AND CAST(GETDATE() AS DATE) THEN
 					fact_finance_summary.damages_paid		
 		ELSE
 			0
@@ -283,6 +290,7 @@ WHERE
 	dim_matter_header_current.master_client_code = 'N1001'	
 	--AND dim_detail_health.matter_number = '00020596'
 	AND dim_matter_header_current.reporting_exclusions = 0
+	AND ISNULL(RTRIM(LOWER(dim_detail_outcome.outcome_of_case)), '') <> 'exclude from reports'
 	and(CASE WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
 		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
 		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
@@ -293,7 +301,7 @@ WHERE
 			AND	dim_matter_header_current.master_client_code = 'N1001'				 
 			AND dim_matter_header_current.reporting_exclusions = 0
 				AND dim_matter_header_current.ms_only = 1
-				
+			AND ISNULL(RTRIM(LOWER(dim_detail_outcome.outcome_of_case)), '') <> 'exclude from reports'	
 			 
 
 
