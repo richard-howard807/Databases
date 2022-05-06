@@ -633,12 +633,14 @@ WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.ms_only = 1
+	AND ISNULL(RTRIM(LOWER(dim_detail_outcome.outcome_of_case)), '') <> 'exclude from reports'
 	--AND dim_detail_core_details.present_position = 'Claim and costs outstanding'
 ORDER BY	
 	risk_rating_order
 	, [Claimant Name]
 
 END
+
 
 
 GO
