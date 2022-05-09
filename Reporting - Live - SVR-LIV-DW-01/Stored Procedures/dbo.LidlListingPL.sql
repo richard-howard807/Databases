@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2022-04-01
@@ -52,8 +53,13 @@ BEGIN
 		,fact_finance_summary.defence_costs_billed AS [Revenue Billed]
 		,fact_finance_summary.disbursements_billed AS [Disbursements Billed]
 		,CASE WHEN clients_claims_handler_surname_forename LIKE '%,%' THEN 0 ELSE 1 END AS ClientClaimHandlerException
-
-
+		,DATEDIFF(DAY,date_opened_case_management,GETDATE()) AS DaysOpened
+		,DATEDIFF(MONTH,date_opened_case_management,GETDATE()) AS MonthOpened
+		,CASE WHEN dim_detail_core_details.referral_reason LIKE '%Disp%' THEN 1 ELSE 0 END AS discase
+		,CASE WHEN dim_detail_core_details.referral_reason LIKE '%Disp%' OR dim_detail_core_details.referral_reason LIKE '%Pre-action%' THEN 1 ELSE 0 END AS Prediscase
+		,CASE WHEN dim_detail_core_details.present_position ='Claim and costs outstanding' THEN 0 ELSE 1 END AS PPRule
+	,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
+	,dim_detail_core_details.[brief_details_of_claim]
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 	ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
