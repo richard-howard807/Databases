@@ -159,12 +159,14 @@ FROM   (
 		--and c.number = 'W21295'
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
-		OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna
+		OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918','WB170835','115222')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna | FY 21/22 'WB170835','115222' From Greg 
 			AND armaster.invdate >= @processdate														
 	   --  AND timecard.timekeeper NOT IN (SELECT timekeeper FROM @timekeepers  ) -- Exclues any timecard transactions by client introducer
 	 --  AND timecard.timekeeper <> co.timekeeper
 		--AND tko.tkprindex = @test_partner
 	    
+
+
 	 UNION ALL
   -- Charges   
 
@@ -208,7 +210,7 @@ FROM   (
 		--and c.number = 'W21295'
 		AND ((c.opendate >= '20190501' 
 		AND DATEDIFF(D, c.opendate, armaster.invdate) < 1095)
-		OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna
+	OR c.number IN ('123447R','W21348','W21295','89377S','105576','W18918','WB170835','115222')) -- Request to exclude two clients from hard date cut off by Laura Harrison | 'W21295' from Greg | '89377S','105576','W18918' from Anna | FY 21/22 'WB170835','115222' From Greg
 														
 		AND armaster.invdate >= @processdate
 		--AND tko.tkprindex = @test_partner
