@@ -18,7 +18,11 @@ BEGIN
 
 
 --DROP TABLE IF EXISTS #Template
-DROP table if exists #Audits
+--DROP table if exists #Audits
+IF OBJECT_ID('dbo.AuditDataTableau') IS NOT NULL
+        DROP TABLE dbo.AuditDataTableau;
+		IF OBJECT_ID('#Audits') IS NOT NULL
+        DROP TABLE #Audits;
  SET NOCOUNT ON 
 
 
@@ -133,8 +137,9 @@ select distinct #Audits.employeeid
 	 --, CASE WHEN levelidud	 LIKE '%Partner%' THEN 'Partner'
 		--			 WHEN levelidud = 'Legal Director' THEN 'Legal Director'
 		--			 ELSE levelidud END AS JobLevelTitle
-
+ INTO  dbo.AuditDataTableau
 from #Audits
+
 
 INNER JOIN red_dw..dim_ac_audit_questions on dim_ac_audit_questions.dim_ac_audits_key = #Audits.dim_ac_audits_key
 INNER JOIN red_dw..dim_fed_hierarchy_history 

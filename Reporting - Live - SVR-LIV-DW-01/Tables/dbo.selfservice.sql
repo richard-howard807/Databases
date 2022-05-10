@@ -257,6 +257,7 @@ CREATE TABLE [dbo].[selfservice]
 [tier_1_3_case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [International elements] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [LL Damages £350k+] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[MIB) Service Category] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL
 ) ON [PRIMARY]

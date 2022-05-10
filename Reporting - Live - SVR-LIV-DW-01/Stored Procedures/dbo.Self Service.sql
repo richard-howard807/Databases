@@ -46,6 +46,7 @@ GO
 -- ES 20211208 Added ate details, requested by BH
 -- ES 20220222 added dst isured client name and removed FED from insured client name & reference field, requested by BH
 -- ES 20220309 amended work type label to matter type
+-- ES 20220510 added mib service category, requested by EJ
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -807,6 +808,7 @@ WHEN
        ,dim_detail_claim.[tier_1_3_case]        -- Added as per request via HF 20210203 - MT
        ,dim_detail_core_details.[inter_are_there_any_international_elements_to_this_matter] AS [International elements]
        ,will_total_gross_reserve_on_the_claim_exceed_500000 AS [LL Damages £350k+]
+	   ,dim_detail_client.[service_category] AS [MIB) Service Category]
 	   ,billing_arrangement_description AS [Billing Arrangement]
        ,ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 INTO Reporting.dbo.selfservice
