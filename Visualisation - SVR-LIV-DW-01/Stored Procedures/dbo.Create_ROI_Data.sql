@@ -593,6 +593,7 @@ FROM #partner_bills
 						SELECT 
 							fact_bill_receipts_detail.bill_sequence
 							, ds_sh_3e_timekeeper.tkprindex
+							, matterindex_bill_item
 							, SUM(fact_bill_receipts_detail.revenue)	AS bill_paid_total
 						FROM red_dw.dbo.fact_bill_receipts_detail
 							INNER JOIN red_dw.dbo.ds_sh_3e_timekeeper
@@ -602,14 +603,17 @@ FROM #partner_bills
 							INNER JOIN red_dw.dbo.dim_date
 								ON dim_date.calendar_date = CAST(fact_bill_receipts_detail.bill_date AS DATE)
 						WHERE 1 = 1
+							and bill_fully_paid = 1 -- only fully paid bills included in bonus scheme
 							--Exclude payments over 3 months after year end of the bills fin year 
 							AND fact_bill_receipts_detail.receipt_date < DATEADD(MONTH, 3, DATEADD(DAY, 1, EOMONTH(DATEADD(MONTH, 12 - dim_date.fin_month_no, fact_bill_receipts_detail.bill_date))))
 						GROUP BY
 							fact_bill_receipts_detail.bill_sequence
+							, matterindex_bill_item
 							, ds_sh_3e_timekeeper.tkprindex
 					) AS total_paid
 		ON total_paid.bill_sequence = #partner_bills.invindex
 			AND total_paid.tkprindex = #partner_bills.actual_timekeeper
+			and #partner_bills.mattindex = total_paid.matterindex_bill_item
 WHERE 1 = 1
 	--AND #partner_bills.invoice_date BETWEEN @start_date AND @end_date
 GROUP BY
