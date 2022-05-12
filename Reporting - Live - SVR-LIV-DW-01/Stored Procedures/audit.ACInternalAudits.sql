@@ -20,16 +20,16 @@ GO
 CREATE PROCEDURE [audit].[ACInternalAudits]
 
 ( @Template AS NVARCHAR(MAX)
-, @AuditYear AS NVARCHAR(50)
+, @AuditYear AS INT
 )
 as
 
 
 --DECLARE @Template AS NVARCHAR(MAX)
---, @AuditYear AS NVARCHAR(50)
+--, @AuditYear AS INT
 --, @hsd_director AS NVARCHAR(MAX);
---SET @Template='NHSR';
---SET @AuditYear='2021/2022';
+--SET @Template='August 21 MS Audits|Claims Audit |Commercial Recoveries Audit |Costs Audit |LTA (No CDD) Audit |LTA Audit |MIB|NHSR|New Starter Audit |PREDiCT Audit |Real Estate Audit |Zurich TT Audit ';
+--SET @AuditYear='2023';
 --SET @hsd_director = '';-- '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
 
 
@@ -43,7 +43,9 @@ drop table if exists #Audits_Calculated;
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template);
 
 
-	
+	SELECT *
+	into #Audits
+	FROM (
 		SELECT  pvt3.audit_id
 			,pvt3.employeeid
 			, name AS [Auditee Name]
@@ -61,7 +63,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			, pvt3.fin_quarter
 			, pvt3.fin_quarter_no
 			, pvt3.fin_year
-			into #Audits
+			--into #Audits
 		FROM (SELECT 
 					dim_ac_audits.audit_id,
 					auditor.employeeid
@@ -100,6 +102,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 
 				WHERE dim_ac_audits.created_at >='2021-09-01'
 				and dim_ac_audits.dim_auditee1_hierarchy_history_key <> 0 
+				--AND dim_date.fin_year = @AuditYear
 		) src
 
 		UNPIVOT (name FOR position IN ([Auditee Name 1], [Auditee Name 2], [Auditee Name 3]))pvt1
@@ -207,6 +210,7 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 				  AND fact_child_detail.nhs_audit_score IS NOT NULL
 				  AND dim_matter_header_current.master_client_code <> '30645'
 				  AND dim_date.calendar_date >= '2021-09-01'
+				  --AND dim_date.fin_year = @AuditYear
 				  --AND dim_parent_detail.dim_parent_key = 471917
 		) AS nhs_audits
 			UNPIVOT
@@ -260,10 +264,10 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 			dim_matter_header_current.master_client_code = 'M1001'
 			AND dim_detail_audit.client_screen_date_of_audit IS NOT NULL
 			AND dim_date.calendar_date >= '2021-09-01'
+			--AND dim_date.fin_year = @AuditYear
+	
 
 	union all
-
-	
 
 	select dbFile.fileID auditid
 	, auditor.employeeid 
@@ -301,6 +305,9 @@ SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Temp
 				ON #Template.ListValue = 'August 21 MS Audits'
 
 	 WHERE [red_dw].[dbo].[datetimelocal](dteDateAudit) between '20210801' and '20210901'
+	) AS audit_templates
+	WHERE
+		audit_templates.fin_year = @AuditYear
 		 ;
 
 
@@ -342,9 +349,11 @@ INNER JOIN (SELECT DISTINCT
 				and dim_employee.classification = 'Casehandler'
 				AND dim_fed_hierarchy_history.hierarchylevel2hist IN ('Legal Ops - Claims', 'Legal Ops - LTA')
 				--and dim_employee.employeeid = '855920FD-6007-49F0-B1A5-0B391B2176FD'
-				and isnull(dim_date.fin_year, '2099') >= (select distinct fin_year from red_dw.dbo.dim_date where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear ) -- exclude leavers after financial year they left
+				and isnull(dim_date.fin_year, '2099') >= @AuditYear  -- exclude leavers after financial year they left
 		) employees
-where CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear
+where 
+--CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) = @AuditYear
+dim_date.fin_year = @AuditYear
 --and dim_date.calendar_date >= employees.employeestartdate
 --and dim_date.calendar_date <= isnull(employees.leftdate, '20990101')
 AND dim_date.fin_year >= employees.employeestartdate_fin_year;
