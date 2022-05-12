@@ -19,7 +19,7 @@ master_client_code +'.'+master_matter_number[MS Client/Matter Ref]
 ,wip AS [WIP]
 ,Chargeable.AllTimeChargeableHrs AS [Chargeable Hours Recorded]
 ,last_time_transaction_date AS [Date of Last Time Posting]
-
+, certas_revenue.revenue		AS [Revenue]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -41,6 +41,21 @@ AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
 AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN (
+					SELECT 
+						dim_matter_header_current.dim_matter_header_curr_key
+						, SUM(fact_bill_activity.bill_amount)  AS revenue
+					FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+						INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+							ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+						INNER JOIN red_dw.dbo.dim_matter_header_current
+							ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_activity.dim_matter_header_curr_key
+					WHERE 
+						dim_matter_header_current.master_client_code = '808656'
+					GROUP BY 
+						dim_matter_header_current.dim_matter_header_curr_key
+				) AS certas_revenue
+	ON certas_revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE master_client_code='808656'
 AND dim_matter_header_current.date_closed_case_management IS NULL
 AND work_type_group='EPI'
