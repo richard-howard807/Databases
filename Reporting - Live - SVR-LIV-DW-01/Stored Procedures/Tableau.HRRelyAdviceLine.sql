@@ -22,8 +22,9 @@ BEGIN
 	, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 	, dim_matter_header_current.date_closed_case_management AS [Date Closed]
 	, dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
-	, COALESCE(dim_detail_advice.issue, dim_detail_advice.issue_hr) AS [Issue]
-	, dim_detail_advice.emph_primary_issue AS [Primary Issue]
+	, dim_matter_worktype.work_type_name AS [Matter Type]
+	, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
+	, COALESCE(dim_detail_advice.issue, dim_detail_advice.emph_primary_issue,dim_detail_advice.issue_hr) AS [Issue]
 	, dim_detail_advice.diversity_issue AS [Diversity Issue]
 	, COALESCE(dim_detail_advice.secondary_issue, dim_detail_advice.secondary_issue_hr) AS [Secondary Issue]
 	, dim_detail_advice.brief_description AS [Brief Description]
@@ -48,6 +49,8 @@ BEGIN
 	, dim_detail_advice.summary_of_advice AS [Summary of Advice]
 	, dim_detail_advice.knowledge_gap AS [Knowledge Gap]
 	, dim_detail_advice.units AS [Units]
+	, TimeRecorded.[Hours Recorded]
+	, fact_matter_summary_current.last_time_transaction_date AS [Date of Last Time Posting]
 	
 	
 FROM red_dw.dbo.fact_dimension_main
@@ -61,6 +64,14 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+LEFT OUTER JOIN (SELECT fact_billable_time_activity.dim_matter_header_curr_key, SUM(fact_billable_time_activity.minutes_recorded)/60 AS [Hours Recorded] 
+FROM red_dw.dbo.fact_billable_time_activity
+GROUP BY fact_billable_time_activity.dim_matter_header_curr_key) AS [TimeRecorded]
+ON TimeRecorded.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
+ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'

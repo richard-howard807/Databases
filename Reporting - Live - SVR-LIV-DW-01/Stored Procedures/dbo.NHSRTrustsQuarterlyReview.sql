@@ -16,6 +16,7 @@ GO
 --		   JL Change of name to report, added new RAG logic for 'Safety & Learning Factor identified'
 --			#125557, ES added additional details
 --		   JL 07-04-22 added join for def_trust param for second defend trust #141539
+--		   JL 12-05-22 added additional Instruction type option as per ticket #147102
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSRTrustsQuarterlyReview]
 (
@@ -392,7 +393,8 @@ SELECT
 	,CASE 
 		WHEN nhs_instruction_type IN 
 		('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
-		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25') THEN 
+		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25','2022: C100','2022: MOJ IA','2022: MOJ S3','2022: NC100'
+) THEN 
 			'Delegated authority'
 		WHEN nhs_instruction_type IN 
 		('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
@@ -400,15 +402,17 @@ SELECT
 		,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
 		,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
 		,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
-		,'Worcester Group Action','WWL - Data Breach group action') THEN 
+		,'Worcester Group Action','WWL - Data Breach group action',
+		'2022: C250','2022: C500','2022: C500+','2022: CDI','2022: CDI (ENS)','2022: NC250','2022: NC250+','2022: NCDI','2022: Sodium Valproate','MED: 2022') THEN 
 			'Direct instruction'
-		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 
+		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests','2022: INC C','2022: INQ NC') THEN 
 			'Inquest'
 		WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
 		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
 		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
 		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
-		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
+		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)',
+		'2022: AOS','2022: INQ AC','2022: LI250','2022: LI250+','2022: LIQ100','2022: LIQ250','2022: LIQ250+','2022: PAD','2022: SCH5') THEN 
 			'Limited instructions'
 		WHEN nhs_instruction_type IN ('Other') THEN 
 			'Other'

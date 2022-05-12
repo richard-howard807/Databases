@@ -32,6 +32,8 @@ GO
 -- JL 20210924 #115469 added in stage of settlement nhsr
 -- ES 20211220 added recovery rate requested by EJ
 -- ES 20220309 amended work type label to matter type, JS
+-- ES 20220511 #147342, added Further Info, Covid Reason (NHSR), COVID-19 Impact
+
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
@@ -487,7 +489,9 @@ dim_detail_health.nhs_scheme IN
            RTRIM(dim_detail_core_details.track) AS [Track],
            dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?],
 
-		  
+		   dim_detail_health.[furthur_info] AS [Further Info],
+		   dim_detail_health.[covid_reason_nhsr] AS [Covid Reason (NHSR],
+		   dim_detail_core_details.covid_reason_desc AS [COVID-19 Impact],
         
            dim_claimant_thirdparty_involvement.[claimant_name] AS [Claimant Name],
 		   CASE WHEN ClaimantsAddress.litigant_in_person=1 THEN 'Yes' ELSE NULL END AS [Is the claimant a litigant in person (LIP)?],
@@ -538,6 +542,8 @@ dim_detail_health.nhs_scheme IN
            dim_detail_claim.[dst_claimant_solicitor_firm ] AS [Claimant's Solicitor],
                                 -- dim_claimant_thirdparty_involvement.claimantsols_name AS [Claimant's Solicitor],
            ClaimantsAddress.[claimant1_postcode] AS [Claimant's Postcode],
+
+		  
            fact_finance_summary.total_reserve AS [Total Reserve],
           -- ISNULL(fact_detail_reserve_detail.converge_disease_reserve, 0) AS [Converge Disease Reserve],
 		   fact_finance_summary.[damages_reserve_initial] [Damages Reserve (Initial)],
