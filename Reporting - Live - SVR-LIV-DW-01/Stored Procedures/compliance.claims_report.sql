@@ -149,7 +149,7 @@ hierarchylevel2,hierarchylevel3
 WHERE dss_current_flag='Y'
 AND level=3
 AND hierarchylevel2 <>'Unknown'
-AND hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA')
+AND hierarchylevel2 IN ('Legal Ops - Claims','Legal Ops - LTA','Business Services')
 ) AS Division
  ON 		[practice_area]= hierarchylevel3 
 END
