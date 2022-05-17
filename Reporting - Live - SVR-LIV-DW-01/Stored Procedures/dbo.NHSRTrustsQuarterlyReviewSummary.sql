@@ -26,7 +26,7 @@ BEGIN
 
 -- For testing
 --==============================================================================================================================================
---DECLARE @def_trust AS VARCHAR(MAX) = 'University Hospitals Birmingham NHS Foundation Trust'
+--DECLARE @def_trust AS VARCHAR(MAX) = 'forWrightington, Wigan & Leigh NHS Foundation Trust'
 --	, @nhs_specialty AS VARCHAR(MAX) = 'Ambulance|Anaesthesia|Antenatal Clinic|Audiological Medicine|Cardiology|Casualty / A & E|Chemical Pathology|Community Medicine/ Public Health|Community Midwifery|Dentistry|Dermatology|District Nursing|Gastroenterology|General Medicine|General Surgery|Genito-Urinary Medicine|Geriatric Medicine|Gynaecology|Haematology|Histopathology|Infectious Diseases|Intensive Care Medicine|Microbiology/ Virology|Missing|NHS Direct Services|Neurology|Neurosurgery|Non-Clinical Staff|Non-obstetric claim|Not Specified|Obstetrics|Obstetrics / Gynaecology|Oncology|Opthalmology|Oral & Maxillo Facial Surgery|Orthopaedic Surgery|Other|Otorhinolaryngology/ ENT|Paediatrics|Palliative Medicine|Pharmacy|Physiotherapy|Plastic Surgery|Podiatry|Psychiatry/ Mental Health|Radiology|Rehabilitation|Renal Medicine|Respiratory Medicine/ Thoracic Medic|Rheumatology|Surgical Speciality - Other|Unknown|Urology|Vascular Surgery' 
 --	, @instruction_type AS VARCHAR(MAX) = 'ISS Plus|Expert Report + LoR - Limited|2022: LIQ100|Schedule 5 (ENS)|HIV Recall Group|Letter of Response - Limited|2022: CDI|Mediation - capped fee|Inquests|CFF 250 (PA)|2022: C500|Full Investigation - Limited|2022: SCH5|OSINT - Sch 1 FF|CFF 250 (Non-PA)|2022: NCDI|OSINT & Claims Validation|EL/PL - old delegated matters|GPI - Advice|ISS 250 Advisory|CFF 50 (PA)|CFF 50 (Non-PA)|Clinical - Non DA - FF|Inquest - NC|Expert Report - Limited|2022: LI250|2022: C500+|Clinical - Non DA|EL/PL DA|OSINT - Sch 2 - FF|EL/PL Non DA|2022: C100|EL/PL - PADs|Breast screenings - group action|2022: INQ NC|DPA/Defamation etc|Worcester Group Action|MTW Group Action|Mid Staffs Group Action|UHNS Group Action|C&W Group Action|2022: AOS|Lot 3 work|2022: LI100|2022: CDI (ENS)|C-Difficile|East Lancs Group Action|Clinical - Delegated, FF|Schedule 3|Clinical - Non DA (ENS)|2022: C250|2022: INC C|Schedule 4|ELS - Non DA|Other|East Sussex Group Action|NCFF 25|CFF 100 (Non-PA)|TB Group Midlands Partnership|Inquest - C|RG - UHNM Group Action|ISS 250|Schedule 4 (ENS)|Sodium Valproate claims|Derbyshire Healthcare Group Action|2022: NC100|Schedule 1|CFF 100 (PA)|Inquest - associated claim|ISS Plus Advisory|OSINT - Sch 2 - HR|Buckinghamshire Data Breach - Group Action|2022: INQ AC|Schedule 2|Missing|2022: LI250+'
 --	, @referral_reason AS VARCHAR(MAX) = 'advice only|costs dispute|criminal representation|dispute on liability|dispute on liability and quantum|dispute on quantum|hse prosecution|in house|infant approval|inquest|intel only|missing|nomination only|pre-action disclosure|recovery'
@@ -229,7 +229,7 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 	,	CASE 
 		WHEN nhs_instruction_type IN 
 		('CFF 50 (Non-PA)','CFF 50 (PA)','Clinical - Delegated, FF','Clinical - Non DA - FF'
-		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25') THEN 
+		,'EL/PL - old delegated matters','EL/PL DA','NCFF 25','2022: C100','2022: MOJ IA','2022: MOJ S3','2022: NC100') THEN 
 			'Delegated authority'
 		WHEN nhs_instruction_type IN 
 		('Breast screenings - group action','C&W Group Action','C-Difficile','CFF 100 (Non-PA)','CFF 100 (PA)'
@@ -237,15 +237,18 @@ SELECT 	 distinct	 --JL Added 30-11-2021 #122283
 		,'DPA/Defamation etc','East Lancs Group Action','East Sussex Group Action','EL/PL Non DA','ELS - Non DA','HIV Recall Group'
 		,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
 		,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
-		,'Worcester Group Action','WWL - Data Breach group action') THEN 
+		,'Worcester Group Action','WWL - Data Breach group action','2022: C250','2022: C500','2022: C500+','2022: CDI','2022: CDI (ENS)','2022: NC250','2022: NC250+','2022: NCDI','2022: Sodium Valproate','MED: 2022','Sodium Valproate claims','Buckinghamshire Data Breach - Group Action') THEN 
 			'Direct instruction'
-		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests') THEN 
+		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests','2022: INC C',
+'2022: INQ NC') THEN 
 			'Inquest'
 		WHEN nhs_instruction_type IN ('EL/PL - PADs','Expert Report - Limited','Expert Report + LoR - Limited','Full Investigation - Limited'
 		,'GPI - Advice','Inquest - associated claim','ISS 250','ISS 250 Advisory','ISS Plus','ISS Plus Advisory'
 		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
 		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
-		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)') THEN 
+		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)',
+		'2022: AOS','2022: INQ AC','2022: LI250','2022: LI250+','2022: LIQ100','2022: LIQ250','2022: LIQ250+','2022: PAD','2022: SCH5','2022: LI100')
+		 THEN 
 			'Limited instructions'
 		WHEN nhs_instruction_type IN ('Other') THEN 
 			'Other'
@@ -351,4 +354,8 @@ END
 
 
 
+			
+			
+
+ 
 GO

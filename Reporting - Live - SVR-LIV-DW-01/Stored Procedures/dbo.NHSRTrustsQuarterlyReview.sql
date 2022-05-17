@@ -403,7 +403,7 @@ SELECT
 		,'Manchester bombings','Mediation - capped fee','Mid Staffs Group Action','MTW Group Action','OSINT - Sch 2 - HR'
 		,'RG - UHNM Group Action','SME Group Action','SV - Group action','TB Group Midlands Partnership','UHNS Group Action'
 		,'Worcester Group Action','WWL - Data Breach group action',
-		'2022: C250','2022: C500','2022: C500+','2022: CDI','2022: CDI (ENS)','2022: NC250','2022: NC250+','2022: NCDI','2022: Sodium Valproate','MED: 2022') THEN 
+		'2022: C250','2022: C500','2022: C500+','2022: CDI','2022: CDI (ENS)','2022: NC250','2022: NC250+','2022: NCDI','2022: Sodium Valproate','MED: 2022','Sodium Valproate claims','Buckinghamshire Data Breach - Group Action') THEN 
 			'Direct instruction'
 		WHEN nhs_instruction_type IN ('Inquest - C','Inquest - NC','Inquests','2022: INC C','2022: INQ NC') THEN 
 			'Inquest'
@@ -412,7 +412,7 @@ SELECT
 		,'Letter of Response - Limited','Lot 3 work','OSINT - Sch 1 FF','OSINT - Sch 2 - FF','OSINT & Claims Validation'
 		,'OSINT & Fraud (returned to NHS Protocol)','OSINT (advice)','Schedule 1','Schedule 2','Schedule 3'
 		,'Schedule 4','Schedule 4 (ENS)','Schedule 5 (ENS)',
-		'2022: AOS','2022: INQ AC','2022: LI250','2022: LI250+','2022: LIQ100','2022: LIQ250','2022: LIQ250+','2022: PAD','2022: SCH5') THEN 
+		'2022: AOS','2022: INQ AC','2022: LI250','2022: LI250+','2022: LIQ100','2022: LIQ250','2022: LIQ250+','2022: PAD','2022: SCH5','2022: LI100') THEN 
 			'Limited instructions'
 		WHEN nhs_instruction_type IN ('Other') THEN 
 			'Other'
