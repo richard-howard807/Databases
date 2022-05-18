@@ -45,15 +45,15 @@ SELECT
 [Claimant General Damages Claimed] = 	          CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_general_damages_claimed]    =0 THEN NULL ELSE fact_detail_cost_budgeting.[hastings_claimant_general_damages_claimed]     END,
 [Claimant LOE Claimed] = 	                      CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_loe_claimed]		          =0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_claimant_loe_claimed]		           END,
 [Claimant Treatment Claimed] = 	                  CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_treatment_claimed]	      =0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_claimant_treatment_claimed]	       END,
-[Claimant Vehicle Damages Claimed] = 	'',--          CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_vehicle_damages_claimed]	  =0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_claimant_vehicle_damages_claimed]	   END,
+[Claimant Vehicle Damages Claimed] = 	          CASE WHEN fact_detail_cost_budgeting.hastings_claimant_vehicle_damages_claime  =0 THEN NULL ELSE	fact_detail_cost_budgeting.hastings_claimant_vehicle_damages_claime	   END,
 [Claimant Hire Claimed] = 	                      CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_hire_claimed]		          =0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_claimant_hire_claimed]		           END,
 [Claimant Other Costs Claimed] = 	              CASE WHEN fact_detail_cost_budgeting.[hastings_claimant_other_costs_claimed]		  =0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_claimant_other_costs_claimed]		   END,
-[Hastings Total GD Best Offer] = 	   '',--           CASE WHEN fact_detail_claim.[hastings_hastings_total_gd_best_offer]				  =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_gd_best_offer]				   END,
-[Hastings Total LOE Best Offer] = 	  '',--             CASE WHEN fact_detail_claim.[hastings_total_loe_best_offer]						  =0 THEN NULL ELSE	fact_detail_claim.[hastings_total_loe_best_offer]						   END,
-[Hastings Total Treatment Best Offer] = '',--	      CASE WHEN fact_detail_claim.[hastings_hastings_total_treatment_best_offer]	      =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_treatment_best_offer]	       END,
-[Hastings Total Damages Best Offer] = 	'',--          CASE WHEN fact_detail_claim.[hastings_hastings_total_damages_best_offer]			  =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_damages_best_offer]			   END,
-[Hastings Total Hire Best Offer] = 	  '',--            CASE WHEN fact_detail_claim.[hastings_hastings_total_hire_best_offer]				  =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_hire_best_offer]				   END,
-[Hastings Total Other Costs Best Offer] = '',--	      CASE WHEN fact_detail_claim.[hastings_total_other_costs_best_offer]			      =0 THEN NULL ELSE	fact_detail_claim.[hastings_total_other_costs_best_offer]			       END,
+[Hastings Total GD Best Offer] = 	              CASE WHEN fact_detail_claim.hastings_hastings_total_gd_best_offer				  =0 THEN NULL ELSE	fact_detail_claim.hastings_hastings_total_gd_best_offer			   END,
+[Hastings Total LOE Best Offer] = 	              CASE WHEN fact_detail_claim.[hastings_total_loe_best_offer]						  =0 THEN NULL ELSE	fact_detail_claim.[hastings_total_loe_best_offer]						   END,
+[Hastings Total Treatment Best Offer] =           CASE WHEN fact_detail_claim.[hastings_hastings_total_treatment_best_offer]	      =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_treatment_best_offer]	       END,
+[Hastings Total Damages Best Offer] = 	          CASE WHEN fact_detail_claim.[hastings_hastings_total_damages_best_offer]			  =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_damages_best_offer]			   END,
+[Hastings Total Hire Best Offer] = 	              CASE WHEN fact_detail_claim.[hastings_hastings_total_hire_best_offer]				  =0 THEN NULL ELSE	fact_detail_claim.[hastings_hastings_total_hire_best_offer]				   END,
+[Hastings Total Other Costs Best Offer] = 	      CASE WHEN fact_detail_claim.[hastings_total_other_costs_best_offer]			      =0 THEN NULL ELSE	fact_detail_claim.[hastings_total_other_costs_best_offer]			       END,
 [Total General Damages to be Reserved] = 	      CASE WHEN fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved]=0 THEN NULL ELSE	fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved] END,
 [Total LOE to be Reserved] = 	                  CASE WHEN fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved]		      =0 THEN NULL ELSE fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved]		       END,   
 [Total Treatment to be Reserved] = 	              CASE WHEN fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved]	  =0 THEN NULL ELSE fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved]	   END,   
@@ -71,14 +71,16 @@ SELECT
 [Outcome Type]=		                              dim_detail_outcome.[hastings_outcome_type],
 [CRU to be Paid] = 		                          fact_detail_paid_detail.[cru_costs_paid], 	
 [NHS to be Paid] = 		                          fact_detail_paid_detail.[nhs_charges_paid_by_client], 
-[Supplier Own Fees (Exc vat)] =                   '',	    --		3E - Revenue
-[Supplier VAT] =                                  '',		--3E
-[Disbursements cost] =                            '',	--3E
+[Supplier Own Fees (Exc vat)] =                   CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN  ISNULL(hastings_listing_table.defence_costs_billed, 0) END,	    --		3E - Revenue
+[Supplier VAT] =                                  CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN ISNULL(hastings_listing_table.vat_billed, 0) END,		--3E
+[Disbursements cost] =                            CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN ISNULL(hastings_listing_table.disbursements_billed, 0) END,	--3E
 [Recovery to be made?] = 	                      dim_detail_outcome.[hastings_recovery_to_be_made],
 [Damages Recovery Amount] =                       CASE WHEN dim_detail_outcome.[hastings_recovery_to_be_made] ='Yes' THEN  (ISNULL(fact_detail_recovery_detail.[recovery_damages_counterclaim_third_party], 0) + ISNULL(fact_detail_recovery_detail.[recovery_damages_counterclaim_claimant], 0) + ISNULL(fact_detail_recovery_detail.[recovery_claimants_damages_claimant], 0) + ISNULL(fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution], 0)) END, --Financial Amount	Only show sum value if dim_detail_outcome[hastings_recovery_to_be_made] is yes	"Sum of:
 [Costs Recovery Amount] = 	                      CASE WHEN dim_detail_outcome.[hastings_recovery_to_be_made] = 'Yes' THEN (ISNULL(fact_finance_summary.[recovery_defence_costs_via_third_party_contribution], 0) +  ISNULL(fact_detail_recovery_detail.[recovery_claimants_costs_via_third_party_contribution], 0) +ISNULL(fact_finance_summary.[recovery_defence_costs_from_claimant], 0) ) END, --[Costs Recovery Amount] Financial Amount	Only show sum value if dim_detail_outcome[hastings_recovery_to_be_made] is yes	"Sum of: 
 [Assumed Court Track At Instruction] = 			 
  
+
+
  CASE 
      WHEN TRIM(dim_detail_claim.[hastings_jurisdiction]) = 'England & Wales' then dim_detail_core_details.[track] 
 	 WHEN TRIM(dim_detail_core_details.[track]) =  'Small claims' THEN 'Small Claims Track'
@@ -97,7 +99,16 @@ CASE WHEN ISNULL(dim_detail_core_details.[proceedings_issued], '')  = 'No' THEN 
 [Final Damages Payment Requested] = 		      dim_detail_claim.[hastings_final_damages_payment_requested], 
 [Final Costs Payment Requested] = 	              dim_detail_claim.[hastings_final_costs_payment_requested], 
 [Total Claimant Costs] =                          fact_finance_summary.[claimants_costs_paid]		
-,ms_fileid
+,ms_fileid,
+/* Costs Template*/
+[Final Bill Date]      = dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] ,
+[Fee] =   '',
+[Fee Amount] = CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN  ISNULL(hastings_listing_table.defence_costs_billed, 0) END,
+[Fee VAT] = CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN ISNULL(hastings_listing_table.vat_billed, 0) END,
+[Hours Spent] = '',
+[Disbursements] = '',
+[Disbursements Amount] = CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN ISNULL(hastings_listing_table.disbursements_billed, 0) END
+
 
 
 FROM red_dw.dbo.fact_dimension_main
@@ -129,6 +140,8 @@ LEFT JOIN red_dw.dbo.dim_client_involvement
 	ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 LEFT JOIN red_dw.dbo.dim_detail_fraud
 	ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
+LEFT JOIN red_dw.dbo.fact_detail_claim
+ON fact_detail_claim.dim_matter_header_curr_key = dim_detail_claim.dim_matter_header_curr_key
 /*Claimant associate details*/
 LEFT JOIN 
 (
@@ -189,7 +202,8 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
 
  ) Court ON Court.fileID = ms_fileid AND Court.RN = 1
 
-
+ LEFT JOIN  Reporting.dbo.hastings_listing_table
+ ON [Supplier Reference] = TRIM(dim_matter_header_current.master_client_code) +'-'+TRIM(master_matter_number)
 
  WHERE 1 =1 
  AND dim_matter_header_current.master_client_code = '4908'

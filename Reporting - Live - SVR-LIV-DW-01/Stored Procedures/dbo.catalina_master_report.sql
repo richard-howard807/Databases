@@ -7,6 +7,8 @@ GO
 -- Author:		Jamie Bonner
 -- Create date: 2022-04-01
 -- Description:	Ticket #140824 New Catalina report
+
+-- JL 17/05/2022 added in new fields as per ticket #148197
 -- =============================================
 
 CREATE PROCEDURE [dbo].[catalina_master_report]
@@ -98,7 +100,15 @@ SELECT
 	, fact_finance_summary.disbursement_balance			AS [Unbilled Disbursements]
 	, #last_bill_data.last_bill_date				AS [Last Bill Date]
 	, CAST(fact_matter_summary_current.last_time_transaction_date AS DATE)				AS [Last Time Transaction Date]
-	,dim_detail_claim.[lead_or_follow] AS [Lead/Follow] 
+	,dim_detail_claim.[lead_or_follow] AS [Lead/Follow]
+	,dim_detail_core_details.referral_reason AS [Referral Reason]
+	,dim_matter_worktype.[work_type_name] AS [work Type]
+	,track AS [Track]
+	,fact_finance_summary.damages_reserve AS[Damages Reserve]
+	,claimant_costs_reserve_current AS [Claimants Costs Reserve]
+	,fact_detail_claim.damages_paid_by_client AS [Damages Paid]
+	,claimants_total_costs_paid_by_all_parties AS [Claimants Costs Paid]
+
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.fact_dimension_main
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -126,6 +136,14 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON #revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
    LEFT JOIN red_dw.dbo.dim_detail_claim
 	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.fact_detail_claim WITH(NOLOCK)
+   ON  fact_detail_claim.client_code = dim_matter_header_current.client_code
+ AND fact_detail_claim.matter_number = dim_matter_header_current.matter_number
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK)
+  ON  fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
+ AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
+ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype WITH(NOLOCK)
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
 WHERE 1 = 1
 	AND dim_matter_header_current.reporting_exclusions = 0
