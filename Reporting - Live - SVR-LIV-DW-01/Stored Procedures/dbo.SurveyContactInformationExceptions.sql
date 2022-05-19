@@ -3,9 +3,19 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 CREATE PROCEDURE [dbo].[SurveyContactInformationExceptions]
+(
+@Division AS NVARCHAR(MAX)
+,@Department AS NVARCHAR(MAX)
+,@Team AS NVARCHAR(MAX)
+)
 AS
 BEGIN 
+
+SELECT ListValue  INTO #Division FROM Reporting.dbo.[udt_TallySplit]('|', @Division)
+SELECT ListValue  INTO #Department FROM Reporting.dbo.[udt_TallySplit]('|', @Department)
+SELECT ListValue  INTO #Team FROM Reporting.dbo.[udt_TallySplit]('|', @Team)
 SELECT 
 RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,client_name AS [Client Name]
@@ -34,6 +44,9 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
  FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
+INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel2hist COLLATE DATABASE_DEFAULT
+INNER JOIN #Department AS Department  ON Department.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel3hist COLLATE DATABASE_DEFAULT
+INNER JOIN #Team AS Team ON Team.ListValue   COLLATE DATABASE_DEFAULT = hierarchylevel4hist COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
