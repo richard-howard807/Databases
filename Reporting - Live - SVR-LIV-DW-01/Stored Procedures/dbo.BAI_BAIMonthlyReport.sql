@@ -55,7 +55,51 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 			[Claimant] = dim_claimant_thirdparty_involvement.claimant_name,
 			[Policyholder] = COALESCE(insuredclient_name, dim_defendant_involvement.[defendant_name]),
 			[Claimant Solicitor] = COALESCE(dim_detail_claim.dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name),
-			[Gross Reserve] = ISNULL(fact_finance_summary.[damages_reserve],0) + ISNULL(fact_detail_reserve_detail.[claimant_costs_reserve_current],0) + ISNULL(fact_finance_summary.[defence_costs_reserve],0),
+		
+		
+				/*
+			
+			Sum of the 3 reserve columns (M,O,Q) BUT with following position when key fields are triggered:
+If date_claim_concluded is complete then it is columns N,O,Q Damages Agreed	Costs Reserve Defence Costs Reserve
+If date_costs_settled is complete then it is columns N,P,Q  Damages Agreed  Costs Agreed,  Defence Costs Reserve
+			
+		
+			*/
+		
+		[Gross Reserve] = CASE 
+			WHEN date_claim_concluded IS NOT NULL THEN 
+			--Damages Agreed + 	Costs Reserve +  Defence Costs Reserve
+			ISNULL(fact_finance_summary.[damages_paid_to_date],0) --Damages Agreed
+			+ ISNULL(fact_finance_summary.[tp_costs_reserve_net],0) --Costs Reserve
+			+ ISNULL(fact_finance_summary.[defence_costs_reserve_net],0) --Defence Costs Reserve
+			--Damages Agreed  +  Costs Agreed, +  Defence Costs Reserve
+			WHEN date_costs_settled IS NOT NULL THEN 
+			ISNULL(fact_finance_summary.[damages_paid_to_date],0) --Damages Agreed
+			+ ISNULL(fact_finance_summary.[total_tp_costs_paid_to_date],0) --Costs Agreed,
+			+ ISNULL(fact_finance_summary.[defence_costs_reserve_net],0) --Defence Costs Reserve
+
+		  WHEN date_closed_case_management IS NOT NULL OR TRIM(dim_detail_core_details.present_position) IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
+		  -- Damages Agreed + Costs Agreed + Defence Cost
+		  THEN ISNULL(fact_finance_summary.[damages_paid_to_date],0) --Damages Agreed
+		  +    ISNULL(fact_finance_summary.[total_tp_costs_paid_to_date],0) --Costs Agreed
+		  +    ISNULL(defence_costs_billed,0) --Defence Cost
+
+			/*If matter is closed OR present_position is fnal bill sent/to be closed then columns N,P,R */
+
+			ELSE ISNULL(fact_finance_summary.[damages_reserve_net], 0) --Damages Reserve
+			+ ISNULL(fact_finance_summary.[defence_costs_reserve_net],0) --Defence Costs Reserve
+			+ ISNULL(fact_finance_summary.[tp_costs_reserve_net],0) -- Costs Reserve
+
+			END,
+
+			[Damages Reserve] = fact_finance_summary.[damages_reserve_net], -- fact_finance_summary.[damages_reserve],
+			[Damages Agreed]  = fact_finance_summary.[damages_paid_to_date] , --fact_finance_summary.[damages_paid],
+			[Costs Reserve]   = fact_finance_summary.[tp_costs_reserve_net], --fact_detail_reserve_detail.[claimant_costs_reserve_current],
+			[Costs Agreed]    =  fact_finance_summary.[total_tp_costs_paid_to_date],--fact_finance_summary.[claimants_costs_paid] ,
+			[Defence Costs Reserve] = fact_finance_summary.[defence_costs_reserve_net],--  fact_finance_summary.[defence_costs_reserve],
+			[Defence Cost] = defence_costs_billed,
+		
+			--	ISNULL(fact_finance_summary.[damages_reserve],0) + ISNULL(fact_detail_reserve_detail.[claimant_costs_reserve_current],0) + ISNULL(fact_finance_summary.[defence_costs_reserve],0),
 		--fact_detail_reserve_detail.[total_current_reserve],
 		    [FSCS Protected] = CASE WHEN ISNUMERIC(capita_fscs_protected_yes_enter_percent_no_leave_blank)=1 THEN CAST(capita_fscs_protected_yes_enter_percent_no_leave_blank AS NVARCHAR(4)) +'%'
 			WHEN capita_fscs_protected_yes_enter_percent_no_leave_blank='Yes-100%' THEN '100%'
@@ -63,13 +107,8 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 			                ELSE dim_detail_core_details.[capita_fscs_protected_yes_enter_percent_no_leave_blank] END,
 
             [Cause of Litigation] = dim_detail_core_details.[referral_reason],
-			[Damages Reserve] = fact_finance_summary.[damages_reserve],
-			[Damages Agreed] = fact_finance_summary.[damages_paid],
-			[Costs Reserve] = fact_detail_reserve_detail.[claimant_costs_reserve_current],
-			[Costs Agreed] =  fact_finance_summary.[claimants_costs_paid] ,
-			[Defence Costs Reserve] = fact_finance_summary.[defence_costs_reserve],
-			[Defence Cost] = defence_costs_billed,
-			
+
+
 			    [Status] = CASE 
 			 WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL AND UPPER(TRIM(dim_detail_outcome.[outcome_of_case])) IN ( 'DISCONTINUED','DISCONTINUED  - PRE-LIT','DISCONTINUED - INDEMNIFIED BY 3RD PARTY', 'DISCONTINUED - INDEMNIFIED BY THIRD PARTY', 'DISCONTINUED - POST LIT WITH NO COSTS ORDER', 'DISCONTINUED - POST-LIT WITH COSTS ORDER', 'DISCONTINUED - POST-LIT WITH NO COSTS ORDER', 'DISCONTINUED - PRE LIT NO COSTS ORDER', 'DISCONTINUED - PRE-LIT', 'STRUCK OUT', 'WON', 'WON AT TRIAL' ) THEN 'Closed – Repudiated'
              WHEN dim_matter_header_current.date_closed_case_management IS NULL AND UPPER(TRIM(dim_detail_outcome.[outcome_of_case])) IN ( 'DISCONTINUED','DISCONTINUED  - PRE-LIT','DISCONTINUED - INDEMNIFIED BY 3RD PARTY', 'DISCONTINUED - INDEMNIFIED BY THIRD PARTY', 'DISCONTINUED - POST LIT WITH NO COSTS ORDER', 'DISCONTINUED - POST-LIT WITH COSTS ORDER', 'DISCONTINUED - POST-LIT WITH NO COSTS ORDER', 'DISCONTINUED - PRE LIT NO COSTS ORDER', 'DISCONTINUED - PRE-LIT', 'STRUCK OUT', 'WON', 'WON AT TRIAL' ) THEN 'Repudiated'
@@ -94,6 +133,8 @@ SET @EndDate=(SELECT MAX(calendar_date) FROM red_dw.dbo.dim_date WHERE cal_month
 			,dim_detail_core_details.capita_category_position_code
 		,CASE WHEN CONVERT(DATE,final_bill_date,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileClosedPeriod]
 		,CASE WHEN CONVERT(DATE,date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS [FileOpenedPeriod]
+		,date_costs_settled
+		,date_claim_concluded
 		--00516705 00000696
 		FROM  red_dw.dbo.fact_dimension_main
 		JOIN red_dw.dbo.dim_matter_header_current
