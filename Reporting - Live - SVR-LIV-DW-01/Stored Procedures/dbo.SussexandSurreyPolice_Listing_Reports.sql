@@ -12,6 +12,7 @@ Current Version:	Initial Create
 ====================================================
 --ES 2022/03/16 #139463, added suffolk client code 817395
 --JL 2022/04/19 #143521, added new field for area column 
+--JB 2022/05/24 #149458, added new Surrey Police fields
 ====================================================
 
 */
@@ -25,7 +26,8 @@ BEGIN
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-
+--DECLARE @StartFY AS DATE = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.current_fin_year = 'Current')
+--		, @EndFY AS DATE = CAST(GETDATE() AS DATE)
 
 SELECT
  fact_dimension_main.client_code [Client Code]
@@ -51,7 +53,9 @@ SELECT
 ,Billed.[Disbursementsincvat] AS Disbursements
 ,dim_detail_core_details.suffolk_police_area
 
-
+, dim_detail_client.surrey_pol_division_where_claim_arises		AS [SP Division]
+, dim_detail_client.surrey_pol_type_of_negligence_claim			AS [Neg Type]
+, dim_detail_client.surrey_pol_lessons_learnt_paid_claims	AS [Lessons]
 
 from red_dw..fact_dimension_main
 left join red_dw..dim_matter_header_current on fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -81,7 +85,8 @@ inner join
               having sum(bill_total) <>0
        ) as Billed
        on fact_dimension_main.dim_matter_header_curr_key = Billed.dim_matter_header_curr_key
-
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 
 dim_matter_header_current.client_code IN ('00451638' , '00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
@@ -89,4 +94,9 @@ AND dim_matter_header_current.matter_number <>'ML'
 END
 
   
+
+
+
+
+
 GO
