@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2021-11-15
@@ -18,7 +19,7 @@ CREATE PROCEDURE [dbo].[EmployeeAttendanceTracker]
 		, @team AS NVARCHAR(MAX)
 		, @employee_id AS NVARCHAR(MAX)
 		, @category AS NVARCHAR(MAX)
-		, @jobrole as nvarchar(max)
+		, @jobrole AS NVARCHAR(MAX)
 )
 AS
 
@@ -106,6 +107,7 @@ CROSS APPLY
 			dim_employee.deleted_from_cascade = 0
 			AND dim_fed_hierarchy_history.windowsusername IS NOT null			
 	        and isnull(dim_employee.leftdate, '20990101') >= getdate()
+			AND ISNULL(previous_firm,'')<>'RadcliffesLeBrasseur' -- added requested by Debbie holmes 
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -161,7 +163,7 @@ CROSS APPLY
 			dim_employee.deleted_from_cascade = 0
 			AND dim_fed_hierarchy_history.windowsusername IS NOT null
 			and isnull(dim_employee.leftdate, '20990101') >= getdate()
-            
+            AND ISNULL(previous_firm,'')<>'RadcliffesLeBrasseur' -- added requested by Debbie holmes 
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -205,18 +207,18 @@ FROM #employee_dates
 
 		
 -- pre covid comparison data
-	left outer join (
-			select pre_covid_data.cal_month_name + '-' + cast(pre_covid_data.cal_year as varchar(4)) pre_covid_period, pre_covid_data.cal_month_name,
+	LEFT OUTER JOIN (
+			SELECT pre_covid_data.cal_month_name + '-' + CAST(pre_covid_data.cal_year AS VARCHAR(4)) pre_covid_period, pre_covid_data.cal_month_name,
 			pre_covid_data.employeeid, 
-			sum(pre_covid_data.OfficeCount) pre_covid_office_count, sum(pre_covid_data.working_day) pre_covid_working_day, 
-						(select MAX(dim_date.cal_day_in_month) from red_dw..dim_date where dim_date.cal_month_name = pre_covid_data.cal_month_name and dim_date.trading_day_flag = 'Y' and dim_date.holiday_desc is null
-													and dim_date.calendar_date between @start_cal_date and @end_cal_date and dim_date.calendar_date <= cast(getdate() as date)) first_day_in_month
-				from (
-					select #pre_covid_employee_dates.*,
-					case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') then 1
-					else 0  end OfficeCount,
-					case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') then 1
-					else 0 END as working_day
+			SUM(pre_covid_data.OfficeCount) pre_covid_office_count, SUM(pre_covid_data.working_day) pre_covid_working_day, 
+						(SELECT MAX(dim_date.cal_day_in_month) FROM red_dw..dim_date WHERE dim_date.cal_month_name = pre_covid_data.cal_month_name AND dim_date.trading_day_flag = 'Y' AND dim_date.holiday_desc IS NULL
+													AND dim_date.calendar_date BETWEEN @start_cal_date AND @end_cal_date AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)) first_day_in_month
+				FROM (
+					SELECT #pre_covid_employee_dates.*,
+					CASE WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') THEN 1
+					ELSE 0  END OfficeCount,
+					CASE WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') THEN 1
+					ELSE 0 END AS working_day
 				
 					FROM #pre_covid_employee_dates 
 						LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
@@ -226,13 +228,13 @@ FROM #employee_dates
 						INNER JOIN #category
 							ON ISNULL(fact_employee_attendance.category, 'Working From Home') COLLATE DATABASE_DEFAULT = #category.ListValue
 					) pre_covid_data
-				group by pre_covid_data.cal_month_name + '-' + cast(pre_covid_data.cal_year as varchar(4))
+				GROUP BY pre_covid_data.cal_month_name + '-' + CAST(pre_covid_data.cal_year AS VARCHAR(4))
                        , pre_covid_data.employeeid, pre_covid_data.cal_month_name, pre_covid_data.cal_month
-				) pre_covid on pre_covid.employeeid = #employee_dates.employeeid and pre_covid.cal_month_name = #employee_dates.cal_month_name 
-								and pre_covid.first_day_in_month = #employee_dates.cal_day_in_month
+				) pre_covid ON pre_covid.employeeid = #employee_dates.employeeid AND pre_covid.cal_month_name = #employee_dates.cal_month_name 
+								AND pre_covid.first_day_in_month = #employee_dates.cal_day_in_month
 
 
-order by employee_name, calendar_date
+ORDER BY employee_name, calendar_date
 
 
 END 

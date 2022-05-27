@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2021-11-15
@@ -17,7 +18,7 @@ CREATE PROCEDURE [dbo].[EmployeeNoOfficeAttendance]
 		, @department AS NVARCHAR(MAX)	
 		, @team AS NVARCHAR(MAX)
 		, @employee_id AS NVARCHAR(MAX)
-		, @category as nvarchar(max)
+		, @category AS NVARCHAR(MAX)
 )
 AS
 
@@ -92,6 +93,7 @@ CROSS APPLY
 			dim_employee.deleted_from_cascade = 0
 			AND dim_fed_hierarchy_history.windowsusername IS NOT null            
 	        and isnull(leftdate, '20990101') >= getdate()
+			AND ISNULL(previous_firm,'')<>'RadcliffesLeBrasseur' -- added requested by Debbie holmes 
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -117,18 +119,18 @@ SELECT
   , employee_data.cal_month_name
   , employee_data.cal_quarter
   , employee_data.cal_year
-	, sum(OfficeCount)	AS OfficeCount
-	, sum(working_day) as working_day
+	, SUM(OfficeCount)	AS OfficeCount
+	, SUM(working_day) AS working_day
 	, 1 AS day_count
 
-from 
+FROM 
 
 	(
-		select #employee_dates.*,
-			case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') then 1
-		else 0  end OfficeCount,
-		case when ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') then 1
-		else 0 END as working_day
+		SELECT #employee_dates.*,
+			CASE WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office') THEN 1
+		ELSE 0  END OfficeCount,
+		CASE WHEN ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home') THEN 1
+		ELSE 0 END AS working_day
 
 		FROM #employee_dates
 			LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
@@ -140,7 +142,7 @@ from
 	) employee_data
 	 
 
-group by employee_data.dim_fed_hierarchy_history_key
+GROUP BY employee_data.dim_fed_hierarchy_history_key
        , employee_data.employeeid
        , employee_data.employee_name
        , employee_data.office
@@ -154,7 +156,7 @@ group by employee_data.dim_fed_hierarchy_history_key
        , employee_data.cal_month_name
        , employee_data.cal_quarter
        , employee_data.cal_year
-having sum(OfficeCount) = 0 AND sum(employee_data.working_day) > 0
+HAVING SUM(OfficeCount) = 0 AND SUM(employee_data.working_day) > 0
 
 END 
 

@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 2021-11-15
@@ -14,7 +15,7 @@ CREATE PROCEDURE [dbo].[EmployeeAvgAttendance]
 		@start_date AS INT
 		, @end_date AS INT
 		, @office AS NVARCHAR(MAX)
-		, @category as nvarchar(max)
+		, @category AS NVARCHAR(MAX)
 )
 AS
 
@@ -73,7 +74,8 @@ CROSS APPLY
 			INNER JOIN #office on #office.ListValue = dim_employee.locationidud collate database_default
 		WHERE
 			dim_employee.deleted_from_cascade = 0
-			AND dim_fed_hierarchy_history.windowsusername IS NOT null            
+			AND dim_fed_hierarchy_history.windowsusername IS NOT null 
+			AND ISNULL(previous_firm,'')<>'RadcliffesLeBrasseur' -- added requested by Debbie holmes
 	) AS employees
 WHERE 1 = 1
 	AND dim_date.calendar_date <= CAST(GETDATE() AS DATE)
@@ -81,15 +83,16 @@ WHERE 1 = 1
 	AND dim_date.holiday_flag = 'N'
 	AND dim_date.calendar_date BETWEEN @start_cal_date AND @end_cal_date
 	AND employees.employeestartdate <= dim_date.calendar_date
+	
 --	AND employees.leaver = 0
 
 
 
 
-select
+SELECT
        avg_data.office
      , avg_data.calendar_date
-	 ,  datepart(weekday, avg_data.calendar_date) day_order
+	 ,  DATEPART(WEEKDAY, avg_data.calendar_date) day_order
      , avg_data.cal_day_in_week
      , avg_data.cal_week_in_year
      , avg_data.cal_month
@@ -97,8 +100,8 @@ select
      , avg_data.cal_quarter
      , avg_data.cal_year
      , avg_data.category
-     , sum(avg_data.OfficeCount) OfficeCount
-from (
+     , SUM(avg_data.OfficeCount) OfficeCount
+FROM (
 		SELECT 
 		
 		   #employee_dates.employeeid
@@ -127,9 +130,9 @@ from (
 						AND fact_employee_attendance.attendancekey <> 'Dummy'
 			INNER JOIN #category
 				ON ISNULL(fact_employee_attendance.category, 'Working From Home') COLLATE DATABASE_DEFAULT = #category.ListValue
-		where fact_employee_attendance.category = 'In Office' 
+		WHERE fact_employee_attendance.category = 'In Office' 
 	) avg_data
-group by avg_data.office
+GROUP BY avg_data.office
        , avg_data.calendar_date
        , avg_data.cal_day_in_week
        , avg_data.cal_week_in_year
