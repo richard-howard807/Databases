@@ -10,6 +10,7 @@ GO
 -- =============================================
 -- ===========================================================================================================================
 -- Changed SP to populate Reporting.dbo.ClaimsSLAComplianceTable instead, to speed up the report rather than running it live
+-- Ticket #149956 - exclude Makerstudy matters with instruction type MSG Project 3
 -- ===========================================================================================================================
 
 CREATE PROCEDURE [dbo].[ClaimsSLACompliance] --EXEC [dbo].[ClaimsSLACompliance]
@@ -547,7 +548,7 @@ SELECT
 		ELSE
 			'LimeGreen'
 	  END								 AS RagWithouthSub
-	,referral_reason
+	,dim_detail_core_details.referral_reason
 	, dim_detail_core_details.delegated
 	, CASE 
 		WHEN #ClientReportDates.do_clients_require_an_initial_report = 'No' OR
@@ -614,6 +615,8 @@ FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 		ON dim_detail_client.client_code = dim_matter_header_current.client_code
 			AND dim_detail_client.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+		ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #FICProcess FICProcess 
 		ON FICProcess.fileID = ms_fileid
 	LEFT OUTER JOIN Reporting.dbo.ClientSLAs 
@@ -653,8 +656,13 @@ WHERE
 		END) = 0
 	AND ISNULL(dim_matter_header_current.dim_matter_worktype_key, '') <> 32 --Claims handling matter types removed as they don't have KPIs like this
 	--AND ISNULL(#ClientReportDates.do_clients_require_an_initial_report, '') = 'No'
+	AND (CASE
+			WHEN fact_dimension_main.master_client_code = 'W24438' AND dim_detail_claim.msg_instruction_type = 'MSG Project 3' THEN
+				0
+			ELSE
+				1
+		END 
+		) = 1 --exclude Makerstudy matters with instruction type MSG Project 3
 END
-
-
 
 GO
