@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 CREATE PROCEDURE [dbo].[MarketstudyProject3Report]
 
 AS
@@ -44,28 +46,56 @@ matter_description AS [Insured]
 ,dim_detail_predict.doc_updated_date_key
 ,dim_detail_core_details.present_position
 ,msg_claim_strategy
-FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+,matter_description AS [Full Case Description]
+,dim_detail_claim.[number_of_claimants]
+,fileNotes
+,fileExternalNotes
+,HoursRec.[Hours recorded to date]
+,claimant_name
+,outcome_of_case
+FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
-LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+ ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
+ AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_client_involvement WITH(NOLOCK)
  ON dim_client_involvement.client_code = dim_matter_header_current.client_code
  AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
-LEFT OUTER JOIN red_dw.dbo.dim_detail_predict
+LEFT OUTER JOIN red_dw.dbo.dim_detail_predict WITH(NOLOCK)
  ON dim_detail_predict.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
+LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail WITH(NOLOCK)
  ON fact_detail_paid_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
+LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail WITH(NOLOCK)
  ON fact_detail_recovery_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
+LEFT OUTER JOIN red_dw.dbo.fact_detail_claim WITH(NOLOCK)
  ON fact_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+LEFT OUTER JOIN red_dw.dbo.dim_detail_claim WITH(NOLOCK)
  ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK)
  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
+LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
  ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN ms_prod.config.dbFile WITH(NOLOCK)
+ ON fileID=ms_fileid
+LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key,SUM(minutes_recorded)/60 AS [Hours recorded to date] FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+INNER JOIN red_dw.dbo.fact_all_time_activity WITH(NOLOCK)
+ ON fact_all_time_activity.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+WHERE  ms_fileid IN 
+(
+5235647,5235648,5235649,5235679,5235680,5235681,5235682
+,5235683,5235684,5235685,5235686,5235687,5235688,5235689
+,5235690,5235691,5235692,5235693,5235694,5235695,5235696
+,5235697,5235698,5235650,5235651,5235652,5235653,5235654
+,5235655,5235656,5235657,5235658,5235659,5235660,5235661
+,5235662,5235663,5235664,5235665,5235666,5235667,5235668
+,5235669,5235670,5235671,5235672,5235673,5235674,5235675
+,5235676,5235677,5235678,5235338
+)
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS HoursRec
+ ON HoursRec.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE  ms_fileid IN 
 (
 5235647,5235648,5235649,5235679,5235680,5235681,5235682
