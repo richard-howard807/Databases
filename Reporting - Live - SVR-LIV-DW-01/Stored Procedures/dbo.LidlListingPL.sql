@@ -60,6 +60,9 @@ BEGIN
 		,CASE WHEN dim_detail_core_details.present_position ='Claim and costs outstanding' THEN 0 ELSE 1 END AS PPRule
 	,CASE WHEN date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS FileStatus
 	,dim_detail_core_details.[brief_details_of_claim]
+	,fact_finance_summary.wip
+	,fact_finance_summary.[unpaid_bill_balance]
+	
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 	ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
