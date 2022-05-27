@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[SurveyContactInformationExceptions]
 (
 @Division AS NVARCHAR(MAX)
@@ -147,7 +148,8 @@ WHERE Bills.LastBill=1
 AND dim_matter_header_current.date_closed_case_management IS NULL
 AND master_matter_number<>'0'
 AND (txtContEmail IS NULL OR txtContName IS NULL)
-AND work_type_code NOT  IN ('2038','1114','1077')
+AND work_type_code NOT  IN ('2038','1114','1077','1143','2039','2041')
+AND fee_earner_code <>'PRV'
 AND client_name NOT LIKE '%Weightmans%'
 AND master_client_code NOT IN ('30645','6930','47237','47354','1878','76202','CB001','123739')
 AND UPPER(matter_description) NOT LIKE '%HR RELY%'
