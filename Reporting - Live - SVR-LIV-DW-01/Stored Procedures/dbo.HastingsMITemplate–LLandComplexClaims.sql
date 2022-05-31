@@ -109,7 +109,7 @@ CASE WHEN ISNULL(dim_detail_core_details.[proceedings_issued], '')  = 'No' THEN 
 [Disbursements] = '',
 [Disbursements Amount] = CASE WHEN dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL THEN ISNULL(hastings_listing_table.disbursements_billed, 0) END
 
-
+,dim_detail_core_details.[referral_reason]
 
 FROM red_dw.dbo.fact_dimension_main
 JOIN red_dw.dbo.dim_matter_header_current
@@ -210,7 +210,7 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
  AND date_opened_case_management >= '2021-05-01'  --01/05/2021
  AND reporting_exclusions = 0 
  AND dim_matter_header_current.master_client_code +'-' + master_matter_number <> '4908-19'
-
+ AND ISNULL(dim_detail_core_details.[referral_reason], '') <> 'Advice only'
 
  ORDER BY ms_fileid 
 

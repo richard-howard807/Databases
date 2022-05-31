@@ -102,9 +102,12 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,txtContName AS [Survey Contact Name]
 ,txtContEmail AS [Survey Contact Email]
 ,SurveyMatters.Logic
+,CASE WHEN txtContEmail IS NOT NULL THEN  ROW_NUMBER() OVER	(PARTITION BY txtContEmail ORDER BY date_opened_case_management DESC) ELSE NULL END AS DuplicateEmail
 ------------------Sheets----------------------------------
-,CASE WHEN ClientOptouts.clNo IS NOT  NULL THEN 'Client level opt outs' 
---•	Contact level opt outs
+,CASE 
+WHEN (CASE WHEN txtContEmail IS NOT NULL THEN  ROW_NUMBER() OVER	(PARTITION BY txtContEmail ORDER BY date_opened_case_management DESC) ELSE NULL END)>1 THEN 'Duplicate Email'
+WHEN ClientOptouts.clNo IS NOT  NULL THEN 'Client level opt outs' 
+WHEN txtContEmail IN (SELECT txtContEmailVal FROM MS_Prod.dbo.udContactEmailOptOut) THEN 'Contact level opt outs'
 WHEN IA.dim_client_key IS NOT NULL THEN 'Marketing General Opt Outs'
 --•	Duplicate contacts
 WHEN work_type_code IN ('2038','1114','1077','1143','2039','2041') 
@@ -124,7 +127,7 @@ THEN 'All Internal / CJSM matters / Excluded matter types'
 WHEN txtContEmail  IS NULL THEN 'Data Quality Issues'
 
 END AS [Sheets]
-
+,1 AS Matters
 FROM #SurveyMatters AS SurveyMatters
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = SurveyMatters.dim_matter_header_curr_key
@@ -218,7 +221,9 @@ INNER JOIN red_dw.dbo.dim_ia_activity_involvement
   AND dim_ia_contact_lists.dim_client_key =0
 ) AS IA
  ON IA.dim_client_key = dim_client.dim_client_key
+
 WHERE SurveyMatters.Logic IS NOT NULL
 
 END
+
 GO

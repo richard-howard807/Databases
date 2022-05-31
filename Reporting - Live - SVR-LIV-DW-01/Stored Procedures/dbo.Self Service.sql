@@ -47,6 +47,7 @@ GO
 -- ES 20220222 added dst isured client name and removed FED from insured client name & reference field, requested by BH
 -- ES 20220309 amended work type label to matter type
 -- ES 20220510 added mib service category, requested by EJ
+-- MT 20220525 added [Method of claimants funding]  = dim_detail_core_details.[method_of_claimants_funding] #149787
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -524,6 +525,7 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_detail_core_details.[incident_location] AS [Incident Location]
        ,dim_detail_core_details.has_the_claimant_got_a_cfa AS [Has the Claimant got a CFA? ]
        ,dim_detail_claim.cfa_entered_into_before_1_april_2013 AS [CFA entered into before 1 April 2013]
+	   ,[Method of claimants funding]  = dim_detail_core_details.[method_of_claimants_funding] 
        ,dim_detail_claim.[dst_claimant_solicitor_firm ] AS [Claimant's Solicitor (Data Service)]
        ,dim_claimant_thirdparty_involvement.claimantsols_name AS [Claimant's Solicitor]
        ,RTRIM(LTRIM(dim_involvement_full.forename)) + ' ' + RTRIM(LTRIM(dim_involvement_full.name)) [Claimants Representative]

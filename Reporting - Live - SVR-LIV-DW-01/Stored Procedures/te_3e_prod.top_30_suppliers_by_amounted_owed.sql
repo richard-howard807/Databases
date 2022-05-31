@@ -29,7 +29,7 @@ SELECT TOP 30
 		ON v.Payee = pe.PayeeIndex
 	INNER JOIN [TE_3E_PROD]..vendor ve 
 		ON ve.VendorIndex = pe.Vendor
-	INNER JOIN [SVR-LIV-3ESQ-01].[TE_3E_PROD].[DBO].[GLNatural] GL with (NOLOCK)
+	INNER JOIN [TE_3E_PROD].[DBO].[GLNatural] GL with (NOLOCK)
 		ON gl.GLNaturalID = pe.APGLNat
 	
 	WHERE gl.GLNat in ('420002','420003')

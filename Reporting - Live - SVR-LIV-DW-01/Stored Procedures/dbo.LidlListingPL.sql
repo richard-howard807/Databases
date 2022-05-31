@@ -62,7 +62,13 @@ BEGIN
 	,dim_detail_core_details.[brief_details_of_claim]
 	,fact_finance_summary.wip
 	,fact_finance_summary.[unpaid_bill_balance]
-	
+	, CASE 
+		WHEN ISNULL(dim_detail_core_details.referral_reason, '') NOT IN ('Advice only', 'Intel only') AND dim_detail_core_details.proceedings_issued IS NULL THEN
+			'Red'
+		ELSE
+			'Transparent'
+	  END					AS proceedings_issued_colour
+
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 	ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key

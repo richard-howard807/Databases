@@ -8,6 +8,49 @@ CREATE PROCEDURE [dbo].[HastingsMITemplate–LLandComplexClaims_CostsTemplate]--
 AS
 
 
+DROP TABLE IF EXISTS #t1
+SELECT DISTINCT 
+[Claim Reference]	               =     COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference),
+TimeRecordedBy.fed_hierarchy_business_key
+,bill_amount_vat = SUM(fact_bill_activity.bill_amount_vat) OVER (PARTITION BY COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference),TimeRecordedBy.fed_hierarchy_business_key) 
+
+INTO #t1 
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+ ON dim_bill_date.dim_bill_date_key = fact_bill_billed_time_activity.dim_bill_date_key
+INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
+ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS TimeRecordedBy
+ ON TimeRecordedBy.dim_fed_hierarchy_history_key = fact_bill_billed_time_activity.dim_fed_hierarchy_history_key 
+INNER JOIN red_dw.dbo.dim_employee WITH(NOLOCK)
+ ON dim_employee.dim_employee_key = TimeRecordedBy.dim_employee_key
+LEFT JOIN red_dw.dbo.dim_fed_hierarchy_history AS Levelname
+ ON Levelname.fed_code = TimeRecordedBy.fed_code AND Levelname.dss_current_flag = 'Y'
+JOIN red_dw.dbo.fact_dimension_main
+ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT JOIN red_dw.dbo.dim_client_involvement
+ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
+LEFT JOIN red_dw.dbo.dim_detail_outcome
+ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+LEFT JOIN red_dw.dbo.fact_bill_activity
+ON fact_bill_activity.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+AND fact_bill_activity.dim_fed_hierarchy_history_key = fact_bill_billed_time_activity.dim_fed_hierarchy_history_key
+
+WHERE 1 =1 
+
+ AND dim_matter_header_current.master_client_code = '4908'
+ AND date_opened_case_management >= '2021-05-01'  --01/05/2021
+ AND dim_matter_header_current.reporting_exclusions = 0 
+ AND dim_matter_header_current.master_client_code +'-' + master_matter_number <> '4908-19'
+ AND fact_bill_billed_time_activity.minutes_recorded > 0 
+
+ 
+ --AND dim_matter_header_current.master_client_code +'-' + master_matter_number = '4908-9'
+ 
+ GROUP BY 
+ COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference),
+TimeRecordedBy.fed_hierarchy_business_key,fact_bill_activity.bill_amount_vat
+
 SELECT * 
 
 FROM 
@@ -17,8 +60,8 @@ SELECT DISTINCT
 [Claim Reference]	               =     COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference),
 [Final Bill Date]                  =     dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill],
 [Fee]                              =     dim_employee.forename  +' ' + dim_employee.surname , 
-[Fee Amount]                       = SUM(fact_bill_billed_time_activity.actual_time_recorded_value),
-[Fee VAT]                          =  NULL,
+[Fee Amount]                       =     SUM(fact_bill_billed_time_activity.actual_time_recorded_value),
+[Fee VAT]                          =     #t1.bill_amount_vat,
 [Hours Spent]                      =	SUM(CAST(fact_bill_billed_time_activity.minutes_recorded AS DECIMAL(10,2)))/60,
 [Disbursements]                    =   CAST('' AS VARCHAR(100)),
 [Disbursements Amount]             =   NULL,
@@ -45,6 +88,13 @@ LEFT JOIN red_dw.dbo.dim_client_involvement
 ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 LEFT JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+LEFT JOIN #t1 ON 
+TimeRecordedBy.fed_hierarchy_business_key = #t1.fed_hierarchy_business_key AND #t1.[Claim Reference] =  COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference)
+LEFT JOIN red_dw.dbo.fact_bill
+ON fact_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+--LEFT JOIN red_dw.dbo.fact_bill_activity
+--ON fact_bill_activity.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
+--AND fact_bill_activity.dim_fed_hierarchy_history_key = fact_bill_billed_time_activity.dim_fed_hierarchy_history_key
 
 
 WHERE 1 =1 
@@ -53,13 +103,16 @@ WHERE 1 =1
  AND date_opened_case_management >= '2021-05-01'  --01/05/2021
  AND dim_matter_header_current.reporting_exclusions = 0 
  AND dim_matter_header_current.master_client_code +'-' + master_matter_number <> '4908-19'
+ AND fact_bill_billed_time_activity.minutes_recorded > 0 
  --AND dim_matter_header_current.master_client_code +'-' + master_matter_number = '4908-9'
- --AND  dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL 
+ AND  dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL 
+ AND ISNULL(fact_bill.amount_outstanding, 0) = 0
+ 
 
 
 GROUP BY  COALESCE([dim_client_involvement].client_reference, [dim_client_involvement].insurerclient_reference),
 		  dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill],
-    	  dim_employee.forename  +' ' + dim_employee.surname 
+    	  dim_employee.forename  +' ' + dim_employee.surname,#t1.bill_amount_vat
 
 		  UNION 
 
@@ -102,6 +155,7 @@ FROM TE_3E_Prod.dbo.CostCard
 		JOIN red_dw.dbo.dim_matter_header_current 
 		ON ms_fileid = fileID
 
+
 		 LEFT JOIN red_dw.dbo.fact_disbursements_detail   
  ON CostCard.CostIndex = fact_disbursements_detail.costindex
  LEFT JOIN red_dw.dbo.dim_disbursement_cost_type 
@@ -112,6 +166,8 @@ LEFT JOIN red_dw.dbo.dim_client_involvement
 ON dim_client_involvement.dim_client_involvement_key = fact_dimension_main.dim_client_involvement_key
 LEFT JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+	LEFT JOIN red_dw.dbo.fact_bill
+ON fact_bill.dim_bill_key = fact_disbursements_detail.dim_bill_key
 WHERE 1 = 1 
 
       AND TE_3E_Prod.dbo.CostCard.IsActive = 1
@@ -124,7 +180,11 @@ WHERE 1 = 1
       
 	  AND dim_matter_header_current.reporting_exclusions = 0 
 
-	--  AND  dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL 
+	  AND  dim_detail_outcome.[mib_grp_zurich_pizza_hut_date_of_final_bill] IS NOT NULL 
+
+	  AND ISNULL(fact_bill.amount_outstanding, 0) = 0
+
+
 
 
 	  ) ALLdata

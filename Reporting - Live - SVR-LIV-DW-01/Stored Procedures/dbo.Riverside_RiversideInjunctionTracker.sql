@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2021-03-29
@@ -10,7 +12,48 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[Riverside_RiversideInjunctionTracker] 
 AS
+SELECT AllData.[Weightmans Reference],
+       AllData.work_type_name,
+       AllData.UPRN,
+       AllData.Region,
+       AllData.[Matter Description],
+       AllData.[Date Opened],
+       AllData.[Date Closed],
+       AllData.[Case Manager],
+       AllData.[LBA Date Upload],
+       AllData.[LBA Expiry Date],
+       AllData.[Injunction Application Date],
+       AllData.[Injunction Type],
+       AllData.[Hearing Date],
+       AllData.[Date Order Served],
+       AllData.[Injunction Service Date],
+       AllData.Comments,
+       AllData.[Total Billed],
+       AllData.Revenue,
+       AllData.Disbursements,
+       AllData.VAT,
+       AllData.[Last Bill Date],
+       AllData.[Expiry of Gas Certificate],
+       AllData.[Date Access Obtained],
+       AllData.[Current Status],
+       AllData.[Reason over 3 months],
+       AllData.Completed_Ongoing_Flag,
+       AllData.[Tenant's Name],
+      
+	  case
 
+when right(rtrim(REPLACE(LTRIM(RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))) 
+	  ,LTRIM(REPLACE(LTRIM(RIGHT((RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))),8)),',','')),'')),1) = ',' then substring(rtrim(REPLACE(LTRIM(RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))) 
+	  ,LTRIM(REPLACE(LTRIM(RIGHT((RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))),8)),',','')),'')),1,len(rtrim(REPLACE(LTRIM(RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))) 
+	  ,LTRIM(REPLACE(LTRIM(RIGHT((RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))),8)),',','')),'')))-1)
+
+else REPLACE(LTRIM(RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))) 
+	  ,LTRIM(REPLACE(LTRIM(RIGHT((RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))),8)),',','')),'') END as [Tenant's Address],
+	
+	   LTRIM(REPLACE(LTRIM(RIGHT((RTRIM(REPLACE(AllData.NewAddress,CHAR(13)+CHAR(10),' '))),8)),',','')) AS [Tenant's Postcode],
+       AllData.matter_description,
+       AllData.ms_fileid FROM
+(
 SELECT 
 	dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 	, dim_matter_worktype.work_type_name
@@ -37,17 +80,20 @@ SELECT
 			NULL
 		ELSE
             CAST(fact_matter_summary_current.last_bill_date AS DATE)
-	  END													AS [Last Bill Date],
+	  END													AS [Last Bill Date]
 
-	[Expiry of Gas Certificate]  =  CAST(dim_detail_claim.[gascomp_expiry_of_gas_certificate] AS DATE),
-	[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained], 
-	[Current Status]  = dim_detail_claim.[gascomp_current_status],
-	[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months],
+	,[Expiry of Gas Certificate]  =  CAST(dim_detail_claim.[gascomp_expiry_of_gas_certificate] AS DATE)
+	,[Date Access Obtained] = dim_detail_claim.[gascomp_date_access_obtained]
+	,[Current Status]  = dim_detail_claim.[gascomp_current_status]
+	,[Reason over 3 months] = dim_detail_claim.[gascomp_reason_over_three_months]
 
-	[Completed_Ongoing_Flag] = CASE WHEN dim_detail_claim.[gascomp_date_access_obtained] IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END,
-	[Tenant's Name] = TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin'), CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')), CHARINDEX('-',REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) - CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) + Len('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')),
-	[Tenant's Address] = CASE WHEN matter_description LIKE '%-%' THEN  TRIM(',' FROM REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(matter_description, TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(dim_matter_header_current.matter_description, CHARINDEX('GAS  ', dim_matter_header_current.matter_description), CHARINDEX('-',dim_matter_header_current.matter_description) - CHARINDEX('GAS  ', dim_matter_header_current.matter_description) + Len('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')), ''), RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1), ''), 'GAS  - ', ''), 'GAS -', ''), 'Martin - ', ''), 'Louise Darby - ', ''), 'Salam - ', ''), 'Ryan - ', '')) ELSE matter_description END
-	,[Tenant's Postcode] =  RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1) 
+	,[Completed_Ongoing_Flag] = CASE WHEN dim_detail_claim.[gascomp_date_access_obtained] IS NOT NULL THEN 'Completed' ELSE 'Ongoing' END
+	,[Tenant's Name] = TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin'), CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')), CHARINDEX('-',REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) - CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) + LEN('-')), 'GAS  ', ''), 'GAS ', ''), '-', ''))
+	--,[Tenant's Address] = CASE WHEN matter_description LIKE '%-%' THEN  TRIM(',' FROM REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(matter_description, TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(dim_matter_header_current.matter_description, CHARINDEX('GAS  ', dim_matter_header_current.matter_description), CHARINDEX('-',dim_matter_header_current.matter_description) - CHARINDEX('GAS  ', dim_matter_header_current.matter_description) + LEN('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')), ''), RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1), ''), 'GAS  - ', ''), 'GAS -', ''), 'Martin - ', ''), 'Louise Darby - ', ''), 'Salam - ', ''), 'Ryan - ', '')) ELSE matter_description END
+	--,[Tenant's Postcode] =  RIGHT(dim_matter_header_current.matter_description,CHARINDEX(',',REVERSE(dim_matter_header_current.matter_description))-1) 
+	,REPLACE(REPLACE(REPLACE(matter_description,TRIM(REPLACE(REPLACE(REPLACE(SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin'), CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')), CHARINDEX('-',REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) - CHARINDEX('GAS  ', REPLACE(REPLACE(REPLACE(REPLACE(dim_matter_header_current.matter_description, 'Kerrie-Louise', 'Kerrie Louise'), 'Wilkes-Ryan', 'Wilkes Ryan'), 'Abdel-Salam', 'Abdel Salam'), 'Hannah-Martin', 'Hannah Martin')) + LEN('-')), 'GAS  ', ''), 'GAS ', ''), '-', '')),'')
+	,'GAS  - ',''),'-','') AS NewAddress
+	,REPLACE(matter_description,'    ','') AS trimmedMatterdesc
 	,matter_description
   ,ms_fileid
 FROM red_dw.dbo.dim_matter_header_current
@@ -74,8 +120,9 @@ WHERE 1 = 1
 	AND reporting_exclusions = 0
 	AND ISNULL(matter_description, '') <> 'Ignore - opened in error'
 
+) AS AllData
 
-	ORDER BY dim_detail_claim.[gascomp_expiry_of_gas_certificate] asc
+	ORDER BY [Expiry of Gas Certificate] ASC
 	
 	
 GO

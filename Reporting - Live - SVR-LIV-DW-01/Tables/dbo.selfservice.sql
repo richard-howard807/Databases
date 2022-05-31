@@ -90,6 +90,7 @@ CREATE TABLE [dbo].[selfservice]
 [Incident Location] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Has the Claimant got a CFA? ] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [CFA entered into before 1 April 2013] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Method of claimants funding] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Claimant's Solicitor (Data Service)] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Claimant's Solicitor] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Claimants Representative] [varchar] (131) COLLATE Latin1_General_BIN NULL,
