@@ -18,7 +18,7 @@ SELECT
 [Claimant Surname]	=                             Claimant.contSurname, -- Claimant associate record
 [Claimant DOB] = 	                              dim_detail_core_details.[claimants_date_of_birth],
 [Is Claimant Injured?] =	                      dim_detail_core_details.[does_claimant_have_personal_injury_claim],
-[Injury Category] =                               dim_detail_claim.[hastings_injury_category],	                         
+[Injury Category] =                               dim_detail_core_details.injury_type,	                         
 [Prognosis Time] = 	                              dim_detail_claim.[hastings_prognosis_time],
 [PD Type] = 		                              dim_detail_outcome.[hastings_pd_type],
 [Credit Hire Duration]   =                        CASE WHEN dim_detail_hire_details.[hastings_credit_hire_duration] = 0 THEN NULL ELSE dim_detail_hire_details.[hastings_credit_hire_duration] END,    --	Integer	Show as blank if zero is entered	
