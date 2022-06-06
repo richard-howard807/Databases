@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 /*
 ===================================================
 ===================================================
@@ -18,8 +19,8 @@ Current Version:	Initial Create
 */
 CREATE PROCEDURE [dbo].[SussexandSurreyPolice_Listing_Reports]  --'2017-05-01', '2017-10-12'
 (
- @StartFY as date,
-@EndFY as date
+ @StartFY AS DATE,
+@EndFY AS DATE
 )
 AS
 BEGIN
@@ -38,7 +39,7 @@ SELECT
 , date_opened_case_management AS [Date Case Opened]
 , date_closed_case_management AS [Date Case Closed]
 , work_type_name AS [Work Type]
-, dim_detail_claim.[source_of_instruction] AS [Source of Instruction]
+, CASE WHEN dim_matter_header_current.master_client_code='817395' THEN dim_detail_core_details.[suffolk_police_source_of_instruction]  ELSE dim_detail_claim.[source_of_instruction] END AS [Source of Instruction]
 , dim_detail_claim.district AS District
 , dim_detail_advice.sussex_police_stations
 , dim_detail_claim.borough AS [Borough]
@@ -48,8 +49,8 @@ SELECT
 ,dbo.PoliceWorkTypes.GroupWorkTypeLookup
 --,bill_total AS [Total Billed to date]
 --,fees_total as [Profit Costs to date]
-,Billed.TotalBilled as [Total Billed]
-,Billed.ProfitCostsBilled as [Profit Costs]
+,Billed.TotalBilled AS [Total Billed]
+,Billed.ProfitCostsBilled AS [Profit Costs]
 ,Billed.[Disbursementsincvat] AS Disbursements
 ,dim_detail_core_details.suffolk_police_area
 
@@ -57,34 +58,34 @@ SELECT
 , dim_detail_client.surrey_pol_type_of_negligence_claim			AS [Neg Type]
 , dim_detail_client.surrey_pol_lessons_learnt_paid_claims	AS [Lessons]
 
-from red_dw..fact_dimension_main
-left join red_dw..dim_matter_header_current on fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-left join red_dw..dim_fed_hierarchy_history on dim_matter_header_current.fee_earner_code = dim_fed_hierarchy_history.fed_code and dim_fed_hierarchy_history.dss_current_flag = 'Y'
-left join red_dw..fact_bill_matter on fact_dimension_main.master_fact_key = fact_bill_matter.master_fact_key
-left join red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key 
-left join red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-left join red_dw.dbo.dim_detail_advice ON red_dw.dbo.dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
-left join red_dw.dbo. dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-left join reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.work_type_name = [dbo].[PoliceWorkTypes].[Work Type] COLLATE DATABASE_DEFAULT
-inner join 
+FROM red_dw..fact_dimension_main
+LEFT JOIN red_dw..dim_matter_header_current ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT JOIN red_dw..dim_fed_hierarchy_history ON dim_matter_header_current.fee_earner_code = dim_fed_hierarchy_history.fed_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
+LEFT JOIN red_dw..fact_bill_matter ON fact_dimension_main.master_fact_key = fact_bill_matter.master_fact_key
+LEFT JOIN red_dw.dbo.dim_matter_worktype ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key 
+LEFT JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+LEFT JOIN red_dw.dbo.dim_detail_advice ON red_dw.dbo.dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
+LEFT JOIN red_dw.dbo. dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+LEFT JOIN reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.work_type_name = [dbo].[PoliceWorkTypes].[Work Type] COLLATE DATABASE_DEFAULT
+INNER JOIN 
        (                       
-              select
+              SELECT
               client_code
               ,dim_matter_header_curr_key
               ,matter_number
-              ,sum(bill_total) as TotalBilled
-              ,sum(fees_total) as ProfitCostsBilled
-              ,sum(hard_costs + soft_costs + other_costs + vat) as [Disbursementsincvat]
+              ,SUM(bill_total) AS TotalBilled
+              ,SUM(fees_total) AS ProfitCostsBilled
+              ,SUM(hard_costs + soft_costs + other_costs + vat) AS [Disbursementsincvat]
               
-              from red_dw..fact_bill_matter_detail  --
-			  where  bill_date between @StartFY and @EndFY
-              and client_code IN ('00451638' , '00113147','00817395') 
+              FROM red_dw..fact_bill_matter_detail  --
+			  WHERE  bill_date BETWEEN @StartFY AND @EndFY
+              AND client_code IN ('00451638' , '00113147','00817395') 
               
-              group by 
+              GROUP BY 
               client_code,matter_number, dim_matter_header_curr_key 
-              having sum(bill_total) <>0
-       ) as Billed
-       on fact_dimension_main.dim_matter_header_curr_key = Billed.dim_matter_header_curr_key
+              HAVING SUM(bill_total) <>0
+       ) AS Billed
+       ON fact_dimension_main.dim_matter_header_curr_key = Billed.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 
