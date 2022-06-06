@@ -18,8 +18,8 @@ SELECT
 [Claimant Surname]	=                             Claimant.contSurname, -- Claimant associate record
 [Claimant DOB] = 	                              dim_detail_core_details.[claimants_date_of_birth],
 [Is Claimant Injured?] =	                      dim_detail_core_details.[does_claimant_have_personal_injury_claim],
-[Injury Category] =                               dim_detail_core_details.injury_type,	                         
-[Prognosis Time] = 	                              dim_detail_claim.[hastings_prognosis_time],
+[Injury Category] =                               hastings_child_details.hastings_injury_category,	                         
+[Prognosis Time] = 	                              hastings_child_details.hastings_prognosis_time,
 [PD Type] = 		                              dim_detail_outcome.[hastings_pd_type],
 [Credit Hire Duration]   =                        CASE WHEN dim_detail_hire_details.[hastings_credit_hire_duration] = 0 THEN NULL ELSE dim_detail_hire_details.[hastings_credit_hire_duration] END,    --	Integer	Show as blank if zero is entered	
 [Loss Date] =                                     dim_detail_core_details.[incident_date],
@@ -205,6 +205,66 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
  LEFT JOIN  Reporting.dbo.hastings_listing_table
  ON [Supplier Reference] = TRIM(dim_matter_header_current.master_client_code) +'-'+TRIM(master_matter_number)
 
+
+ LEFT OUTER JOIN (
+				SELECT 
+					hasting_child_detail.dim_matter_header_curr_key
+					, STRING_AGG(CAST(hasting_child_detail.hastings_injury_category AS NVARCHAR(MAX)), ', ')		AS hastings_injury_category
+					, STRING_AGG(CAST(hasting_child_detail.hastings_prognosis_time AS NVARCHAR(MAX)), ', ')			AS hastings_prognosis_time
+				FROM (
+						SELECT DISTINCT
+									dim_matter_header_current.dim_matter_header_curr_key
+									, dim_child_detail.hastings_injury_category
+									, NULL		AS hastings_prognosis_time
+								FROM red_dw.dbo.dim_matter_header_current
+									INNER JOIN red_dw.dbo.dim_parent_detail
+										ON dim_parent_detail.client_code = dim_matter_header_current.client_code
+											AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
+									INNER JOIN red_dw.dbo.dim_child_detail
+										ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+								WHERE	
+									dim_matter_header_current.master_client_code = '4908'
+									AND dim_child_detail.hastings_injury_category IS NOT NULL
+
+						UNION 
+
+						-- Hastings only want to see the most severe prognosis time.
+						SELECT 
+							prognosis_time.dim_matter_header_curr_key
+							, NULL
+							, prognosis_time.hastings_prognosis_time
+						FROM (
+								SELECT DISTINCT
+									dim_matter_header_current.dim_matter_header_curr_key
+									, dim_child_detail.hastings_prognosis_time
+									, ROW_NUMBER() OVER(PARTITION BY dim_matter_header_current.dim_matter_header_curr_key ORDER BY CASE dim_child_detail.hastings_prognosis_time
+																																	WHEN 'Permanent' THEN 1
+																																	WHEN 'TBC - ongoing/ unresolved' THEN 2
+																																	WHEN '24mth+' THEN 3
+																																	WHEN '18-24mth' THEN 4
+																																	WHEN '12-18mth' THEN 5
+																																	WHEN '6-12mth' THEN 6
+																																	WHEN '3-6mth' THEN 7
+																																	WHEN '0-3mth' THEN 8
+																																 END)					AS severity
+								FROM red_dw.dbo.dim_matter_header_current
+									INNER JOIN red_dw.dbo.dim_parent_detail
+										ON dim_parent_detail.client_code = dim_matter_header_current.client_code
+											AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
+									INNER JOIN red_dw.dbo.dim_child_detail
+										ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+								WHERE	
+									dim_matter_header_current.master_client_code = '4908'
+									AND dim_child_detail.hastings_prognosis_time IS NOT NULL
+							) AS prognosis_time
+						WHERE
+							prognosis_time.severity = 1
+					) AS hasting_child_detail
+				GROUP BY
+					hasting_child_detail.dim_matter_header_curr_key
+				)	AS hastings_child_details
+	ON hastings_child_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
  WHERE 1 =1 
  AND dim_matter_header_current.master_client_code = '4908'
  AND date_opened_case_management >= '2021-05-01'  --01/05/2021
@@ -215,7 +275,6 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
  ORDER BY ms_fileid 
 
  
-
 
 
 GO
