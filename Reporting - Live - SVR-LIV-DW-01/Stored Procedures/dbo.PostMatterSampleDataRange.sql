@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[PostMatterSampleDataRange] -- EXEC dbo.PostMatterSampleDataRange '2021-08-01','2021-09-30'
 (
 @StartDate  AS DATE
@@ -68,6 +69,8 @@ SELECT
 ,ClientAssoc.[Client ContactDefault]
 ,InsurerClientAssoc.[Insurer AssocEmail]
 ,InsurerClientAssoc.[Insurer ContactDefault]
+,[Survey Contact Name]=txtContName
+,[Survey Contact Email]=txtContEmail
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -101,7 +104,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_property
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
  ON fact_matter_summary_current.client_code = dim_matter_header_current.client_code
  AND fact_matter_summary_current.matter_number = dim_matter_header_current.matter_number
-
+LEFT OUTER JOIN ms_prod.dbo.udMICoreGeneralA
+ ON ms_fileid=udMICoreGeneralA.fileID
 
 LEFT OUTER JOIN 
 (

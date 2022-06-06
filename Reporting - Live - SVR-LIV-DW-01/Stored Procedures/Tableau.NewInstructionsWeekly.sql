@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 20200327
@@ -20,7 +23,7 @@ BEGIN
 		, fact_dimension_main.matter_number AS [Matter Number]
 		, dim_matter_header_current.matter_description AS [Matter Description]
 		, dim_date.calendar_date
-		, dim_matter_header_current.date_opened_practice_management AS [Date Opened]
+		, dim_matter_header_current.date_opened_case_management AS [Date Opened]
 		, dim_date.fin_month_name AS [Month Name]
 		, dim_date.fin_month_no AS [Month]
 		, dim_date.fin_month
@@ -28,7 +31,7 @@ BEGIN
 		, dim_date.current_fin_month
 		, CAST(fin_year-1 AS VARCHAR)+'/'+CAST(fin_year AS VARCHAR) AS [Year]
 		, cal_week_in_year AS [Week Number]
-		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_current.date_opened_practice_management)-1), dim_matter_header_current.date_opened_practice_management) AS DATE) [Week Start]
+		, CAST(DATEADD(dd, -(DATEPART(dw, dim_matter_header_current.date_opened_case_management)-1), dim_matter_header_current.date_opened_case_management) AS DATE) [Week Start]
 		, trading_days_in_mth AS [Working Days in Month]
 		, dim_fed_hierarchy_history.[hierarchylevel2hist] AS [Division]
 		, dim_fed_hierarchy_history.[hierarchylevel3hist] AS [Department]
@@ -85,7 +88,7 @@ BEGIN
 			WHEN dim_client.client_name='Van Ameyde UK Ltd' THEN dim_client.client_name --Van Ameyde UK Ltd
 			WHEN dim_client.client_name='Vericlaim UK Limited' THEN dim_client.client_name --Vericlaim UK Limited
 			ELSE 'Other' END AS [Key Clients]
-		 , CASE WHEN dim_matter_header_current.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+		 , CASE WHEN dim_matter_header_current.date_opened_case_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
@@ -173,11 +176,11 @@ BEGIN
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_history.dim_fed_hierarchy_history_key
 --AND dim_matter_header_history.dss_version=1
---AND date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
+--AND date_opened_case_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
 --ON dim_matter_header_history.fee_earner_code = dim_fed_hierarchy_history.fed_code
---AND dim_matter_header_history.date_opened_practice_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
+--AND dim_matter_header_history.date_opened_case_management BETWEEN dim_fed_hierarchy_history.dss_start_date AND dim_fed_hierarchy_history.dss_end_date
  LEFT OUTER JOIN red_dw.dbo.dim_date 
- ON calendar_date=CAST(dim_matter_header_current.date_opened_practice_management AS DATE)
+ ON calendar_date=CAST(dim_matter_header_current.date_opened_case_management AS DATE)
  LEFT OUTER JOIN red_dw.dbo.dim_client 
  ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
@@ -199,8 +202,8 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 
 
- WHERE dim_matter_header_current.date_opened_practice_management>='2019-01-01'
- AND dim_matter_header_current.date_opened_practice_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
+ WHERE dim_matter_header_current.date_opened_case_management>='2019-01-01'
+ AND dim_matter_header_current.date_opened_case_management<=(SELECT DATEADD(DAY,-1,MIN(calendar_date)) AS [CurrentWeekCommencing]  -- Removed 1 days as this is a sunday tableau goes from sunday to sat
 									FROM red_dw.dbo.dim_date
 									WHERE current_cal_week='Current')
 
@@ -208,12 +211,12 @@ ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=dim_fed_hierarchy_hi
  --AND name ='Natasha Jordan'
 -- AND hierarchylevel3hist='Casualty'
  --AND hierarchylevel4hist='Litigation Leeds'
- --AND dim_matter_header_current.date_opened_practice_management >= '2020-10-01' 
- --AND dim_matter_header_current.date_opened_practice_management <= '2020-05-30'
+ --AND dim_matter_header_current.date_opened_case_management >= '2020-10-01' 
+ --AND dim_matter_header_current.date_opened_case_management <= '2020-05-30'
  AND reporting_exclusions=0    
 --AND fact_dimension_main.client_code='00451638' AND fact_dimension_main.matter_number='00004477'--00451638-00004477
 --excluded as bulk opened thousands of matters, BH
-and NOT dim_matter_worktype.work_type_name IN ('Wills Archive','Deeds Archive')
+AND NOT dim_matter_worktype.work_type_name IN ('Wills Archive','Deeds Archive')
 
 END
 

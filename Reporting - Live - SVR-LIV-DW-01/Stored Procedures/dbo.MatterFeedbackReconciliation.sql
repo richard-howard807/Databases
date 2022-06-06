@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -116,7 +117,7 @@ OR master_client_code IN ('30645','6930','47237','47354','1878','76202','CB001',
 OR txtContEmail LIKE '%CJM%'
 OR UPPER(matter_description) LIKE '%WEIGHTMANS%'
 OR UPPER(matter_description) LIKE '%HR RELY%'
-OR UPPER(matter_description) LIKE '%GENERAL%'
+--OR UPPER(matter_description) LIKE '%GENERAL%'
 OR UPPER(matter_description) LIKE '%INTERNAL%'
 OR UPPER(matter_description) LIKE '%TRAINING%'
 OR UPPER(matter_description) LIKE '%SECONDMENT%'
@@ -204,14 +205,14 @@ WHERE name='James Holman') AS JamesTime
  ON JamesTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN 
 (
-select DISTINCT dim_ia_contact_lists.dim_client_key
-from red_dw.dbo.dim_ia_contact_lists
+SELECT DISTINCT dim_ia_contact_lists.dim_client_key
+FROM red_dw.dbo.dim_ia_contact_lists
 INNER JOIN red_dw.dbo.dim_client
  ON dim_client.dim_client_key = dim_ia_contact_lists.dim_client_key
  WHERE dim_ia_contact_lists.dim_lists_key = 67
   AND dim_ia_contact_lists.dim_client_key <>0
 UNION
-select DISTINCT dim_ia_activity_involvement.dim_client_key
+SELECT DISTINCT dim_ia_activity_involvement.dim_client_key
 FROM  red_dw.dbo.dim_ia_lists
 INNER JOIN red_dw.dbo.dim_ia_contact_lists 
 ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
