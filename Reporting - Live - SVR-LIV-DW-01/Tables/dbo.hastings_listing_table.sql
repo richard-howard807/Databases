@@ -16,7 +16,7 @@ CREATE TABLE [dbo].[hastings_listing_table]
 [Claimant Postcode] [nvarchar] (max) COLLATE Latin1_General_BIN NULL,
 [Adult or Minor] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Male or Female] [nvarchar] (15) COLLATE Latin1_General_BIN NULL,
-[Injury Type] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[Injury Type] [nvarchar] (max) COLLATE Latin1_General_BIN NULL,
 [Firm Injury Type - DELETE BEFORE SENDING] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Policyholder First Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Policyholder Last Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,

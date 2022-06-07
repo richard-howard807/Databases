@@ -223,7 +223,7 @@ SELECT
 	, CAST(claimant_names.claimant_postcode AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN			AS [Claimant Postcode]
 	, dim_detail_claim.hastings_claimant_adult_or_minor			AS [Adult or Minor]
 	, CAST(dim_detail_core_details.ll01_sex	AS NVARCHAR(15)) COLLATE Latin1_General_BIN			AS [Male or Female]
-	, dim_detail_claim.hastings_injury_type				AS [Injury Type]
+	, hastings_child_detail.hastings_injury_category				AS [Injury Type]
 	, CAST(dim_detail_core_details.injury_type AS NVARCHAR(255)) COLLATE Latin1_General_BIN				AS [Firm Injury Type - DELETE BEFORE SENDING]
 	, dim_detail_client.hastings_policyholder_first_name		AS [Policyholder First Name]
 	, dim_detail_client.hastings_policyholder_last_name			AS [Policyholder Last Name]
@@ -684,6 +684,29 @@ FROM red_dw.dbo.dim_matter_header_current
 							dim_key_dates.dim_matter_header_curr_key
 					) AS defence_due_key_date
 		ON defence_due_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN (
+						SELECT 
+							hasting_child_details.dim_matter_header_curr_key
+							, STRING_AGG(CAST(hasting_child_details.hastings_injury_category AS NVARCHAR(MAX)), ', ')		AS hastings_injury_category
+						FROM (
+								SELECT DISTINCT
+									dim_matter_header_current.dim_matter_header_curr_key
+									, dim_child_detail.hastings_injury_category
+									, NULL		AS hastings_prognosis_time
+								FROM red_dw.dbo.dim_matter_header_current
+									INNER JOIN red_dw.dbo.dim_parent_detail
+										ON dim_parent_detail.client_code = dim_matter_header_current.client_code
+											AND dim_parent_detail.matter_number = dim_matter_header_current.matter_number
+									INNER JOIN red_dw.dbo.dim_child_detail
+										ON dim_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
+								WHERE	
+									dim_matter_header_current.master_client_code = '4908'
+									AND dim_child_detail.hastings_injury_category IS NOT NULL
+							) AS hasting_child_details
+						GROUP BY
+							hasting_child_details.dim_matter_header_curr_key
+					) AS hastings_child_detail
+		ON hastings_child_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = '4908'
 	AND dim_matter_header_current.reporting_exclusions = 0

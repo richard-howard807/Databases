@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[PostMatterSampleDataRange] -- EXEC dbo.PostMatterSampleDataRange '2021-08-01','2021-09-30'
 (
 @StartDate  AS DATE
@@ -17,6 +18,7 @@ BEGIN
 
 SELECT 
                 ms_fileid
+				,RTRIM(master_client_code)+'-'+master_matter_number AS [3E Reference]
 				,dim_matter_header_current.client_name AS [client_name]
                 ,dim_matter_header_current.client_code AS [client_code]
 				,dim_matter_header_current.matter_number AS [matter_number]

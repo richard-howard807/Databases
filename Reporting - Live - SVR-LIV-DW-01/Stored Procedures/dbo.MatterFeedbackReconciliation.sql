@@ -3,6 +3,13 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
+
+
+
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -17,22 +24,38 @@ BEGIN
 --SET @EndDate='2022-04-30'
 
 
+
+IF OBJECT_ID('tempdb..#JamesTime') IS NOT NULL DROP TABLE #JamesTime
+SELECT DISTINCT dim_matter_header_curr_key INTO #JamesTime
+FROM red_dw.dbo.fact_all_time_activity
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+ ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
+WHERE name='James Holman'
+
+
+
 IF OBJECT_ID('tempdb..#SurveyMatters') IS NOT NULL DROP TABLE #SurveyMatters
 
 SELECT dim_matter_header_current.dim_matter_header_curr_key
-,CASE WHEN LastBillComposit.BillType='Interim' AND date_closed_case_management IS NOT NULL AND  hierarchylevel2hist='Legal Ops - LTA' THEN 'LTA Logic set 2'
-WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - LTA'  AND LastBillComposit.Revenue>500  AND ISNULL(wip,0)<50 THEN 'LTA Logic set 1'
+,CASE WHEN LastBillComposit.BillType='Interim' AND dim_matter_header_current.date_closed_case_management IS NOT NULL AND  hierarchylevel2hist='Legal Ops - LTA' THEN 'LTA Logic set 2'
+WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - LTA'  AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 THEN 'LTA Logic set 1'
 
-WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - Claims'  AND LastBillComposit.Revenue>500  AND ISNULL(wip,0)<50
+WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - Claims'  AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50
 AND dim_detail_core_details.present_position IN ('Final bill sent - unpaid','Final bill due - claim and costs concluded','To be closed/minor balances to be clear') THEN 'Claims Logic set 1'
-WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - Claims'  AND LastBillComposit.Revenue>500  AND ISNULL(wip,0)<50 THEN 'Claims Logic set 2'
-WHEN LastBillComposit.BillType='Interim' AND date_closed_case_management IS NOT NULL AND  hierarchylevel2hist='Legal Ops - Claims' THEN 'Claims Logic set 3'
+WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - Claims'  AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 THEN 'Claims Logic set 2'
+WHEN LastBillComposit.BillType='Interim' AND dim_matter_header_current.date_closed_case_management IS NOT NULL AND  hierarchylevel2hist='Legal Ops - Claims' THEN 'Claims Logic set 3'
+WHEN LastBillComposit.BillType='Interim'  AND hierarchylevel2hist='Legal Ops - LTA' AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 AND DATEDIFF(DAY,last_time_transaction_date,GETDATE())>60 THEN 'LTA Logic set 4'
+WHEN LastBillComposit.BillType='Interim'  AND hierarchylevel2hist='Legal Ops - Claims' AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 AND DATEDIFF(DAY,last_time_transaction_date,GETDATE())>60 THEN 'Claims Logic set 4'
+
+
 END AS Logic
 ,hierarchylevel2hist
 ,dim_detail_core_details.present_position AS [Present Position]
 ,LastBillComposit.LastBillDate AS [Last Bill Date]
 ,LastBillComposit.BillType AS [Last Bill Type]
 ,LastBillComposit.Revenue AS [Last Bill Revenue]
+,defence_costs_billed_composite AS [Revenue Billed Composite]
+,last_time_transaction_date AS [Last Time Postings]
 INTO #SurveyMatters
 	FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
@@ -56,8 +79,7 @@ SELECT Bills.client_code AS client_code,
 ,ROW_NUMBER() OVER (PARTITION BY fact_bill_matter_detail_summary.client_code,fact_bill_matter_detail_summary.matter_number ORDER BY fact_bill_matter_detail_summary.bill_date DESC) AS LastBill
 FROM red_dw.dbo.fact_bill_matter_detail_summary
 INNER JOIN red_dw.dbo.dim_matter_header_current
- ON dim_matter_header_current.client_code = fact_bill_matter_detail_summary.client_code
- AND dim_matter_header_current.matter_number = fact_bill_matter_detail_summary.matter_number
+ ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_matter_detail_summary.dim_matter_header_curr_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill_matter_detail_summary.dim_bill_date_key
 LEFT OUTER JOIN red_dw.dbo.dim_bill
@@ -73,15 +95,19 @@ WHERE Bills.LastBill=1
 ) AS LastBillComposit
  ON LastBillComposit.client_code = dim_matter_header_current.client_code
  AND LastBillComposit.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
+ON fact_matter_summary_current.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE CONVERT(DATE,LastBillComposit.LastBillDate,103) BETWEEN @StartDate AND @EndDate
-
+AND defence_costs_billed_composite>500
 
 
 
 SELECT
 RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
+,dim_matter_header_current.client_code AS [Client]
+,dim_matter_header_current.matter_number AS [Matter]
 ,dim_client.client_name AS [Client Name]
 ,matter_description AS [Matter description]
 ,date_opened_case_management AS [Date Opened]
@@ -129,6 +155,8 @@ WHEN txtContEmail  IS NULL THEN 'Data Quality Issues'
 
 END AS [Sheets]
 ,1 AS Matters
+,[Revenue Billed Composite]
+,SurveyMatters.[Last Time Postings]
 FROM #SurveyMatters AS SurveyMatters
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = SurveyMatters.dim_matter_header_curr_key
@@ -198,10 +226,7 @@ INNER JOIN ms_prod.dbo.udExtClient
  ON udExtClient.clID = dbClient.clID
 WHERE chkSurOptOut=1) AS ClientOptouts
  ON master_client_code=ClientOptouts.clNo COLLATE DATABASE_DEFAULT
-LEFT OUTER JOIN (SELECT DISTINCT dim_matter_header_curr_key FROM red_dw.dbo.fact_all_time_activity
-INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
- ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_all_time_activity.dim_fed_hierarchy_history_key
-WHERE name='James Holman') AS JamesTime
+LEFT OUTER JOIN #JamesTime AS JamesTime
  ON JamesTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN 
 (
