@@ -36,7 +36,7 @@ SELECT DISTINCT
 , CONCAT(dim_bill_date.bill_cal_month_name,'-',dim_bill_date.bill_cal_year) AS [Period]
 , SUM(bill_amount) AS [Value]
 , 'Bill Date' AS [Date Range]
-
+, dim_bill_date.bill_fin_period AS table_order
 FROM red_dw.dbo.fact_bill_activity
 INNER JOIN red_dw.dbo.dim_bill_date
 ON dim_bill_date.bill_date = fact_bill_activity.bill_date
@@ -72,7 +72,7 @@ GROUP BY
          dim_bill_date.bill_cal_month_no,
          dim_bill_date.bill_cal_month_name
 		  ,dim_client.segment
-
+		  , dim_bill_date.bill_fin_period
 
 UNION
 
@@ -87,7 +87,7 @@ SELECT DISTINCT
 	, CONCAT(dim_date.cal_month_name,'-',dim_date.cal_year) AS [Period]
 	, COUNT(dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number) AS [Value] 
 	, 'Date Opened' AS [Date Range]
-
+	, dim_date.fin_period AS table_order
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -125,6 +125,6 @@ GROUP BY
          dim_date.cal_month_no,
          dim_date.cal_month_name
 		  ,dim_client.segment
-
+		  , dim_date.fin_period
 END
 GO
