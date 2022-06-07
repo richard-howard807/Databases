@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[CreateMSFeeEarner]
 		@usrInits NVARCHAR(30),
 		@usrAlias NVARCHAR(36),
@@ -18,7 +19,7 @@ CREATE PROCEDURE [dbo].[CreateMSFeeEarner]
 		@feeExtID INT,
 		@office NVARCHAR(16),
 		@usrID INT OUTPUT,
-		@error int = 0 OUTPUT, 
+		@error INT = 0 OUTPUT, 
 		@errormsg VARCHAR(2000) = '' OUTPUT
 
 AS
@@ -130,7 +131,8 @@ BEGIN TRANSACTION
 					,[feeAddSignOff] -- Position
 					,[feeResponsibleTo]
 					,[feeResponsible]
-					,feeActive)
+					,feeActive
+					,feeAddRef)
 			VALUES
 					(@feeusrID,
 					 @feeExtID,
@@ -138,7 +140,8 @@ BEGIN TRANSACTION
 					 @position,
 					 @usrWorksFor,  --EW 20161123 - Mandy says BCM is still required here - EW 20161123
 					 1,
-					 1
+					 1,
+					 left(@usrFullName, 1) + SUBSTRING( @usrFullName, CHARINDEX(' ', @usrFullName, 0) + 1 , 4 ) --added request by Jake for letter reference
 					 )
 
 		INSERT INTO [MS_PROD].[dbo].[udExtUser] 
