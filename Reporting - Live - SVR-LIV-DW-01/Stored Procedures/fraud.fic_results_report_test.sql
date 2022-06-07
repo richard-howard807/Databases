@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 21/02/2018
@@ -20,14 +21,14 @@ GO
 -- ES 2021-01-12 removed leavers, #84433
 -- ES 2021-01-20 removed work type  1603, PL - Pol - CHIS, requested by BH
 --==============================================
-CREATE  PROCEDURE [fraud].[fic_results_report_test]
+CREATE  PROCEDURE [fraud].[fic_results_report_test] 
 
 (
     @FedCode AS VARCHAR(MAX),
     --@Month AS VARCHAR(100)
     @Level AS VARCHAR(100)
 	,@Status AS VARCHAR(MAX)
-	,@ClientGroupName varchar(MAX)
+	,@ClientGroupName VARCHAR(MAX)
 )
 	
 AS
@@ -63,15 +64,15 @@ dim_fed_hierarchy_history_key
 FROM red_Dw.dbo.dim_fed_hierarchy_history 
 WHERE dim_fed_hierarchy_history_key IN ('+@FedCode+')'
 
-INSERT into #FedCodeList 
-exec sp_executesql @sql
-	end
+INSERT INTO #FedCodeList 
+EXEC sp_executesql @sql
+	END
 	
 	
 	IF  @level  = 'Individual'
     BEGIN
 	PRINT ('Individual')
-    INSERT into #FedCodeList 
+    INSERT INTO #FedCodeList 
 	SELECT ListValue
    -- INTO #FedCodeList
     FROM dbo.udt_TallySplit(',', @FedCode)
@@ -191,7 +192,7 @@ FROM (
 	) AS [Process]
 	LEFT OUTER JOIN (SELECT fileID, tskDesc, tskDue, tskCompleted 
 					FROM MS_Prod.dbo.dbTasks
-					WHERE (tskDesc LIKE 'FIC Process'
+					WHERE (tskDesc LIKE '%FIC Process%'
 					OR tskDesc LIKE '%ADM: Complete fraud indicator checklist%')
 					AND tskActive=1) AS [Tasks] ON Tasks.fileID = Process.fileid
 
@@ -262,10 +263,10 @@ FROM (
 		AND LOWER(referral_reason) LIKE '%dispute%'
 		AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease') 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT NULL)
 		THEN 1 ELSE 0 END AS [Number of Matters]
 		, CASE WHEN FICProcess.totalpointscalc IS NOT NULL THEN 1 ELSE 0 END AS [countscore]
-		, CASE WHEN date_claim_concluded IS NULL THEN 'Open' else 'Closed' END AS [Status]
+		, CASE WHEN date_claim_concluded IS NULL THEN 'Open' ELSE 'Closed' END AS [Status]
 
 	FROM 
 	red_dw.dbo.fact_dimension_main
@@ -413,7 +414,7 @@ FROM (
 	AND suspicion_of_fraud ='No'
 		AND work_type_group IN ('EL','PL All','Motor','Disease')
 
-		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT null)
+		AND (DATEDIFF(DAY,date_opened_case_management, GETDATE())>=14 OR FICProcess.totalpointscalc IS NOT NULL)
 		AND LOWER(ISNULL(dim_detail_outcome.outcome_of_case,''))<>'exclude from reports'
 		AND ISNULL(dim_matter_worktype.work_type_code,'')<>'1603'
 
