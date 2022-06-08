@@ -10,6 +10,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -46,6 +49,8 @@ WHEN LastBillComposit.BillType='Final' AND hierarchylevel2hist='Legal Ops - Clai
 WHEN LastBillComposit.BillType='Interim' AND dim_matter_header_current.date_closed_case_management IS NOT NULL AND  hierarchylevel2hist='Legal Ops - Claims' THEN 'Claims Logic set 3'
 WHEN LastBillComposit.BillType='Interim'  AND hierarchylevel2hist='Legal Ops - LTA' AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 AND DATEDIFF(DAY,last_time_transaction_date,GETDATE())>60 THEN 'LTA Logic set 4'
 WHEN LastBillComposit.BillType='Interim'  AND hierarchylevel2hist='Legal Ops - Claims' AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50 AND DATEDIFF(DAY,last_time_transaction_date,GETDATE())>60 THEN 'Claims Logic set 4'
+WHEN LastBillComposit.BillType='Interim' AND hierarchylevel2hist='Legal Ops - Claims'  AND defence_costs_billed_composite>500  AND ISNULL(wip,0)<50
+AND dim_detail_core_details.present_position IN ('Final bill sent - unpaid','Final bill due - claim and costs concluded','To be closed/minor balances to be clear') THEN 'Claims Logic set 5'
 
 
 END AS Logic
@@ -134,7 +139,7 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,CASE 
 WHEN (CASE WHEN txtContEmail IS NOT NULL THEN  ROW_NUMBER() OVER	(PARTITION BY txtContEmail ORDER BY date_opened_case_management DESC) ELSE NULL END)>1 THEN 'Duplicate Email'
 WHEN ClientOptouts.clNo IS NOT  NULL THEN 'Client level opt outs' 
-WHEN txtContEmail IN (SELECT txtContEmailVal FROM MS_Prod.dbo.udContactEmailOptOut) THEN 'Contact level opt outs'
+WHEN RTRIM(txtContEmail) IN (SELECT RTRIM(txtContEmailVal) FROM MS_Prod.dbo.udContactEmailOptOut WHERE bitActive=1 ) THEN 'Contact level opt outs'
 WHEN IA.dim_client_key IS NOT NULL THEN 'Marketing General Opt Outs'
 --•	Duplicate contacts
 WHEN work_type_code IN ('2038','1114','1077','1143','2039','2041') 
