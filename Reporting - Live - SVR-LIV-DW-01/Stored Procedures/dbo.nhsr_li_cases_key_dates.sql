@@ -75,7 +75,7 @@ SELECT
 	, #key_dates.key_date_description			AS [Key Date Reminder]
 	, #key_dates.key_date_due_date				AS [Date Due]
 	, #key_dates.key_date_owner					AS [Task Owner]
-	, #key_dates.overdue_future_date
+	, ISNULL(#key_dates.overdue_future_date, 'no_date') AS overdue_future_date
 	, CASE 
 		WHEN overdue_matters.dim_matter_header_curr_key IS NOT NULL THEN 
 			'Red'
