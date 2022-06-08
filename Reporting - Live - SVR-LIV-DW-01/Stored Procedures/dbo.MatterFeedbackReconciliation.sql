@@ -13,6 +13,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -139,8 +141,11 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,CASE 
 WHEN (CASE WHEN txtContEmail IS NOT NULL THEN  ROW_NUMBER() OVER	(PARTITION BY txtContEmail ORDER BY date_opened_case_management DESC) ELSE NULL END)>1 THEN 'Duplicate Email'
 WHEN ClientOptouts.clNo IS NOT  NULL THEN 'Client level opt outs' 
-WHEN RTRIM(txtContEmail) IN (SELECT RTRIM(txtContEmailVal) FROM MS_Prod.dbo.udContactEmailOptOut WHERE bitActive=1 ) THEN 'Contact level opt outs'
-WHEN IA.dim_client_key IS NOT NULL THEN 'Marketing General Opt Outs'
+WHEN UPPER(RTRIM(txtContEmail)) IN (SELECT UPPER(RTRIM(txtContEmailVal)) FROM MS_Prod.dbo.udContactEmailOptOut WHERE bitActive=1 ) THEN 'Contact level opt outs'
+WHEN UPPER(RTRIM(txtContEmail)) COLLATE DATABASE_DEFAULT IN (SELECT DISTINCT UPPER(RTRIM(email_address))
+FROM red_dw.dbo.dim_ia_contact_lists
+WHERE dim_ia_contact_lists.dim_lists_key = 67
+AND email_address IS NOT NULL) THEN 'Marketing General Opt Outs'
 --•	Duplicate contacts
 WHEN work_type_code IN ('2038','1114','1077','1143','2039','2041') 
 OR fee_earner_code='PRV' 
@@ -233,25 +238,7 @@ WHERE chkSurOptOut=1) AS ClientOptouts
  ON master_client_code=ClientOptouts.clNo COLLATE DATABASE_DEFAULT
 LEFT OUTER JOIN #JamesTime AS JamesTime
  ON JamesTime.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-LEFT OUTER JOIN 
-(
-SELECT DISTINCT dim_ia_contact_lists.dim_client_key
-FROM red_dw.dbo.dim_ia_contact_lists
-INNER JOIN red_dw.dbo.dim_client
- ON dim_client.dim_client_key = dim_ia_contact_lists.dim_client_key
- WHERE dim_ia_contact_lists.dim_lists_key = 67
-  AND dim_ia_contact_lists.dim_client_key <>0
-UNION
-SELECT DISTINCT dim_ia_activity_involvement.dim_client_key
-FROM  red_dw.dbo.dim_ia_lists
-INNER JOIN red_dw.dbo.dim_ia_contact_lists 
-ON dim_ia_contact_lists.dim_lists_key = dim_ia_lists.dim_lists_key
-INNER JOIN red_dw.dbo.dim_ia_activity_involvement
- ON ia_contact_id=ia_client_id
- WHERE dim_ia_contact_lists.dim_lists_key = 67
-  AND dim_ia_contact_lists.dim_client_key =0
-) AS IA
- ON IA.dim_client_key = dim_client.dim_client_key
+
 
 WHERE SurveyMatters.Logic IS NOT NULL
 
