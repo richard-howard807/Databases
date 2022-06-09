@@ -35,23 +35,30 @@ SELECT DISTINCT
 	, dbUser.usrFullName		AS key_date_owner
 	, IIF([red_dw].[dbo].[datetimelocal](dbTasks.tskDue) < CAST(GETDATE() AS DATE), 'overdue', 'future')		AS overdue_future_date
 INTO #key_dates
-FROM MS_Prod..dbKeyDates
-	INNER JOIN MS_Prod..dbTasks
+FROM MS_Prod..dbTasks
+	LEFT OUTER JOIN MS_Prod..dbKeyDates
 		ON dbTasks.fileID = dbKeyDates.fileID
 			AND dbTasks.tskRelatedID = dbKeyDates.kdRelatedID
 	INNER JOIN MS_Prod..dbUser
 		ON dbUser.usrID = dbTasks.feeusrID
 	INNER JOIN red_dw.dbo.dim_matter_header_current
-		ON dbKeyDates.fileID = dim_matter_header_current.ms_fileid
+		ON dbTasks.fileID = dim_matter_header_current.ms_fileid
 	INNER JOIN red_dw.dbo.dim_detail_health
 		ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+') 
 	AND dbTasks.tskComplete = 0
-	AND dbKeyDates.kdActive = 1
-	AND dbKeyDates.kdType <> 'REPORTCLIENT'
-	AND dbTasks.tskDesc LIKE '%today%'
+	AND dbTasks.tskActive = 1
+	AND dbTasks.tskType = 'KEYDATE'
+	AND ISNULL(dbKeyDates.kdType, '') <> 'REPORTCLIENT'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%tomorrow%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9]% year%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9]% month%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9]% day%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%weeks%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%due 1d%'
+	AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%two days%'
 	AND CAST([red_dw].[dbo].[datetimelocal](dbTasks.tskDue) AS DATE) BETWEEN '2022-03-01' AND DATEADD(YEAR, 2, CAST(GETDATE() AS  DATE))
 
 
@@ -123,6 +130,9 @@ WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'N1001'
 	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+')
+	--AND dim_matter_header_current.master_matter_number = '21910'
+
+
 
 
 END 

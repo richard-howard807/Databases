@@ -23,7 +23,12 @@ CREATE PROCEDURE [dbo].[TeamClientsKeyDates]  --EXEC TeamCLientsKeyDates '2020-0
 ,@EndDate AS DATE
 )
 AS
+
 BEGIN
+
+--Testing
+--DECLARE @StartDate AS DATE = CAST(GETDATE() AS DATE)
+--		, @EndDate AS DATE = DATEADD(YEAR, 2, CAST(GETDATE() AS DATE))
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 SELECT 
@@ -75,8 +80,7 @@ FROM [MS_Prod].[dbo].[dbTasks] dbTasks
 WHERE tskType = 'KEYDATE'
       AND
       (
-          CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103)
-      BETWEEN @StartDate AND @EndDate
+          CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103) BETWEEN @StartDate AND @EndDate
           OR (DATEDIFF(DAY, CAST(GETDATE() AS DATE), CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103)) <= 0)
       )
       --  AND tskRelatedID IS NOT NULL -- exclude the manual tasks
@@ -87,25 +91,14 @@ WHERE tskType = 'KEYDATE'
       AND dbTasks.tskCompleted IS NULL
       AND dbTasks.tskComplete = 0
       AND header.reporting_exclusions = 0
-      AND dbTasks.tskDesc NOT LIKE '%omorrow%'
-      AND dbTasks.tskDesc <>'Report to client due – today'
-      AND tskDesc NOT IN ('Report to client due - today')
-      AND dbTasks.tskDesc NOT LIKE '%7 days%'
-      AND dbTasks.tskDesc NOT LIKE '%7 Days%'
-      AND dbTasks.tskDesc NOT LIKE '%weeks%'
-      AND dbTasks.tskDesc NOT LIKE '%Due 7d%'
-      AND dbTasks.tskDesc NOT LIKE '%due 7d%'
-      AND dbTasks.tskDesc NOT LIKE '%due 2 months%'
-      AND dbTasks.tskDesc NOT LIKE '%2 days%'
-      AND dbTasks.tskDesc NOT LIKE '%2days%'
-      AND dbTasks.tskDesc NOT LIKE '%due 1d%'
-      AND dbTasks.tskDesc NOT LIKE '%2d%'
-      AND dbTasks.tskDesc NOT LIKE '%7d%'
-      AND dbTasks.tskDesc NOT LIKE '%14 days%'
-      AND dbTasks.tskDesc NOT LIKE '%21 days%'
-      AND dbTasks.tskDesc NOT LIKE '%two days%'
-     AND dbTasks.tskDesc NOT LIKE '%Report to client due today%'
- --     AND a.activity_code NOT IN ( 'FTRA0267', 'GEN01003', 'FIAA0213', 'TRAA0113' )
+	  AND ISNULL(dbKeyDates.kdType, '') <> 'REPORTCLIENT'
+      AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%tomorrow%'
+	  AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9] year%'
+	  AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9] month%'
+	  AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%[0-9] day%'
+      AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%weeks%'
+      AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%due 1d%'
+      AND ISNULL(LOWER(dbTasks.tskDesc), '') NOT LIKE '%two days%'
 	 AND ISNULL(a.activity_code,'') IN (
 										'','NHSA0376','PSRA0146','PSRA0131','COLA0121','TRAA0315'
 										,'WPSA0220','TRAA0115','WPSA0120','WPSA0178','EMPA0110'
@@ -159,7 +152,6 @@ WHERE tskType = 'KEYDATE'
 										,'EMPA0204','FAMA0124','FTRA9821','TRA0136 ','TRAA0308'
 										,'FTRA0906'
 										)
-
 ORDER BY 
 	[Matter Owner]
 	, [Matter Number]
