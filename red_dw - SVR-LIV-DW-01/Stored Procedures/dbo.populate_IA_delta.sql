@@ -70,7 +70,7 @@ NULL suffix,
 left(cm.job_title,120) Jobtitle,
 --LEFT(cc.kc_salutn, CHARINDEX(' ',cc.kc_salutn)) +  ' ' + REPLACE(cc.kc_salutn, LEFT(cc.kc_salutn, CHARINDEX(' ',cc.kc_salutn)),'') goesby,
 --left(cm.client_name,60) goesby,
-LEFT(cm.firstname,60) goesby,
+NULL, -- LEFT(cm.firstname,60) goesby,  -- RH Removed goes by 09/06/22 #151716
 NULL department,
 NULL assistant,
 cl.dim_client_key
@@ -123,7 +123,7 @@ NULL suffix,
 left(cm.job_title,120) Jobtitle,
 --LEFT(cc.kc_salutn, CHARINDEX(' ',cc.kc_salutn)) +  ' ' + REPLACE(cc.kc_salutn, LEFT(cc.kc_salutn, CHARINDEX(' ',cc.kc_salutn)),'') goesby,
 --left(cm.client_name,60) goesby,
-LEFT(cm.firstname,60) goesby,
+NULL, -- LEFT(cm.firstname,60) goesby,  -- RH Removed goes by 09/06/22 #151716
 NULL department,
 NULL assistant,
 cl.dim_client_key

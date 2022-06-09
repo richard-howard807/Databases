@@ -41,10 +41,11 @@ CREATE TABLE [dbo].[dim_employee]
 [deleted_from_cascade] [bit] NULL,
 [client_manager] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
 [line_manager_email] [nvarchar] (320) COLLATE Latin1_General_BIN NULL,
-[not_current_active] [bit] NULL
+[not_current_active] [bit] NULL,
+[previous_firm] [nvarchar] (50) COLLATE Latin1_General_BIN NULL
 ) ON [DIM_TAB]
 GO
-ALTER TABLE [dbo].[dim_employee] ADD CONSTRAINT [dim_employee_idx_0] PRIMARY KEY CLUSTERED  ([dim_employee_key]) ON [DIM_TAB]
+ALTER TABLE [dbo].[dim_employee] ADD CONSTRAINT [dim_employee_idx_0] PRIMARY KEY CLUSTERED ([dim_employee_key]) ON [DIM_TAB]
 GO
 CREATE UNIQUE NONCLUSTERED INDEX [dim_employee_idx_A] ON [dbo].[dim_employee] ([employeeid], [payrollid]) ON [DIM_IDX]
 GO

@@ -14,7 +14,7 @@ CREATE TABLE [dbo].[dim_matter_header_current]
 [client_group_code] [varchar] (40) COLLATE Latin1_General_BIN NULL,
 [client_group_name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [client_name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
-[matter_description] [varchar] (200) COLLATE Latin1_General_BIN NULL,
+[matter_description] [varchar] (300) COLLATE Latin1_General_BIN NULL,
 [date_opened_practice_management] [datetime] NULL,
 [date_closed_case_management] [datetime] NULL,
 [branch_code] [char] (4) COLLATE Latin1_General_BIN NULL,
@@ -64,7 +64,7 @@ CREATE TABLE [dbo].[dim_matter_header_current]
 [opt_out_reason_desc] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [DIM_TAB]
 GO
-ALTER TABLE [dbo].[dim_matter_header_current] ADD CONSTRAINT [dim_matt_header_curren_idx_0] PRIMARY KEY CLUSTERED  ([dim_matter_header_curr_key]) ON [DIM_TAB]
+ALTER TABLE [dbo].[dim_matter_header_current] ADD CONSTRAINT [dim_matt_header_curren_idx_0] PRIMARY KEY CLUSTERED ([dim_matter_header_curr_key]) ON [DIM_TAB]
 GO
 CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_4] ON [dbo].[dim_matter_header_current] ([case_id]) INCLUDE ([source_system_id], [client_code], [matter_number]) ON [DIM_IDX]
 GO
