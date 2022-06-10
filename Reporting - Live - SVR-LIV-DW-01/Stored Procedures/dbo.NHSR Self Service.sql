@@ -33,6 +33,7 @@ GO
 -- ES 20211220 added recovery rate requested by EJ
 -- ES 20220309 amended work type label to matter type, JS
 -- ES 20220511 #147342, added Further Info, Covid Reason (NHSR), COVID-19 Impact
+-- MT 20220609 #151890 Added New FYs for Revenue, Hours Billed, Chargeable Hours and Disbursements
 
 -- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
@@ -68,6 +69,7 @@ GROUP BY dim_matter_header_curr_key
 
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
+			   PVIOT.[2023],
 			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
@@ -81,20 +83,21 @@ GROUP BY dim_matter_header_curr_key
 			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
 			FROM red_dw.dbo.fact_bill_activity
 			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021,2022)
+			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021,2022,2023)
 			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, NHS_Fin_Year
 			) AS revenue
 		PIVOT	
 			(
 			SUM(Revenue)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022],[2023])
 			) AS PVIOT
 	
 
 
 	SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
-			     PVIOT.[2022],
+			   PVIOT.[2023],
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -108,20 +111,21 @@ GROUP BY dim_matter_header_curr_key
 			FROM red_dw.dbo.fact_bill_billed_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021,2022)
+			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021,2022,2023)
 			GROUP BY client_code, matter_number, NHS_Fin_Year
 			) AS billedhours
 		PIVOT	
 			(
 			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022],[2023])
 			) AS PVIOT
 
 -- Added Chargeable hours #45295
 
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
-			     PVIOT.[2022],
+			   PVIOT.[2023],
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -135,19 +139,20 @@ GROUP BY dim_matter_header_curr_key
 			FROM red_dw.dbo.fact_billable_time_activity
 			INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
 			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021,2022)
+			WHERE dim_bill_date.NHS_Fin_Year IN (2016, 2017,2018,2019,2020,2021,2022,2023)
 			GROUP BY client_code, matter_number, NHS_Fin_Year
 			) AS revenue
 		PIVOT	
 			(
 			SUM(Billed_hours)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022],[2023])
 			) AS PVIOT
 
 --Added disbursements #61966
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
-			     PVIOT.[2022],
+			   PVIOT.[2023],
+			   PVIOT.[2022],
 			   PVIOT.[2021],
 			   PVIOT.[2020],
 			   PVIOT.[2019],
@@ -160,7 +165,7 @@ GROUP BY dim_matter_header_curr_key
 			SELECT client_code, matter_number, dim_bill_date.NHS_Fin_Year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
 			FROM red_dw.dbo.fact_bill_detail
 			INNER JOIN red_dw.dbo.#nhsdates dim_bill_date ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021,2022)
+			WHERE dim_bill_date.NHS_Fin_Year IN (2017,2018,2019,2020,2021,2022,2023)
 			AND charge_type='disbursements'
 			GROUP BY client_code,
              matter_number,
@@ -169,7 +174,7 @@ GROUP BY dim_matter_header_curr_key
 		PIVOT	
 			(
 			SUM(Disbursements)
-			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022])
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
 			) AS PVIOT
 
 
@@ -787,13 +792,14 @@ GETDATE() AS update_time,
                                
 
 
-	 Revenue.[2016] [Revenue 2015/2016]
+	  Revenue.[2016] [Revenue 2015/2016]
 	, Revenue.[2017] [Revenue 2016/2017]
 	, Revenue.[2018] [Revenue 2017/2018]
 	, Revenue.[2019] [Revenue 2018/2019]
 	, Revenue.[2020] [Revenue 2019/2020]
 	, Revenue.[2021] [Revenue 2020/2021]
 	, Revenue.[2022] [Revenue 2021/2022]
+	, Revenue.[2023] [Revenue 2022/2023]
 
 	 , Billed_hours.[2016] /60 AS [Hours Billed 2015/2016]
 	 , Billed_hours.[2017] /60 AS [Hours Billed 2016/2017]
@@ -801,7 +807,8 @@ GETDATE() AS update_time,
 	 , Billed_hours.[2019] /60 AS [Hours Billed 2018/2019]
 	 , Billed_hours.[2020] /60 AS [Hours Billed 2019/2020]
 	 , Billed_hours.[2021] /60 AS [Hours Billed 2020/2021]
-	 	 , Billed_hours.[2022] /60 AS [Hours Billed 2021/2022]
+	 , Billed_hours.[2022] /60 AS [Hours Billed 2021/2022]
+	 , Billed_hours.[2023] /60 AS [Hours Billed 2022/2023]
 
 	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
 	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
@@ -810,6 +817,7 @@ GETDATE() AS update_time,
 	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
 	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
 	 , Chargeable_hours.[2022] [Chargeable Hours Posted 2021/2022]
+	 , Chargeable_hours.[2023] [Chargeable Hours Posted 2022/2023]
 
 	, Disbursements.[2016] [Disbursements Billed 2015/2016]
 	, Disbursements.[2017] [Disbursements Billed 2016/2017]
@@ -817,7 +825,9 @@ GETDATE() AS update_time,
 	, Disbursements.[2019] [Disbursements Billed 2018/2019]
 	, Disbursements.[2020] [Disbursements Billed 2019/2020]
 	, Disbursements.[2021] [Disbursements Billed 2020/2021]
-		, Disbursements.[2022] [Disbursements Billed 2021/2022]
+    , Disbursements.[2022] [Disbursements Billed 2021/2022]
+    , Disbursements.[2023] [Disbursements Billed 2022/2023]
+
 	,billing_arrangement_description AS [Billing Arrangement]
 	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
 
