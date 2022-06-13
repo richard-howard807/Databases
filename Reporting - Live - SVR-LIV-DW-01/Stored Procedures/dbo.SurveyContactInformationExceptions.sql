@@ -5,6 +5,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[SurveyContactInformationExceptions]
 (
 @Division AS NVARCHAR(MAX)
@@ -151,7 +153,7 @@ AND (txtContEmail IS NULL OR txtContName IS NULL)
 AND work_type_code NOT  IN ('2038','1114','1077','1143','2039','2041')
 AND fee_earner_code <>'PRV'
 AND client_name NOT LIKE '%Weightmans%'
-AND master_client_code NOT IN ('30645','6930','47237','47354','1878','76202','CB001','123739')
+AND master_client_code NOT IN ('30645','6930','47237','47354','1878','76202','CB001','123739','WB54992')
 AND UPPER(matter_description) NOT LIKE '%HR RELY%'
 AND UPPER(matter_description) NOT LIKE '%GENERAL%'
 AND UPPER(matter_description) NOT LIKE '%INTERNAL%'
@@ -162,7 +164,7 @@ AND matter_partner_full_name<>'James Holman'
 AND chkSurOptOut  IS NULL
 -----
 AND DATEDIFF(DAY,ISNULL(last_time_transaction_date,GETDATE()),GETDATE())<=180
-AND ISNULL(LastBillComposit.BillType,'')<>'Final'
+--AND ISNULL(LastBillComposit.BillType,'')<>'Final'
 AND ISNULL(dim_detail_core_details.present_position,'') NOT IN ('Final bill sent - unpaid','To be closed/minor balances to be clear')
 AND (CASE WHEN dim_detail_core_details.fixed_fee='Yes' AND fixed_fee_amount BETWEEN 0.01 AND 499.99 THEN 1 ELSE 0 END)=0
 

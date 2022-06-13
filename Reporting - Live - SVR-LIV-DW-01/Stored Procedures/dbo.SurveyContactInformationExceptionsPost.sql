@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[SurveyContactInformationExceptionsPost]
 (
 @Division AS NVARCHAR(MAX)
@@ -150,7 +151,7 @@ AND dim_matter_header_current.date_closed_case_management IS NULL
 AND master_matter_number<>'0'
 AND (txtContEmail IS NULL OR txtContName IS NULL)
 -------------------------------------------
-AND work_type_code NOT  IN ('2038','1114','1077','1143','2039','2041')
+AND work_type_code NOT  IN ('2038','1114','1077','1143','2039','2041','WB54992')
 AND fee_earner_code <>'PRV'
 AND UPPER(matter_description) NOT LIKE '%HR RELY%'
 AND UPPER(matter_description) NOT LIKE '%GENERAL%'
