@@ -15,6 +15,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -149,7 +150,7 @@ AND email_address IS NOT NULL) THEN 'Marketing General Opt Outs'
 --•	Duplicate contacts
 WHEN work_type_code IN ('2038','1114','1077','1143','2039','2041') 
 OR fee_earner_code='PRV' 
-OR master_client_code IN ('30645','6930','47237','47354','1878','76202','CB001','123739')
+OR master_client_code IN ('30645','6930','47237','47354','1878','76202','CB001','123739','WB54992')
 OR txtContEmail LIKE '%CJM%'
 OR UPPER(matter_description) LIKE '%WEIGHTMANS%'
 OR UPPER(matter_description) LIKE '%HR RELY%'

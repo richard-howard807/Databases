@@ -6,18 +6,10 @@ GO
 
 CREATE PROCEDURE [nhs].[NHSRFilesDisbursementsReport] 
 
---EXEC [nhs].[NHSRFilesDisbursementsReport] '2022-01-01', '2022-05-01', '125409T', '1232'
-
 @Matter AS VARCHAR(10)
 
 AS
 /* Testing*/
---DECLARE
---@StartDate AS DATE = '2022-01-01', 
---@EndDate   AS DATE = '2022-05-01', 
---@Client AS VARCHAR(10) = '125409T',
---@Matter AS VARCHAR(10) = NULL --'1232'
-
 --DECLARE @Matter AS VARCHAR(50) = 22141
 
 SELECT DISTINCT 
@@ -32,7 +24,12 @@ txt1
 ,WardHadaway.master_client_code
 ,WardHadaway.master_matter_number
 FROM 
- [SQLAdmin].[dbo].[NHSRFilesUpload]
+/* PR will request a new data upload. Just nename this one NHSRFilesUploadOld. 
+Load in the new data table and label it NHSRFilesUploadNew. 
+All field names should be the same but just test the new table
+If all ok then just rename [NHSRFilesUploadNew] to [NHSRFilesUpload] and then test the report 
+https://bardetail/reports/report/Healthcare/NHSR%20Files%20-%20Disbursements%20Report */
+[SQLAdmin].[dbo].[NHSRFilesUpload]
 
 
  LEFT JOIN 
@@ -47,7 +44,7 @@ FROM
 ) WardHadaway ON WardHadaway.CRSystemSourceID = clnt_matt_code
 
 
-WHERE @Matter LIKE '%'+ WardHadaway.master_matter_number +'%'
+WHERE @Matter =  WardHadaway.master_matter_number 
 
 ORDER BY 1 
 GO

@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MarketstudyProject3Report]
 
 AS
@@ -53,6 +54,7 @@ matter_description AS [Insured]
 ,HoursRec.[Hours recorded to date]
 ,claimant_name
 ,outcome_of_case
+,dim_detail_claim.[dst_insured_client_name]  
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'

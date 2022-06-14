@@ -4,13 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -35,7 +28,7 @@ GO
 -- ES 20220511 #147342, added Further Info, Covid Reason (NHSR), COVID-19 Impact
 -- MT 20220609 #151890 Added New FYs for Revenue, Hours Billed, Chargeable Hours and Disbursements
 
--- =============================================
+---- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
 AS
 BEGIN
@@ -49,7 +42,7 @@ BEGIN
 
 
 -- New Revenue & Billed hours Query as fact_bill_detail doesn't match fact_bill_activity
-
+  DROP TABLE IF EXISTS #nhsdates
 	SELECT dim_bill_date.dim_bill_date_key, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_month_no, 
 		IIF(bill_fin_month_no <> 12, dim_bill_date.bill_fin_month_no + 1, 1) NHS_Fin_Month,
 		iif(bill_fin_month_no <> 12, dim_bill_date.bill_fin_year, dim_bill_date.bill_fin_year + 1) NHS_Fin_Year
@@ -66,7 +59,7 @@ INNER JOIN red_dw.dbo.dim_bill
 WHERE bill_reversed=0
 GROUP BY dim_matter_header_curr_key
 
-
+DROP TABLE IF EXISTS #Revenue
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2023],
@@ -93,7 +86,7 @@ GROUP BY dim_matter_header_curr_key
 			) AS PVIOT
 	
 
-
+DROP TABLE IF EXISTS #Billed_hours
 	SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2023],
@@ -121,7 +114,7 @@ GROUP BY dim_matter_header_curr_key
 			) AS PVIOT
 
 -- Added Chargeable hours #45295
-
+DROP TABLE IF EXISTS #Chargeable_hours
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2023],
@@ -149,6 +142,7 @@ GROUP BY dim_matter_header_curr_key
 			) AS PVIOT
 
 --Added disbursements #61966
+DROP TABLE IF EXISTS #Disbursements
 		SELECT PVIOT.client_code,
 			   PVIOT.matter_number,
 			   PVIOT.[2023],
@@ -176,6 +170,134 @@ GROUP BY dim_matter_header_curr_key
 			SUM(Disbursements)
 			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
 			) AS PVIOT
+
+
+
+
+
+/* 
+Weightmans Revenue, Hours Billed, Chargeable Hours Postedand  Disbursements Billed
+*/
+
+
+DROP TABLE IF EXISTS #WeightmansRevenue
+
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #WeightmansRevenue
+		FROM (
+
+			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022,2023)
+			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Revenue)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
+			) AS PVIOT
+
+
+DROP TABLE IF EXISTS #WeightmansBilled_hours
+	SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #WeightmansBilled_hours
+		FROM (
+
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hours
+			FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021,2022,2023)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS billedhours
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
+			) AS PVIOT
+
+-- Added Chargeable hours #45295
+DROP TABLE IF EXISTS #WeightmansChargeable_hours
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #WeightmansChargeable_hours
+		FROM (
+
+			SELECT dim_matter_header_current.client_code, dim_matter_header_current.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK) ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021, 2022, 2023)
+			GROUP BY client_code, matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022], [2023])
+			) AS PVIOT
+
+
+
+DROP TABLE IF EXISTS #WeightmansDisbursements
+--Added disbursements #61966
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #WeightmansDisbursements
+		FROM (
+
+						SELECT client_code, matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
+			FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK) ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022, 2023)
+			AND charge_type='disbursements'
+	GROUP BY client_code,
+             matter_number,
+             bill_fin_year
+			) AS disbursements
+		PIVOT	
+			(
+			SUM(Disbursements)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022], [2023])
+			) AS PVIOT
+
+
+
 
 
 
@@ -476,9 +598,9 @@ dim_detail_health.nhs_scheme IN
            dim_detail_core_details.[insured_departmentdepot] AS [Insured Department],
            dim_detail_core_details.insured_departmentdepot_postcode AS [Insured Department Depot Postcode],
            dim_matter_header_current.date_opened_case_management AS [Date Case Opened],
-		   [FY Opened],
+		   [FY Opened] AS [NHSR FY Opened],
            dim_matter_header_current.date_closed_case_management AS [Date Case Closed],
-		   [FY Closed],
+		   [FY Closed] AS [NHSR FY Closed],
           -- dim_detail_critical_mi.date_closed AS [Converge Date Closed],
            RTRIM(dim_detail_core_details.present_position) AS [Present Position],
             --dim_detail_critical_mi.claim_status AS [Converge Claim Status],
@@ -792,41 +914,80 @@ GETDATE() AS update_time,
                                
 
 
-	  Revenue.[2016] [Revenue 2015/2016]
-	, Revenue.[2017] [Revenue 2016/2017]
-	, Revenue.[2018] [Revenue 2017/2018]
-	, Revenue.[2019] [Revenue 2018/2019]
-	, Revenue.[2020] [Revenue 2019/2020]
-	, Revenue.[2021] [Revenue 2020/2021]
-	, Revenue.[2022] [Revenue 2021/2022]
-	, Revenue.[2023] [Revenue 2022/2023]
+	  Revenue.[2016] [NHSR Revenue 2015/2016]
+	, Revenue.[2017] [NHSR Revenue 2016/2017]
+	, Revenue.[2018] [NHSR Revenue 2017/2018]
+	, Revenue.[2019] [NHSR Revenue 2018/2019]
+	, Revenue.[2020] [NHSR Revenue 2019/2020]
+	, Revenue.[2021] [NHSR Revenue 2020/2021]
+	, Revenue.[2022] [NHSR Revenue 2021/2022]
+	, Revenue.[2023] [NHSR Revenue 2022/2023]
 
-	 , Billed_hours.[2016] /60 AS [Hours Billed 2015/2016]
-	 , Billed_hours.[2017] /60 AS [Hours Billed 2016/2017]
-	 , Billed_hours.[2018] /60 AS [Hours Billed 2017/2018]
-	 , Billed_hours.[2019] /60 AS [Hours Billed 2018/2019]
-	 , Billed_hours.[2020] /60 AS [Hours Billed 2019/2020]
-	 , Billed_hours.[2021] /60 AS [Hours Billed 2020/2021]
-	 , Billed_hours.[2022] /60 AS [Hours Billed 2021/2022]
-	 , Billed_hours.[2023] /60 AS [Hours Billed 2022/2023]
+	 , Billed_hours.[2016] /60 AS [NHSR Hours Billed 2015/2016]
+	 , Billed_hours.[2017] /60 AS [NHSR Hours Billed 2016/2017]
+	 , Billed_hours.[2018] /60 AS [NHSR Hours Billed 2017/2018]
+	 , Billed_hours.[2019] /60 AS [NHSR Hours Billed 2018/2019]
+	 , Billed_hours.[2020] /60 AS [NHSR Hours Billed 2019/2020]
+	 , Billed_hours.[2021] /60 AS [NHSR Hours Billed 2020/2021]
+	 , Billed_hours.[2022] /60 AS [NHSR Hours Billed 2021/2022]
+	 , Billed_hours.[2023] /60 AS [NHSR Hours Billed 2022/2023]
 
-	 , Chargeable_hours.[2016] [Chargeable Hours Posted 2015/2016]
-	 , Chargeable_hours.[2017] [Chargeable Hours Posted 2016/2017]
-	 , Chargeable_hours.[2018] [Chargeable Hours Posted 2017/2018]
-	 , Chargeable_hours.[2019] [Chargeable Hours Posted 2018/2019]
-	 , Chargeable_hours.[2020] [Chargeable Hours Posted 2019/2020]
-	 , Chargeable_hours.[2021] [Chargeable Hours Posted 2020/2021]
-	 , Chargeable_hours.[2022] [Chargeable Hours Posted 2021/2022]
-	 , Chargeable_hours.[2023] [Chargeable Hours Posted 2022/2023]
+	 , Chargeable_hours.[2016] [NHSR Chargeable Hours Posted 2015/2016]
+	 , Chargeable_hours.[2017] [NHSR Chargeable Hours Posted 2016/2017]
+	 , Chargeable_hours.[2018] [NHSR Chargeable Hours Posted 2017/2018]
+	 , Chargeable_hours.[2019] [NHSR Chargeable Hours Posted 2018/2019]
+	 , Chargeable_hours.[2020] [NHSR Chargeable Hours Posted 2019/2020]
+	 , Chargeable_hours.[2021] [NHSR Chargeable Hours Posted 2020/2021]
+	 , Chargeable_hours.[2022] [NHSR Chargeable Hours Posted 2021/2022]
+	 , Chargeable_hours.[2023] [NHSR Chargeable Hours Posted 2022/2023]
 
-	, Disbursements.[2016] [Disbursements Billed 2015/2016]
-	, Disbursements.[2017] [Disbursements Billed 2016/2017]
-	, Disbursements.[2018] [Disbursements Billed 2017/2018]
-	, Disbursements.[2019] [Disbursements Billed 2018/2019]
-	, Disbursements.[2020] [Disbursements Billed 2019/2020]
-	, Disbursements.[2021] [Disbursements Billed 2020/2021]
-    , Disbursements.[2022] [Disbursements Billed 2021/2022]
-    , Disbursements.[2023] [Disbursements Billed 2022/2023]
+	, Disbursements.[2016] [NHSR Disbursements Billed 2015/2016]
+	, Disbursements.[2017] [NHSR Disbursements Billed 2016/2017]
+	, Disbursements.[2018] [NHSR Disbursements Billed 2017/2018]
+	, Disbursements.[2019] [NHSR Disbursements Billed 2018/2019]
+	, Disbursements.[2020] [NHSR Disbursements Billed 2019/2020]
+	, Disbursements.[2021] [NHSR Disbursements Billed 2020/2021]
+    , Disbursements.[2022] [NHSR Disbursements Billed 2021/2022]
+    , Disbursements.[2023] [NHSR Disbursements Billed 2022/2023]
+
+
+	/* Weightmans FYs*/
+
+	, #WeightmansRevenue.[2016] [Weightmans Revenue 2015/2016]
+	, #WeightmansRevenue.[2017] [Weightmans Revenue 2016/2017]
+	, #WeightmansRevenue.[2018] [Weightmans Revenue 2017/2018]
+	, #WeightmansRevenue.[2019] [Weightmans Revenue 2018/2019]
+	, #WeightmansRevenue.[2020] [Weightmans Revenue 2019/2020]
+	, #WeightmansRevenue.[2021] [Weightmans Revenue 2020/2021]
+	, #WeightmansRevenue.[2022] [Weightmans Revenue 2021/2022]
+	, #WeightmansRevenue.[2023] [Weightmans Revenue 2022/2023]
+
+	 , #WeightmansBilled_hours.[2016] /60 AS [Weightmans Hours Billed 2015/2016]
+	 , #WeightmansBilled_hours.[2017] /60 AS [Weightmans Hours Billed 2016/2017]
+	 , #WeightmansBilled_hours.[2018] /60 AS [Weightmans Hours Billed 2017/2018]
+	 , #WeightmansBilled_hours.[2019] /60 AS [Weightmans Hours Billed 2018/2019]
+	 , #WeightmansBilled_hours.[2020] /60 AS [Weightmans Hours Billed 2019/2020]
+	 , #WeightmansBilled_hours.[2021] /60 AS [Weightmans Hours Billed 2020/2021]
+	 , #WeightmansBilled_hours.[2022] /60 AS [Weightmans Hours Billed 2021/2022]
+	 , #WeightmansBilled_hours.[2023] /60 AS [Weightmans Hours Billed 2022/2023]
+
+	 , #WeightmansChargeable_hours.[2016] [Weightmans Chargeable Hours Posted 2015/2016]
+	 , #WeightmansChargeable_hours.[2017] [Weightmans Chargeable Hours Posted 2016/2017]
+	 , #WeightmansChargeable_hours.[2018] [Weightmans Chargeable Hours Posted 2017/2018]
+	 , #WeightmansChargeable_hours.[2019] [Weightmans Chargeable Hours Posted 2018/2019]
+	 , #WeightmansChargeable_hours.[2020] [Weightmans Chargeable Hours Posted 2019/2020]
+	 , #WeightmansChargeable_hours.[2021] [Weightmans Chargeable Hours Posted 2020/2021]
+	 , #WeightmansChargeable_hours.[2022] [Weightmans Chargeable Hours Posted 2021/2022]
+	 , #WeightmansChargeable_hours.[2023] [Weightmans Chargeable Hours Posted 2022/2023]
+
+	, #WeightmansDisbursements.[2016] [Weightmans Disbursements Billed 2015/2016]
+	, #WeightmansDisbursements.[2017] [Weightmans Disbursements Billed 2016/2017]
+	, #WeightmansDisbursements.[2018] [Weightmans Disbursements Billed 2017/2018]
+	, #WeightmansDisbursements.[2019] [Weightmans Disbursements Billed 2018/2019]
+	, #WeightmansDisbursements.[2020] [Weightmans Disbursements Billed 2019/2020]
+	, #WeightmansDisbursements.[2021] [Weightmans Disbursements Billed 2020/2021]
+    , #WeightmansDisbursements.[2022] [Weightmans Disbursements Billed 2021/2022]
+    , #WeightmansDisbursements.[2023] [Weightmans Disbursements Billed 2022/2023]
 
 	,billing_arrangement_description AS [Billing Arrangement]
 	, IIF(ISNULL(dim_matter_header_current.reporting_exclusions, 0) = 0, CAST(0 AS BIT), CAST(1 AS BIT)) reporting_exclusions
@@ -836,7 +997,7 @@ GETDATE() AS update_time,
 	, CASE WHEN ISNULL([RevenueAmount].bill_amount,0)=0 OR ISNULL(BilledHours.billed_hours,0)=0 THEN NULL ELSE ISNULL([RevenueAmount].bill_amount,0)/ISNULL(BilledHours.billed_hours,0) END AS [Recovery Rate]
 	
     ---------------------------------------------------
-   INTO Reporting.dbo.NHSRSelfService
+  INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810
 
     --ss.GeneralDataFile
@@ -1246,6 +1407,33 @@ LEFT OUTER JOIN #Chargeable_hours Chargeable_hours  ON dim_matter_header_current
 -- Added Disbursements #61966
 LEFT OUTER JOIN #Disbursements Disbursements  ON dim_matter_header_current.client_code=Disbursements.client_code
 			AND dim_matter_header_current.matter_number=Disbursements.matter_number 
+
+
+
+
+LEFT OUTER JOIN #WeightmansRevenue
+ ON dim_matter_header_current.client_code=#WeightmansRevenue.client_code
+AND dim_matter_header_current.matter_number=#WeightmansRevenue.matter_number
+
+LEFT OUTER	JOIN #WeightmansBilled_hours  ON dim_matter_header_current.client_code=#WeightmansBilled_hours.client_code
+			AND dim_matter_header_current.matter_number=#WeightmansBilled_hours.matter_number 
+
+
+-- Added Chargeable hours #45295
+LEFT OUTER JOIN #WeightmansChargeable_hours   ON dim_matter_header_current.client_code=#WeightmansChargeable_hours.client_code
+			AND dim_matter_header_current.matter_number=#WeightmansChargeable_hours.matter_number 
+
+-- Added Disbursements #61966
+LEFT OUTER JOIN #WeightmansDisbursements   ON dim_matter_header_current.client_code= #WeightmansDisbursements.client_code
+			AND dim_matter_header_current.matter_number=#WeightmansDisbursements.matter_number 
+
+
+
+
+
+
+
+
 
 
 --added fields for recovery rate

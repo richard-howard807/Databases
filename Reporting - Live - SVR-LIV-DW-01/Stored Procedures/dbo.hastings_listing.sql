@@ -386,50 +386,50 @@ SELECT
 	, #hastings_financials.hastings_predict_lifecycle_meta_model_value			AS [PREDICT Lifecycle Meta-model Value]
 	, #hastings_financials.predict_rec_settlement_time						AS [PREDICT Recommended Settlement Time]
 	, DATEDIFF(DAY, dim_detail_core_details.date_instructions_received, dim_detail_outcome.date_claim_concluded)			AS [Damages Lifecycle]
-	, dim_detail_compliance.hastings_instructions_acknowledged_within_a_day					AS [SLA.A1 Instructions Acknowledged]
-	, dim_detail_compliance.hastings_instructions_allocated_within_two_days					AS [SLA.A2 File Allocated]
-	, IIF(ISNULL(dim_detail_compliance.hastings_file_set_up_on_collaborate, '')='Not applicable', 'N/A', dim_detail_compliance.hastings_file_set_up_on_collaborate)		AS [SLA.A2 on Collaborate]
-	, IIF(ISNULL(dim_detail_compliance.hastings_references_sent_to_ph_within_two_business_days, '')='Not applicable', 'N/A', hastings_references_sent_to_ph_within_two_business_days)			AS [SLA.A2 Refs Sent to Policyholder]
-	, IIF(ISNULL(dim_detail_compliance.hastings_initial_contact_with_claimant_solicitors, '')='Not applicable', 'N/A', hastings_initial_contact_with_claimant_solicitors)				AS [SLA.A2 Initial Contact with Claimant Sols]
-	, IIF(ISNULL(dim_detail_compliance.hastings_initial_report_sent_within_ten_days, '')='Not applicable', 'N/A', hastings_initial_report_sent_within_ten_days)					AS [SLA.A3 Initial Report 10 Days]
-	, IIF(ISNULL(dim_detail_compliance.hastings_defences_submitted_to_hastings, '')='Not applicable', 'N/A', hastings_defences_submitted_to_hastings) 							AS [SLA.A4 Defencese Submitted 7 Days]
-	, CAST(IIF(ISNULL(dim_detail_compliance.hastings_court_directions_provided_to_hastings, '')='Not applicable', 'N/A', hastings_court_directions_provided_to_hastings) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A5 Court Directions Provided to Hastings 2 Days]
-	, IIF(ISNULL(dim_detail_compliance.hastings_defence_submitted_to_court_within_direction_timetable, '')='Not applicable', 'N/A', hastings_defence_submitted_to_court_within_direction_timetable)		AS [SLA.A6 Defence Submitted to Court]
-	, CAST(IIF(ISNULL(dim_detail_compliance.hastings_compliance_with_all_other_court_dates, '')='Not applicable', 'N/A', hastings_compliance_with_all_other_court_dates) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A7 Compliance with Court Dates]
-	, IIF(ISNULL(dim_detail_compliance.hastings_brought_other_parties_into_litigation, '')='Not applicable', 'N/A', hastings_brought_other_parties_into_litigation)					AS [SLA.A8 Identified Other Parties]
-	, IIF(ISNULL(dim_detail_compliance.hastings_urgent_developments_reported_two_days, '')='Not applicable', 'N/A', hastings_urgent_developments_reported_two_days)					AS [SLA.A9 Urgent Developments Reported]
-	, IIF(ISNULL(dim_detail_compliance.hastings_update_reports_submitted_every_three_months, '')='Not applicable', 'N/A', hastings_update_reports_submitted_every_three_months)			AS [SLA.A9 Update Reports Submitted]
-	, IIF(ISNULL(dim_detail_compliance.hastings_significant_developments_reported_five_days, '')='Not applicable', 'N/A', hastings_significant_developments_reported_five_days)			AS [SLA.A10 Significant Developments Reported]
-	, IIF(ISNULL(dim_detail_compliance.hastings_provided_written_responses_in_a_timely_manner, '')='Not applicable', 'N/A', hastings_provided_written_responses_in_a_timely_manner)			AS [SLA.A11 Non-urgent Written Responses]
-	, IIF(ISNULL(dim_detail_compliance.hastings_provided_written_responses_to_urgent_correspondence, '')='Not applicable', 'N/A', hastings_provided_written_responses_to_urgent_correspondence)	AS [SLA.A12 Urgent Written Responses]
-	, IIF(ISNULL(dim_detail_compliance.hastings_supplier_recognises_new_information_indicates_change, '')='Not applicable', 'N/A', hastings_supplier_recognises_new_information_indicates_change)		AS [SLA.A12 Supplier Written Responses]
-	, IIF(ISNULL(dim_detail_compliance.hastings_responded_to_phone_calls_within_two_business_days, '')='Not applicable', 'N/A', hastings_responded_to_phone_calls_within_two_business_days)			AS [SLA.A13 Responded to Phone Calls 2 Days]
-	, IIF(ISNULL(dim_detail_compliance.hastings_outcome_reports_submitted_within_two_days, '')='Not applicable', 'N/A', hastings_outcome_reports_submitted_within_two_days)				AS [SLA.A14 Outcome Reports Submitted 2 days]
-	, IIF(ISNULL(dim_detail_compliance.hastings_trials_referred_to_and_signed_off_by_large_loss, '')='Not applicable', 'N/A', hastings_trials_referred_to_and_signed_off_by_large_loss)			AS [SLA.A15 Trials Referred to Large Loss]
-	, IIF(ISNULL(dim_detail_compliance.hastings_advice_to_be_directed_to_the_hastings_handler, '')='Not applicable', 'N/A', hastings_advice_to_be_directed_to_the_hastings_handler)			AS [SLA.A15 Trial Advice Directed to Hastings]
-	, IIF(ISNULL(dim_detail_compliance.hastings_report_on_tactics_submitted_to_hastings, '')='Not applicable', 'N/A', hastings_report_on_tactics_submitted_to_hastings)				AS [SLA.A15 Full Report Tactics 2 Weeks]
-	, IIF(ISNULL(dim_detail_compliance.hastings_any_trial_dates_missed, '')='Not applicable', 'N/A', hastings_any_trial_dates_missed)							AS [SLA.A16 Trial Dates Missed]
-	, IIF(ISNULL(dim_detail_compliance.hastings_reports_and_advice_to_be_provided_to_hastings, '')='Not applicable', 'N/A', hastings_reports_and_advice_to_be_provided_to_hastings)			AS [SLA.A17 Experts Reports Provided to Hastings]
-	, IIF(ISNULL(dim_detail_compliance.hastings_instructions_and_reports_agreed_with_hastings, '')='Not applicable', 'N/A', hastings_instructions_and_reports_agreed_with_hastings)			AS [SLA.A17 Experts Reports Agreed with Hastings]
-	, IIF(ISNULL(dim_detail_compliance.hastings_accurate_reserves_held_on_file_at_all_times, '')='Not applicable', 'N/A', hastings_accurate_reserves_held_on_file_at_all_times)			AS [SLA.A19 Accurate Reserves Held]
+	, hastings_slas.hastings_instructions_acknowledged_within_a_day					AS [SLA.A1 Instructions Acknowledged]
+	, hastings_slas.hastings_instructions_allocated_within_two_days					AS [SLA.A2 File Allocated]
+	, IIF(ISNULL(hastings_slas.hastings_file_set_up_on_collaborate, '')='Not applicable', 'N/A', hastings_slas.hastings_file_set_up_on_collaborate)		AS [SLA.A2 on Collaborate]
+	, IIF(ISNULL(hastings_slas.hastings_references_sent_to_ph_within_two_business_days, '')='Not applicable', 'N/A', hastings_references_sent_to_ph_within_two_business_days)			AS [SLA.A2 Refs Sent to Policyholder]
+	, IIF(ISNULL(hastings_slas.hastings_initial_contact_with_claimant_solicitors, '')='Not applicable', 'N/A', hastings_initial_contact_with_claimant_solicitors)				AS [SLA.A2 Initial Contact with Claimant Sols]
+	, IIF(ISNULL(hastings_slas.hastings_initial_report_sent_within_ten_days, '')='Not applicable', 'N/A', hastings_initial_report_sent_within_ten_days)					AS [SLA.A3 Initial Report 10 Days]
+	, IIF(ISNULL(hastings_slas.hastings_defences_submitted_to_hastings, '')='Not applicable', 'N/A', hastings_defences_submitted_to_hastings) 							AS [SLA.A4 Defencese Submitted 7 Days]
+	, CAST(IIF(ISNULL(hastings_slas.hastings_court_directions_provided_to_hastings, '')='Not applicable', 'N/A', hastings_court_directions_provided_to_hastings) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A5 Court Directions Provided to Hastings 2 Days]
+	, IIF(ISNULL(hastings_slas.hastings_defence_submitted_to_court_within_direction_timetable, '')='Not applicable', 'N/A', hastings_defence_submitted_to_court_within_direction_timetable)		AS [SLA.A6 Defence Submitted to Court]
+	, CAST(IIF(ISNULL(hastings_slas.hastings_compliance_with_all_other_court_dates, '')='Not applicable', 'N/A', hastings_compliance_with_all_other_court_dates) AS NVARCHAR(255)) COLLATE Latin1_General_BIN					AS [SLA.A7 Compliance with Court Dates]
+	, IIF(ISNULL(hastings_slas.hastings_brought_other_parties_into_litigation, '')='Not applicable', 'N/A', hastings_brought_other_parties_into_litigation)					AS [SLA.A8 Identified Other Parties]
+	, IIF(ISNULL(hastings_slas.hastings_urgent_developments_reported_two_days, '')='Not applicable', 'N/A', hastings_urgent_developments_reported_two_days)					AS [SLA.A9 Urgent Developments Reported]
+	, IIF(ISNULL(hastings_slas.hastings_update_reports_submitted_every_three_months, '')='Not applicable', 'N/A', hastings_update_reports_submitted_every_three_months)			AS [SLA.A9 Update Reports Submitted]
+	, IIF(ISNULL(hastings_slas.hastings_significant_developments_reported_five_days, '')='Not applicable', 'N/A', hastings_significant_developments_reported_five_days)			AS [SLA.A10 Significant Developments Reported]
+	, IIF(ISNULL(hastings_slas.hastings_provided_written_responses_in_a_timely_manner, '')='Not applicable', 'N/A', hastings_provided_written_responses_in_a_timely_manner)			AS [SLA.A11 Non-urgent Written Responses]
+	, IIF(ISNULL(hastings_slas.hastings_provided_written_responses_to_urgent_correspondence, '')='Not applicable', 'N/A', hastings_provided_written_responses_to_urgent_correspondence)	AS [SLA.A12 Urgent Written Responses]
+	, IIF(ISNULL(hastings_slas.hastings_supplier_recognises_new_information_indicates_change, '')='Not applicable', 'N/A', hastings_supplier_recognises_new_information_indicates_change)		AS [SLA.A12 Supplier Written Responses]
+	, IIF(ISNULL(hastings_slas.hastings_responded_to_phone_calls_within_two_business_days, '')='Not applicable', 'N/A', hastings_responded_to_phone_calls_within_two_business_days)			AS [SLA.A13 Responded to Phone Calls 2 Days]
+	, IIF(ISNULL(hastings_slas.hastings_outcome_reports_submitted_within_two_days, '')='Not applicable', 'N/A', hastings_outcome_reports_submitted_within_two_days)				AS [SLA.A14 Outcome Reports Submitted 2 days]
+	, IIF(ISNULL(hastings_slas.hastings_trials_referred_to_and_signed_off_by_large_loss, '')='Not applicable', 'N/A', hastings_trials_referred_to_and_signed_off_by_large_loss)			AS [SLA.A15 Trials Referred to Large Loss]
+	, IIF(ISNULL(hastings_slas.hastings_advice_to_be_directed_to_the_hastings_handler, '')='Not applicable', 'N/A', hastings_advice_to_be_directed_to_the_hastings_handler)			AS [SLA.A15 Trial Advice Directed to Hastings]
+	, IIF(ISNULL(hastings_slas.hastings_report_on_tactics_submitted_to_hastings, '')='Not applicable', 'N/A', hastings_report_on_tactics_submitted_to_hastings)				AS [SLA.A15 Full Report Tactics 2 Weeks]
+	, IIF(ISNULL(hastings_slas.hastings_any_trial_dates_missed, '')='Not applicable', 'N/A', hastings_any_trial_dates_missed)							AS [SLA.A16 Trial Dates Missed]
+	, IIF(ISNULL(hastings_slas.hastings_reports_and_advice_to_be_provided_to_hastings, '')='Not applicable', 'N/A', hastings_reports_and_advice_to_be_provided_to_hastings)			AS [SLA.A17 Experts Reports Provided to Hastings]
+	, IIF(ISNULL(hastings_slas.hastings_instructions_and_reports_agreed_with_hastings, '')='Not applicable', 'N/A', hastings_instructions_and_reports_agreed_with_hastings)			AS [SLA.A17 Experts Reports Agreed with Hastings]
+	, IIF(ISNULL(hastings_slas.hastings_accurate_reserves_held_on_file_at_all_times, '')='Not applicable', 'N/A', hastings_accurate_reserves_held_on_file_at_all_times)			AS [SLA.A19 Accurate Reserves Held]
 	, CAST(CASE 
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Justified complaint made' THEN 
+		WHEN hastings_slas.hastings_any_complaints_made = 'Justified complaint made' THEN 
 			'Yes'
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
+		WHEN hastings_slas.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
 		ELSE 
 			NULL
 	  END AS NVARCHAR(255)) COLLATE Latin1_General_BIN																	AS [SLA.A20 Justified Complaints Made]
 	, CAST(CASE 
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'Non-justified complaint made' THEN 
+		WHEN hastings_slas.hastings_any_complaints_made = 'Non-justified complaint made' THEN 
 			'Yes'
-		WHEN dim_detail_compliance.hastings_any_complaints_made = 'No complaints made' THEN
+		WHEN hastings_slas.hastings_any_complaints_made = 'No complaints made' THEN
 			'No'
 		ELSE 
 			NULL
 	  END AS NVARCHAR(255)) COLLATE Latin1_General_BIN																	AS [SLA.A20 Non-Justified Complaints Made]
-	, IIF(ISNULL(dim_detail_compliance.hastings_any_leakage_identified, '')='Not applicable', 'N/A', hastings_any_leakage_identified)				AS [SLA.A21 Any Leakage Identified]
-	, CAST(dim_detail_compliance.hastings_date_of_sla_review AS DATE)				AS [Date of Last Review]
+	, IIF(ISNULL(hastings_slas.hastings_any_leakage_identified, '')='Not applicable', 'N/A', hastings_any_leakage_identified)				AS [SLA.A21 Any Leakage Identified]
+	, CAST(hastings_slas.hastings_date_of_sla_review AS DATE)				AS [Date of Last Review]
 	, CAST(CASE
 		WHEN ISNULL(dim_detail_core_details.do_clients_require_an_initial_report, '') = 'No' THEN	
 			'N/A'
@@ -573,9 +573,6 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-	LEFT OUTER JOIN red_dw.dbo.dim_detail_compliance
-		ON dim_detail_compliance.client_code = dim_matter_header_current.client_code
-			AND dim_detail_compliance.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days
 		ON fact_detail_elapsed_days.client_code = dim_matter_header_current.client_code
 			AND fact_detail_elapsed_days.matter_number = dim_matter_header_current.matter_number
@@ -583,6 +580,48 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON #hastings_financials.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #next_trial_date
 		ON #next_trial_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN (
+						SELECT 
+							dim_matter_header_current.dim_matter_header_curr_key
+							, dim_child_detail.hastings_accurate_reserves_held_on_file_at_all_times
+							, dim_child_detail.hastings_trials_referred_to_and_signed_off_by_large_loss
+							, dim_child_detail.hastings_advice_to_be_directed_to_the_hastings_handler
+							, dim_child_detail.hastings_compliance_with_all_other_court_dates
+							, dim_child_detail.hastings_any_complaints_made
+							, dim_child_detail.hastings_court_directions_provided_to_hastings
+							, dim_child_detail.hastings_defences_submitted_to_hastings
+							, dim_child_detail.hastings_defence_submitted_to_court_within_direction_timetable
+							, dim_child_detail.hastings_reports_and_advice_to_be_provided_to_hastings
+							, dim_child_detail.hastings_file_set_up_on_collaborate
+							, dim_child_detail.hastings_report_on_tactics_submitted_to_hastings
+							, dim_child_detail.hastings_brought_other_parties_into_litigation
+							, dim_child_detail.hastings_initial_contact_with_claimant_solicitors
+							, dim_child_detail.hastings_initial_report_sent_within_ten_days
+							, dim_child_detail.hastings_instructions_acknowledged_within_a_day
+							, dim_child_detail.hastings_instructions_allocated_within_two_days
+							, dim_child_detail.hastings_instructions_and_reports_agreed_with_hastings
+							, dim_child_detail.hastings_any_leakage_identified
+							, dim_child_detail.hastings_outcome_reports_submitted_within_two_days
+							, dim_child_detail.hastings_provided_written_responses_in_a_timely_manner
+							, dim_child_detail.hastings_provided_written_responses_to_urgent_correspondence
+							, dim_child_detail.hastings_references_sent_to_ph_within_two_business_days
+							, dim_child_detail.hastings_responded_to_phone_calls_within_two_business_days
+							, dim_child_detail.hastings_significant_developments_reported_five_days
+							, dim_child_detail.hastings_any_trial_dates_missed
+							, dim_child_detail.hastings_update_reports_submitted_every_three_months
+							, dim_child_detail.hastings_urgent_developments_reported_two_days
+							, dim_child_detail.hastings_supplier_recognises_new_information_indicates_change
+							, dim_child_detail.hastings_date_of_sla_review
+							, ROW_NUMBER() OVER(PARTITION BY dim_matter_header_current.dim_matter_header_curr_key ORDER BY dim_child_detail.hastings_date_of_sla_review DESC)	AS row_num
+						FROM red_dw.dbo.dim_child_detail
+							INNER JOIN red_dw.dbo.dim_matter_header_current
+								ON dim_matter_header_current.client_code = dim_child_detail.client_code
+									AND dim_matter_header_current.matter_number = dim_child_detail.matter_number
+						WHERE
+							dim_matter_header_current.master_client_code = '4908'
+					)	AS hastings_slas
+		ON hastings_slas.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+			AND hastings_slas.row_num = 1
 	LEFT OUTER JOIN (
 						SELECT 
 							dbFile.fileID
