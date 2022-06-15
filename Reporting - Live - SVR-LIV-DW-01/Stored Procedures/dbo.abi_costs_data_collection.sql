@@ -72,7 +72,7 @@ PIVOT
 SELECT 
 	'Weightmans LLP'			AS [Panel Firm]
 	, dim_client_involvement.insurerclient_reference			AS [Insurer Reference]
-	, dim_matter_header_current.ms_fileid
+	, dim_matter_header_current.master_client_code
 	, dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number			AS [Panel Firm Reference]
 	, #assoc_address.[CLAIMANT-contName]					AS [Claimant Solicitor]
 	, #assoc_address.[CLAIMANT-addPostcode]					AS [Claimant Solicitor Postcode]
@@ -121,7 +121,7 @@ WHERE
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.outcome_of_case)), '') NOT IN ('exclude from reports', 'returned to client', 'won at trial', 'struck out')
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'no order %claimant% costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'paid claimant% fixed costs'
-	
+	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.global_settlement)), '')	<> 'yes'
 
 END 
 
