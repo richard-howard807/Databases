@@ -28,7 +28,7 @@ BEGIN
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 --DECLARE @StartFY AS DATE = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.current_fin_year = 'Current')
---		, @EndFY AS DATE = CAST(GETDATE() AS DATE)
+--	, @EndFY AS DATE = CAST(GETDATE() AS DATE)
 
 SELECT
  fact_dimension_main.client_code [Client Code]
@@ -58,6 +58,12 @@ SELECT
 , dim_detail_client.surrey_pol_type_of_negligence_claim			AS [Neg Type]
 , dim_detail_client.surrey_pol_lessons_learnt_paid_claims	AS [Lessons]
 
+
+,[Contact name] = udMICoreGeneralA.txtContName
+,[Contact email] = udMICoreGeneralA.txtContEmail
+,[Billing Group] = cboBillGroup.cboBillGroup
+
+
 FROM red_dw..fact_dimension_main
 LEFT JOIN red_dw..dim_matter_header_current ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT JOIN red_dw..dim_fed_hierarchy_history ON dim_matter_header_current.fee_earner_code = dim_fed_hierarchy_history.fed_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
@@ -67,6 +73,7 @@ LEFT JOIN red_dw.dbo.dim_detail_claim ON red_dw.dbo.dim_detail_claim.dim_detail_
 LEFT JOIN red_dw.dbo.dim_detail_advice ON red_dw.dbo.dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
 LEFT JOIN red_dw.dbo. dim_detail_core_details ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 LEFT JOIN reporting.[dbo].[PoliceWorkTypes] ON red_dw.dbo.dim_matter_worktype.work_type_name = [dbo].[PoliceWorkTypes].[Work Type] COLLATE DATABASE_DEFAULT
+LEFT JOIN ms_prod.dbo.udMICoreGeneralA ON ms_fileid = fileID
 INNER JOIN 
        (                       
               SELECT
@@ -88,9 +95,19 @@ INNER JOIN
        ON fact_dimension_main.dim_matter_header_curr_key = Billed.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
 		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT JOIN ms_prod.dbo.udMIClientSuffolkPolice
+ON udMIClientSuffolkPolice.fileID = ms_fileid
+LEFT JOIN (SELECT DISTINCT cdCode, cdDesc AS cboBillGroup  FROM  MS_PROD.dbo.udMapDetail
+JOIN ms_prod.dbo.dbCodeLookup ON txtLookupCode = cdType
+WHERE txtMSCode = 'cboBillGroup' 
+AND txtMSTable = 'udMIClientSuffolkPolice') cboBillGroup 
+ON cboBillGroup.cdCode = udMIClientSuffolkPolice.cboBillGroup
+
 WHERE 
 dim_matter_header_current.client_code IN ('00451638' , '00113147','00817395') 
 AND dim_matter_header_current.matter_number <>'ML'
+
 
 END
 

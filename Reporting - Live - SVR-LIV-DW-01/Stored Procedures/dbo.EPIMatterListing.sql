@@ -18,29 +18,35 @@ INTO #last_bill_date
 FROM red_dw.dbo.fact_bill_matter_detail_summary
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_matter_detail_summary.dim_matter_header_curr_key
+	INNER JOIN red_dw.dbo.dim_matter_worktype
+		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 WHERE 
 	dim_matter_header_current.reporting_exclusions=0
-	AND dim_matter_header_current.department_code='0012'
-	AND (dim_matter_header_current.date_closed_practice_management IS NULL 
-		OR dim_matter_header_current.date_closed_practice_management>='2017-05-01')
+	--AND dim_matter_header_current.department_code='0012'
+	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
 GROUP BY	
 	dim_matter_header_current.dim_matter_header_curr_key
 
 
 SELECT 
-	dim_matter_header_current.dim_matter_header_curr_key
+	--dim_matter_header_current.dim_matter_header_curr_key
+	fact_billable_time_activity.dim_matter_header_curr_key
 	, SUM(fact_billable_time_activity.minutes_recorded)			AS chargeable_hours
 INTO #chargeable_hours
 FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
-	INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) 
-		ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
-WHERE
-	dim_matter_header_current.reporting_exclusions=0
-	AND dim_matter_header_current.department_code='0012'
-	AND (dim_matter_header_current.date_closed_practice_management IS NULL 
-		OR dim_matter_header_current.date_closed_practice_management>='2017-05-01')
+	--INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) 
+	--	ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+	--INNER JOIN red_dw.dbo.dim_matter_worktype
+	--	ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+WHERE 1 = 1
+	--AND dim_matter_header_current.reporting_exclusions=0
+	--AND dim_matter_header_current.department_code='0012'
+	--AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+	--AND (dim_matter_header_current.date_closed_practice_management IS NULL 
+	--	OR dim_matter_header_current.date_closed_practice_management>='2017-05-01')
 GROUP BY 
-	dim_matter_header_current.dim_matter_header_curr_key
+	fact_billable_time_activity.dim_matter_header_curr_key
 
 
 
@@ -137,13 +143,12 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON #chargeable_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 
 	dim_matter_header_current.reporting_exclusions=0
-	AND dim_matter_header_current.department_code='0012'
-	AND (dim_matter_header_current.date_closed_practice_management IS NULL 
-		OR dim_matter_header_current.date_closed_practice_management>='2017-05-01')
-
+	--AND dim_matter_header_current.department_code='0012'
+	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
+	--AND dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number = '808656/749'
 
 END
-
 
 
 
