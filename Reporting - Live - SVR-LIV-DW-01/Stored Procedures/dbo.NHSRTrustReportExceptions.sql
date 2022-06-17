@@ -43,4 +43,5 @@ JOIN Exceptions.dbo.vwExceptions
        WHERE dim_matter_header_current.master_client_code = 'N1001'
 	   AND dim_detail_core_details.[present_position] = 'Claim and costs outstanding'
        AND reporting_exclusions = 0
+	   AND datasetid = 247
 GO
