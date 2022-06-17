@@ -22,7 +22,7 @@ SELECT DISTINCT
 [Date Opened] = date_opened_case_management,
 [Defendant Trust] = dim_detail_claim.[defendant_trust],
 [Present Position] = dim_detail_core_details.[present_position],
-[Exceptions],
+[Exceptions] = REPLACE([Exceptions], '&amp;','&'),
 fact_dimension_main.master_fact_key
 
 
@@ -44,4 +44,6 @@ JOIN Exceptions.dbo.vwExceptions
 	   AND dim_detail_core_details.[present_position] = 'Claim and costs outstanding'
        AND reporting_exclusions = 0
 	   AND datasetid = 247
+
+ 
 GO
