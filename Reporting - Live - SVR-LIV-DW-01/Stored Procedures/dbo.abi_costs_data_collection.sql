@@ -105,6 +105,11 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
 		ON dim_client_involvement.client_code = dim_matter_header_current.client_code
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
+	LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+		ON dim_fed_hierarchy_history.fed_code = dim_matter_header_current.fee_earner_code
+			AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
+	LEFT OUTER JOIN red_dw.dbo.dim_employee
+		ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 		ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
@@ -122,9 +127,9 @@ WHERE
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'no order %claimant% costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'paid claimant% fixed costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.global_settlement)), '')	<> 'yes'
+	AND ISNULL(dim_employee.locationidud, '') <> 'Glasgow'
 
 END 
-
 
 
 
