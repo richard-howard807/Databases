@@ -74,7 +74,7 @@ SELECT
 	, dim_client_involvement.insurerclient_reference			AS [Insurer Reference]
 	, dim_matter_header_current.master_client_code
 	, dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number			AS [Panel Firm Reference]
-	, #assoc_address.[CLAIMANT-contName]					AS [Claimant Solicitor]
+	, #assoc_address.[CLAIMANTSOLS-contName]					AS [Claimant Solicitor]
 	, #assoc_address.[CLAIMANT-addPostcode]					AS [Claimant Solicitor Postcode]
 	, ISNULL(fact_finance_summary.damages_paid, 0)				AS [Agreed Damages Amount]
 	, ISNULL(fact_finance_summary.tp_total_costs_claimed, 0)			AS [Total Claimant Costs Claimed]
