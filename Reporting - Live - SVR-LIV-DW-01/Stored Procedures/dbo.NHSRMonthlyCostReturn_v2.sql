@@ -131,7 +131,7 @@ SELECT
 	 END AS NewInstructionType
 	 	 ,DisbsAfterCosts.AllDisbs
 	 ,DisbsAfterCosts.DisbsAfterCosts
-	
+	, dim_detail_core_details.present_position		AS [Present Position]
 
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
@@ -140,6 +140,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
 		ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
@@ -336,7 +338,7 @@ SELECT
 	 END AS NewInstructionType
 	 ,DisbsAfterCosts.AllDisbs
 	 ,DisbsAfterCosts.DisbsAfterCosts
-	 
+	 , dim_detail_core_details.present_position		AS [Present Position]
 FROM red_dw.dbo.fact_dimension_main
 	INNER JOIN red_dw.dbo.dim_matter_header_current
 		ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -344,6 +346,8 @@ FROM red_dw.dbo.fact_dimension_main
 		ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
 		ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
