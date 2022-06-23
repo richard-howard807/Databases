@@ -24,7 +24,7 @@ BEGIN
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 --testing
---DECLARE @selected_quarter AS INT = 202202
+--DECLARE @selected_quarter AS INT = 202101
 
 
 DECLARE @last_quarter AS INT = (SELECT q.last_quarter FROM (
@@ -159,7 +159,7 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'W24119'
-	AND dim_date.cal_quarter = @selected_quarter
+	AND dim_date.cal_quarter <= @selected_quarter
 	AND RTRIM(LOWER(ISNULL(dim_detail_outcome.outcome_of_case, ''))) <> 'exclude from reports'
 
 END
