@@ -74,7 +74,7 @@ HAVING
 SELECT
 	dim_claimant_thirdparty_involvement.claimant_name		AS [Claimant Name]
 	, dim_matter_header_current.matter_description			AS [Matter Description]
-	, NULL					AS [Forest District]
+	, dim_detail_client.forestry_commission_forest_district					AS [Forest District]
 	, dim_detail_core_details.clients_claims_handler_surname_forename		AS [FE Contact Client]
 	, dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number		AS [Weightmans Reference]
 	, dim_matter_header_current.matter_owner_full_name		AS [Fee Earner]
@@ -87,7 +87,7 @@ SELECT
 	, CAST(dim_detail_core_details.incident_date AS DATE)			AS [Accident Date]
 	, dim_detail_core_details.brief_details_of_claim			AS [Accident Details]
 	, NULL				AS [Current Status]
-	, NULL				AS [Probability of Claim Succeeding]
+	, dim_detail_client.forestry_commission_probability_of_success				AS [Probability of Claim Succeeding]
 	, fact_detail_reserve_detail.general_damages_non_pi_misc_reserve_current			AS [General Damages Reserve]
 	, fact_detail_reserve_detail.special_damages_miscellaneous_reserve			AS [Special Damages Reserve]
 	, fact_detail_reserve_detail.claimant_costs_reserve_current					AS [Claimant Costs Reserve]
@@ -146,6 +146,8 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 		ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 		ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
