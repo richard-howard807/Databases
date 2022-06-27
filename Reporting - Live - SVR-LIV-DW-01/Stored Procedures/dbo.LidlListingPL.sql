@@ -68,6 +68,8 @@ BEGIN
 		ELSE
 			'Transparent'
 	  END					AS proceedings_issued_colour
+	  , Doogal.Longitude
+		, Doogal.Latitude
 
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -90,6 +92,8 @@ BEGIN
 	ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_court
 	ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.Doogal 
+	ON Doogal.Postcode = dim_detail_core_details.[incident_location_postcode] COLLATE database_default
 
 	LEFT OUTER JOIN (SELECT fileID,MAX(tskDue) AS [Trial date]
 	FROM ms_prod.dbo.dbTasks WITH(NOLOCK) WHERE tskActive=1

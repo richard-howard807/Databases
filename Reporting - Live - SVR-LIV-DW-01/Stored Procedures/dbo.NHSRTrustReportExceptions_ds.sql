@@ -11,9 +11,18 @@ Report: NHSR Trust Report Exceptions #152914
 
 */
 
-CREATE PROCEDURE [dbo].[NHSRTrustReportExceptions]
+CREATE PROCEDURE [dbo].[NHSRTrustReportExceptions_ds]
+
+(
+@DefendantTrust AS VARCHAR(MAX)
+)
 
 AS 
+
+
+
+DROP TABLE IF EXISTS #defendant_trust
+SELECT udt_TallySplit.ListValue  INTO #defendant_trust FROM 	dbo.udt_TallySplit('|', @DefendantTrust)
 
 DECLARE @nDate AS DATETIME = (SELECT MIN(dim_date.calendar_date) FROM red_dw..dim_date WHERE dim_date.fin_year = (SELECT fin_year - 3 FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = CAST(GETDATE() AS DATE)))
 DECLARE @last_year AS DATE = DATEADD(MONTH, -11, GETDATE()+1)-DAY(GETDATE())
@@ -46,7 +55,12 @@ LEFT JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT JOIN red_dw.dbo.dim_detail_health
 ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
-	  WHERE 1 = 1 
+JOIN #defendant_trust
+ON dim_detail_claim.defendant_trust  = #defendant_trust.ListValue COLLATE DATABASE_DEFAULT
+		
+	
+	
+	WHERE 1 = 1 
 	  
 	   AND dim_matter_header_current.master_client_code = 'N1001'
 	   AND datasetid = 247
@@ -71,6 +85,8 @@ ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_heal
 		OR (dim_detail_outcome.date_claim_concluded >= @last_year )	  
 		
 		)
+
+		AND defendant_trust IN (@DefendantTrust)
 
 
 

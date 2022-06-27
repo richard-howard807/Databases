@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 06/12/2018
@@ -9,8 +10,8 @@ GO
 -- =============================================
 CREATE PROCEDURE [te_3e_prod].[duplicate_disbursements]
 	
-	@StartDate Date
-	,@EndDate Date
+	@StartDate DATE
+	,@EndDate DATE
 	,@CostType VARCHAR(3000)
 
 AS
@@ -42,6 +43,7 @@ BEGIN
 	CC.WorkDate			[Work Date],
 	CC.Narrative_UnformattedText [Narrative],
 	IM.InvNumber [		Invoice]
+	,V.VchrIndex
 	FROM TE_3E_Prod.dbo.CostCard AS CC WITH (NOLOCK)
 	INNER JOIN TE_3E_Prod.dbo.CostType AS CT WITH (NOLOCK) ON CT.Code = CC.CostType
 	INNER JOIN TE_3E_Prod.dbo.Voucher AS V WITH (NOLOCK) ON V.VchrIndex = CC.Voucher
@@ -61,7 +63,7 @@ BEGIN
 		, CC.CostType 
 		, cc.WorkAmt 
 		, V.Payee 
-		, count(*) [cnt]
+		, COUNT(*) [cnt]
 
 	FROM TE_3E_Prod.dbo.CostCard AS CC WITH (NOLOCK)
 	INNER JOIN TE_3E_Prod.dbo.Matter AS MT WITH (NOLOCK) ON MT.MattIndex = CC.Matter
@@ -70,19 +72,19 @@ BEGIN
 	INNER JOIN TE_3E_Prod.dbo.MattDate AS MD WITH (NOLOCK) ON MD.MatterLkUp = MT.MattIndex AND MD.NxEndDate = '99991231'
 
 	WHERE CC.WorkDate BETWEEN @StartDate AND @EndDate
-	AND CC.CostType collate database_default IN (select val from @CostTypeTable)
+	AND CC.CostType COLLATE DATABASE_DEFAULT IN (SELECT val FROM @CostTypeTable)
 	AND CC.IsActive = 1
 
-	group by 
+	GROUP BY 
 		MT.MattIndex 
 		, CC.CostType 
 		, cc.WorkAmt 
 		, V.Payee 
-	having count(*) >1
+	HAVING COUNT(*) >1
 
-	) duplicates on  duplicates.MattIndex = MT.MattIndex 
-					and duplicates.CostType = CC.CostType
-					and duplicates.WorkAmt = CC.WorkAmt
+	) duplicates ON  duplicates.MattIndex = MT.MattIndex 
+					AND duplicates.CostType = CC.CostType
+					AND duplicates.WorkAmt = CC.WorkAmt
 					AND duplicates.Payee = V.Payee  
 
 	LEFT OUTER JOIN TE_3E_Prod.dbo.InvMaster AS IM WITH (NOLOCK) ON IM.InvIndex = CC.InvMaster

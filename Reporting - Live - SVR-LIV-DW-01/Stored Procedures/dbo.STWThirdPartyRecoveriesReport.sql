@@ -41,6 +41,7 @@ DATEDIFF(DAY, date_instructions_received,red_dw.dbo.datetimelocal(dteTPAgreeComp
 ELSE DATEDIFF(DAY, date_instructions_received,CONVERT(DATE, DATEADD(d, -( DAY(GETDATE()) ), GETDATE()))) END AS [Elapsed days]
 ,wip AS [WIP]
 ,disbursement_balance AS [Unbilled Disbursements]
+,dim_detail_core_details.[date_letter_of_claim]
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key

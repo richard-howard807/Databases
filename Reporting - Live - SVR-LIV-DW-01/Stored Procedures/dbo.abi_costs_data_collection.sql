@@ -95,6 +95,7 @@ SELECT
 	, fact_detail_claim.grade_d_rate_awarded			AS [Grade D Rate Offered, Agreed or Awarded]
 	, dim_detail_outcome.costs_outcome					AS [Nature of the Costs Settlement]
 	, dim_detail_core_details.referral_reason
+	, dim_detail_core_details.track		AS [Track]
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key

@@ -28,6 +28,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -132,6 +133,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,UnbilledDisbs.NotVatDisbs AS [Not-Vatable disbursements]
 ,UnbilledDisbs.DisbsWithVat AS [Vatable Disbursements]
 ,UnbilledDisbs.VatDisbursements AS [VAT on Vatable Disbursements]
+,ISNULL(UnbilledDisbs.NotVatDisbs,0)+ISNULL(UnbilledDisbs.DisbsWithVat,0)+ISNULL(UnbilledDisbs.VatDisbursements,0) AS [OutstandingDisbs]
 ,NULL AS [Purchase Order Number]
 ,NULL AS [Northern Powergrid Reference Number:]
 ,NULL AS [Authorisation/Release Number:]
@@ -142,7 +144,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,Disbs.VatableDisbs AS [Total cost of Vatable Disbursements (net of VAT)(Billed)]
 ,Disbs.VatonDisbs AS [VAT on Vatable Disbursements(Billed)]
 ,ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Net of Vat Disbursements]
-,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
+,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
 ,ISNULL(ms_workstream.workstream,'Other') AS workstream
 ,cboNPGFileType
 ,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
@@ -157,6 +159,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,CASE WHEN cboFeeArrang='FIXEDFEE' THEN  
 IIF(ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0) <0 ,0,ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0))
 ELSE NULL END AS FixedFeeLeft
+
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -278,6 +281,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,UnbilledDisbs.NotVatDisbs AS [Not-Vatable disbursements]
 ,UnbilledDisbs.DisbsWithVat AS [Vatable Disbursements]
 ,UnbilledDisbs.VatDisbursements AS [VAT on Vatable Disbursements]
+,ISNULL(UnbilledDisbs.NotVatDisbs,0)+ISNULL(UnbilledDisbs.DisbsWithVat,0)+ISNULL(UnbilledDisbs.VatDisbursements,0) AS [OutstandingDisbs]
 ,NULL AS [Purchase Order Number]
 ,NULL AS [Northern Powergrid Reference Number:]
 ,NULL AS [Authorisation/Release Number:]
@@ -288,7 +292,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,Disbs.VatableDisbs AS [Total cost of Vatable Disbursements (net of VAT)(Billed)]
 ,Disbs.VatonDisbs AS [VAT on Vatable Disbursements(Billed)]
 ,ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Net of Vat Disbursements]
-,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0)+ISNULL(Disbs.VatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
+,ISNULL(Fees.[Legal Costs],0)+ISNULL(Disbs.NonVatableDisbs,0) AS [Total costs including disbursements net of VAT(Billed)]
 ,ISNULL(ms_workstream.workstream,'Other') AS workstream
 ,cboNPGFileType
 ,[red_dw].[dbo].[datetimelocal](dteCompletionD) AS [Completion Date]
