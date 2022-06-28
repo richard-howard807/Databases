@@ -668,7 +668,7 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ROLLINGREVTWELVEMNTH
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
 	
 	UNION
-	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_ROLLINGREVTWELVEMNTH$1].UCI IS null
