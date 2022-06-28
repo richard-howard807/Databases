@@ -117,6 +117,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #assoc_address
 		ON #assoc_address.fileID = dim_matter_header_current.ms_fileid
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_future_care
+		ON dim_detail_future_care.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code IN ('W15564', 'Z1001')
@@ -127,10 +129,12 @@ WHERE
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.outcome_of_case)), '') NOT IN ('exclude from reports', 'returned to client', 'won at trial', 'struck out')
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'no order %claimant% costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'paid claimant% fixed costs'
-	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.global_settlement)), '')	<> 'yes'
+	AND ISNULL(LOWER(RTRIM(dim_detail_future_care.global_settlement)), '')	<> 'yes'
 	AND ISNULL(dim_employee.locationidud, '') <> 'Glasgow'
 
+
 END 
+
 
 
 
