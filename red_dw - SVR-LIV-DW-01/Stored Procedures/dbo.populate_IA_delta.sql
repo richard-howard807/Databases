@@ -12,8 +12,6 @@ AS
 -- Used to send data to IA from DWH.
 
 
-
-
 IF OBJECT_ID ('tempdb.dbo.#offices') IS NOT NULL
 DROP TABLE #offices
 
@@ -456,7 +454,6 @@ WHERE
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
-
 -- client group code
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1]
         ( [CLIENT_GROUP_CODE], [UCI] )
@@ -470,6 +467,9 @@ WHERE
 	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) AND cli.client_group_code IS NOT NULL AND cli.client_group_code <> ''
  and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
   
@@ -487,6 +487,8 @@ WHERE
 	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+		UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) AND cli.client_group_code IS NOT NULL AND cli.client_group_code <> ''
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
@@ -527,6 +529,8 @@ WHERE
 	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	AND cli.sector IS NOT NULL 
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
@@ -547,6 +551,8 @@ WHERE
 	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND [INT_DTS_SUBSECTOR$1].UCI IS null
@@ -567,9 +573,12 @@ WHERE
 	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND [INT_DTS_SEGMENT$1].UCI IS null
+
 
 
 -- Client Group Rev   HERE*******************************************
@@ -590,7 +599,7 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVLASTYEAR
 	   SELECT ISNULL(costs_to_date_ytd1,0), UCI
 		   FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
-	
+
 
 -- Client Group Rev -2
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVYRBEFORE$1]
@@ -622,7 +631,6 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPROLLINGREV$
 	  SELECT ISNULL(costs_to_date_running,0), UCI
 		   FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
-		   
 
 -- Client Rev
 INSERT INTO  [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYTD$1]
@@ -637,6 +645,9 @@ INSERT INTO  [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYTD$1]
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_REVENUEYTD$1].UCI IS null
@@ -655,16 +666,21 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ROLLINGREVTWELVEMNTH
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_ROLLINGREVTWELVEMNTH$1].UCI IS null
+
+
 
 -- Client Rev -1
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUELASTYEAR$1]
            ([REVENUE_LAST_YEAR]
            ,[UCI])
 
-		      	      SELECT ISNULL(costs_to_date_ytd1,0),dim_client_key 
+		      	      SELECT DISTINCT ISNULL(costs_to_date_ytd1,0), dim_client_key 
 				   FROM fact_client_matter_summary INNER JOIN dbo.dim_client_matter_summary cli
 		   ON cli.dim_client_matter_summ_key = fact_client_matter_summary.dim_client_matter_summ_key
 		   LEFT OUTER JOIN [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUELASTYEAR$1] ON cli.dim_client_key = [INT_DTS_REVENUELASTYEAR$1].UCI AND [INT_DTS_REVENUELASTYEAR$1].REVENUE_LAST_YEAR = ISNULL(costs_to_date_ytd1,0)
@@ -672,9 +688,14 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUELASTYEAR$1]
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_REVENUELASTYEAR$1].UCI IS NULL
+	
+
 
 
 -- Client Rev -2
@@ -690,6 +711,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYRBEFORELAST$
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_REVENUEYRBEFORELAST$1].UCI IS null
@@ -708,6 +732,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTWIP$1]
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_CLIENTWIP$1].UCI IS null
@@ -725,6 +752,9 @@ SELECT open_date, dim_client_key FROM dbo.dim_client_matter_summary cli
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
@@ -738,6 +768,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTCLOSEDMATTER$
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
@@ -751,6 +784,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTOPENMATTER$1]
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
@@ -765,10 +801,15 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_NUMOPENMATTERS$1]
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
+
 	/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 --Aged Debt Client Group
 INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_CLIENTGRPREVAGEDDEBT$1]
 			([CLIENT_GROUP_AGED_DEBT__90_DAYS_]
@@ -789,7 +830,7 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPTOTALDEBT$1
 			select ISNULL(debt_total,0), UCI 
 			  FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
-	
+
 
 --Aged Debt Client 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_AGEDDEBT$1]
@@ -803,7 +844,10 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_AGEDDEBT$1]
 			   WHERE dim_client_key IN 
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 			UNION
-			SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
+			SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+			
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1)
 			and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
@@ -820,10 +864,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_TOTAL_DEBT$1]
 			   WHERE dim_client_key IN 
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
-	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
+	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1)
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_TOTAL_DEBT$1].UCI IS NULL -- added to stop sending data more than once
-
 
 -- Matters
 --USE [InterAction]
@@ -872,11 +918,13 @@ AND
 	    t1.dim_client_key IN 
 		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 	UNION
-	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
+	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1)
 and t1.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
-	
-	
+
 
 
 INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_DEPARTMENT$1]
@@ -903,6 +951,8 @@ INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_OFFICE$1]
            ,[DESCRIPTION])
 		   SELECT 	* 
 		   FROM	[#offices] AS [o]
+
+
 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ALLCLIENTNUMBERS$1]
@@ -974,6 +1024,7 @@ SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
 where Organisation <> ''
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
+
 /* client partner */ 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTPARTNER$1]
@@ -988,7 +1039,10 @@ LEFT OUTER JOIN [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTPARTNER$1]
 where dim_client.client_partner_name is not null and dim_client.address_type = 'CL'
 and dim_client.dim_client_key in		   	(	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 												UNION
-												SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
+												SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+												UNION
+												SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
+											)
 and dim_client.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 AND [INT_DTS_CLIENTPARTNER$1].UCI IS null
@@ -1007,8 +1061,11 @@ where dim_client.firm_contact_name is not null and dim_client.address_type = 'CL
 and dim_client.dim_client_key in		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1
 
 	UNION
-	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
+	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
+	UNION
+	SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1)
 and dim_client.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
+
 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_GENERATORLEVEL$1]
