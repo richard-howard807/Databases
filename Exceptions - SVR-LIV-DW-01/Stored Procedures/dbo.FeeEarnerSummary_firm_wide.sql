@@ -23,7 +23,7 @@ AS
 BEGIN
 
     --create a temp table called #feeearner that will be inserted into later on 
-    CREATE TABLE #feeearner (feeearner_code NVARCHAR(10) COLLATE DATABASE_DEFAULT);
+    CREATE TABLE #feeearner (feeearner_code NVARCHAR(20) COLLATE DATABASE_DEFAULT);
 
     --if employeee id is not null then use it to pull the fee_earner codes from dim_fed_hir
     IF (@employeeid IS NOT NULL)
