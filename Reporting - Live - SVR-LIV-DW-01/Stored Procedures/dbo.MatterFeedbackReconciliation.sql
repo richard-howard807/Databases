@@ -16,6 +16,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -160,6 +161,7 @@ OR UPPER(matter_description) LIKE '%TRAINING%'
 OR UPPER(matter_description) LIKE '%SECONDMENT%'
 OR matter_owner_full_name='James Holman'
 OR matter_partner_full_name='James Holman'
+OR txtContEmail LIKE '%CJSM%'
 OR JamesTime.dim_matter_header_curr_key IS NOT NULL
 THEN 'All Internal / CJSM matters / Excluded matter types'
 WHEN txtContEmail  IS NULL THEN 'Data Quality Issues'

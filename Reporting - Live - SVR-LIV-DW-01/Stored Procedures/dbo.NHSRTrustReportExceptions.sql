@@ -26,7 +26,10 @@ SELECT DISTINCT
 [Defendant Trust] = dim_detail_claim.[defendant_trust],
 [Present Position] = dim_detail_core_details.[present_position],
 [Exceptions] = REPLACE([Exceptions], '&amp;','&'),
-fact_dimension_main.master_fact_key
+fact_dimension_main.master_fact_key	 ,
+nhs_instruction_type
+,CASE WHEN nhs_instruction_type LIKE '%Group Actio%' THEN 'Exclude' ELSE 'Do not exclude' END AS filter
+
 
 
 FROM red_dw.dbo.dim_matter_header_current

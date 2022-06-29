@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MarketstudyProject3Report]
 
 AS
@@ -53,6 +54,13 @@ matter_description AS [Insured]
 ,dim_detail_predict.doc_updated_date_key
 ,dim_detail_core_details.present_position
 ,msg_claim_strategy
+,CASE WHEN msg_claim_strategy='READY' THEN 'Ready to Settle'
+WHEN msg_claim_strategy='NOTREADY' THEN 'Not ready for settlement'
+WHEN msg_claim_strategy='SETTLE' THEN 'obtain evidence and settle asap'
+ELSE REPLACE(REPLACE(REPLACE(msg_claim_strategy,'CLUS4','Claim unlikely to settle within 4 months')
+,'MATUR','Matter is under reserved')
+,'NOTREADY','Not ready for settlement')
+END  AS Strat
 ,matter_description AS [Full Case Description]
 ,dim_detail_claim.[number_of_claimants]
 ,fileNotes

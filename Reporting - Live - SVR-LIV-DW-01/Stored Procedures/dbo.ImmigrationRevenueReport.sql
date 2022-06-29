@@ -49,11 +49,12 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_client AS dim_detail_client ON dim_detail_
 	, SUM(fact_bill_activity.bill_amount)  Revenue	
 	,fed_code_fee_earner
 	,dim_fed_hierarchy_history_key AS fedkey
+	
 	FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)			
 	INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)			
 	ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key	
 	AND  fact_bill_activity.fed_code_fee_earner IN( '1262','5851')
-	WHERE  bill_fin_year=@FinYear
+	WHERE  bill_fin_year='2022'
 	GROUP BY  dim_matter_header_curr_key,fed_code_fee_earner,dim_fed_hierarchy_history_key
 				
 ) RevenueBilled2022 ON RevenueBilled2022.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key

@@ -6,6 +6,7 @@ GO
 -- Author:		Jamie Bonner
 -- Create date: 27/08/2021
 -- Description:	Ticket #110181 report on hastings bills
+--JL 28-06-22 #154581 changed claim ref to pick up all claims, removed client/matter 19 as per ticket
 -- =============================================
 
 CREATE PROCEDURE [dbo].[hastings_rebate_reporting]
@@ -20,12 +21,13 @@ BEGIN
 
 --testing
 --DECLARE	@start_date AS DATE = DATEADD(MONTH, -1, GETDATE())
---		, @end_date AS DATE = GETDATE()
+--	, @end_date AS DATE = GETDATE()
 		
 
 
 SELECT 
-	dim_client_involvement.insurerclient_reference			AS [Claim Number]
+	
+	 CAST(COALESCE(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference) AS NVARCHAR(2000))	COLLATE Latin1_General_BIN	AS [Claim Reference] /*jl 28-06-22*/
 	, dim_detail_core_details.clients_claims_handler_surname_forename			AS [Hastings Handler Name]
 	, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number			AS [Supplier Reference]
 	, dim_matter_header_current.matter_owner_full_name				AS [Matter Owner]
@@ -55,6 +57,7 @@ FROM red_dw.dbo.fact_bill
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = '4908'
+	AND dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	 <>'4908-19'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_bill.bill_reversed = 0
 	AND dim_bill.bill_number <> 'PURGE'
@@ -95,6 +98,7 @@ FROM red_dw.dbo.fact_bill
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
 WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = '4908'
+	AND dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number	 <>'4908-19'  /*jl 28-06-22*/
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_bill.bill_reversed = 0
 	AND dim_bill.bill_number <> 'PURGE'
