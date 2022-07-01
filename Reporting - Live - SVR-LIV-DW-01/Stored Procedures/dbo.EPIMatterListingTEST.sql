@@ -3,11 +3,53 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [dbo].[EPIMatterListing]
+
+CREATE PROCEDURE [dbo].[EPIMatterListingTEST]
 AS
 BEGIN
 
-SET NOCOUNT ON
+SET NOCOUNT ON 
+
+DROP TABLE IF EXISTS #epi_matters
+DROP TABLE IF EXISTS #last_bill_date
+DROP TABLE IF EXISTS #chargeable_hours
+
+
+SELECT dim_matter_header_current.dim_matter_header_curr_key
+INTO #epi_matters
+FROM red_dw.dbo.dim_matter_header_current
+	INNER JOIN red_dw.dbo.dim_matter_worktype
+		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+WHERE 
+	dim_matter_header_current.reporting_exclusions=0
+	--AND dim_matter_header_current.department_code = '0012'
+	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
+
+
+SELECT 
+	fact_bill_matter_detail_summary.dim_matter_header_curr_key
+	, CAST(MAX(fact_bill_matter_detail_summary.bill_date) AS DATE)			AS last_bill_date
+INTO #last_bill_date
+FROM red_dw.dbo.fact_bill_matter_detail_summary
+	INNER JOIN #epi_matters
+		ON #epi_matters.dim_matter_header_curr_key = fact_bill_matter_detail_summary.dim_matter_header_curr_key
+GROUP BY	
+	fact_bill_matter_detail_summary.dim_matter_header_curr_key
+
+
+SELECT 
+	fact_billable_time_activity.dim_matter_header_curr_key
+	, SUM(fact_billable_time_activity.minutes_recorded)			AS chargeable_hours
+INTO #chargeable_hours
+FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
+	INNER JOIN #epi_matters
+		ON #epi_matters.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+GROUP BY 
+	fact_billable_time_activity.dim_matter_header_curr_key
+
+
+
 
 SELECT 
 	COALESCE(NULLIF(dim_matter_header_current.client_group_name, ''), dim_matter_header_current.client_name)		AS [Client Name/Client Group]
@@ -57,12 +99,14 @@ SELECT
 	, fact_finance_summary.vat_non_comp				AS [VAT]
 	, fact_finance_summary.wip				AS [WIP]
 	, fact_finance_summary.disbursement_balance			AS [Unbilled Disbursements]
-	, last_bill_date.last_bill_date				AS [Date of Last Bill]
-	, chargeable_hours.chargeable_hours				AS [Chargeable Hours Posted]
+	, #last_bill_date.last_bill_date				AS [Date of Last Bill]
+	, #chargeable_hours.chargeable_hours				AS [Chargeable Hours Posted]
 	, CAST(fact_matter_summary_current.last_time_transaction_date AS DATE)			[Date of Last Time Posting]
 FROM red_dw.dbo.dim_matter_header_current
+	INNER JOIN #epi_matters
+		ON #epi_matters.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
-		 ON fed_code=fee_earner_code
+		 ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
 			AND dss_current_flag='Y'
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area
 		 ON dim_detail_practice_area.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key 
@@ -95,30 +139,16 @@ FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 		ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
 			AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
-	LEFT OUTER JOIN (
-					SELECT 
-						fact_bill_matter_detail_summary.dim_matter_header_curr_key
-						, CAST(MAX(fact_bill_matter_detail_summary.bill_date) AS DATE)			AS last_bill_date
-					FROM red_dw.dbo.fact_bill_matter_detail_summary
-					GROUP BY	
-						fact_bill_matter_detail_summary.dim_matter_header_curr_key
-					) AS last_bill_date
-		ON last_bill_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-	LEFT OUTER JOIN (
-					SELECT 
-						fact_billable_time_activity.dim_matter_header_curr_key
-						, SUM(fact_billable_time_activity.minutes_recorded)			AS chargeable_hours
-					FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
-					GROUP BY 
-						fact_billable_time_activity.dim_matter_header_curr_key
-					) AS chargeable_hours
-		ON chargeable_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-WHERE 
-	dim_matter_header_current.reporting_exclusions=0
-	--AND dim_matter_header_current.department_code='0012'
-	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
-	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
-	--AND dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number = '808656/749'
+	LEFT OUTER JOIN #last_bill_date
+		ON #last_bill_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN #chargeable_hours
+		ON #chargeable_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+--WHERE 
+--	dim_matter_header_current.reporting_exclusions=0
+--	--AND dim_matter_header_current.department_code='0012'
+--	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+--	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
+--	--AND dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number = '808656/749'
 
 END
 

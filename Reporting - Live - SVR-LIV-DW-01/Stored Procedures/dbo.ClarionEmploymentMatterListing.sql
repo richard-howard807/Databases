@@ -11,7 +11,7 @@ Created Date:		2022-05-16
 Description:		This is to drive the Clarion Empolyment Matter Listing Report 
 Current Version:	Initial Create
 ====================================================
-
+-- 2022-07-01 ES #155462, added some extra details and hours posted
 ====================================================
 
 */
@@ -104,6 +104,13 @@ dim_matter_header_current.client_code AS [Client Number]
 ,last_time_transaction_date AS [Date of last time posting]
 ,AdvocacyTime.[Hours Recorded] AS [Advocacy Hours Recorded]
 ,dim_matter_worktype.work_type_name
+,dim_detail_client.[peel_ports_manager] AS [Peel Ports Manager]
+,dim_detail_core_details.[brief_details_of_claim] AS [Brief Details of Claim]
+,dim_detail_court.[date_proceedings_issued] AS [Date Proceedings Issued]
+,dim_detail_advice.[advice_function] AS [Function]
+,dim_claimant_thirdparty_involvement.claimant_name AS [Claimant Name]
+,HoursRecorded.[Hours Recorded] AS [Hours Posted]
+
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
@@ -142,6 +149,9 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
 ON dim_detail_core_details.client_code = dim_matter_header_current.client_code
 AND dim_detail_core_details.matter_number = dim_matter_header_current.matter_number
+LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
+AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
 
 LEFT OUTER JOIN (SELECT fact_all_time_activity.client_code
 		, fact_all_time_activity.matter_number
@@ -163,6 +173,16 @@ LEFT OUTER JOIN (SELECT fact_all_time_activity.client_code
 
 ON AdvocacyTime.client_code = dim_matter_header_current.client_code
 AND AdvocacyTime.matter_number = dim_matter_header_current.matter_number
+
+LEFT OUTER JOIN (SELECT fact_all_time_activity.client_code
+		, fact_all_time_activity.matter_number
+		, SUM(minutes_recorded)/60 AS [Hours Recorded] 
+		FROM red_dw.dbo.fact_all_time_activity
+		GROUP BY fact_all_time_activity.client_code,
+                 fact_all_time_activity.matter_number) AS HoursRecorded 
+ON HoursRecorded.client_code = dim_matter_header_current.client_code
+AND HoursRecorded.matter_number = dim_matter_header_current.matter_number
+
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND dim_matter_header_current.client_code = '00756630'

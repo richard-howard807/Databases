@@ -28,7 +28,9 @@ SELECT DISTINCT
 [Exceptions] = REPLACE([Exceptions], '&amp;','&'),
 fact_dimension_main.master_fact_key	 ,
 nhs_instruction_type
-,CASE WHEN nhs_instruction_type LIKE '%Group Actio%' THEN 'Exclude' ELSE 'Do not exclude' END AS filter
+,CASE WHEN nhs_instruction_type LIKE '%Group Action%' THEN 'Exclude' 
+WHEN nhs_instruction_type LIKE '%group action%'	THEN 'Exclude' 
+ELSE 'Do not exclude' END AS filter
 
 
 
