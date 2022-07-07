@@ -60,41 +60,41 @@ SELECT
 	, last_bill_date.last_bill_date				AS [Date of Last Bill]
 	, chargeable_hours.chargeable_hours				AS [Chargeable Hours Posted]
 	, CAST(fact_matter_summary_current.last_time_transaction_date AS DATE)			[Date of Last Time Posting]
-FROM red_dw.dbo.dim_matter_header_current
+FROM red_dw.dbo.dim_matter_header_current	
+	INNER JOIN red_dw.dbo.fact_dimension_main
+		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	INNER JOIN red_dw.dbo.dim_fed_hierarchy_history 
-		 ON fed_code=fee_earner_code
-			AND dss_current_flag='Y'
+		 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area
-		 ON dim_detail_practice_area.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key 
+		 ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
-		 ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		 ON dim_detail_client.dim_detail_client_key = fact_dimension_main.dim_detail_client_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_advice
-		ON dim_detail_advice.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_advice.dim_detail_advice_key = fact_dimension_main.dim_detail_advice_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
-		ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_court
-		ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
 	LEFT OUTER JOIN red_dw.dbo.dim_instruction_type
 		ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
-		 ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		 ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
-		ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
-		ON fact_detail_paid_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
-		ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 	LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
-		ON fact_matter_summary_current.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+		ON fact_matter_summary_current.master_fact_key = fact_dimension_main.master_fact_key
+	INNER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 	LEFT JOIN red_dw.dbo.dim_detail_finance 
-		ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_finance.dim_detail_finance_key = fact_dimension_main.dim_detail_finance_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
-		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+		ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
 	LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
-		ON dim_claimant_thirdparty_involvement.client_code = dim_matter_header_current.client_code
-			AND dim_claimant_thirdparty_involvement.matter_number = dim_matter_header_current.matter_number
+		ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
 	LEFT OUTER JOIN (
 					SELECT 
 						fact_bill_matter_detail_summary.dim_matter_header_curr_key
@@ -115,13 +115,11 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON chargeable_hours.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 
 	dim_matter_header_current.reporting_exclusions=0
-	--AND dim_matter_header_current.department_code='0012'
-	AND RTRIM(dim_matter_worktype.work_type_group) = 'EPI'
+	AND dim_matter_worktype.work_type_group = 'EPI                                     '
 	AND ISNULL(dim_matter_header_current.date_closed_practice_management, '9999-12-31') >= '2017-05-01'
-	--AND dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number = '808656/749'
+
 
 END
-
 
 
 

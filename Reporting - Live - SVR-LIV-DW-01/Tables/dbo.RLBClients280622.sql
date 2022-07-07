@@ -15,6 +15,7 @@ CREATE TABLE [dbo].[RLBClients280622]
 [county] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [country] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [postcodea] [nvarchar] (255) COLLATE Latin1_General_CI_AS NULL,
-[date_created] [datetime] NULL
+[date_created] [datetime] NULL,
+[InsertDate] [date] NULL CONSTRAINT [DF_RLBClients280622] DEFAULT (getdate())
 ) ON [PRIMARY]
 GO

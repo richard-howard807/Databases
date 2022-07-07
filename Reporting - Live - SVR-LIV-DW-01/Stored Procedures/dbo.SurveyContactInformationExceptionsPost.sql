@@ -6,6 +6,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [dbo].[SurveyContactInformationExceptionsPost]
 (
 @Division AS NVARCHAR(MAX)
@@ -44,6 +46,7 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,dim_detail_core_details.present_position
 ,dim_detail_core_details.fixed_fee
 ,fixed_fee_amount
+,CASE WHEN DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())>=30 THEN 'Yes' ELSE 'No' END 
  FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -162,7 +165,14 @@ AND client_name NOT LIKE '%Weightmans%'
 AND master_client_code NOT IN ('30645','6930','47237','47354','1878','76202','CB001','123739')
 AND matter_owner_full_name<>'James Holman'
 AND matter_partner_full_name<>'James Holman'
-
+AND DATEDIFF(DAY,dim_matter_header_current.date_opened_case_management,GETDATE())>=30
+AND NOT (hierarchylevel3='Motor' AND master_client_code='A3003')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='T3003')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='W15564')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='W15492')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='A1001')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='W20218')
+AND NOT (hierarchylevel3='Motor' AND master_client_code='W23148')
 
 END
 GO

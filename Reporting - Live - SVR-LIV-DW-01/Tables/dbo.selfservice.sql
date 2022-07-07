@@ -256,6 +256,7 @@ CREATE TABLE [dbo].[selfservice]
 [LL Damages £350k+] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [MIB) Service Category] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
-[reporting_exclusions] [smallint] NOT NULL
+[reporting_exclusions] [smallint] NOT NULL,
+[Total Write Off Value] [numeric] (38, 2) NULL
 ) ON [PRIMARY]
 GO

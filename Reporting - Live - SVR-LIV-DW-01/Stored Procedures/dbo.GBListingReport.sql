@@ -4,13 +4,92 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE [dbo].[GBListingReport]-- 'GB Associates'
+
+
+
+CREATE PROCEDURE [dbo].[GBListingReport] --'GB Associates','2022-07-01','2022-07-05'
 (
 @Filter AS NVARCHAR(20)
+,@StartDate AS DATE
+,@EndDate AS DATE
+
 )
 AS 
 
 BEGIN
+
+
+
+DECLARE @LastYRStart AS DATE
+SET @LastYRStart=(DATEADD(YEAR,-1,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)))
+DECLARE @LastYREnd AS DATE
+SET @LastYREnd=(DATEADD(DAY,-1,DATEADD(YEAR,0,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))))
+
+DECLARE @PreviousYRStart AS DATE
+SET @PreviousYRStart=(DATEADD(YEAR,-2,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)))
+
+DECLARE @PreviousYREnd AS DATE
+SET @PreviousYREnd=(DATEADD(DAY,-1,DATEADD(YEAR,-1,DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))))
+
+IF OBJECT_ID(N'tempdb..#HrsLastYTD') IS NOT NULL
+BEGIN
+DROP TABLE #HrsLastYTD
+END
+
+IF OBJECT_ID(N'tempdb..#HrsYTD') IS NOT NULL
+BEGIN
+DROP TABLE #HrsYTD
+END
+
+
+DECLARE @Year AS INT
+SET @Year=(SELECT bill_fin_year FROM red_dw.dbo.dim_bill_date
+WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,GETDATE(),103))
+
+DECLARE @Month AS INT
+SET @Month=(SELECT bill_fin_month_no FROM red_dw.dbo.dim_bill_date
+WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,GETDATE(),103))
+
+SELECT dim_matter_header_current.dim_matter_header_curr_key
+, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hoursYTD
+INTO #HrsYTD
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+WHERE bill_fin_year=@Year
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+
+SELECT dim_matter_header_current.dim_matter_header_curr_key
+, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hoursLastYTD
+INTO #HrsLastYTD
+FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+WHERE bill_fin_year=@Year-1
+AND bill_fin_month_no<=@Month
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+
+
+SELECT dim_matter_header_current.dim_matter_header_curr_key
+, SUM(fees_total) RevenueYTD
+INTO #RevenueYTD
+FROM red_dw.dbo.fact_bill WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)  ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON  dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
+WHERE bill_fin_year=@Year
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+
+
+SELECT dim_matter_header_current.dim_matter_header_curr_key
+, SUM(fees_total) RevenueLastYTD
+INTO #RevenueLastYTD
+FROM red_dw.dbo.fact_bill WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON  dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
+WHERE bill_fin_year=@Year-1
+AND bill_fin_month_no<=@Month
+GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+
 
 IF @Filter='All'
 
@@ -56,6 +135,13 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,NULL AS [Date of Last Bill]
 ,wip AS [WIP]
 ,fact_finance_summary.disbursement_balance AS [Unbilled Disbursements]
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS OpenedSelected
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @LastYRStart AND @LastYREnd THEN 1 ELSE 0 END AS OpenedLastYear
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @PreviousYRStart AND @PreviousYREnd THEN 1 ELSE 0 END AS OpenedPreviousYear
+,#HrsYTD.Billed_hoursYTD
+,#HrsLastYTD.Billed_hoursLastYTD
+,#RevenueYTD.RevenueYTD
+,#RevenueLastYTD.RevenueLastYTD
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -97,8 +183,18 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN #HrsYTD
+ ON #HrsYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #HrsLastYTD
+ ON #HrsLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueYTD
+ ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueLastYTD
+ ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01' 
+
+
 
 
 END
@@ -147,6 +243,13 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,NULL AS [Date of Last Bill]
 ,wip AS [WIP]
 ,fact_finance_summary.disbursement_balance AS [Unbilled Disbursements]
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS OpenedSelected
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @LastYRStart AND @LastYREnd THEN 1 ELSE 0 END AS OpenedLastYear
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @PreviousYRStart AND @PreviousYREnd THEN 1 ELSE 0 END AS OpenedPreviousYear
+,#HrsYTD.Billed_hoursYTD
+,#HrsLastYTD.Billed_hoursLastYTD
+,#RevenueYTD.RevenueYTD
+,#RevenueLastYTD.RevenueLastYTD
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -188,7 +291,14 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
+LEFT OUTER JOIN #HrsYTD
+ ON #HrsYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #HrsLastYTD
+ ON #HrsLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueYTD
+ ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueLastYTD
+ ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code='G1001'
 END
@@ -239,6 +349,13 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,NULL AS [Date of Last Bill]
 ,wip AS [WIP]
 ,fact_finance_summary.disbursement_balance AS [Unbilled Disbursements]
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @StartDate AND @EndDate THEN 1 ELSE 0 END AS OpenedSelected
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @LastYRStart AND @LastYREnd THEN 1 ELSE 0 END AS OpenedLastYear
+,CASE WHEN CONVERT(DATE,dim_matter_header_current.date_opened_case_management,103) BETWEEN @PreviousYRStart AND @PreviousYREnd THEN 1 ELSE 0 END AS OpenedPreviousYear
+,#HrsYTD.Billed_hoursYTD
+,#HrsLastYTD.Billed_hoursLastYTD
+,#RevenueYTD.RevenueYTD
+,#RevenueLastYTD.RevenueLastYTD
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -280,7 +397,14 @@ LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
  AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
+LEFT OUTER JOIN #HrsYTD
+ ON #HrsYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #HrsLastYTD
+ ON #HrsLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueYTD
+ ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN #RevenueLastYTD
+ ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code<>'G1001'
 END

@@ -32,6 +32,8 @@ BEGIN
            ,[Date of Trial] = COALESCE(dim_detail_court.[date_of_trial], MAX(dim_key_dates.key_date) OVER (PARTITION BY fact_dimension_main.master_fact_key))
 		   ,dim_matter_header_current.date_opened_case_management
 		   ,hierarchylevel3hist AS Department
+		   ,work_type_name
+		   ,work_type_group
 		
     FROM red_dw.dbo.fact_dimension_main
         INNER JOIN red_dw.dbo.dim_matter_header_current AS dim_matter_header_current
@@ -61,15 +63,15 @@ BEGIN
 		LEFT JOIN red_dw.dbo.dim_detail_court
 			ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
  
- WHERE ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
-          AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
+ WHERE  1 = 1
+ 
+          AND ISNULL(LOWER(dim_detail_outcome.outcome_of_case), '') <> 'exclude from reports'
           AND dim_matter_header_current.matter_number <> 'ML'
           AND dim_matter_header_current.master_client_code = 'A1001'
           AND dim_matter_header_current.reporting_exclusions = 0
           AND dim_detail_outcome.[date_claim_concluded] IS NULL
-		 -- AND (dim_detail_core_details.[does_claimant_have_personal_injury_claim] = 'Yes' OR dim_detail_core_details.[suspicion_of_fraud] = 'Yes' ) 
 		  AND COALESCE(dim_detail_court.[date_of_trial], dim_key_dates.key_date) > GETDATE()
-		  AND hierarchylevel3hist  = 'Motor'
+		  AND work_type_group  = 'Motor'
       
 		  
    

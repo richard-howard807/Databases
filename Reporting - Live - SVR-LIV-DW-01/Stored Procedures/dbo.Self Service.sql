@@ -41,6 +41,7 @@ GO
 -- ES 20220510 added mib service category, requested by EJ
 -- MT 20220525 added [Method of claimants funding]  = dim_detail_core_details.[method_of_claimants_funding] #149787
 -- MT 20220607 added Revenue, Billed Hours, Chargeable Hours, Disbursements for 2022/23
+-- ES 20220705 added total write off value
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -812,6 +813,8 @@ WHEN
 	   ,dim_detail_client.[service_category] AS [MIB) Service Category]
 	   ,billing_arrangement_description AS [Billing Arrangement]
        ,ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
+	   , writeoff.Value AS [Total Write Off Value]
+
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -1086,6 +1089,14 @@ LEFT JOIN
 	ON dim_matter_header_current.ms_fileid = defendant.fileID
 LEFT OUTER JOIN #HrsBilled AS HrsBilled
  ON HrsBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+ LEFT OUTER JOIN (SELECT fact_write_off.master_fact_key
+					 , SUM(ISNULL(fact_write_off.bill_amt_wdn,0))		AS [Value]
+				FROM red_dw.dbo.fact_write_off
+				WHERE fact_write_off.write_off_type IN ('WA','NC','BA','P')
+				GROUP BY fact_write_off.master_fact_key) AS writeoff
+ ON writeoff.master_fact_key = fact_dimension_main.master_fact_key
+
 
 WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )

@@ -14,8 +14,8 @@ CREATE PROCEDURE [nhs].[NHSKPIAudit2022] --EXEC [nhs].[NHSKPIAudit2022] '2022-03
 AS
 
 -- for testing purposes
---DECLARE @StartDate AS DATE = '20220301'
---, @EndDate AS DATE = '20220322'
+--DECLARE @StartDate AS DATE = '20220601'
+--, @EndDate AS DATE = '20220722'
 
 -- used to set fin year headings for NHSR MI Dashboard report
 DECLARE @current_fin_year AS INT = (SELECT DISTINCT dim_date.fin_year FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date = @EndDate)
@@ -206,7 +206,16 @@ ELSE '-' END AS [Damages Tranche]
 + CASE WHEN nhs_court_deadlines_met ='Not applicable' THEN 0 ELSE 1 END
 + CASE WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate ='Not applicable' THEN 0 ELSE 1 END
 + 1 -- Hard Leakage
-+ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Not applicable' THEN 0 ELSE 1 END AS [Possible Points]
++ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Not applicable' THEN 0 ELSE 1 END 
+
+/* Added 20220707 - MT*/
++ CASE WHEN nhsr_steps_to_avoid_litigation  ='Not applicable' THEN 0 ELSE 1 END 
++ CASE WHEN panel_steps_to_avoid_litigation ='Not applicable' THEN 0 ELSE 1 END  
++ CASE WHEN adr_considered ='Not applicable' THEN 0 ELSE 1 END  
++ CASE WHEN adr_appropriate_time ='Not applicable' THEN 0 ELSE 1 END  
+
+
+AS [Possible Points]
 
 ,CASE WHEN nhs_correct_costs_scheme IN ('Not applicable','No') THEN 0 
 WHEN nhs_correct_costs_scheme ='Partial' THEN 0.5
@@ -267,9 +276,23 @@ ELSE 1 END
 ELSE 1 END
 + CASE WHEN fact_child_detail.nhs_hard_leakage_quantified_at <>0 THEN 0 ELSE 1 END 
 + CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify  IN ('Not applicable','No') THEN 1 
-WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Partial' 
+WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Partial' THEN 0.5 ELSE 0 END
 
-THEN 0.5 ELSE 0 END AS [Total Points]
+/* Added 20220707 - MT*/
++CASE WHEN nhsr_steps_to_avoid_litigation IN ('Not applicable','No') THEN 0 
+ WHEN nhsr_steps_to_avoid_litigation ='Partial' THEN 0.5
+ELSE 1 END
++ CASE WHEN panel_steps_to_avoid_litigation IN ('Not applicable','No') THEN 0 
+ WHEN panel_steps_to_avoid_litigation ='Partial' THEN 0.5
+ELSE 1 END
++ CASE WHEN adr_considered IN ('Not applicable','No') THEN 0 
+ WHEN adr_considered ='Partial' THEN 0.5
+ELSE 1 END
++ CASE WHEN adr_appropriate_time IN ('Not applicable','No') THEN 0 
+ WHEN adr_appropriate_time ='Partial' THEN 0.5
+ELSE 1 END
+
+ AS [Total Points]
 
 
 ,[Auditee 1] = dim_child_detail.[nhs_auditee_1]

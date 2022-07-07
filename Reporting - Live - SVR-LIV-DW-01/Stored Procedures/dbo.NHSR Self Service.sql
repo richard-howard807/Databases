@@ -27,6 +27,7 @@ GO
 -- ES 20220309 amended work type label to matter type, JS
 -- ES 20220511 #147342, added Further Info, Covid Reason (NHSR), COVID-19 Impact
 -- MT 20220609 #151890 Added New FYs for Revenue, Hours Billed, Chargeable Hours and Disbursements
+-- ES 20220705 added total write off value
 
 ---- =============================================
 CREATE PROCEDURE [dbo].[NHSR Self Service]
@@ -316,9 +317,9 @@ DROP TABLE IF EXISTS #WeightmansDisbursements
                                 --, dim_matter_header_current.ms_client_code AS [MS Client Code]
            fact_dimension_main.matter_number AS [Matter Number],
            REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') AS [Mattersphere Client Code],
-           REPLACE(LTRIM(REPLACE(RTRIM([master_matter_number]), '0', ' ')), ' ', '0') AS [Mattersphere Matter Number],
+           REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0') AS [Mattersphere Matter Number],
            REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.[master_client_code]), '0', ' ')), ' ', '0') + '-'
-           + REPLACE(LTRIM(REPLACE(RTRIM([master_matter_number]), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference],
+           + REPLACE(LTRIM(REPLACE(RTRIM(dim_matter_header_current.master_matter_number), '0', ' ')), ' ', '0') AS [Mattersphere Weightmans Reference],
            dim_matter_header_current.[matter_description] AS [Matter Description],
                                 --, dim_fed_hierarchy_history.[display_name] AS [Case Manager Name]
            dim_fed_hierarchy_history.[name] AS [Case Manager],
@@ -995,7 +996,7 @@ GETDATE() AS update_time,
 	--added requested by EJ
 	, [RevenueAmount].bill_amount AS [Revenue]
 	, CASE WHEN ISNULL([RevenueAmount].bill_amount,0)=0 OR ISNULL(BilledHours.billed_hours,0)=0 THEN NULL ELSE ISNULL([RevenueAmount].bill_amount,0)/ISNULL(BilledHours.billed_hours,0) END AS [Recovery Rate]
-	
+	, writeoff.Value AS [Total Write Off Value]
     ---------------------------------------------------
   INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810
@@ -1477,6 +1478,14 @@ WHERE client_group_name = 'NHS Resolution' OR client_code IN
 'W21443','W21617')
 )  AS NHSFinYearClosed
  ON NHSFinYearClosed.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+
+LEFT OUTER JOIN (SELECT fact_write_off.master_fact_key
+					 , SUM(ISNULL(fact_write_off.bill_amt_wdn,0))		AS [Value]
+				FROM red_dw.dbo.fact_write_off
+				WHERE fact_write_off.write_off_type IN ('WA','NC','BA','P')
+				GROUP BY fact_write_off.master_fact_key) AS writeoff
+ ON writeoff.master_fact_key = fact_dimension_main.master_fact_key
 
     WHERE dim_matter_header_current.matter_number <> 'ML'
           AND dim_client.client_code NOT IN ( '00030645', '95000C', '00453737' )

@@ -270,6 +270,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [bit] NULL,
 [Revenue] [numeric] (38, 2) NULL,
-[Recovery Rate] [numeric] (38, 6) NULL
+[Recovery Rate] [numeric] (38, 6) NULL,
+[Total Write Off Value] [numeric] (38, 2) NULL
 ) ON [PRIMARY]
 GO
