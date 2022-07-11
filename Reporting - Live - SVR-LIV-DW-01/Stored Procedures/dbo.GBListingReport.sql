@@ -7,6 +7,10 @@ GO
 
 
 
+
+
+
+
 CREATE PROCEDURE [dbo].[GBListingReport] --'GB Associates','2022-07-01','2022-07-05'
 (
 @Filter AS NVARCHAR(20)
@@ -17,6 +21,36 @@ CREATE PROCEDURE [dbo].[GBListingReport] --'GB Associates','2022-07-01','2022-07
 AS 
 
 BEGIN
+SET NOCOUNT ON;
+
+
+DROP TABLE IF EXISTS #RevenueAll
+
+		SELECT PVIOT.client_code,
+			   PVIOT.matter_number,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #RevenueAll
+		FROM (
+
+			SELECT fact_bill_activity.client_code, fact_bill_activity.matter_number, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022,2023)
+			GROUP BY fact_bill_activity.client_code, fact_bill_activity.matter_number, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Revenue)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
+			) AS PVIOT
 
 
 
@@ -70,25 +104,27 @@ AND bill_fin_month_no<=@Month
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key
 
 
-SELECT dim_matter_header_current.dim_matter_header_curr_key
-, SUM(fees_total) RevenueYTD
+SELECT fact_bill_activity.dim_matter_header_curr_key
+, SUM(fact_bill_activity.bill_amount) RevenueYTD
 INTO #RevenueYTD
-FROM red_dw.dbo.fact_bill WITH(NOLOCK)
-			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)  ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON  dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-WHERE bill_fin_year=@Year
-GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+	FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE  bill_fin_year=@Year
+
+GROUP BY fact_bill_activity.dim_matter_header_curr_key
 
 
-SELECT dim_matter_header_current.dim_matter_header_curr_key
-, SUM(fees_total) RevenueLastYTD
+SELECT fact_bill_activity.dim_matter_header_curr_key
+, SUM(fact_bill_activity.bill_amount) RevenueLastYTD
 INTO #RevenueLastYTD
-FROM red_dw.dbo.fact_bill WITH(NOLOCK)
-			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON  dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key
-			INNER JOIN red_dw.dbo.dim_bill_date ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
+	FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+
 WHERE bill_fin_year=@Year-1
 AND bill_fin_month_no<=@Month
-GROUP BY dim_matter_header_current.dim_matter_header_curr_key
+GROUP BY fact_bill_activity.dim_matter_header_curr_key
 
 
 IF @Filter='All'
@@ -105,7 +141,7 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,work_type_name AS [Matter Type]
 ,insurerclient_name AS [Insurer Client]
 ,insurerclient_reference AS [Insurer Client Ref]
-,insuredclient_name AS [Insured client name]
+,ISNULL(dst_insured_client_name,insuredclient_name) AS [Insured client name]
 ,insuredclient_reference AS [Insured Client Ref]
 ,dim_detail_core_details.[present_position] AS [Present position]
 ,dim_detail_core_details.[referral_reason] AS [Referral reason]
@@ -142,6 +178,11 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,#HrsLastYTD.Billed_hoursLastYTD
 ,#RevenueYTD.RevenueYTD
 ,#RevenueLastYTD.RevenueLastYTD
+,[2019] [Revenue 2018/2019]
+,[2020] [Revenue 2019/2020]
+,[2021] [Revenue 2020/2021]
+,[2022] [Revenue 2021/2022]
+,[2023] [Revenue 2022/2023]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -191,7 +232,9 @@ LEFT OUTER JOIN #HrsYTD
  ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  LEFT OUTER JOIN #RevenueLastYTD
  ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
+LEFT OUTER JOIN #RevenueAll
+ ON dim_matter_header_current.client_code=#RevenueAll.client_code
+ AND dim_matter_header_current.matter_number=#RevenueAll.matter_number
 WHERE dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01' 
 
 
@@ -250,6 +293,11 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,#HrsLastYTD.Billed_hoursLastYTD
 ,#RevenueYTD.RevenueYTD
 ,#RevenueLastYTD.RevenueLastYTD
+,[2019] [Revenue 2018/2019]
+,[2020] [Revenue 2019/2020]
+,[2021] [Revenue 2020/2021]
+,[2022] [Revenue 2021/2022]
+,[2023] [Revenue 2022/2023]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -299,6 +347,10 @@ LEFT OUTER JOIN #HrsYTD
  ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  LEFT OUTER JOIN #RevenueLastYTD
  ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN #RevenueAll
+ ON dim_matter_header_current.client_code=#RevenueAll.client_code
+ AND dim_matter_header_current.matter_number=#RevenueAll.matter_number
+
 WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code='G1001'
 END
@@ -356,6 +408,11 @@ RTRIM(master_client_code) +'-'+RTRIM(master_matter_number) AS [Client/Matter Num
 ,#HrsLastYTD.Billed_hoursLastYTD
 ,#RevenueYTD.RevenueYTD
 ,#RevenueLastYTD.RevenueLastYTD
+,[2019] [Revenue 2018/2019]
+,[2020] [Revenue 2019/2020]
+,[2021] [Revenue 2020/2021]
+,[2022] [Revenue 2021/2022]
+,[2023] [Revenue 2022/2023]
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT dim_matter_header_curr_key
 FROM red_dw.dbo.dim_matter_header_current
@@ -405,6 +462,10 @@ LEFT OUTER JOIN #HrsYTD
  ON #RevenueYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  LEFT OUTER JOIN #RevenueLastYTD
  ON #RevenueLastYTD.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN #RevenueAll
+ ON dim_matter_header_current.client_code=#RevenueAll.client_code
+ AND dim_matter_header_current.matter_number=#RevenueAll.matter_number
+
 WHERE (dim_matter_header_current.date_closed_case_management IS NULL OR dim_matter_header_current.date_closed_case_management>='2018-05-01')
 AND master_client_code<>'G1001'
 END
