@@ -16,6 +16,22 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Reference]
 ,txtInvoiceNum AS [Invoice Number - Legacy Claims]
 ,dim_detail_client.[subsidiary] AS [Subsidiary]
 ,cboCountyDiv.cdDesc  AS [County/ Division]  -- udMICoreSTW.cboCountyDiv--
+,CASE WHEN cboCountyDiv.cdDesc = 'Central' THEN 'Birmingham'
+WHEN cboCountyDiv.cdDesc = 'Central East' THEN 'Coventry'
+WHEN cboCountyDiv.cdDesc = 'Central West' THEN 'Wolverhampton'
+WHEN cboCountyDiv.cdDesc = 'Chester' THEN 'Chester'
+WHEN cboCountyDiv.cdDesc = 'Derbyshire' THEN 'Derbyshire'
+WHEN cboCountyDiv.cdDesc = 'Leicestershire' THEN 'Leicester'
+WHEN cboCountyDiv.cdDesc = 'Nottinghamshire' THEN 'Nottingham'
+WHEN cboCountyDiv.cdDesc = 'Powys' THEN 'Newtown'
+WHEN cboCountyDiv.cdDesc = 'Shropshire' THEN 'Telford'
+WHEN cboCountyDiv.cdDesc = 'Staffordshire' THEN 'Stafford'
+WHEN cboCountyDiv.cdDesc = 'Warwickshire' THEN 'Warwick'
+WHEN cboCountyDiv.cdDesc = 'Worcestershire/Gloucestershire' THEN 'Gloucester'
+WHEN cboCountyDiv.cdDesc = 'Wrexham' THEN 'Wrexham'
+WHEN cboCountyDiv.cdDesc = 'Severn Trent Green Power' THEN 'Chipping Norton'
+ELSE cboCountyDiv.cdDesc END AS [City]
+
 ,dim_detail_claim.[stw_waste_or_water] AS [Water/Waste]
 ,cboDamagedInfr.cdDesc AS [Damaged Infrastructure] --udMICoreSTW.cboDamagedInfr--
 ,red_dw.dbo.datetimelocal(dteCompPackRec) AS [Date Complete Pack Received]
@@ -36,12 +52,15 @@ SELECT master_client_code + '-' + master_matter_number AS [Weightmans Reference]
 ,curTotAmountRec*0.1425 AS [Fee Amount deducted by Coreclaims - New cases - Net VAT]
 ,ISNULL(curTotAmountRec,0) - ISNULL(defence_costs_billed,0) AS [Net amount recovered]
 ,LastBill.LastNonDisbBill AS [Fee billing month and year]
+, IIF(LastBill.LastNonDisbBill = '2022-07-04', 'Jun-22', dim_date.cal_month_name + '-' + CAST(RIGHT(dim_date.cal_year, 2) AS NVARCHAR(2))) AS [Fee billing month and year formatted]
 ,CASE WHEN date_claim_concluded IS NOT NULL THEN 
 DATEDIFF(DAY, date_instructions_received,red_dw.dbo.datetimelocal(dteTPAgreeComp))
 ELSE DATEDIFF(DAY, date_instructions_received,CONVERT(DATE, DATEADD(d, -( DAY(GETDATE()) ), GETDATE()))) END AS [Elapsed days]
 ,wip AS [WIP]
 ,disbursement_balance AS [Unbilled Disbursements]
 ,dim_detail_core_details.[date_letter_of_claim]
+
+
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -110,6 +129,8 @@ AND fact_bill.bill_number <>'PURGE'
 AND fees_total>0
 GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS LastBill
  ON LastBill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN red_dw.dbo.dim_date
+	ON dim_date.calendar_date = LastBill.LastNonDisbBill
 WHERE master_client_code='257248'
 AND  dim_detail_claim.[stw_work_type] ='Third Party Recoveries'
 
