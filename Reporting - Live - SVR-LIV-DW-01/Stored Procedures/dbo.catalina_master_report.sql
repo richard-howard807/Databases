@@ -16,6 +16,8 @@ CREATE PROCEDURE [dbo].[catalina_master_report]
 AS
 BEGIN
 
+SET NOCOUNT ON
+
 DROP TABLE IF EXISTS #last_bill_data
 DROP TABLE IF EXISTS #revenue
 
@@ -76,8 +78,8 @@ SELECT
 	CAST(dim_detail_core_details.date_instructions_received AS DATE)		AS [Receipt of Instruction]
 	, CAST(dim_matter_header_current.date_opened_case_management AS DATE)	AS [Date Opened]
 	, dim_client_involvement.insurerclient_reference				AS [Claim Number]
-	, dim_claimant_thirdparty_involvement.claimant_name				AS [Claimant Name]
-	, dim_client_involvement.insuredclient_name					AS [Policyholder]
+	, ISNULL(NULLIF(dim_claimant_thirdparty_involvement.claimant_name, ''), dim_detail_claim.zurich_data_admin_claimant_name)				AS [Claimant Name]
+	, ISNULL(NULLIF(dim_client_involvement.insuredclient_name, ''), dim_detail_core_details.zurich_policy_holdername_of_insured)					AS [Policyholder]
 	, dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number		AS [MS Reference]
 	, dim_matter_header_current.matter_owner_full_name			AS [Matter Owner]
 	, dim_employee.locationidud					AS [Office]
@@ -137,11 +139,9 @@ FROM red_dw.dbo.dim_matter_header_current
    LEFT JOIN red_dw.dbo.dim_detail_claim
 	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_claim WITH(NOLOCK)
-   ON  fact_detail_claim.client_code = dim_matter_header_current.client_code
- AND fact_detail_claim.matter_number = dim_matter_header_current.matter_number
+   ON  fact_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail WITH(NOLOCK)
-  ON  fact_detail_reserve_detail.client_code = dim_matter_header_current.client_code
- AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
+  ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype WITH(NOLOCK)
  ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
 
