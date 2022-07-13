@@ -13,7 +13,10 @@ GO
 */
 
 CREATE PROCEDURE [dbo].[abi_costs_data_collection] 
-
+(
+	@start_date DATE
+	, @end_date DATE
+)
 AS
 
 BEGIN
@@ -21,7 +24,10 @@ BEGIN
 	SET NOCOUNT ON;
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-
+--Testing
+--DECLARE @previous_quarter AS INT = (SELECT TOP 1 LAG(dim_date.cal_quarter) OVER(ORDER BY dim_date.cal_quarter) AS previous_quarter FROM red_dw.dbo.dim_date WHERE dim_date.calendar_date <= CAST(GETDATE() AS DATE)	AND dim_date.cal_year >= 2022 ORDER BY dim_date.cal_quarter DESC)
+--DECLARE @start_date AS DATE = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.cal_quarter = @previous_quarter)
+--		, @end_date AS DATE = (SELECT MAX(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.cal_quarter = @previous_quarter)
 
 
 DROP TABLE IF EXISTS #assoc_address
@@ -96,6 +102,7 @@ SELECT
 	, dim_detail_outcome.costs_outcome					AS [Nature of the Costs Settlement]
 	, dim_detail_core_details.referral_reason
 	, dim_detail_core_details.track		AS [Track]
+	, CAST(dim_detail_outcome.date_costs_settled AS DATE)		AS [Date Costs Concluded]
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -131,7 +138,7 @@ WHERE
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'paid claimant% fixed costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_future_care.global_settlement)), '')	<> 'yes'
 	AND ISNULL(dim_employee.locationidud, '') <> 'Glasgow'
-
+	AND dim_detail_outcome.date_costs_settled BETWEEN @start_date AND @end_date
 
 END 
 
