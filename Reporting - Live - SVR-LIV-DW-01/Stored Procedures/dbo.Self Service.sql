@@ -42,6 +42,7 @@ GO
 -- MT 20220525 added [Method of claimants funding]  = dim_detail_core_details.[method_of_claimants_funding] #149787
 -- MT 20220607 added Revenue, Billed Hours, Chargeable Hours, Disbursements for 2022/23
 -- ES 20220705 added total write off value
+-- JB 20220715 added local authority name
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -355,6 +356,7 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_fed_hierarchy_history.[hierarchylevel2hist] [Division]
        ,dim_matter_worktype.[work_type_name] AS [Matter Type]
        ,dim_matter_worktype.[work_type_code] AS [Matter Type Code]
+	   ,dim_matter_worktype.work_type_group
        ,CASE
            WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
 				'PL All'
@@ -814,7 +816,7 @@ WHEN
 	   ,billing_arrangement_description AS [Billing Arrangement]
        ,ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 	   , writeoff.Value AS [Total Write Off Value]
-
+	   , dim_detail_core_details.local_authority_name		AS [Local Authority Name]
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)

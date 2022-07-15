@@ -27,6 +27,7 @@ CREATE TABLE [dbo].[selfservice]
 [Division] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
 [Matter Type] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Matter Type Code] [char] (8) COLLATE Latin1_General_BIN NULL,
+[work_type_group] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Matter Group] [varchar] (17) COLLATE Latin1_General_CI_AS NOT NULL,
 [Instruction Type] [char] (60) COLLATE Latin1_General_BIN NULL,
 [Client Name] [char] (80) COLLATE Latin1_General_BIN NULL,
@@ -257,6 +258,7 @@ CREATE TABLE [dbo].[selfservice]
 [MIB) Service Category] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL,
-[Total Write Off Value] [numeric] (38, 2) NULL
+[Total Write Off Value] [numeric] (38, 2) NULL,
+[Local Authority Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO
