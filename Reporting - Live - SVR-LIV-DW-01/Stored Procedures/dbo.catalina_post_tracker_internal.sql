@@ -167,7 +167,7 @@ FROM #catalina_docs
 	LEFT JOIN red_dw.dbo.dim_detail_claim
 	ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 1 = 1
-
+	AND #catalina_docs.docID <> 41818290 --deleted document doesn't need to be shown on report
 
 END
 GO
