@@ -118,6 +118,8 @@ FROM red_dw.dbo.dim_matter_header_current
 			AND dim_fed_hierarchy_history.dss_current_flag = 'Y'
 	LEFT OUTER JOIN red_dw.dbo.dim_employee
 		ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+		ON dim_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
 		ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
@@ -138,6 +140,7 @@ WHERE
 	AND ISNULL(LOWER(RTRIM(dim_detail_outcome.costs_outcome)), '') NOT LIKE 'paid claimant% fixed costs'
 	AND ISNULL(LOWER(RTRIM(dim_detail_future_care.global_settlement)), '')	<> 'yes'
 	AND ISNULL(dim_employee.locationidud, '') <> 'Glasgow'
+	AND ISNULL(dim_detail_client.is_there_a_catalina_claim_number_on_this_claim, 'No') = 'No'
 	AND dim_detail_outcome.date_costs_settled BETWEEN @start_date AND @end_date
 
 END 
