@@ -156,6 +156,7 @@ CREATE TABLE [dbo].[hastings_listing_table]
 [SLA.A17 Experts Reports Provided to Hastings] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [SLA.A17 Experts Reports Agreed with Hastings] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [SLA.A19 Accurate Reserves Held] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[SLA.A20 Settlement Achieved, Supplier Will Notify Hastings] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [SLA.A20 Justified Complaints Made] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [SLA.A20 Non-Justified Complaints Made] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [SLA.A21 Any Leakage Identified] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,

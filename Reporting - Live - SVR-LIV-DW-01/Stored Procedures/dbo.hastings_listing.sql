@@ -412,6 +412,7 @@ SELECT
 	, IIF(ISNULL(hastings_slas.hastings_reports_and_advice_to_be_provided_to_hastings, '')='Not applicable', 'N/A', hastings_reports_and_advice_to_be_provided_to_hastings)			AS [SLA.A17 Experts Reports Provided to Hastings]
 	, IIF(ISNULL(hastings_slas.hastings_instructions_and_reports_agreed_with_hastings, '')='Not applicable', 'N/A', hastings_instructions_and_reports_agreed_with_hastings)			AS [SLA.A17 Experts Reports Agreed with Hastings]
 	, IIF(ISNULL(hastings_slas.hastings_accurate_reserves_held_on_file_at_all_times, '')='Not applicable', 'N/A', hastings_accurate_reserves_held_on_file_at_all_times)			AS [SLA.A19 Accurate Reserves Held]
+	, IIF(ISNULL(hastings_slas.hastings_settlement_achieved_notify_within_one_business_day, '')='Not applicable', 'N/A', hastings_settlement_achieved_notify_within_one_business_day)		AS [SLA.A20 Settlement Achieved, Supplier Will Notify Hastings]
 	, CAST(CASE 
 		WHEN hastings_slas.hastings_any_complaints_made = 'Justified complaint made' THEN 
 			'Yes'
@@ -612,6 +613,7 @@ FROM red_dw.dbo.dim_matter_header_current
 							, dim_child_detail.hastings_urgent_developments_reported_two_days
 							, dim_child_detail.hastings_supplier_recognises_new_information_indicates_change
 							, dim_child_detail.hastings_date_of_sla_review
+							, dim_child_detail.hastings_settlement_achieved_notify_within_one_business_day
 							, ROW_NUMBER() OVER(PARTITION BY dim_matter_header_current.dim_matter_header_curr_key ORDER BY dim_child_detail.hastings_date_of_sla_review DESC)	AS row_num
 						FROM red_dw.dbo.dim_child_detail
 							INNER JOIN red_dw.dbo.dim_matter_header_current
