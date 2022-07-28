@@ -315,7 +315,9 @@ select
 	employees.employeeid, CAST(dim_date.fin_year -1 AS varchar(4))+'/'+CAST(dim_date.fin_year as varchar(4)) audit_year,
 	dim_date.calendar_date, dim_date.fin_quarter, employees.employeestartdate, employees.employeestartdate_fin_year, employees.leftdate,
 	employees.Name, employees.Department, employees.Team, employees.Division,
-	case when employeestartdate >= dateadd(month, -3, dim_date.calendar_date) then 1
+	case 
+	WHEN employees.previous_firm = 'RadcliffesLeBrasseur' AND dim_date.fin_quarter = '2023-Q2' THEN NULL --RLB handlers to have audits in Q2 2023 following merger
+	WHEN employeestartdate >= dateadd(month, -3, dim_date.calendar_date) then 1
 	when leftdate < dim_date.calendar_date then 2
 	when not_current_active = 1 then 3
 	end as exclude
@@ -338,6 +340,7 @@ INNER JOIN (SELECT DISTINCT
 				, dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
 				, dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
 				, dim_employee.jobtitle
+				, dim_employee.previous_firm
 			from red_dw.dbo.dim_employee
 			LEFT OUTER JOIN red_dw.dbo.dim_date AS start_year ON start_year.calendar_date = CAST(dim_employee.employeestartdate AS DATE)
 			left outer join red_dw.dbo.dim_date on cast(dim_employee.leftdate as date) = dim_date.calendar_date
