@@ -41,7 +41,7 @@ SELECT  dim_client_involvement.insurerclient_reference AS [Tokio Marine HCC Refe
 		ELSE ISNULL(fact_finance_summary.[defence_costs_reserve],0)-ISNULL(Payor.[Billed to Tokio],0) END,0)
 	AS [Total incurred:]
 	, dim_detail_court.[date_of_trial] AS [Trial/Proof Date (if set)]
-	, CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') THEN 'Closed'
+	, CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND fact_finance_summary.unpaid_bill_balance=0 THEN 'Closed'
 		WHEN dim_matter_header_current.date_closed_case_management IS NOT NULL THEN 'Closed' ELSE 'Open' END AS [Open/Closed]
 --internal
 	, dim_detail_core_details.referral_reason AS [Referral Reason]
@@ -63,7 +63,16 @@ SELECT  dim_client_involvement.insurerclient_reference AS [Tokio Marine HCC Refe
 	, fact_finance_summary.damages_interims AS [Damages Interims]
 	, fact_detail_paid_detail.[interim_costs_payments] AS [Interim Costs Payments]
 	, fact_detail_paid_detail.[interim_costs_payments_by_client_pre_instruction] AS [Interim Costs Payments by Client Pre-Instruction]
-	
+	, fact_finance_summary.unpaid_bill_balance AS [Unpaid Balance]
+	, dim_detail_claim.acting_as	AS [Acting As]
+
+-- TMHCC Claims Report or TMHCC Specialty Report filter
+	, CASE
+		WHEN dim_matter_worktype.work_type_group IN ('EL', 'PL All', 'Disease', 'Motor') THEN
+			'claims'
+		ELSE
+			'specialty'
+	  END				AS report_filter
 
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
@@ -84,6 +93,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome
 ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_matter_summary_current
 ON fact_matter_summary_current.dim_matter_header_curr_key = dim_detail_core_details.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail
@@ -92,7 +103,7 @@ ON fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key
 				, master_client_code + '-' + master_matter_number AS [Reference]
 				,SUM(ARAmt) AS [Total Billed]
-				,SUM(CASE WHEN Payor.DisplayName LIKE '%Tokio Marine%' THEN ARAmt ELSE 0 END) AS [Billed to Tokio]
+				,SUM(CASE WHEN Payor.DisplayName LIKE '%Tokio Marine%' OR Payor.DisplayName LIKE '%HCC Underwriting Agency%' THEN ARAmt ELSE 0 END) AS [Billed to Tokio]
 				FROM red_dw.dbo.dim_matter_header_current
 				INNER JOIN ms_prod.config.dbFile
 				 ON ms_fileid=fileID
@@ -117,9 +128,9 @@ LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND dim_matter_header_current.client_group_code='00000054'
-AND dim_matter_worktype.work_type_group IN ('EL', 'PL All', 'Disease', 'Motor')
-AND (((dim_matter_header_current.date_closed_case_management is NULL OR dim_matter_header_current.date_closed_case_management>='2022-01-01')
-OR (dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND fact_matter_summary_current.last_bill_date>='2022-01-01')))
+--AND dim_matter_worktype.work_type_group IN ('EL', 'PL All', 'Disease', 'Motor')
+--AND (((dim_matter_header_current.date_closed_case_management is NULL OR dim_matter_header_current.date_closed_case_management>='2022-01-01')
+--OR (dim_detail_core_details.[present_position] IN ('Final bill sent - unpaid','To be closed/minor balances to be clear') AND fact_matter_summary_current.last_bill_date>='2022-01-01')))
 
 
 END
