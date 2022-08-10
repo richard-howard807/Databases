@@ -7,6 +7,8 @@ GO
 
 
 
+
+
 CREATE PROCEDURE [nhs].[NHSRRawDataReport]--EXEC [nhs].[NHSRRawDataReport] '1009','Dispute on liability and quantum',NULL,NULL
 (
 @FeeEarner AS NVARCHAR(MAX)
@@ -387,6 +389,6 @@ AND (dim_detail_outcome.date_claim_concluded >= '2020-04-01' OR dim_detail_outco
 AND CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insurerclient_reference END NOT IN ('M17LT402/026')
 AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client >= '2020-04-01' OR dim_detail_health.zurichnhs_date_final_bill_sent_to_client IS NULL )
 
-AND dim_matter_header_current.dim_matter_header_curr_key NOT IN (SELECT dim_matter_header_curr_key FROM dbo.NHSWHExclusionForJuly)
+AND dim_matter_header_current.dim_matter_header_curr_key NOT IN (SELECT dim_matter_header_curr_key FROM dbo.NHSWHExclusionForAug)
 END
 GO
