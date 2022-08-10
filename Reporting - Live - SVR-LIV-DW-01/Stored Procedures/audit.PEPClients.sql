@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [audit].[PEPClients]
 AS
 
@@ -17,6 +18,7 @@ SELECT clNo,clName
 	  ,fileDesc,fileclosed
 	  ,txtAMLComments
 	  ,brName AS Office
+	  ,red_dw.dbo.datetimelocal(dbClient.Created) AS [Date Client Opened]
 FROM MS_Prod.dbo.udExtClient 
 INNER JOIN MS_Prod.config.dbClient
  ON udExtClient.clID=dbClient.clID   
