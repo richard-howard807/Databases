@@ -16,7 +16,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 
-SELECT  dim_client_involvement.insurerclient_reference AS [Tokio Marine HCC Reference]
+SELECT  ISNULL(dim_client_involvement.insurerclient_reference, dim_client_involvement.client_reference) AS [Tokio Marine HCC Reference]
 	, dim_matter_header_current.master_client_code+'-'+dim_matter_header_current.master_matter_number AS [Solicitors Reference]
 	, dim_matter_header_current.matter_owner_full_name AS [Fee Earner]
 	, ISNULL(dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_case_management) AS [Instructions Date]
