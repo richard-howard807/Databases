@@ -6,8 +6,6 @@
   <DefaultUser>dbo</DefaultUser>
   <DefaultFilegroup>PRIMARY</DefaultFilegroup>
   <DatabaseVersion>14</DatabaseVersion>
-  <CompatibilityLevel>140</CompatibilityLevel>
-  <EngineEdition>Unknown</EngineEdition>
   <IsAzure>False</IsAzure>
   <ScriptFolderType>Default</ScriptFolderType>
   <MaxDataFileSize>10485760</MaxDataFileSize>

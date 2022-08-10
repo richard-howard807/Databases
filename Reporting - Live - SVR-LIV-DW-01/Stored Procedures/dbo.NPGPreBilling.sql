@@ -29,6 +29,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -159,7 +160,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,CASE WHEN cboFeeArrang='FIXEDFEE' THEN  
 IIF(ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0) <0 ,0,ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0))
 ELSE NULL END AS FixedFeeLeft
-
+,clName
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -307,6 +308,7 @@ SELECT dbFile.fileID AS [ms_fileid]
 ,CASE WHEN cboFeeArrang='FIXEDFEE' THEN  
 IIF(ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0) <0 ,0,ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0))
 ELSE NULL END AS FixedFeeLeft
+,clName
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
