@@ -30,6 +30,13 @@ BEGIN
 --		, @end_date AS DATE = (SELECT MAX(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.cal_quarter = @previous_quarter)
 
 
+--Add master_client_codes to this variable 
+DECLARE @clients_included AS NVARCHAR(MAX) = 'W15564,Z1001,A2002'
+
+DROP TABLE IF EXISTS #clients_included
+SELECT value ListValue INTO #clients_included FROM STRING_SPLIT(@clients_included, ',')
+
+
 DROP TABLE IF EXISTS #assoc_address
 
 SELECT *
@@ -55,8 +62,9 @@ FROM (
 						ON dbFile.fileID = dbAssociates.fileID
 					INNER JOIN MS_Prod.config.dbClient
 						ON dbClient.clID = dbFile.clID
+					INNER JOIN #clients_included
+						ON dbClient.clNo = #clients_included.ListValue
 				WHERE 1 = 1
-					AND dbClient.clNo IN ('W15564', 'Z1001')
 					AND dbAssociates.assocType IN ('CLAIMANTSOLS', 'CLAIMANTREP', 'CLAIMANT')
 					AND dbAssociates.assocActive = 1
 					--AND dbAssociates.fileID = 4769147
@@ -104,6 +112,8 @@ SELECT
 	, dim_detail_core_details.track		AS [Track]
 	, CAST(dim_detail_outcome.date_costs_settled AS DATE)		AS [Date Costs Concluded]
 FROM red_dw.dbo.dim_matter_header_current
+	INNER JOIN #clients_included
+		ON dim_matter_header_current.master_client_code = #clients_included.ListValue COLLATE DATABASE_DEFAULT
 	INNER JOIN red_dw.dbo.dim_detail_core_details
 		ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	INNER JOIN red_dw.dbo.dim_detail_outcome
@@ -130,7 +140,6 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_detail_future_care.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
 	dim_matter_header_current.reporting_exclusions = 0
-	AND dim_matter_header_current.master_client_code IN ('W15564', 'Z1001')
 	AND ISNULL(LOWER(RTRIM(dim_detail_core_details.referral_reason)), '') IN ('costs dispute', 'dispute on liability', 'dispute on quantum', 'dispute on liability and quantum', 'infant approval')
 	AND dim_detail_outcome.date_costs_settled >= '2022-01-01'
 	AND ISNULL(LOWER(RTRIM(dim_detail_core_details.method_of_claimants_funding)), '') <> 'frc'
