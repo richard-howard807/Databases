@@ -56,7 +56,7 @@ WHERE 1 = 1
         dim_detail_client.is_there_a_catalina_claim_number_on_this_claim = 'Yes'
 		)
 	AND dim_matter_header_current.master_matter_number <> '0'
-
+	AND dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number <> 'W25984.134'
 
 --================================================================================================================
 -- Get documents and assigned document tasks on Catalina matters

@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS #catalina_matters
 DROP TABLE IF EXISTS #catalina_docs
 DROP TABLE IF EXISTS #doc_journey
 DROP TABLE IF EXISTS #report_week
+
 	
 --================================================================================================================
 -- Sets the dates to run the import for 
@@ -154,7 +155,7 @@ WHERE 1 = 1
 		)
 	AND dim_matter_header_current.master_matter_number <> '0'
 	--AND COALESCE(pre_lit_catalina.zurich_claim_ref, dim_client_involvement.insurerclient_reference) = 'LEX4532200'
-
+	AND dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number <> 'W25984.134'
 
 --================================================================================================================
 -- Get documents and assigned document tasks on Catalina matters
