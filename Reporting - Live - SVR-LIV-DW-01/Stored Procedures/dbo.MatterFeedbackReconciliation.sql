@@ -17,6 +17,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -163,6 +164,14 @@ OR matter_owner_full_name='James Holman'
 OR matter_partner_full_name='James Holman'
 OR txtContEmail LIKE '%CJSM%'
 OR JamesTime.dim_matter_header_curr_key IS NOT NULL
+OR (hierarchylevel3hist='Motor' AND  master_client_code = 'A3003')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'T3003')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'W15564')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'W15492')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'A1001')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'W20218')
+OR (hierarchylevel3hist='Motor' and master_client_code = 'W23148')
+OR matter_category='Police'
 THEN 'All Internal / CJSM matters / Excluded matter types'
 WHEN txtContEmail  IS NULL THEN 'Data Quality Issues'
 
@@ -183,7 +192,6 @@ LEFT OUTER JOIN ms_prod.dbo.udMICoreGeneralA
  ON ms_fileid=udMICoreGeneralA.fileID
 LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
- 
 LEFT OUTER JOIN
 (
 SELECT fileID,STRING_AGG(assocEmail,',') AS [Insurer AssocEmail]
