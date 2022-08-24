@@ -3,6 +3,9 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
+
 CREATE PROCEDURE [dbo].[Ageas_AgeasAutomatedPaymentReport]
 
 AS 
@@ -61,9 +64,9 @@ ON Bills.bill_number = fact_bill_detail.bill_number
 WHERE 1 = 1
 
 AND dim_matter_header_current.master_client_code = 'A3003'
-AND reporting_exclusions = 0
+--AND reporting_exclusions = 0 asked to include exclude from reports #164383
 AND hierarchylevel3hist = 'Motor'
-AND ISNULL(outcome_of_case, '') <> 'Exclude from reports'
+--AND ISNULL(outcome_of_case, '') <> 'Exclude from reports' asked to include exclude from reports #164383
 
 /*Testing*/
 --AND bill_number = '02073545'
@@ -88,7 +91,7 @@ fact_bill_detail.bill_number
 
 
 SELECT * FROM #t1
-WHERE [Invoice Date] >GETDATE() -60
+WHERE CONVERT(DATE,[Invoice Date],103) > CONVERT(DATE,GETDATE()-60,103) 
 ORDER BY [Invoice Date] DESC
 
 
