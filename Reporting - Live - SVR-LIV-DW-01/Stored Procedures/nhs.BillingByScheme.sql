@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 	LD: 20190228
 	ES - 20190621 - Added fixed fee cases to create a report parameter based on fee arrangement, 24172
@@ -36,7 +37,7 @@ BEGIN
            a.matter_number AS matter,
            RTRIM(a.client_code) + '-' + a.matter_number [LoadNumber],
            matter_description AS case_public_desc1,
-           insurerclient_reference AS ClientRef,
+           ISNULL(client_reference, insurerclient_reference) AS ClientRef,
            [nhs_scheme] AS [Schema],
            a.client_code AS FeesClient,
            a.matter_number AS FeesMatter,
