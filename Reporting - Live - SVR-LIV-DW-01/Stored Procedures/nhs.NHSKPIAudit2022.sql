@@ -22,7 +22,7 @@ DECLARE @current_fin_year AS INT = (SELECT DISTINCT dim_date.fin_year FROM red_d
 DECLARE @previous_fin_year AS INT = @current_fin_year - 1
 
 BEGIN
-SELECT dim_detail_health.[nhs_type_of_instruction_billing] AS [Worktype]
+SELECT REPLACE(dim_detail_health.[nhs_type_of_instruction_billing], '2022: ', '') AS [Worktype]
 ,CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insurerclient_reference END  AS [NHSR Ref]
 ,RTRIM(master_client_code) + '-' + RTRIM(master_matter_number)  AS [Weightmans reference AS [Panel Ref]
 ,[name] AS [Panel fee earner]
@@ -186,113 +186,121 @@ ELSE '-' END AS [Damages Tranche]
 
 
 
-,CASE WHEN nhs_correct_costs_scheme='Not applicable' THEN 0 ELSE 1 END 
-+ CASE WHEN nhs_proactivity_on_file ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_damages_reserve_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_c_costs_reserve_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_d_costs_reserve_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_probabilty_reserve_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_esd_reserve_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_breach_of_duty_decision_correct ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_causation_decision_correct ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_correct_choice_of_expert ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_supervisory_process_followed ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_sla_instructions_ack_in_48_hours ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_sla_first_report_deadline_met ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_sla_follow_up_report_deadlines_met ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_sla_pre_trial_report_deadline_met ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_sla_advice_on_claimant_p36_offer_deadline_met ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_advice_contains_all_required_fields_quality ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_court_deadlines_met ='Not applicable' THEN 0 ELSE 1 END
-+ CASE WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate ='Not applicable' THEN 0 ELSE 1 END
-+ 1 -- Hard Leakage
-+ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Not applicable' THEN 0 ELSE 1 END 
+, CASE WHEN nhs_correct_costs_scheme IN ('Not applicable', 'N/A') THEN 0 ELSE 1 END  --1  [Correct costs scheme?] also known as Correctly billed?
++ CASE WHEN nhs_proactivity_on_file IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END  --2  [Proactivity on File?]
++ CASE WHEN nhs_damages_reserve_accurate IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --3 [Damages reserve accurate?] --Damages reserve - change deadline met?
++ CASE WHEN nhs_c_costs_reserve_accurate IN ('Not applicable', 'N/A') THEN 0 ELSE 1 END --4 [C Costs reserve accurate?]
++ CASE WHEN nhs_d_costs_reserve_accurate IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --5  [D Costs reserve accurate?]
++ CASE WHEN nhs_probabilty_reserve_accurate IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --6 [Probabilty reserve accurate?] --Probability change deadline met?
++ CASE WHEN nhs_esd_reserve_accurate IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --7   [ESD reserve accurate?] --ESD change deadline met?
++ CASE WHEN nhs_breach_of_duty_decision_correct IN ('Not applicable', 'N/A') THEN 0 ELSE 1 END --8  [Breach of duty decision correct?]
++ CASE WHEN nhs_causation_decision_correct IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --9  [Causation decision correct?]
++ CASE WHEN nhs_correct_choice_of_expert IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --10  [Correct choice of expert?]
++ CASE WHEN nhs_supervisory_process_followed IN ('Not applicable', 'N/A') THEN 0 ELSE 1 END --11 [Supervisory process followed?]
++ CASE WHEN nhs_sla_instructions_ack_in_48_hours IN ('Not applicable', 'N/A') THEN 0 ELSE 1 END --12 [SLA: Instructions ack in 48 hours?]
++ CASE WHEN nhs_sla_first_report_deadline_met IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --13  [SLA: First report deadline met?]
++ CASE WHEN nhs_sla_follow_up_report_deadlines_met IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --14 [SLA: Follow up report deadlines met?]
++ CASE WHEN nhs_sla_pre_trial_report_deadline_met IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --15 [SLA: Pre-trial report deadline met?]
++ CASE WHEN nhs_sla_advice_on_claimant_p36_offer_deadline_met IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --16 [SLA: Advice on claimant P36 offer deadline met?]
++ CASE WHEN nhs_advice_contains_all_required_fields_quality IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --17 [Advice contains all required fields/quality?]
++ CASE WHEN nhs_court_deadlines_met IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --18  [Court deadlines met?]
++ CASE WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --19 [Internal and NHSR CMS consistent and accurate?]
++ CASE WHEN fact_child_detail.nhs_hard_leakage_quantified_at >= 0 THEN 1 ELSE 0 END -- [Hard Leakage quantified at £] --20
++ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --21 [Soft Leakage -difficult/unable to quantify]
 
 /* Added 20220707 - MT*/
-+ CASE WHEN nhsr_steps_to_avoid_litigation  ='Not applicable' THEN 0 ELSE 1 END 
-+ CASE WHEN panel_steps_to_avoid_litigation ='Not applicable' THEN 0 ELSE 1 END  
-+ CASE WHEN adr_considered ='Not applicable' THEN 0 ELSE 1 END  
-+ CASE WHEN adr_appropriate_time ='Not applicable' THEN 0 ELSE 1 END  
-
+--+ CASE WHEN nhsr_steps_to_avoid_litigation  ='Not applicable' THEN 0 ELSE 1 END  --Removed by LH 12/06/2022
++ CASE WHEN panel_steps_to_avoid_litigation IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END  --22  [Did Panel take steps to avoid Litigation?]
++ CASE WHEN adr_considered IN ('Not applicable', 'N/A', 'Unsuitable')  THEN 0 ELSE 1 END  --23  [ADR: Has it been considered?]
++ CASE WHEN adr_appropriate_time IN ('Not applicable', 'N/A', 'Unsuitable')  THEN 0 ELSE 1 END  --24 [ADR: was it considered at appropriate time?]
++ CASE WHEN covid_direct_reported IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --25  [Is the case a covid direct case and reported as such?]
++ CASE WHEN covid_indirect_reported  IN ('Not applicable', 'N/A')  THEN 0 ELSE 1 END --26  [Does the case have covid indirect elements and reported as such?]
 
 AS [Possible Points]
 
-,CASE WHEN nhs_correct_costs_scheme IN ('Not applicable','No') THEN 0 
+,CASE WHEN nhs_correct_costs_scheme IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_correct_costs_scheme ='Partial' THEN 0.5
-ELSE 1 END 
-+ CASE WHEN nhs_proactivity_on_file IN ('Not applicable','No') THEN 0 
+ELSE 1 END --1
++ CASE WHEN nhs_proactivity_on_file IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_proactivity_on_file ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_damages_reserve_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --2
++ CASE WHEN nhs_damages_reserve_accurate IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_damages_reserve_accurate ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_c_costs_reserve_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --3
++ CASE WHEN nhs_c_costs_reserve_accurate IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_c_costs_reserve_accurate ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_d_costs_reserve_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --4
++ CASE WHEN nhs_d_costs_reserve_accurate IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_d_costs_reserve_accurate ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_probabilty_reserve_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --5
++ CASE WHEN nhs_probabilty_reserve_accurate IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_probabilty_reserve_accurate='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_esd_reserve_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --6
++ CASE WHEN nhs_esd_reserve_accurate IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_esd_reserve_accurate ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_breach_of_duty_decision_correct IN ('Not applicable','No') THEN 0 
+ELSE 1 END --7
++ CASE WHEN nhs_breach_of_duty_decision_correct IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_breach_of_duty_decision_correct ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_causation_decision_correct IN ('Not applicable','No') THEN 0 
+ELSE 1 END --8
++ CASE WHEN nhs_causation_decision_correct IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_causation_decision_correct ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_correct_choice_of_expert IN ('Not applicable','No') THEN 0 
+ELSE 1 END --9
++ CASE WHEN nhs_correct_choice_of_expert IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_correct_choice_of_expert ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_supervisory_process_followed IN ('Not applicable','No') THEN 0 
+ELSE 1 END --10
++ CASE WHEN nhs_supervisory_process_followed IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_supervisory_process_followed ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_sla_instructions_ack_in_48_hours IN ('Not applicable','No') THEN 0 
+ELSE 1 END --11
++ CASE WHEN nhs_sla_instructions_ack_in_48_hours IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_sla_instructions_ack_in_48_hours  ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_sla_first_report_deadline_met IN ('Not applicable','No') THEN 0 
+ELSE 1 END --12
++ CASE WHEN nhs_sla_first_report_deadline_met IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_sla_first_report_deadline_met ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_sla_follow_up_report_deadlines_met IN ('Not applicable','No') THEN 0 
+ELSE 1 END --13
++ CASE WHEN nhs_sla_follow_up_report_deadlines_met IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_sla_follow_up_report_deadlines_met ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_sla_pre_trial_report_deadline_met IN ('Not applicable','No') THEN 0 
+ELSE 1 END --14
++ CASE WHEN nhs_sla_pre_trial_report_deadline_met IN ('Not applicable','No', 'N/A') THEN 0 
  WHEN nhs_sla_pre_trial_report_deadline_met ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_sla_advice_on_claimant_p36_offer_deadline_met IN ('Not applicable','No') THEN 0 
+ELSE 1 END --15
++ CASE WHEN nhs_sla_advice_on_claimant_p36_offer_deadline_met IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_sla_advice_on_claimant_p36_offer_deadline_met ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_advice_contains_all_required_fields_quality IN ('Not applicable','No') THEN 0 
+ELSE 1 END --16
++ CASE WHEN nhs_advice_contains_all_required_fields_quality IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_advice_contains_all_required_fields_quality ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_court_deadlines_met IN ('Not applicable','No') THEN 0 
+ELSE 1 END --17
++ CASE WHEN nhs_court_deadlines_met IN ('Not applicable','No', 'N/A') THEN 0 
 WHEN nhs_court_deadlines_met ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate IN ('Not applicable','No') THEN 0 
+ELSE 1 END --18
++ CASE WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate IN ('Not applicable','No', 'N/A') THEN 0 
  WHEN nhs_internal_and_nhsr_cms_consistent_and_accurate ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN fact_child_detail.nhs_hard_leakage_quantified_at <>0 THEN 0 ELSE 1 END 
-+ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify  IN ('Not applicable','No') THEN 1 
+ELSE 1 END --19
++ CASE WHEN fact_child_detail.nhs_hard_leakage_quantified_at <>0 THEN 0 ELSE 1 END --20
++ CASE WHEN nhs_soft_leakage_difficult_unable_to_quantify  IN ('Not applicable','No', 'N/A') THEN 1 --21
 WHEN nhs_soft_leakage_difficult_unable_to_quantify ='Partial' THEN 0.5 ELSE 0 END
 
 /* Added 20220707 - MT*/
-+CASE WHEN nhsr_steps_to_avoid_litigation IN ('Not applicable','No') THEN 0 
- WHEN nhsr_steps_to_avoid_litigation ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN panel_steps_to_avoid_litigation IN ('Not applicable','No') THEN 0 
+--+CASE WHEN nhsr_steps_to_avoid_litigation IN ('Not applicable','No') THEN 0 
+-- WHEN nhsr_steps_to_avoid_litigation ='Partial' THEN 0.5
+--ELSE 1 END --Removed by LH 12/06/2022
++ CASE WHEN panel_steps_to_avoid_litigation IN ('Not applicable','No', 'N/A') THEN 0 
  WHEN panel_steps_to_avoid_litigation ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN adr_considered IN ('Not applicable','No') THEN 0 
+ELSE 1 END --22
++ CASE WHEN adr_considered IN ('Not applicable','No', 'Unsuitable', 'N/A') THEN 0 
  WHEN adr_considered ='Partial' THEN 0.5
-ELSE 1 END
-+ CASE WHEN adr_appropriate_time IN ('Not applicable','No') THEN 0 
+ELSE 1 END --23
++ CASE WHEN adr_appropriate_time IN ('Not applicable','No', 'N/A', 'Unsuitable') THEN 0 
  WHEN adr_appropriate_time ='Partial' THEN 0.5
-ELSE 1 END
+ELSE 1 END --24
++ CASE WHEN covid_direct_reported IN ('Not applicable','No', 'N/A') THEN 0 
+ WHEN covid_direct_reported ='Partial' THEN 0.5
+ELSE 1 END --25 
++ CASE WHEN covid_indirect_reported IN ('Not applicable','No', 'N/A') THEN 0 
+ WHEN covid_indirect_reported ='Partial' THEN 0.5
+ELSE 1 END --26
 
  AS [Total Points]
+
 
 
 ,[Auditee 1] = dim_child_detail.[nhs_auditee_1]
@@ -397,7 +405,8 @@ AND reporting_exclusions=0
 AND [red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date)>='2022-03-01'
 AND [red_dw].[dbo].[datetimelocal](dim_parent_detail.nhs_audit_date) BETWEEN @StartDate AND @EndDate
 
-
+--Testing
+--AND master_client_code +'-'+master_matter_number = 'N1001-21979'
 
 END
 GO
