@@ -6,18 +6,6 @@ GO
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 CREATE PROCEDURE [dbo].[MatterFeedbackReconciliation]
 (
 @StartDate AS DATE
@@ -122,6 +110,7 @@ RTRIM(master_client_code)+'-'+RTRIM(master_matter_number) AS [File reference]
 ,matter_description AS [Matter description]
 ,date_opened_case_management AS [Date Opened]
 ,name AS [Matter Owner]
+, dim_matter_header_current.matter_partner_full_name		AS [Lead Partner]
 ,dim_fed_hierarchy_history.hierarchylevel2hist AS [Division]
 ,dim_fed_hierarchy_history.hierarchylevel3hist AS [Department]
 ,dim_fed_hierarchy_history.hierarchylevel4hist AS [Team]
@@ -165,12 +154,12 @@ OR matter_partner_full_name='James Holman'
 OR txtContEmail LIKE '%CJSM%'
 OR JamesTime.dim_matter_header_curr_key IS NOT NULL
 OR (hierarchylevel3hist='Motor' AND  master_client_code = 'A3003')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'T3003')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'W15564')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'W15492')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'A1001')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'W20218')
-OR (hierarchylevel3hist='Motor' and master_client_code = 'W23148')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'T3003')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'W15564')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'W15492')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'A1001')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'W20218')
+OR (hierarchylevel3hist='Motor' AND master_client_code = 'W23148')
 OR matter_category='Police'
 THEN 'All Internal / CJSM matters / Excluded matter types'
 WHEN txtContEmail  IS NULL THEN 'Data Quality Issues'
@@ -179,6 +168,9 @@ END AS [Sheets]
 ,1 AS Matters
 ,[Revenue Billed Composite]
 ,SurveyMatters.[Last Time Postings]
+,sector
+,segment
+,branch_name
 FROM #SurveyMatters AS SurveyMatters
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = SurveyMatters.dim_matter_header_curr_key
