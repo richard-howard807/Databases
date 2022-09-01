@@ -67,6 +67,7 @@ SELECT
 		, CASE WHEN LOWER(work_type_name)='claims handling' THEN 'Yes' ELSE dim_detail_core_details.[delegated] END AS [Delegated]
 		, CASE WHEN LOWER(work_type_name)='claims handling' THEN 'No' ELSE dim_detail_core_details.[suspicion_of_fraud] END AS [Suspicion of Fraud]
 		, CASE WHEN LOWER(work_type_name)='claims handling' THEN 'No' ELSE dim_detail_core_details.[credit_hire] END AS [Credit Hire]
+		, dim_detail_claim.msg_limitation_date		AS [Limitation Date]
 		, dim_detail_core_details.[proceedings_issued] AS [Proceedings Issued]
 		, dim_detail_core_details.[date_proceedings_issued] AS [Date Proceedings Issued]
 		, dim_detail_core_details.[track] AS [Track]
