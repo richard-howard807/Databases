@@ -39,12 +39,26 @@ CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insurerclie
 ,matter_description AS [Matter Description]
 ,RTRIM(master_client_code) + '-' + RTRIM(master_matter_number)  AS [Panel Ref]
 ,dim_detail_health.[nhs_instruction_type] AS [Instruction type (Weightmans)]
-,dim_detail_health.[nhs_type_of_instruction_billing] AS [Instruction type]
+,REPLACE(dim_detail_health.[nhs_type_of_instruction_billing], '2022: ', '') AS [Instruction type]
 ,dim_detail_health.[nhs_scheme] [Scheme ]
 ,dim_matter_header_current.date_opened_case_management [Date Case Opened]
 ,dim_detail_core_details.[date_instructions_received] AS [Date of receipt of instruction]
 ,dim_detail_health.[nhs_date_of_instruction_of_expert_for_schedule_1_and_2] AS [Date of instruction of expert for schedule 1 & 2]
+,CASE
+	WHEN dim_detail_health.nhs_instruction_type IN ('2022: LI100', '2022: LI250', '2022: LI250+', '2022: LIQ100', '2022: LIQ250', '2022: LIQ250+') THEN 
+		NULL
+	ELSE
+		dim_detail_health.[nhs_date_of_instruction_of_expert_for_schedule_1_and_2] 
+  END																				AS [Date of instruction of expert for schedule 1 & 2 V2]
+,CASE
+	WHEN dim_detail_health.nhs_instruction_type IN ('2022: LI100', '2022: LI250', '2022: LI250+', '2022: LIQ100', '2022: LIQ250', '2022: LIQ250+') THEN 
+		dim_detail_health.[nhs_date_of_instruction_of_expert_for_schedule_1_and_2] 
+	ELSE
+		NULL 
+  END														AS [Date of Instruction of Expert For Liability Investigatory Package]
 ,dim_detail_court.[date_proceedings_issued] AS [Date of litigation]
+,dim_detail_health.nhsr_mediation			AS [Mediation]
+, dim_detail_health.nhsr_reason_for_litigation		AS [Reason for Litigation]
 ,dim_detail_health.[nhs_damages_tranche] AS [Case value]
 ,dim_detail_health.[nhs_expected_settlement_date] AS [Expected settlement date]
 ,dim_detail_health.[nhs_probability] AS [Prospects of success/probability]
@@ -391,4 +405,7 @@ AND (dim_detail_health.zurichnhs_date_final_bill_sent_to_client >= '2020-04-01' 
 
 AND dim_matter_header_current.dim_matter_header_curr_key NOT IN (SELECT dim_matter_header_curr_key FROM dbo.NHSWHExclusionForAug)
 END
+
+
+
 GO
