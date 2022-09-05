@@ -370,6 +370,9 @@ WHERE
 						)
 				 END, 0) <= 100000
 	AND dim_detail_core_details.track IN ('Fast Track', 'Multi Track')
+	AND ISNULL(dim_detail_core_details.injury_type_code, '') <> 'A00                                                         '
 
 END
+
+
 GO
