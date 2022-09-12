@@ -18,7 +18,7 @@ AS
 SET NOCOUNT ON
 
 ----Testing
---DECLARE @Team  AS NVARCHAR(MAX)  = (SELECT STRING_AGG(CAST(team_data.hierarchylevel4hist AS NVARCHAR(MAX)), ',')	AS teams
+--DECLARE @Team  AS NVARCHAR(MAX)  = (SELECT STRING_AGG(CAST(team_data.hierarchylevel4hist AS NVARCHAR(MAX)), '|')	AS teams
 --									FROM (
 --									SELECT DISTINCT hierarchylevel4hist
 --									FROM 
@@ -38,7 +38,14 @@ SET NOCOUNT ON
 --									) AS team_data)
 
 IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team;  
-SELECT ListValue  INTO #Team FROM  dbo.udt_TallySplit(',', @Team);  
+
+CREATE TABLE #Team (ListValue NVARCHAR(100) COLLATE Latin1_General_BIN)
+INSERT INTO #Team
+(
+    ListValue
+)
+
+SELECT ListValue  FROM  dbo.udt_TallySplit('|', @Team);  
 
 
 IF OBJECT_ID('tempdb..#reserve_changes') IS NOT NULL DROP TABLE #reserve_changes
@@ -215,7 +222,8 @@ SELECT
 	dim_detail_core_details.referral_reason AS [Referral Reason ],  
 	COALESCE(dim_detail_claim.[claimants_solicitors_firm_name ], dim_claimant_thirdparty_involvement.claimantsols_name) AS [Claimants Solictors],  
 	dim_detail_claim.number_of_claimants AS [Potential Number of Claimants],  
-	dim_detail_core_details.proceedings_issued AS [Proceedings Issued],  
+	dim_detail_core_details.proceedings_issued AS [Proceedings Issued], 
+	CAST(dim_detail_claim.msg_limitation_date AS DATE)			AS [Limitation Date],
 	red_dw.dbo.dim_detail_court.date_of_trial AS [Trial Date],  
 	dim_detail_core_details.delegated AS [Delegated ],  
 	dim_detail_core_details.track AS [Track],  
@@ -244,7 +252,10 @@ SELECT
 	--	ELSE  
 	--		dim_detail_core_details.coop_target_settlement_date  
 	--END																	AS [Target Settlement Date ], 
+	dim_detail_audit.settled_within_initial_tsd			AS [Initial Target Settlement Date],
 	dim_detail_core_details.coop_target_settlement_date						AS [Target Settlement Date ], 
+	dim_detail_client.msg_likelihood_of_tsd_movement		AS [Likelihood of TSD Movement],
+
 	--CASE  
 	--	WHEN department_code = '0027' THEN  
 	--		red_dw.dbo.fact_detail_reserve_detail.general_damages_reserve_current  
@@ -360,7 +371,8 @@ SELECT
 	--		ISNULL(fact_finance_summary.[defence_costs_reserve], 0)  
 	--END																	AS [Defence Costs Reserve Held (before payments)], --LEADLINKED  
 	ISNULL(fact_finance_summary.[defence_costs_reserve], 0) 									AS [Defence Costs Reserve Held (before payments)], --LEADLINKED  
-	ISNULL(fact_finance_summary.[defence_costs_reserve], 0) - total_amount_billed +disbursements_billed			AS [Defence Costs Reserve Outstanding],  
+	ISNULL(fact_finance_summary.[defence_costs_reserve], 0) - ISNULL(total_amount_billed, 0)			AS [Defence Costs Reserve Outstanding],  
+	dim_detail_claim.likelihood_of_substantial_reserve_movement			AS [Likelihood of Substantial Reserve Movement],
 	vat_billed,  
 	vat_amount,  
 	total_amount_billed [Total paid to date  ],  
@@ -533,6 +545,8 @@ FROM red_dw.dbo.dim_client
 		ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key  
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome  
 		ON dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key  
+	LEFT OUTER JOIN red_dw.dbo.dim_detail_audit
+		ON dim_detail_audit.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary  
 		ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key  
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_group  
@@ -557,9 +571,7 @@ FROM red_dw.dbo.dim_client
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_elapsed_days  
 		ON fact_detail_elapsed_days.master_fact_key = fact_dimension_main.master_fact_key  
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_future_care  
-		ON fact_detail_future_care.master_fact_key = fact_detail_client.master_fact_key  
-	LEFT OUTER JOIN red_dw.dbo.dim_detail_audit  
-		ON dim_detail_audit.dim_detail_audit_key = fact_dimension_main.dim_detail_audit_key  
+		ON fact_detail_future_care.master_fact_key = fact_detail_client.master_fact_key    
 	LEFT OUTER JOIN #reserve_changes
 		ON #reserve_changes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	--LEFT OUTER JOIN(  
@@ -734,7 +746,7 @@ FROM red_dw.dbo.dim_client
 	--	ON dfc.client_code = red_dw.dbo.fact_dimension_main.client_code  
 	--		AND dfc.matter_number = red_dw.dbo.fact_dimension_main.matter_number 
 	INNER JOIN #Team AS Team  
-	   ON Team.ListValue COLLATE DATABASE_DEFAULT = ISNULL(dim_fed_hierarchy_history.hierarchylevel4hist, 'Unknown') COLLATE DATABASE_DEFAULT  
+	   ON Team.ListValue  = ISNULL(dim_fed_hierarchy_history.hierarchylevel4hist, 'Unknown')  
 	WHERE 1 = 1   
 		AND reporting_exclusions = 0  
 		AND LOWER(ISNULL(outcome_of_case, '')) NOT IN ( 'exclude from reports', 'returned to client' )  
