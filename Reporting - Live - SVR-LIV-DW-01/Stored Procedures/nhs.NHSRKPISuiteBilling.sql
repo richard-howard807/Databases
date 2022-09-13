@@ -33,7 +33,7 @@ SELECT CASE WHEN insurerclient_reference IS NULL THEN client_reference ELSE insu
 	ELSE
 		AllData.jobtitle
  END										AS mapped_lawyer_grade
-,dim_detail_health.[nhs_type_of_instruction_billing] AS [Type of instruction]
+,REPLACE(dim_detail_health.[nhs_type_of_instruction_billing], '2022: ', '') AS [Type of instruction]
 ,fact_finance_summary.[fixed_fee_amount] AS [Capped fee]
 ,CASE WHEN [zurichnhs_date_final_bill_sent_to_client]='1900-01-01' THEN 'Interim'
 WHEN zurichnhs_date_final_bill_sent_to_client='01/01/1990  00:00:00' THEN 'Interim'

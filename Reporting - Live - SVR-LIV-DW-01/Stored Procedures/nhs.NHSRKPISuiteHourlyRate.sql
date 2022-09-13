@@ -14,8 +14,8 @@ AS
 
 BEGIN
 
-	--DECLARE @StartDate AS DATE = '2021-06-01'
-	--		, @EndDate AS DATE = '2021-07-01'
+	--DECLARE @StartDate AS DATE = '2022-06-01'
+	--		, @EndDate AS DATE = '2022-07-01'
 
     SELECT CASE
                WHEN insurerclient_reference IS NULL THEN
@@ -46,7 +46,7 @@ BEGIN
 			ELSE
 				dim_fed_hierarchy_history.jobtitle
 		  END											AS mapped_lawyer_grade, 
-           dim_detail_health.[nhs_type_of_instruction_billing] [Type of instruction],
+           REPLACE(dim_detail_health.[nhs_type_of_instruction_billing], '2022: ', '')	AS [Type of instruction],
            fact_bill_billed_time_activity.minutes_recorded / 60 [Hours billed],
            BillHrs AS HrsBilled,
            WorkHrs AS HrsWorks,
