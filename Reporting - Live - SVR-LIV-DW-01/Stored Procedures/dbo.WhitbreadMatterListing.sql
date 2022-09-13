@@ -65,7 +65,7 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_advice.[name_of_caller] AS [Caller Name]
 ,dim_detail_advice.[name_of_caller] AS [Caller Name 1]
 ,dim_detail_advice.[job_title_of_caller_emp] AS [Caller Job Title]
-,dim_detail_advice.[site] AS [Site]
+,dim_detail_practice_area.[whitbreadpizza_hut_site_address] AS [Site] -- previously dim_detail_advice.[site]
 ,dim_detail_advice.[region] AS [Region]
 ,dim_detail_advice.[geography] AS [Geography]
 ,dim_detail_advice.[name_of_employee] AS [Employee Name]
@@ -81,6 +81,14 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_advice.[policy_issue] AS [Policy Issue]
 ,dim_detail_advice.[diversity_issue] AS [Diversity Issue]
 ,dim_detail_advice.[date_last_call] AS [Date of Last Call]
+,dim_detail_client.[reason_for_prospects_of_success] AS [Reason for prospects of success]
+,dim_detail_client.[reason_for_settlement] AS [Reason for Settlement]
+,fact_detail_client.[compensation_claimed_et1] AS [Compensation Claimed (ET1)]
+,dim_detail_client.[internal_process_failings] AS [Internal process failings]
+,dim_detail_client.[management_manager_issues] AS [Management/Manager issues]
+,dim_detail_client.[other_claims] AS [Other Claims]
+,dim_detail_client.[other_reason_for_settlement] AS [Other Reason for Settlement]
+,dim_detail_client.[witnesses] AS [Witnesses]
 ,total_amount_bill_non_comp AS [Total Billed]
 ,defence_costs_billed_composite AS [Revenue]
 ,disbursements_billed AS [Disbursements]
@@ -126,10 +134,13 @@ LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
  ON dim_detail_finance.dim_matter_header_curr_key = dim_detail_advice.dim_matter_header_curr_key
  LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN red_dw.dbo.fact_detail_client
+ ON fact_detail_client.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE dim_matter_header_current.department_code='0012'
+WHERE 1 = 1
+AND dim_matter_header_current.department_code='0012'
 AND dim_matter_header_current.master_client_code = 'W15630'
-AND (dim_matter_header_current.date_closed_practice_management IS NULL 
-OR dim_matter_header_current.date_closed_practice_management>='2016-01-01')
+--AND (dim_matter_header_current.date_closed_practice_management IS NULL 
+--OR dim_matter_header_current.date_closed_practice_management>='2016-01-01')
 END
 GO
