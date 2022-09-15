@@ -23,6 +23,11 @@ Current Version:	Initial Create
 -- ES 18/06/2021 added dim_detail_core_details[will_total_gross_reserve_on_the_claim_exceed_500000] for EJ
 -- ES 25/06/2021 added no locks as it was causing blocks
 -- ES 25/11/2021 added claimant solicitor postcode for BH
+-- ES 15/07/2022 #157785, added axa claim strategy
+-- ES 03/08/2022 #160501, added axa details
+-- JB 11/08/2022 #162239, added LL reserve and PREDiCT fields from Large Loss Prediction Model MI report 
+-- ES 22/08/2022, A-M requested the data source go back 6 years for insurance client dashboards rather than 3 years
+-- JB 30/08/2022, #164996 added new revenue/hours/disb years. Changed them to pivoted temp tables to avoid multiple joins
 ====================================================
 
 */
@@ -34,7 +39,127 @@ IF OBJECT_ID('dbo.Vis_GeneralData', 'U') IS NOT NULL
 DROP TABLE dbo.Vis_GeneralData
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
-SELECT 
+
+
+----------------------------revenue----------------------------------------------------------------------
+DROP TABLE IF EXISTS #Revenue
+
+		SELECT PVIOT.dim_matter_header_curr_key,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Revenue
+		FROM (
+
+			SELECT fact_bill_activity.dim_matter_header_curr_key, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_activity.bill_amount) Revenue
+			FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+			ON fact_bill_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022,2023)
+			GROUP BY fact_bill_activity.dim_matter_header_curr_key, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Revenue)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
+			) AS PVIOT
+
+
+----------------------------hours billed----------------------------------------------------------------------
+DROP TABLE IF EXISTS #HoursBilled
+	SELECT PVIOT.dim_matter_header_curr_key,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #HoursBilled
+		FROM (
+
+			SELECT fact_bill_billed_time_activity.dim_matter_header_curr_key, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_bill_billed_time_activity.invoiced_minutes) Billed_hours
+			FROM red_dw.dbo.fact_bill_billed_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_billed_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date ON fact_bill_billed_time_activity.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021,2022,2023)
+			GROUP BY fact_bill_billed_time_activity.dim_matter_header_curr_key, bill_fin_year
+			) AS billedhours
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022],[2023])
+			) AS PVIOT
+
+
+----------------------------hours posted----------------------------------------------------------------------
+
+DROP TABLE IF EXISTS #HoursPosted
+		SELECT PVIOT.dim_matter_header_curr_key,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #HoursPosted
+		FROM (
+
+			SELECT fact_billable_time_activity.dim_matter_header_curr_key, dim_bill_date.bill_fin_year bill_fin_year, SUM(fact_billable_time_activity.minutes_recorded) Billed_hours
+			FROM red_dw.dbo.fact_billable_time_activity WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK) ON dim_matter_header_current.dim_matter_header_curr_key = fact_billable_time_activity.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK) ON fact_billable_time_activity.dim_orig_posting_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2016, 2017,2018,2019,2020,2021, 2022, 2023)
+			GROUP BY fact_billable_time_activity.dim_matter_header_curr_key, bill_fin_year
+			) AS revenue
+		PIVOT	
+			(
+			SUM(Billed_hours)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021], [2022], [2023])
+			) AS PVIOT
+
+
+
+----------------------------Disbursements----------------------------------------------------------------------
+DROP TABLE IF EXISTS #Disbursements
+
+		SELECT PVIOT.dim_matter_header_curr_key,
+			   PVIOT.[2023],
+			   PVIOT.[2022],
+			   PVIOT.[2021],
+			   PVIOT.[2020],
+			   PVIOT.[2019],
+			   PVIOT.[2018],
+			   PVIOT.[2017],
+			   PVIOT.[2016]
+			   INTO #Disbursements
+		FROM (
+
+			SELECT fact_bill_detail.dim_matter_header_curr_key, dim_bill_date.bill_fin_year bill_fin_year, SUM(bill_total_excl_vat) Disbursements
+			FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+			INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK) ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+			WHERE dim_bill_date.bill_fin_year IN (2017,2018,2019,2020,2021, 2022, 2023)
+			AND charge_type='disbursements'
+	GROUP BY fact_bill_detail.dim_matter_header_curr_key,
+             bill_fin_year
+			) AS disbursements
+		PIVOT	
+			(
+			SUM(Disbursements)
+			FOR bill_fin_year IN ([2016],[2017],[2018],[2019],[2020],[2021],[2022], [2023])
+			) AS PVIOT
+
+
+----------------------------main insert----------------------------------------------------------------------
+SELECT --TOP 100
 
 RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number AS [Weightmans Reference]
 		, fact_dimension_main.client_code AS [Client Code]
@@ -59,7 +184,9 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, dim_department.department_name AS [Matter Category]
 		, dim_department.department_code AS [Matter Category Code]
 		, dim_detail_core_details.[do_clients_require_an_initial_report] AS [Do Clients Require an Initial Report?]
+		, dim_detail_core_details.date_initial_report_due		AS [Date Initial Report Due]
 		, dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
+		, dim_detail_core_details.date_subsequent_sla_report_sent			AS [Date Subsequent SLA Report Sent]
 		, dim_detail_core_details.status_on_instruction AS [Status On Instruction]
 		, dim_detail_core_details.[is_there_an_issue_on_liability] AS [Issue On Liability]
 		, dim_detail_core_details.delegated AS Delegated
@@ -110,7 +237,9 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, dim_client_involvement.[insuredclient_reference] AS [Insured Client Reference]
 		, dim_detail_core_details.insured_sector AS [Insured Sector]
 		, dim_detail_core_details.present_position AS [Present Position]
+		, dim_detail_claim.[axa_claim_strategy] AS [AXA Claim Strategy]
 		, dim_detail_outcome.[outcome_of_case] AS [Outcome of Case]
+		, dim_detail_core_details.injury_type		AS [Injury Type]
 		, dim_detail_core_details.track AS [Track]
 		, dim_detail_core_details.suspicion_of_fraud AS [Suspicion of Fraud?]
 		, dim_detail_core_details.referral_reason AS [Referral Reason]
@@ -122,6 +251,120 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, CAST(CAST([Incident_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Incident Postcode Longitude]
 		, dim_detail_core_details.incident_date AS [Incident Date]
 		, dim_detail_core_details.[brief_description_of_injury] AS [Description of Injury]
+		, CASE WHEN  dim_detail_core_details.[brief_description_of_injury] IN ('A06 Arm amputation','F04 Foot amputation','F08 Toe amputation','H02 Hand/finger amputation','L01 Leg amputation')	THEN 'Amputation'
+			   WHEN  dim_detail_core_details.[brief_description_of_injury] IN ('B01 Back injury (D13 to be used if Disease issue)','S02 Spinal injury') THEN   'Back Injury'
+			   WHEN  dim_detail_core_details.[brief_description_of_injury] IN ('A03 Ankle burn','A08 Arm burn','F07 Foot burn','H03 Hand/finger burn','L03 Leg burn','W01 Wrist burn') THEN 'Burn'
+			   WHEN  dim_detail_core_details.[brief_description_of_injury] IN ('A02 Ankle cut/bruise','A07 Arm cut/bruise','F06 Foot cut/bruise','H04 Hand/finger cut/bruise','L02 Leg cut/bruise','W02 Wrist cut/bruise')	THEN 'Cut/Bruise'
+			   WHEN dim_detail_core_details.[brief_description_of_injury] IN ('Covid',
+'D02 Acoustic shock',
+'D03 Anthrax',
+'D04 Asbestos/mesothelioma',
+'D05 Asbestosis',
+'D06 Asbestos related cancer',
+'D07 Non asbestos related cancer',
+'D08 Asthma/bronchitis/emphysema',
+'D09 Byssinosis',
+'D10 Cancer',
+'D11 Chrome ulceration',
+'D12 Cold feet',
+'D13 Cumulative back injury (B01 to be used if one off issue)',
+'D14 Deep vein thrombosis',
+'D15 Dermititis/eczema',
+'D16 EMF',
+'D17 Industrial deafness',
+'D18 Isocyanate poisioning',
+'D19 Legionnaires disease',
+'D20 Multiple chemical exposure',
+'D21 Non ferrous metal poisoning',
+'D23 Paralysis following disease',
+'D24 Pleural plaques',
+'D25 Pleural thickening',
+'D26 Pneumoconiosis',
+'D27 Radiation',
+'D28 Sick building syndrome',
+'D30 Tenosynovitis.and/or WRULD',
+'D31 VWF/Reynauds phenomenon',
+'D32 Whole body vibration'
+) THEN 'Disease'
+	WHEN dim_detail_core_details.[brief_description_of_injury] IN ('E01 Eye loss of sight, one eye',
+'E02 Eye loss of sight, two eyes',
+'E03 Eye other injury',
+'F01 Facial disfigurement',
+'F02 Facial injuries - other'
+)  THEN 'Facial Injury'
+	WHEN dim_detail_core_details.[brief_description_of_injury] = 'F03 Fatal injury' THEN 'Fatal Injury'
+	WHEN dim_detail_core_details.[brief_description_of_injury] IN ('A04 Ankle fracture',
+'A09 Arm fracture',
+'F05 Foot fracture',
+'F09 Toe fracture',
+'H06 Hand/finger fracture',
+'H09 Head fractured skull',
+'L04 Leg fracture',
+'W03 Wrist fracture'
+) THEN 'Fracture'
+	WHEN dim_detail_core_details.[brief_description_of_injury] IN ('B05 Brain damage',
+'H08 Head epilepsy',
+'H10 Head permanent brain damage',
+'H11 Hernia',
+'H12 Minor Head Injury'
+)	THEN 'Head Injury'
+WHEN dim_detail_core_details.[brief_description_of_injury] IN ('B02 Bladder injury',
+'B03 Bowel injury',
+'D01 Digestive systems',
+'K01 Kidney injury',
+'R01 Reproductive system: female',
+'R02 Reproductive system: male',
+'S03 Spleen injury') THEN 'Internal Injury'
+WHEN dim_detail_core_details.[brief_description_of_injury] IN ('A11 Abuse',
+'D29 Stress',
+'P03 Psychiatric illness',
+'P04 Post-traumatic stress disorder'
+) THEN 'Mental Health'
+WHEN dim_detail_core_details.[brief_description_of_injury] IN ('XNHS01 Healthcare associated infection (NHS only)',
+'XNHS02 Community associated infection (NHS only)',
+'XNHS03 Failure to diagnose (NHS only)',
+'XNHS04 Nerve damage (NHS only)',
+'XNHS05 MRSA (NHS only)',
+'XNHS06 C-Difficile (NHS only)',
+'XNHS07 Headaches (NHS only)',
+'XNHS08 Infection (NHS only)',
+'XNHS09 Clinical Deterioration (general) (NHS only)',
+'XNHS10 Anaphylactic shock - allergy (NHS only)',
+'XNHS11 Birth injury - CP (NHS only)',
+'XNHS12 Birth injury - other (NHS only)',
+'XNHS13 Loss of baby (NHS only)',
+'XNHS14 Pressure sores (NHS only)',
+'XNHS15 Respiratory disorder (NHS only)',
+'XNHS16 Soft tissue damage (NHS only)',
+'XNHS17 Lung injury (NHS only)'
+)	  THEN 'NHS'
+WHEN dim_detail_core_details.[brief_description_of_injury] = 'A00 No injuries'	THEN 'No Injury'
+WHEN dim_detail_core_details.[brief_description_of_injury] IN ('A01 Ankle achilles tendon',
+'A10 Arm injury other',
+'B04 Brachial plexus',
+'C01 Chest injury',
+'C02 Chronic pain syndrome',
+'D22 Papilloma',
+'H01 Hair loss or damage',
+'H05 Hand/finger degloving injury',
+'H07 Hand/finger injury other',
+'K02 Knee injury (K03 to be used if repetitive injury)',
+'K03 Repetitive Knee Injury (K02 to be used if one off issue)',
+'L05 Leg injury other',
+'M01 Multiple injury - CAT use only',
+'N02 Neck injury other',
+'P01 Paraplegia',
+'P02 Pelvis and hips injury',
+'S01 Shoulder injuries',
+'T01 Taste and smell impairment',
+'T02 Tetraplegia'
+) THEN 'Other'
+WHEN dim_detail_core_details.[brief_description_of_injury] IN ('A05 Ankle sprain',
+'W04 Wrist sprain') THEN 'Sprain'
+WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - whiplash' THEN 'Whiplash'
+ END AS [Description of Injury Grouped]
+
+
 		, TimeRecorded.HoursRecorded AS [Hours Recorded]
 		, fact_matter_summary_current.[last_time_transaction_date] AS [Date of Last Time Posting]
 		, fact_matter_summary_current.last_bill_date AS [Last Bill Date]
@@ -331,6 +574,7 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, [LeaseAgreedTasks].[DateTaskCreated] AS [Date Lease In]
 		, dim_detail_property.completion_date AS [Property Completion Date]
 		, dim_file_notes.external_file_notes AS [Matter Notes]
+		, dim_file_notes.file_notes		as [Internal File Notes]
 		, dim_detail_property.[exchange_date] AS [Property Exchange Date]
 
 		--Archibald Bathgate
@@ -570,6 +814,13 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		--AXA
 		, dim_detail_core_details.[axa_pas_status] as [AXA PAS Status]
 		, dim_detail_claim.[comments] as [Comments]
+		, dim_detail_client.[axa_line_of_business] AS [AXA Line of Business]
+		, dim_detail_claim.[axa_coverage_defence] AS [AXA Coverage Defence]
+		, dim_detail_claim.[axa_first_acknowledgement_date] AS [AXA First Acknowledgement Date]
+		, dim_detail_claim.[axa_reason_for_panel_budget_change] AS [AXA Reason for Panel Budget Change]
+
+		, dim_detail_court.[date_of_trial] AS [Trial Date]
+		, dim_detail_health.[date_of_service_of_proceedings] AS [Date of Service of Proceedings]
 
 		--AIG
 		, dim_detail_core_details.[aig_current_fee_scale] AS [Current Fee Scale]
@@ -614,22 +865,58 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, dim_detail_outcome.costs_outcome AS [Costs Outcome]
 		, dim_detail_core_details.claimants_date_of_birth AS [Claimant's Date of Birth]
 		
-		,[Revenue 2016/2017]
-		,[Revenue 2017/2018]
-		,[Revenue 2018/2019]
-		,[Revenue 2019/2020]
-		,[Revenue 2020/2021]
-		,[Revenue 2021/2022]
-		,[Hours Billed 2016/2017]
-		,[Hours Billed 2017/2018]
-		,[Hours Billed 2018/2019]
-		,[Hours Billed 2019/2020]
-		,[Hours Billed 2020/2021]
-		,[Hours Billed 2021/2022]
-		,[Hours Posted 2016/2017]
-		,[Hours Posted 2017/2018]
-		,[Hours Posted 2018/2019]
-		,[Hours Posted 2019/2020]		
+		--,[Revenue 2016/2017]
+		--,[Revenue 2017/2018]
+		--,[Revenue 2018/2019]
+		--,[Revenue 2019/2020]
+		--,[Revenue 2020/2021]
+		--,[Revenue 2021/2022]	
+		, #Revenue.[2017]		AS [Revenue 2016/2017]
+		, #Revenue.[2018]		AS [Revenue 2017/2018]
+		, #Revenue.[2019]		AS [Revenue 2018/2019]
+		, #Revenue.[2020]		AS [Revenue 2019/2020]
+		, #Revenue.[2021]		AS [Revenue 2020/2021]
+		, #Revenue.[2022]		AS [Revenue 2021/2022]
+		, #Revenue.[2023]		AS [Revenue 2022/2023]
+
+
+		--,[Hours Billed 2016/2017]
+		--,[Hours Billed 2017/2018]
+		--,[Hours Billed 2018/2019]
+		--,[Hours Billed 2019/2020]
+		--,[Hours Billed 2020/2021]
+		--,[Hours Billed 2021/2022]
+		, #HoursBilled.[2017]		AS [Hours Billed 2016/2017]
+		, #HoursBilled.[2018]		AS [Hours Billed 2017/2018]
+		, #HoursBilled.[2019]		AS [Hours Billed 2018/2019]
+		, #HoursBilled.[2020]		AS [Hours Billed 2019/2020]
+		, #HoursBilled.[2021]		AS [Hours Billed 2020/2021]
+		, #HoursBilled.[2022]		AS [Hours Billed 2021/2022]
+		, #HoursBilled.[2023]		AS [Hours Billed 2022/2023]
+
+
+		--,[Hours Posted 2016/2017]
+		--,[Hours Posted 2017/2018]
+		--,[Hours Posted 2018/2019]
+		--,[Hours Posted 2019/2020]	
+		, #HoursPosted.[2017]		AS [Hours Posted 2016/2017]
+		, #HoursPosted.[2018]		AS [Hours Posted 2017/2018]
+		, #HoursPosted.[2019]		AS [Hours Posted 2018/2019]
+		, #HoursPosted.[2020]		AS [Hours Posted 2019/2020]
+		, #HoursPosted.[2021]		AS [Hours Posted 2020/2021]
+		, #HoursPosted.[2022]		AS [Hours Posted 2021/2022]
+		, #HoursPosted.[2023]		AS [Hours Posted 2022/2023]
+
+
+		, #Disbursements.[2017]		AS [Disbursements 2016/2017]
+		, #Disbursements.[2018]		AS [Disbursements 2017/2018]
+		, #Disbursements.[2019]		AS [Disbursements 2018/2019]
+		, #Disbursements.[2020]		AS [Disbursements 2019/2020]
+		, #Disbursements.[2021]		AS [Disbursements 2020/2021]
+		, #Disbursements.[2022]		AS [Disbursements 2021/2022]
+		, #Disbursements.[2023]		AS [Disbursements 2022/2023]
+		
+		
 		,PartnerHours
         ,NonPartnerHours
         ,[Partner/ConsultantTime]
@@ -660,6 +947,31 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 , fact_detail_reserve_detail.[large_loss_hundred_perc_current_dam_res_total] AS [LL Current Damages Reserve]
 , fact_detail_reserve_detail.[claimant_legal_costs_reserve_12_month] AS [LL Current Claimant Costs Reserve]
 , fact_detail_reserve_detail.[own_legal_costsdisbs_reserve_12_month] AS [LL Current Defence Costs Reserve]
+, ISNULL(fact_detail_reserve_detail.[general_damages_reserve_initial], 0)
+	+ ISNULL(fact_detail_reserve_detail.[interest_on_general_damages_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[net_wage_loss_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[misc_specials_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[rehab_ina_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[care_cost_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[aids_and_equipment_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[other_housing_etc_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[interest_on_special_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[future_loss_of_wages_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[s_v_m_award_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[future_care_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[future_aids_equipment_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[domestic_diy_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[holidays_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[future_case_manager_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[housing_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[housing_alterations_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[medical_physio_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[transport_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[pension_loss_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[court_of_protection_reserve_initial_hundred_percent], 0)
+	+ ISNULL(fact_detail_reserve_detail.[hospital_charges_reserve_initial], 0)
+	+ ISNULL(fact_detail_reserve_detail.[cru_charges_reserve_initial], 0)				AS [Initial LL Damages Reserve]
+, fact_detail_reserve_detail.ll28_claimants_legal_costs_reserve_initial		AS [Initial LL Claimant Costs Reserve]
 
 ,dim_court_involvement.court_name AS [Court Name]
 
@@ -672,17 +984,24 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 , dim_detail_claim.[hastings_claim_status] AS [Hastings - Claim Status]
 , dim_detail_client.[hastings_policyholder_first_name]+' '+dim_detail_client.[hastings_policyholder_last_name] AS [Hastings - Policyholder]
 --PREDiCT
+, dim_detail_claim.predict_output_document_id				AS [PREDiCT Output Document ID]
 , fact_detail_reserve_detail.[hastings_predict_damages_meta_model_value] AS [PREDiCT Damages meta-model value]
 , fact_detail_reserve_detail.[hastings_predict_claimant_costs_meta_model_value] AS [PREDiCT Claimant costs meta-model value]
 , fact_detail_reserve_detail.[hastings_predict_lifecycle_meta_model_value] AS [PREDiCT Lifecycle meta-model value]
 , ISNULL(fact_detail_reserve_detail.[predict_rec_claimant_costs_reserve_current], fact_detail_reserve_initial.[predict_rec_claimant_costs_reserve_initial]) AS [PREDiCT Recommended Claimant Costs Reserve]
 , ISNULL(fact_detail_reserve_detail.[predict_rec_damages_reserve_current], fact_detail_reserve_initial.[predict_rec_damages_reserve_initial]) AS [PREDiCT Recommended Damages Reserve]
+, fact_detail_reserve_initial.[predict_rec_damages_reserve_initial]				AS [PREDiCT Recommended Damages Reserve Initial]
+, fact_detail_reserve_detail.[predict_rec_damages_reserve_current]			AS [PREDiCT Recommended Damages Reserve Current]
+, fact_detail_reserve_initial.[predict_rec_claimant_costs_reserve_initial]		AS [PREDiCT Recommended Claimant Costs Reserve Initial]
+, fact_detail_reserve_detail.[predict_rec_claimant_costs_reserve_current]		AS [PREDiCT Recommended Claimant Costs Reserve Current]
+
 
 , [Claimant Solicitors Postcode]
 , [Claimant Solicitors Postcode Latitude]
 , [Claimant Solicitors Postcode Longitude]
 
 , dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the Claimant have a Personal Injury Claim?]
+
 
 INTO dbo.Vis_GeneralData
 
@@ -732,6 +1051,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud WITH(NOLOCK) ON dim_detail_fraud.dim
 LEFT OUTER JOIN red_dw.dbo.fact_bill_matter WITH(NOLOCK) ON fact_bill_matter.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail WITH(NOLOCK) ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_experts_involvement WITH(NOLOCK) ON dim_experts_involvement.dim_experts_involvemen_key = fact_dimension_main.dim_experts_involvemen_key /*1.1*/
+LEFT OUTER JOIN red_dw.dbo.dim_detail_court WITH(NOLOCK) ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
 LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
 				  ,SUM(minutes_recorded)/60 AS [HoursRecorded]
 				  FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
@@ -855,150 +1175,163 @@ LEFT OUTER JOIN (SELECT fileID
 					WHERE client_code IN ('00787558','00787559','00787560','00787561'))) AS [LeaseAgreedTasks] ON [LeaseAgreedTasks].fileID=dim_matter_header_current.ms_fileid
 
 --45432
-LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
-		,SUM(minutes_recorded)/60 AS [Hours Posted 2016/2017]
-FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
-LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
-ON dim_date_key=dim_transaction_date_key
-WHERE calendar_date BETWEEN '2016-05-01' AND '2017-04-30'
-AND minutes_recorded<>0
-GROUP BY master_fact_key) AS [HoursPosted2016/2017]
-ON [HoursPosted2016/2017].master_fact_key = fact_dimension_main.master_fact_key
+--LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
+--		,SUM(minutes_recorded)/60 AS [Hours Posted 2016/2017]
+--FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+--LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
+--ON dim_date_key=dim_transaction_date_key
+--WHERE calendar_date BETWEEN '2016-05-01' AND '2017-04-30'
+--AND minutes_recorded<>0
+--GROUP BY master_fact_key) AS [HoursPosted2016/2017]
+--ON [HoursPosted2016/2017].master_fact_key = fact_dimension_main.master_fact_key
 
-LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
-		,SUM(minutes_recorded)/60 AS [Hours Posted 2017/2018]
-FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
-LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
-ON dim_date_key=dim_transaction_date_key
-WHERE calendar_date BETWEEN '2017-05-01' AND '2018-04-30'
-AND minutes_recorded<>0
-GROUP BY master_fact_key) AS [HoursPosted2017/2018]
-ON [HoursPosted2017/2018].master_fact_key = fact_dimension_main.master_fact_key
+--LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
+--		,SUM(minutes_recorded)/60 AS [Hours Posted 2017/2018]
+--FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+--LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
+--ON dim_date_key=dim_transaction_date_key
+--WHERE calendar_date BETWEEN '2017-05-01' AND '2018-04-30'
+--AND minutes_recorded<>0
+--GROUP BY master_fact_key) AS [HoursPosted2017/2018]
+--ON [HoursPosted2017/2018].master_fact_key = fact_dimension_main.master_fact_key
 
-LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
-		,SUM(minutes_recorded)/60 AS [Hours Posted 2018/2019]
-FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
-LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
-ON dim_date_key=dim_transaction_date_key
-WHERE calendar_date BETWEEN '2018-05-01' AND '2019-04-30'
-AND minutes_recorded<>0
-GROUP BY master_fact_key) AS [HoursPosted2018/2019]
-ON [HoursPosted2018/2019].master_fact_key = fact_dimension_main.master_fact_key
+--LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
+--		,SUM(minutes_recorded)/60 AS [Hours Posted 2018/2019]
+--FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+--LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
+--ON dim_date_key=dim_transaction_date_key
+--WHERE calendar_date BETWEEN '2018-05-01' AND '2019-04-30'
+--AND minutes_recorded<>0
+--GROUP BY master_fact_key) AS [HoursPosted2018/2019]
+--ON [HoursPosted2018/2019].master_fact_key = fact_dimension_main.master_fact_key
 
-LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
-		,SUM(minutes_recorded)/60 AS [Hours Posted 2019/2020]
-FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
-LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
-ON dim_date_key=dim_transaction_date_key
-WHERE calendar_date BETWEEN '2019-05-01' AND '2020-04-30'
-AND minutes_recorded<>0
-GROUP BY master_fact_key) AS [HoursPosted2019/2020]
-ON [HoursPosted2019/2020].master_fact_key = fact_dimension_main.master_fact_key
-
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2016
- ON dim_matter_header_current.client_code=Revenue2016.client_code
-AND dim_matter_header_current.matter_number=Revenue2016.matter_number
+--LEFT OUTER JOIN (SELECT fact_chargeable_time_activity.master_fact_key
+--		,SUM(minutes_recorded)/60 AS [Hours Posted 2019/2020]
+--FROM red_dw.dbo.fact_chargeable_time_activity WITH(NOLOCK)
+--LEFT OUTER JOIN red_dw.dbo.dim_date WITH(NOLOCK)
+--ON dim_date_key=dim_transaction_date_key
+--WHERE calendar_date BETWEEN '2019-05-01' AND '2020-04-30'
+--AND minutes_recorded<>0
+--GROUP BY master_fact_key) AS [HoursPosted2019/2020]
+--ON [HoursPosted2019/2020].master_fact_key = fact_dimension_main.master_fact_key
 
 
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2017
- ON dim_matter_header_current.client_code=Revenue2017.client_code
-AND dim_matter_header_current.matter_number=Revenue2017.matter_number
+LEFT OUTER JOIN #Revenue
+ON #Revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN #HoursBilled
+ON #HoursBilled.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN #HoursPosted
+ON #HoursPosted.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+LEFT OUTER JOIN #Disbursements
+ON #Disbursements.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2016/2017]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2016/2017]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2016/2017]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2016-05-01' AND '2017-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2016
+-- ON dim_matter_header_current.client_code=Revenue2016.client_code
+--AND dim_matter_header_current.matter_number=Revenue2016.matter_number
 
 
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2018
- ON dim_matter_header_current.client_code=Revenue2018.client_code
-AND dim_matter_header_current.matter_number=Revenue2018.matter_number
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2017/2018]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2017/2018]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2017/2018]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2017-05-01' AND '2018-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2017
+-- ON dim_matter_header_current.client_code=Revenue2017.client_code
+--AND dim_matter_header_current.matter_number=Revenue2017.matter_number
 
 
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2019
- ON dim_matter_header_current.client_code=Revenue2019.client_code
-AND dim_matter_header_current.matter_number=Revenue2019.matter_number
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2018/2019]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2018/2019]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2018/2019]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2018-05-01' AND '2019-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2018
+-- ON dim_matter_header_current.client_code=Revenue2018.client_code
+--AND dim_matter_header_current.matter_number=Revenue2018.matter_number
 
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2020
- ON dim_matter_header_current.client_code=Revenue2020.client_code
-AND dim_matter_header_current.matter_number=Revenue2020.matter_number
 
-LEFT OUTER JOIN 
-(
-SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
-,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2021/2022]
-,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2021/2022]
-,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2021/2022]
-FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
-INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
-  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
- WHERE dim_bill_date.bill_date BETWEEN '2021-05-01' AND '2022-04-30'
-AND charge_type='time'
-GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
-) AS Revenue2021
- ON dim_matter_header_current.client_code=Revenue2021.client_code
-AND dim_matter_header_current.matter_number=Revenue2021.matter_number
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2019/2020]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2019/2020]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2019/2020]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2019-05-01' AND '2020-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2019
+-- ON dim_matter_header_current.client_code=Revenue2019.client_code
+--AND dim_matter_header_current.matter_number=Revenue2019.matter_number
+
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2020/2021]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2020/2021]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2020/2021]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2020-05-01' AND '2021-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2020
+-- ON dim_matter_header_current.client_code=Revenue2020.client_code
+--AND dim_matter_header_current.matter_number=Revenue2020.matter_number
+
+--LEFT OUTER JOIN 
+--(
+--SELECT fact_bill_detail.client_code,fact_bill_detail.matter_number
+--,SUM(fact_bill_detail.bill_total_excl_vat) AS [Revenue 2021/2022]
+--,SUM(fact_bill_detail.workhrs) AS [Hours Billed 2021/2022]
+--,SUM(    fact_bill_detail_summary.disbursements_billed_exc_vat) AS [Disbursements Billed 2021/2022]
+--FROM red_dw.dbo.fact_bill_detail WITH(NOLOCK)
+--INNER JOIN red_dw.dbo.dim_bill_date WITH(NOLOCK)
+-- ON fact_bill_detail.dim_bill_date_key=dim_bill_date.dim_bill_date_key
+--  INNER JOIN red_dw.dbo.fact_bill_detail_summary WITH(NOLOCK) ON fact_bill_detail_summary.master_fact_key = fact_bill_detail.master_fact_key
+-- WHERE dim_bill_date.bill_date BETWEEN '2021-05-01' AND '2022-04-30'
+--AND charge_type='time'
+--GROUP BY fact_bill_detail.client_code,fact_bill_detail.matter_number
+--) AS Revenue2021
+-- ON dim_matter_header_current.client_code=Revenue2021.client_code
+--AND dim_matter_header_current.matter_number=Revenue2021.matter_number
 
 WHERE 
 LOWER(ISNULL(dim_detail_outcome.outcome_of_case,'')) <> 'exclude from reports'
@@ -1006,7 +1339,7 @@ LOWER(ISNULL(dim_detail_outcome.outcome_of_case,'')) <> 'exclude from reports'
 AND dim_matter_header_current.matter_number <>'ML'
 AND dim_client.client_code  NOT IN ('00030645','95000C','00453737')
 AND dim_matter_header_current.reporting_exclusions=0
-AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-3,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
+AND (dim_matter_header_current.date_closed_case_management >= DATEADD(YEAR,-6,GETDATE()) OR dim_matter_header_current.date_closed_case_management IS NULL)
 
 --AND RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_current.master_matter_number='W15373-6977'
 END
