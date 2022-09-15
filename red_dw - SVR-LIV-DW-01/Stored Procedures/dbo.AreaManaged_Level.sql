@@ -2,8 +2,14 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+--EXEC [dbo].[AreaManaged_Level] 'jbonne'
+
 CREATE proc [dbo].[AreaManaged_Level] @Username nvarchar(100) as
 set nocount on 
+
+
+--DECLARE @Username AS NVARCHAR(100) = 'asteve'
 
 declare @Path NVARCHAR(1024)
 declare @Query nvarchar(max)
@@ -69,8 +75,8 @@ EXEC master.sys.SP_EXECUTESQL @Query2, N'@Path2 NVARCHAR(1024) OUTPUT',
     @Path2 = @Path2 OUTPUT  
 
 
-declare @FinalTbl table (Level varchar(100), mdx varchar(max), [sql] varchar(max), [default] varchar(100))
-insert into @FinalTbl values ('Individual', NULL, NULL, NULL)
+declare @FinalTbl table (Level varchar(100), mdx varchar(max), [sql] varchar(max), dax VARCHAR(max), [default] varchar(100))
+insert into @FinalTbl values ('Individual', NULL, NULL, NULL, NULL)
 insert into @FinalTbl (Level)
 
 select 
@@ -113,13 +119,14 @@ from #ADGroups
 IF OBJECT_ID('tempdb..#Individual') IS NOT NULL  
 DROP TABLE #Individual
 
-create table #Individual (mdx varchar(max), [sql] varchar(max))
-insert into  #Individual (mdx, [sql]) 
-exec AreaManaged_Individual @Username
+create table #Individual (mdx varchar(max), [sql] varchar(max), dax VARCHAR(max))
+insert into  #Individual (mdx, [sql], dax) 
+exec [AreaManaged_Individual] @Username
 
 update @FinalTbl 
 set mdx = #Individual.mdx,
-	[sql] = #Individual.[sql]
+	[sql] = #Individual.[sql],
+	[@FinalTbl].dax = #Individual.dax
 from @FinalTbl
 cross join #Individual 
 where Level = 'Individual'
@@ -131,13 +138,14 @@ where Level = 'Individual'
 IF OBJECT_ID('tempdb..#AreaManaged') IS NOT NULL 
 DROP TABLE #AreaManaged
 
-create table #AreaManaged (mdx varchar(max), [sql] varchar(max))
-insert into  #AreaManaged (mdx, [sql]) 
-exec AreaManaged_AreaManaged @Username
+create table #AreaManaged (mdx varchar(max), [sql] varchar(max), dax VARCHAR(MAX))
+insert into  #AreaManaged (mdx, [sql], dax) 
+exec [AreaManaged_AreaManaged] @Username
 
 update @FinalTbl 
 set mdx = #AreaManaged.mdx,
-	[sql] = #AreaManaged.[sql]
+	[sql] = #AreaManaged.[sql],
+	[@FinalTbl].dax = #AreaManaged.dax
 from @FinalTbl
 cross join #AreaManaged 
 where Level = 'Area Managed'
@@ -148,7 +156,8 @@ where Level = 'Area Managed'
 
 update @FinalTbl 
 set mdx = '[Dim Fed Hierarchy History].[Hierarchy].AllMembers',
-    [sql] = '(select dim_fed_hierarchy_history_key from dim_fed_hierarchy_history)'
+    [sql] = '(select dim_fed_hierarchy_history_key from dim_fed_hierarchy_history)',
+	dax = 'Firm'
 where Level = 'Firm'
 
 update @FinalTbl set [default] = 'Individual'
@@ -174,10 +183,11 @@ select distinct
 CAST(Level as varchar(100)) 'Level',
 CAST(mdx as nvarchar(max)) 'mdx',
 CAST(sql as nvarchar(max)) 'sql',
+CAST([@FinalTbl].dax AS NVARCHAR(MAX)) 'dax',
 CAST([default] as nvarchar(max)) 'default'
 from @FinalTbl where Level is not null
 
---exec AreaManaged_Level 'cball'
+--exec AreaManaged_Level 'asteve'
 
 --create table #user (
 --Level nvarchar(100),

@@ -2,7 +2,12 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+--EXEC [dbo].[AreaManaged_AreaManaged] 'asteve'
+
 CREATE procedure [dbo].[AreaManaged_AreaManaged] @Username varchar(100) as
+
+--DECLARE @Username AS NVARCHAR(100) = 'asteve'
 
 declare @UsernameTbl table (employeeid varchar(100), management_role_one varchar(100),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100))
 
@@ -38,7 +43,7 @@ and activeud = 1 and dss_current_flag = 'Y'
 													****************/
 
 if exists (select windowslogin from ds_mds_divergent_hierarchy where windowslogin = @Username) 
-begin select mdx_string,sql_string from ds_mds_divergent_hierarchy where windowslogin = @Username 
+begin select mdx_string,sql_string, ds_mds_divergent_hierarchy.dax_string from ds_mds_divergent_hierarchy where windowslogin = @Username 
 end
 else 
 
@@ -52,9 +57,10 @@ if not exists (select management_role_one from @UsernameTbl where management_rol
 
 
 
-declare @TMCodeTbl table (empcode varchar(max),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100)) 
+declare @TMCodeTbl table (empcode varchar(max), fed_code VARCHAR(MAX),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100)) 
 insert into @TMCodeTbl
-select dim_fed_hierarchy_history_key as 'empcode', 
+select dim_fed_hierarchy_history_key as 'empcode',
+	dim_fed_hierarchy_history.fed_code + CAST(dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS NVARCHAR(20))	AS fed_code,
 	rtrim(dim_fed_hierarchy_history.hierarchylevel4hist) team, 
 	rtrim(dim_fed_hierarchy_history.hierarchylevel3hist) department,
 	rtrim(dim_fed_hierarchy_history.hierarchylevel2hist) division, 
@@ -64,6 +70,7 @@ inner join @UsernameTbl u on u.team = dim_fed_hierarchy_history.hierarchylevel4h
 						 and u.department = dim_fed_hierarchy_history.hierarchylevel3hist
 						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
+
 /*
 
 -- Removed 27/01/2022 as wasn't working for people who now manage more than one team
@@ -109,16 +116,22 @@ select empcode + ',' as [text()]
 from @TMCodeTbl
 FOR XML PATH('')  
 )
+declare @TMDaxString varchar(max)
+set @TMDaxString = (
+select [@TMCodeTbl].fed_code + '|' as [text()]
+from @TMCodeTbl
+FOR XML PATH('')  
+)
 
-set @TMSqlString = stuff(@TMSqlString, len(@TMSqlString), 1, '') end
-
+set @TMSqlString = stuff(@TMSqlString, len(@TMSqlString), 1, '') 
+set @TMDaxString = stuff(@TMDaxString, len(@TMDaxString), 1, '') end
 
 
 --HSD
 if exists (select management_role_one from @UsernameTbl where management_role_one = 'HoSD') begin
-declare @HSDCodeTbl table (empcode varchar(max)) 
+declare @HSDCodeTbl table (empcode varchar(max), fed_code VARCHAR(MAX)) 
 insert into @HSDCodeTbl
-select distinct dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
+select distinct dim_fed_hierarchy_history_key as 'empcode', dim_fed_hierarchy_history.fed_code + CAST(dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS NVARCHAR(20)) from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.department = dim_fed_hierarchy_history.hierarchylevel3hist
 						 and u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
@@ -129,15 +142,21 @@ select empcode + ',' as [text()]
 from @HSDCodeTbl
 FOR XML PATH('')  
 )
+declare @HSDDaxString varchar(max)
+set @HSDDaxString = (
+select [@HSDCodeTbl].fed_code + '|' as [text()]
+from @HSDCodeTbl
+FOR XML PATH('')  
+)
 
-set @HSDSqlString = stuff(@HSDSqlString, len(@HSDSqlString), 1, '') end
-
+set @HSDSqlString = stuff(@HSDSqlString, len(@HSDSqlString), 1, '') 
+set @HSDDaxString = stuff(@HSDDaxString, len(@HSDDaxString), 1, '') end
 
 --Director
 if exists (select management_role_one from @UsernameTbl where management_role_one = 'Director') begin
-declare @DirCodeTable table (empcode varchar(max)) 
+declare @DirCodeTable table (empcode varchar(max), fed_code VARCHAR(MAX)) 
 insert into @DirCodeTable
-select distinct dim_fed_hierarchy_history_key as 'empcode' from dim_fed_hierarchy_history 
+select distinct dim_fed_hierarchy_history_key as 'empcode', dim_fed_hierarchy_history.fed_code + CAST(dim_fed_hierarchy_history.dim_fed_hierarchy_history_key AS NVARCHAR(20)) AS fed_code from dim_fed_hierarchy_history 
 inner join @UsernameTbl u on u.division = dim_fed_hierarchy_history.hierarchylevel2hist
 						 and activeud = 1
 
@@ -147,8 +166,15 @@ select empcode + ',' as [text()]
 from @DirCodeTable
 FOR XML PATH('')  
 )
+declare @DirDaxString varchar(max)
+set @DirDaxString = (
+select [@DirCodeTable].fed_code + '|' as [text()]
+from @DirCodeTable
+FOR XML PATH('')  
+)
 
-set @DirSqlString = stuff(@DirSqlString, len(@DirSqlString), 1, '') end
+set @DirSqlString = stuff(@DirSqlString, len(@DirSqlString), 1, '') 
+set @DirDaxString = stuff(@DirDaxString, len(@DirDaxString), 1, '') end
 
 end
 /**********
@@ -168,7 +194,8 @@ if not exists (select management_role_one from @UsernameTbl where management_rol
 																	cast(division as varchar(max))   + ']&[' +
 																	cast(firm as varchar(max)) + ']', ', ')
 	+ ' } ,  [Dim Fed Hierarchy History].[Hierarchy].[Display Name])'  as mdx,
-	@TMSqlString as [sql]
+	@TMSqlString as [sql],
+	@TMDaxString as dax
 	
 	from (	select distinct team, department, division, firm
 			from @TMCodeTbl ) TMCodeTbl 
@@ -183,7 +210,8 @@ select distinct
 																	   department + ']&[' +
 																	   division   + ']&[' +
 																	   firm + '],  [Dim Fed Hierarchy History].[Hierarchy].[Display Name])'  as mdx,
-@HSDSqlString as [sql]
+@HSDSqlString as [sql],
+@HSDDaxString		AS dax
 from @UsernameTbl end
 
 --Director
@@ -192,7 +220,8 @@ select distinct
 'descendants([Dim Fed Hierarchy History].[Hierarchy].[Business Line].&['+
 																	   division   + ']&[' +
 																	   firm + '],  [Dim Fed Hierarchy History].[Hierarchy].[Display Name])'  as mdx,
-@DirSqlString as [sql]
+@DirSqlString as [sql],
+@DirDaxString		AS dax
 from @UsernameTbl end
 
 end 
