@@ -296,7 +296,7 @@ EXEC sp_executesql @sql
                   FROM #FedCodeList
               )
           AND hierarchylevel2 = 'Legal Ops - LTA'
-          AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106' )
+          AND dim_matter_worktype.work_type_code NOT IN ( '1114', '1143', '1101', '1077', '1106', '4000', '2048', '2038')
 		  AND ISNULL(exclude_from_exceptions_reports, '') <> 'Yes'
           AND reporting_exclusions = 0
           AND ISNULL(dim_detail_property.[commercial_bl_status], '') <> 'Pending   
@@ -373,4 +373,5 @@ GROUP BY	ISNULL(nofocases.Exfeearrangement, 0) + ISNULL(nofocases.ExFixedfeeamou
 			ISNULL(fact_finance_summary.revenue_and_disb_estimate_net_of_vat,fact_finance_summary.commercial_costs_estimate)
 
 			END;
+
 GO
