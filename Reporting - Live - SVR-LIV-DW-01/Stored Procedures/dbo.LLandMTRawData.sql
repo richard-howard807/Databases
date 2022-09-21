@@ -17,7 +17,7 @@ AS
   
 SET NOCOUNT ON
 
-----Testing
+--Testing
 --DECLARE @Team  AS NVARCHAR(MAX)  = (SELECT STRING_AGG(CAST(team_data.hierarchylevel4hist AS NVARCHAR(MAX)), '|')	AS teams
 --									FROM (
 --									SELECT DISTINCT hierarchylevel4hist
@@ -252,7 +252,7 @@ SELECT
 	--	ELSE  
 	--		dim_detail_core_details.coop_target_settlement_date  
 	--END																	AS [Target Settlement Date ], 
-	dim_detail_audit.settled_within_initial_tsd			AS [Initial Target Settlement Date],
+	dim_detail_core_details.initial_target_settlement_date			AS [Initial Target Settlement Date],
 	dim_detail_core_details.coop_target_settlement_date						AS [Target Settlement Date ], 
 	dim_detail_client.msg_likelihood_of_tsd_movement		AS [Likelihood of TSD Movement],
 
