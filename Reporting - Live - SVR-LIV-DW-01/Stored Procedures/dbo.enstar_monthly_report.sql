@@ -54,7 +54,8 @@ SELECT
 	, dim_detail_core_details.present_position			AS [Current Case Status]
 	, dim_detail_core_details.delegated		AS [Delegated/Non-Delegated]
 	, dim_detail_core_details.referral_reason		AS [Reason for Litigation]
-	, dim_detail_core_details.was_litigation_avoidable			AS [Litigation Avoidable]
+	--, dim_detail_core_details.was_litigation_avoidable			AS [Litigation Avoidable]
+	, dim_detail_core_details.zurich_grp_rmg_was_litigation_avoidable		AS [Litigation Avoidable]
 	, dim_detail_practice_area.learning_for_pro			AS [Learning for Pro]
 	, CAST(dim_detail_court.date_of_trial AS DATE)			AS [Trial Date]
 	, fact_detail_reserve_detail.asbestos_disease_perc_of_contribution_from_insurer_client_dmgs	AS [Mercantile % Contribution to Damages]
@@ -63,7 +64,18 @@ SELECT
 	, dim_detail_practice_area.private_treatment_claimed		AS [Private Treatement Claimed]
 	, dim_detail_practice_area.indemnity_order_for_treatment_signed_meso		AS [Indemnity Order for Treatment Signed (Meso)]
 	, dim_detail_practice_area.potential_recovery_opportunity		AS [Potential Recovery Opportunity]
-	, NULL		AS [Successful Recovery Made]
+	, CASE	
+		WHEN dim_detail_claim.date_recovery_concluded IS NOT NULL THEN
+			CASE
+				WHEN ISNULL(fact_detail_recovery_detail.recovery_claimants_damages_via_third_party_contribution, 0) + ISNULL(fact_detail_recovery_detail.recovery_defence_costs_from_claimant, 0)
+					+ ISNULL(fact_detail_recovery_detail.recovery_claimants_costs_via_third_party_contribution, 0) + ISNULL(fact_detail_recovery_detail.recovery_defence_costs_via_third_party_contribution, 0) > 0 THEN
+					'Yes'
+				ELSE
+					'No'
+			END 
+		ELSE 
+			'n/a' 
+	  END								AS [Successful Recovery Made]
 	, fact_detail_reserve_detail.damages_reserve		AS [Damages Reserve]
 	, fact_detail_reserve_detail.claimant_costs_reserve_current		AS [Claimant Costs Reserve]
 	, fact_detail_reserve_detail.defence_costs_reserve			AS [Defence Costs Reserve]
@@ -91,6 +103,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_detail_court.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
 		ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
+		ON fact_detail_recovery_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #last_reserve_update
 		ON #last_reserve_update.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 			AND #last_reserve_update.rw_num = 1
