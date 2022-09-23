@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 --SET QUOTED_IDENTIFIER ON
 --SET ANSI_NULLS ON
 --GO
@@ -22,23 +24,21 @@ CREATE PROCEDURE [audit].[ACInternalAudits]
 ( @Template AS NVARCHAR(MAX)
 , @AuditYear AS INT
 )
-as
+AS
 
 
 --DECLARE @Template AS NVARCHAR(MAX)
 --, @AuditYear AS INT
---, @hsd_director AS NVARCHAR(MAX);
 --SET @Template='August 21 MS Audits|Claims Audit |Commercial Recoveries Audit |Costs Audit |LTA (No CDD) Audit |LTA Audit |MIB|NHSR|New Starter Audit |PREDiCT Audit |Real Estate Audit |Zurich TT Audit ';
 --SET @AuditYear='2023';
---SET @hsd_director = '';-- '80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|EA6187FC-B92F-4A39-9FC8-7DF9572B1EB8|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|B0CA9C28-B845-4B22-B3D9-972051F5DA72|DFD60922-F31F-4A76-AF90-C8A5E53B6350|DFD60922-F31F-4A76-AF90-C8A5E53B6350|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|463720C0-6995-4D1B-A296-3E6AEA43A32F|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|463720C0-6995-4D1B-A296-3E6AEA43A32F|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|463720C0-6995-4D1B-A296-3E6AEA43A32F|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|65A08A7D-0242-4313-8DEA-8CE7E7C69170|DFD60922-F31F-4A76-AF90-C8A5E53B6350|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|EE5B88B9-DBE7-422A-9911-12661FC930A3|80B7D2FD-FE8B-4EC6-8D30-3B0A18C41F1D|B0CA9C28-B845-4B22-B3D9-972051F5DA72|65A08A7D-0242-4313-8DEA-8CE7E7C69170|D334CEA3-0FA4-4888-BE08-84B7F8D5A05D|DFD60922-F31F-4A76-AF90-C8A5E53B6350|EE5B88B9-DBE7-422A-9911-12661FC930A3'
 
 
 DROP TABLE IF EXISTS #Template;
-DROP TABLE IF EXISTS #hsd_director;
 DROP TABLE IF EXISTS #Audits;
 DROP TABLE IF EXISTS #EmployeeDates;
 DROP TABLE IF EXISTS #exclude_data;
 drop table if exists #Audits_Calculated;
+
 
 SELECT ListValue  INTO #Template  FROM Reporting.dbo.[udt_TallySplit]('|', @Template);
 
@@ -233,6 +233,7 @@ AND dim_matter_header_current.reporting_exclusions=0
 
 				WHERE dim_ac_audits.created_at >='2021-09-01'
 				and dim_ac_audits.dim_auditee1_hierarchy_history_key <> 0 
+				AND ISNULL(dim_ac_audits.status, '') <> 'Deleted'
 				--AND dim_date.fin_year = @AuditYear
 		) src
 
@@ -314,7 +315,9 @@ AND dim_matter_header_current.reporting_exclusions=0
 					ON fact_child_detail.dim_parent_key = dim_parent_detail.dim_parent_key
 				INNER JOIN red_dw.dbo.dim_date
 					ON dim_date.calendar_date = CAST(dim_parent_detail.nhs_audit_date AS DATE)
-				LEFT OUTER JOIN
+				LEFT OUTER JOIN #temp_nhs_scoring
+				 ON #temp_nhs_scoring.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+				 LEFT OUTER JOIN
 				(
 					SELECT dim_parent_detail.dim_parent_key,
 						   dim_child_detail.nhs_auditee_2,
@@ -656,36 +659,48 @@ from #Audits
 
 
 
-
-
-select    #exclude_data.employeeid
+SELECT    #exclude_data.employeeid
 		, #exclude_data.Division
 		, #exclude_data.Department
 		, #exclude_data.Team
 		, #exclude_data.Name
-		,  string_agg(Audits.Auditor, '<br>') [Auditor]
-		, string_agg(Audits.[Auditee Poistion],'<br>') [Auditee Poistion]
-		, sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) as [Audits Completed]
-		, sum(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 end) AS [Audits Passed]
-		, case when sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) > 0 then sum(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 end) / sum(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) else null end [audits_passed_perc]
-		, string_agg(Audits.[Client Code], '<br>') [Client Code]
-		, string_agg(Audits.[Matter Number], '<br>') [Matter Number]
-		, string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') [Date]
-		, string_agg(Audits.Status, '<br>') [Status]
+		,  STRING_AGG(Audits.Auditor, '<br>') [Auditor]
+		, STRING_AGG(Audits.[Auditee Poistion],'<br>') [Auditee Poistion]
+		, SUM(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) AS [Audits Completed]
+		, SUM(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 END) AS [Audits Passed]
+		, CASE WHEN SUM(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) > 0 THEN SUM(CASE WHEN Audits.Status='Pass' THEN 1 ELSE 0 END) / SUM(CASE WHEN Audits.Date IS NOT NULL THEN 1 ELSE 0 END) ELSE NULL END [audits_passed_perc]
+		, STRING_AGG(Audits.[Client Code], '<br>') [Client Code]
+		, STRING_AGG(Audits.[Matter Number], '<br>') [Matter Number]
+		, STRING_AGG( FORMAT (CAST(Audits.Date AS DATE), 'dd/MM/yyyy') , '<br>') [Date]
+		, STRING_AGG(Audits.Status, '<br>') [Status]
 	--	, Audits.Template
 	--	, #exclude_data.audit_year [Audit Year]
 		, #exclude_data.employeestartdate
 	--	, Audits.Date audit_date
-		, 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-' + #exclude_data.max_quarter_month [Audit Quarter]
-		, iif(string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') IS NULL and leftdate is not null and #exclude_data.exclude_flag is null, 1, #exclude_data.exclude_flag)  exclude_flag
-		, iif(string_agg( format (cast(Audits.Date as date), 'dd/MM/yyyy') , '<br>') is NULL and leftdate is not null and #exclude_data.exclude_flag is null, 'Left ' + cast(format (cast(leftdate as date), 'dd/MM/yyyy') as varchar(12)), #exclude_data.reason) reason
-		-- string_agg(Audits.Status, '<br>') Audits.audit_id
-		
-from #exclude_data
-left outer join #Audits_Calculated Audits on Audits.auditee_emp_key = #exclude_data.employeeid and Audits.calculated_fin_qtr = #exclude_data.fin_quarter_no
- --where #exclude_data.employeeid = '440C1838-A18D-4592-B8AB-F196F1094221'
+		, 'Q' + CAST(#exclude_data.fin_quarter_no AS VARCHAR(1)) + ' ' + #exclude_data.min_quarter_month + '-' + #exclude_data.max_quarter_month [Audit Quarter]
+		, CASE
+			WHEN #exclude_data.reason IS NULL THEN  
+				NULL
+			WHEN STRING_AGG( FORMAT (CAST(Audits.Date AS DATE), 'dd/MM/yyyy') , '<br>') IS NULL AND leftdate IS NOT NULL AND #exclude_data.exclude_flag IS NULL THEN
+				1
+			ELSE
+				#exclude_data.exclude_flag
+		  END															AS exclude_flag
+		, CASE 
+			WHEN #exclude_data.reason IS NULL THEN  
+				NULL
+			WHEN STRING_AGG( FORMAT (CAST(Audits.Date AS DATE), 'dd/MM/yyyy') , '<br>') IS NULL AND leftdate IS NOT NULL AND #exclude_data.exclude_flag IS NULL THEN
+				'Left ' + CAST(FORMAT (CAST(leftdate AS DATE), 'dd/MM/yyyy') AS VARCHAR(12)) 
+			ELSE
+				#exclude_data.reason
+		  END			AS reason
+			-- string_agg(Audits.Status, '<br>') Audits.audit_id
+--SELECT *	
+FROM #exclude_data
+LEFT OUTER JOIN #Audits_Calculated Audits ON Audits.auditee_emp_key = #exclude_data.employeeid AND Audits.calculated_fin_qtr = #exclude_data.fin_quarter_no
+ --where #exclude_data.employeeid = '0AD330B0-436E-4971-9529-CFFA0F5B55AE'
 --where name = 'Julie Byrne'
-group by 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude_data.min_quarter_month + '-'
+GROUP BY 'Q' + CAST(#exclude_data.fin_quarter_no AS VARCHAR(1)) + ' ' + #exclude_data.min_quarter_month + '-'
        + #exclude_data.max_quarter_month
        , #exclude_data.employeeid
        , #exclude_data.Division
@@ -699,14 +714,7 @@ group by 'Q' + cast(#exclude_data.fin_quarter_no as varchar(1)) + ' ' + #exclude
        , #exclude_data.reason
 	   , #exclude_data.leftdate
     --   , Audits.audit_id
-order by #exclude_data.employeeid--, Audits.audit_id;
-
-
-
-
-
-
-
+ORDER BY #exclude_data.employeeid--, Audits.audit_id;
 
 
 GO
