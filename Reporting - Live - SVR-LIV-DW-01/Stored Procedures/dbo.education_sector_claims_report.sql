@@ -56,8 +56,10 @@ WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.date_opened_case_management BETWEEN @start_date AND @end_date
 	AND dim_fed_hierarchy_history.hierarchylevel2hist = 'Legal Ops - Claims'
+	AND dim_matter_header_current.master_client_code NOT IN ('N1001', '30645')
 	AND (
-		dim_client.sub_sector = 'Education                               '
+		dim_client.sector = 'Education                               '
+		OR dim_client.sub_sector = 'Education                               '
 		OR dim_detail_core_details.insured_sector = 'Education'
 		OR LOWER(dim_matter_header_current.matter_description) LIKE '%university%'
 		OR LOWER(dim_matter_header_current.matter_description) LIKE '%college%'
