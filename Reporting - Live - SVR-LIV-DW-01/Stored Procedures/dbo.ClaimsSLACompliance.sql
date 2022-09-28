@@ -171,7 +171,7 @@ SELECT
 	, CASE
 		WHEN ClientSLAsNHSR.inverted_initial_rule = 'Yes' THEN
 			NULL
-		WHEN ClientSLAsNHSR.nhs_instruction_type IS NOT NULL THEN
+		WHEN ClientSLAsNHSR.nhs_instruction_type IS NOT NULL AND ClientSLAsNHSR.initial_report_working_days_flag IS NULL THEN
 			#nhs_first_report_lifecycle.nhs_days_to_first_report_lifecycle
 		ELSE 
 			fact_detail_elapsed_days.days_to_first_report_lifecycle
@@ -231,9 +231,9 @@ SELECT
 				WHEN dim_detail_core_details.ll00_have_we_had_an_extension_for_the_initial_report = 'Yes' THEN
 					date_initial_report_due
 				WHEN dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers IS NOT NULL THEN 
-					[dbo].[AddWorkDaysToDate](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10))
+					[dbo].[AddWorkDaysToDateExclBH](CAST(dim_detail_core_details.grpageas_motor_date_of_receipt_of_clients_file_of_papers AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10))
 				WHEN date_initial_report_due IS NULL THEN 
-					[dbo].[AddWorkDaysToDate](CAST(date_opened_case_management AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10)) 
+					[dbo].[AddWorkDaysToDateExclBH](CAST(date_opened_case_management AS DATE),COALESCE(ClientSLAs.[Initial Report SLA (days)], ClientSLAsNHSR.initial_report_sla_days, 10)) 
 				ELSE 
 					date_initial_report_due 
 				END
@@ -625,6 +625,17 @@ FROM red_dw.dbo.fact_dimension_main
 		ON #ClientReportDates.master_client_code = dim_matter_header_current.master_client_code AND #ClientReportDates.master_matter_number = dim_matter_header_current.master_matter_number
 		LEFT JOIN red_Dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	LEFT OUTER JOIN (
+						SELECT
+							 dim_matter_header_current.dim_matter_header_curr_key
+						FROM red_dw.dbo.dim_matter_header_current
+							LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+								ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+						WHERE
+							dim_matter_header_current.master_client_code = 'H00001'
+							AND dim_matter_worktype.work_type_code = '1604'
+					) AS motor_recoveries
+		ON motor_recoveries.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE 
 	reporting_exclusions=0
 	AND hierarchylevel2hist='Legal Ops - Claims'
@@ -663,6 +674,7 @@ WHERE
 				1
 		END 
 		) = 1 --exclude Makerstudy matters with instruction type MSG Project 3
+	AND motor_recoveries.dim_matter_header_curr_key IS NULL --exclude Motor recovery files on H00001 client code
 END
 
 GO
