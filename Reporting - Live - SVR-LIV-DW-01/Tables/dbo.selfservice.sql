@@ -28,7 +28,7 @@ CREATE TABLE [dbo].[selfservice]
 [Matter Type] [char] (40) COLLATE Latin1_General_BIN NULL,
 [Matter Type Code] [char] (8) COLLATE Latin1_General_BIN NULL,
 [work_type_group] [char] (40) COLLATE Latin1_General_BIN NULL,
-[Matter Group] [varchar] (17) COLLATE Latin1_General_CI_AS NOT NULL,
+[Matter Group] [nvarchar] (255) COLLATE Latin1_General_CI_AS NOT NULL,
 [Instruction Type] [char] (60) COLLATE Latin1_General_BIN NULL,
 [Client Name] [char] (80) COLLATE Latin1_General_BIN NULL,
 [Client Group Name] [varchar] (40) COLLATE Latin1_General_BIN NULL,
@@ -108,6 +108,7 @@ CREATE TABLE [dbo].[selfservice]
 [Defence Costs Reserve Current] [numeric] (13, 2) NULL,
 [Other Defendant's Costs Reserve (Net)] [numeric] (13, 2) NULL,
 [Disease Total Estimated Settlement Value ] [numeric] (13, 2) NULL,
+[AXA Claim Strategy] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [Outcome of Case] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Repudiated/Paid ] [varchar] (10) COLLATE Latin1_General_CI_AS NULL,
 [Settlement basis] [varchar] (255) COLLATE Latin1_General_BIN NULL,
@@ -259,6 +260,8 @@ CREATE TABLE [dbo].[selfservice]
 [Billing Arrangement] [nvarchar] (64) COLLATE Latin1_General_BIN NULL,
 [reporting_exclusions] [smallint] NOT NULL,
 [Total Write Off Value] [numeric] (38, 2) NULL,
-[Local Authority Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
+[Local Authority Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
+[MS Matter Group] [char] (40) COLLATE Latin1_General_BIN NULL,
+[Tesco File Logic] [varchar] (5) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

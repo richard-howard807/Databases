@@ -43,6 +43,10 @@ GO
 -- MT 20220607 added Revenue, Billed Hours, Chargeable Hours, Disbursements for 2022/23
 -- ES 20220705 added total write off value
 -- JB 20220715 added local authority name
+-- ES 20220715 added axa claim strategy, #157785
+-- MT 20220901 added additional logic to Matter Group #165735 
+-- JB 20220912 added department_name/MS Matter Group column as per Bob's adhoc request
+-- JB 20221006 #171684 added tesco file logic column 
 
 CREATE PROCEDURE  [dbo].[Self Service]
 AS
@@ -357,7 +361,8 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_matter_worktype.[work_type_name] AS [Matter Type]
        ,dim_matter_worktype.[work_type_code] AS [Matter Type Code]
 	   ,dim_matter_worktype.work_type_group
-       ,CASE
+       ,
+ CASE
            WHEN dim_matter_worktype.[work_type_name] IN ('NHSLA - Breach of DPA','NHSLA - Breach of HRA') THEN     
 				'PL All'
 		   WHEN dim_matter_worktype.[work_type_name] LIKE '%NHSLA%' THEN
@@ -368,8 +373,6 @@ DROP TABLE IF EXISTS #Disbursements
                'PL Pol'
            WHEN dim_matter_worktype.[work_type_name] LIKE 'PL - OL%' THEN
                'PL OL'
-           WHEN dim_matter_worktype.[work_type_name] LIKE 'Prof Risk%' THEN
-               'Prof Risk'
            WHEN dim_matter_worktype.[work_type_name] LIKE 'EL %' THEN
                'EL'
            WHEN dim_matter_worktype.[work_type_name] LIKE 'Motor%' THEN
@@ -392,8 +395,9 @@ DROP TABLE IF EXISTS #Disbursements
                'Claims Handling'
            WHEN dim_matter_worktype.[work_type_name] LIKE 'Health and %' THEN
                'Health and Safety'
-           ELSE
-               'Other'
+	
+		  ELSE ISNULL([MatterGroupList].[Matter Group],  'Other')
+      
        END [Matter Group]
        ,dim_instruction_type.instruction_type AS [Instruction Type]
        ,dim_client.client_name AS [Client Name]
@@ -549,7 +553,9 @@ DROP TABLE IF EXISTS #Disbursements
                fact_finance_summary.[other_defendants_costs_reserve]
        END AS [Other Defendant's Costs Reserve (Net)]
        ,fact_detail_future_care.disease_total_estimated_settlement_value AS [Disease Total Estimated Settlement Value ]
-       ,RTRIM(dim_detail_outcome.[outcome_of_case]) AS [Outcome of Case]
+	   ,dim_detail_claim.[axa_claim_strategy] AS [AXA Claim Strategy]
+	   ,RTRIM(dim_detail_outcome.[outcome_of_case]) AS [Outcome of Case]
+	   
 	   ,
 
 CASE WHEN (outcome_of_case LIKE 'Discontinued%') OR (outcome_of_case IN
@@ -817,6 +823,15 @@ WHEN
        ,ISNULL(dim_matter_header_current.reporting_exclusions, 0) reporting_exclusions
 	   , writeoff.Value AS [Total Write Off Value]
 	   , dim_detail_core_details.local_authority_name		AS [Local Authority Name]
+	   , dim_department.department_name		AS [MS Matter Group]
+	   , CASE 
+			WHEN dim_matter_header_current.master_client_code = 'T3003' OR (dim_matter_header_current.master_client_code = 'A3003' AND dim_detail_claim.name_of_instructing_insurer = 'Tesco Underwriting (TU)') THEN
+				'Tesco'
+			WHEN dim_matter_header_current.master_client_code = 'A3003' THEN
+				'Ageas'
+			ELSE
+				NULL	
+         END				AS [Tesco File Logic]
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -1098,6 +1113,10 @@ LEFT OUTER JOIN #HrsBilled AS HrsBilled
 				WHERE fact_write_off.write_off_type IN ('WA','NC','BA','P')
 				GROUP BY fact_write_off.master_fact_key) AS writeoff
  ON writeoff.master_fact_key = fact_dimension_main.master_fact_key
+
+
+  LEFT JOIN Reporting.[dbo].[MatterGroupList]
+	   ON dim_matter_worktype.[work_type_name] = [MatterGroupList].[Matter Type] COLLATE DATABASE_DEFAULT
 
 
 WHERE dim_matter_header_current.matter_number <> 'ML'
