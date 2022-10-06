@@ -42,6 +42,8 @@ WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'WB36668'
 	AND dim_matter_header_current.date_closed_case_management IS NULL
+ORDER BY
+	dim_matter_header_current.date_opened_case_management DESC	
 	
 
 END 
