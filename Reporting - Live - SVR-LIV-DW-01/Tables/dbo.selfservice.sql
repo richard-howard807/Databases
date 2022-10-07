@@ -262,6 +262,7 @@ CREATE TABLE [dbo].[selfservice]
 [Total Write Off Value] [numeric] (38, 2) NULL,
 [Local Authority Name] [nvarchar] (255) COLLATE Latin1_General_BIN NULL,
 [MS Matter Group] [char] (40) COLLATE Latin1_General_BIN NULL,
-[Tesco File Logic] [varchar] (5) COLLATE Latin1_General_CI_AS NULL
+[Tesco File Logic] [varchar] (5) COLLATE Latin1_General_CI_AS NULL,
+[VAT non-comp] [numeric] (16, 2) NULL
 ) ON [PRIMARY]
 GO

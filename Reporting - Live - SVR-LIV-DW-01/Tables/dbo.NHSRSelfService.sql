@@ -271,6 +271,7 @@ CREATE TABLE [dbo].[NHSRSelfService]
 [reporting_exclusions] [bit] NULL,
 [Revenue] [numeric] (38, 2) NULL,
 [Recovery Rate] [numeric] (38, 6) NULL,
-[Total Write Off Value] [numeric] (38, 2) NULL
+[Total Write Off Value] [numeric] (38, 2) NULL,
+[VAT non-comp] [numeric] (16, 2) NULL
 ) ON [PRIMARY]
 GO

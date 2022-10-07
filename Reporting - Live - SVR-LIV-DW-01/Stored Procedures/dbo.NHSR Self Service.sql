@@ -997,6 +997,7 @@ GETDATE() AS update_time,
 	, [RevenueAmount].bill_amount AS [Revenue]
 	, CASE WHEN ISNULL([RevenueAmount].bill_amount,0)=0 OR ISNULL(BilledHours.billed_hours,0)=0 THEN NULL ELSE ISNULL([RevenueAmount].bill_amount,0)/ISNULL(BilledHours.billed_hours,0) END AS [Recovery Rate]
 	, writeoff.Value AS [Total Write Off Value]
+	, fact_finance_summary.vat_non_comp		AS [VAT non-comp]
     ---------------------------------------------------
   INTO Reporting.dbo.NHSRSelfService
     --into generaldatafile20180810

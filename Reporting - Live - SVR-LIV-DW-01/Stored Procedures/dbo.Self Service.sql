@@ -832,6 +832,7 @@ WHEN
 			ELSE
 				NULL	
          END				AS [Tesco File Logic]
+		, fact_finance_summary.vat_non_comp		AS [VAT non-comp]
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
