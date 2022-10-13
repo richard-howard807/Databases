@@ -72,7 +72,8 @@ CREATE TABLE [onetoone].[user_stats]
 [Debt_31_90_Days] [numeric] (13, 2) NULL,
 [Debt_90_Days] [numeric] (13, 2) NULL,
 [Utilisation_Percent] [float] NULL,
-[Actual_chargable_hours] [numeric] (38, 6) NULL
+[Actual_chargable_hours] [numeric] (38, 6) NULL,
+[Days_in_the_office] [int] NULL
 ) ON [WRK_TAB]
 GO
 GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL - DataReader access to DW-01 For Software Tester]
