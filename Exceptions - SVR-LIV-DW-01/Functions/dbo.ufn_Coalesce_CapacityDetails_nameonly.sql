@@ -56,4 +56,9 @@ as BEGIN
 
 
 
+
+GO
+GRANT EXECUTE ON  [dbo].[ufn_Coalesce_CapacityDetails_nameonly] TO [SBC\SQL - DataReader on SVR-LIV-DWH-01]
+GO
+GRANT EXECUTE ON  [dbo].[ufn_Coalesce_CapacityDetails_nameonly] TO [ssrs_dynamicsecurity]
 GO

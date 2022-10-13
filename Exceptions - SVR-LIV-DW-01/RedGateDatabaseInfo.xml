@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <DatabaseInformation Version="3">
   <ScriptFileEncoding>UTF8</ScriptFileEncoding>
-  <DefaultCollation>Latin1_General_BIN</DefaultCollation>
+  <DefaultCollation>Latin1_General_CI_AS</DefaultCollation>
   <DefaultSchema>dbo</DefaultSchema>
   <DefaultUser>dbo</DefaultUser>
   <DefaultFilegroup>PRIMARY</DefaultFilegroup>
@@ -55,9 +55,6 @@
       <Sequence>Sequences</Sequence>
       <SearchPropertyList>Search Property Lists</SearchPropertyList>
       <SecurityPolicy>Security Policies</SecurityPolicy>
-      <ExternalFileFormat>External Resources\External File Formats</ExternalFileFormat>
-      <ExternalDataSource>External Resources\External Data Sources</ExternalDataSource>
-      <ExternalTable>Tables\External Tables</ExternalTable>
     </Prefixes>
     <DataWriteAllFilesInOneDirectory>True</DataWriteAllFilesInOneDirectory>
   </WriteToFileOptions>
