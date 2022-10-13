@@ -38,6 +38,8 @@ CREATE TABLE [dbo].[DocumentImportFailure]
 [AuditIdFileMove] [int] NULL,
 [DirectoryId] [int] NULL,
 [FailureDate] [datetime] NULL CONSTRAINT [DF__DocumentSb__Inser__00200768] DEFAULT (getdate()),
-[MSSecurityOption] [bigint] NULL
+[MSSecurityOption] [bigint] NULL,
+[FolderGUID] [uniqueidentifier] NULL,
+[FolderName] [nvarchar] (1000) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO

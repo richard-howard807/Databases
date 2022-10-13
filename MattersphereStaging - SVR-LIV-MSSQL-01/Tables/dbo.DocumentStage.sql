@@ -37,7 +37,9 @@ CREATE TABLE [dbo].[DocumentStage]
 [AuditIdDataStage] [int] NULL,
 [AuditIdFileMove] [int] NULL,
 [DirectoryId] [int] NULL,
-[MSSecurityOption] [bigint] NULL
+[MSSecurityOption] [bigint] NULL,
+[FolderGUID] [uniqueidentifier] NULL,
+[FolderName] [nvarchar] (1000) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO
 CREATE NONCLUSTERED INDEX [IX_DocumentStage_IsCurrent_Covering] ON [dbo].[DocumentStage] ([IsCurrent], [StatusID]) INCLUDE ([AlternateDocDescription], [CreationDate], [DirectoryId], [DocFileName], [DocumentExtension], [DocumentNumber], [DocumentTitle], [ModifiedDate], [MSClientID], [MSFileID], [MSSecurityOption]) ON [PRIMARY]

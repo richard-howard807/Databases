@@ -38,7 +38,9 @@ CREATE TABLE [dbo].[DocumentImportSuccess]
 [AuditIdFileMove] [int] NULL,
 [DirectoryId] [int] NULL,
 [SuccessDate] [datetime] NULL CONSTRAINT [DF__DocumentSa__Inser__00200768] DEFAULT (getdate()),
-[MSSecurityOption] [bigint] NULL
+[MSSecurityOption] [bigint] NULL,
+[FolderGUID] [uniqueidentifier] NULL,
+[FolderName] [nvarchar] (1000) COLLATE Latin1_General_CI_AS NULL
 ) ON [PRIMARY]
 GO
 CREATE NONCLUSTERED INDEX [IX_DocumentImportSuccess_IsCurrent_InsertDate] ON [dbo].[DocumentImportSuccess] ([IsCurrent], [InsertDate]) INCLUDE ([DocFileName], [FileID]) ON [PRIMARY]
