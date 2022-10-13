@@ -28,6 +28,7 @@ Current Version:	Initial Create
 -- JB 11/08/2022 #162239, added LL reserve and PREDiCT fields from Large Loss Prediction Model MI report 
 -- ES 22/08/2022, A-M requested the data source go back 6 years for insurance client dashboards rather than 3 years
 -- JB 30/08/2022, #164996 added new revenue/hours/disb years. Changed them to pivoted temp tables to avoid multiple joins
+-- JB 22/09/2022, #169375 changed Revenue column to look at bill_amount in fact_bill_activity
 ====================================================
 
 */
@@ -42,8 +43,21 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
 
 ----------------------------revenue----------------------------------------------------------------------
+DROP TABLE IF EXISTS #matter_revenue
 DROP TABLE IF EXISTS #Revenue
 
+----------------------Total Revenue per matter-----------------------------------------------------------
+SELECT fact_bill_activity.dim_matter_header_curr_key, SUM(fact_bill_activity.bill_amount) Revenue
+INTO #matter_revenue
+FROM red_dw.dbo.fact_bill_activity WITH(NOLOCK)
+INNER JOIN red_dw.dbo.dim_matter_header_current
+	ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_activity.dim_matter_header_curr_key
+WHERE ISNULL(dim_matter_header_current.date_closed_case_management, '9999-12-31') >= DATEADD(YEAR,-6,GETDATE())
+GROUP BY fact_bill_activity.dim_matter_header_curr_key
+
+
+
+----------------------Revenue per matter and fin year-----------------------------------------------------------
 		SELECT PVIOT.dim_matter_header_curr_key,
 			   PVIOT.[2023],
 			   PVIOT.[2022],
@@ -399,7 +413,8 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 		, fact_finance_summary.[total_paid] AS [Total Paid]
 		, fact_finance_summary.total_amount_bill_non_comp AS [Total Amount Billed]
 		, fact_finance_summary.vat_non_comp AS [VAT Non-comp]
-		, fact_finance_summary.[defence_costs_billed] AS [Revenue]
+		--, fact_finance_summary.[defence_costs_billed] AS [Revenue]
+		, #matter_revenue.Revenue		 AS [Revenue]
 		, fact_finance_summary.[disbursements_billed] AS [Disbursements Billed]
 		, fact_finance_summary.wip AS [WIP]
 		, fact_finance_summary.vat_billed AS [VAT]
@@ -1215,7 +1230,8 @@ LEFT OUTER JOIN (SELECT fileID
 --GROUP BY master_fact_key) AS [HoursPosted2019/2020]
 --ON [HoursPosted2019/2020].master_fact_key = fact_dimension_main.master_fact_key
 
-
+LEFT OUTER JOIN #matter_revenue
+ON #matter_revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN #Revenue
 ON #Revenue.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 

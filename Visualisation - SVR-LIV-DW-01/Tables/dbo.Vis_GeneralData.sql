@@ -109,7 +109,7 @@ CREATE TABLE [dbo].[Vis_GeneralData]
 [Total Paid] [numeric] (13, 2) NULL,
 [Total Amount Billed] [numeric] (13, 2) NULL,
 [VAT Non-comp] [numeric] (16, 2) NULL,
-[Revenue] [numeric] (13, 2) NULL,
+[Revenue] [numeric] (38, 2) NULL,
 [Disbursements Billed] [numeric] (13, 2) NULL,
 [WIP] [numeric] (13, 2) NULL,
 [VAT] [numeric] (13, 2) NULL,

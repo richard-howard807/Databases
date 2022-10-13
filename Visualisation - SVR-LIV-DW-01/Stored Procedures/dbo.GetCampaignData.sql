@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[GetCampaignData]
 
 AS 
@@ -23,7 +24,7 @@ SET @DateFrom='2020-05-01'
 SET @DateTo=CONVERT(DATE,GETDATE(),103)
 
 SELECT 
-Campaign,
+CASE WHEN Campaign='ESG' THEN 'FW - ESG' ELSE Campaign END AS Campaign,
 dim_matter_header_current.master_client_code + '/' + dim_matter_header_current.master_matter_number	AS [Mattersphere Weightmans Reference],
 RTRIM(dim_client.client_code) client_code,
 dim_client.client_name,

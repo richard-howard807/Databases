@@ -5,16 +5,16 @@ GO
 /*
 ===================================================
 ===================================================
---Author:			Julie Loughlin
---Created Date:		2020-01-16
---Description:		Clarion Tableau Dashboard (Ticket 40376)
+--Author:			Max Taylor
+--Created Date:		2022-07-08
+--Description:		Guinness Finance Dashboard (Ticket 156613)
 --Current Version:	Initial Create
 ====================================================
 
 ====================================================
 
 */
-CREATE PROCEDURE [dbo].[ClarionDashboard] 
+CREATE PROCEDURE [dbo].[GuinnessFinanceDashboard] 
 
 AS
 BEGIN
@@ -151,19 +151,21 @@ LEFT OUTER JOIN
 		FROM red_dw.dbo.fact_bill_matter_detail_summary
 		INNER JOIN red_dw.dbo.dim_matter_header_current ON dim_matter_header_current.client_code = fact_bill_matter_detail_summary.client_code
 		 AND dim_matter_header_current.matter_number = fact_bill_matter_detail_summary.matter_number
-		WHERE fact_bill_matter_detail_summary.client_code='00756630'
+		WHERE fact_bill_matter_detail_summary.client_code='00163012'
 		GROUP BY dim_matter_header_current.client_code
 		,dim_matter_header_current.matter_number
 	) AS Bills
 ON Bills.client_code = dim_matter_header_current.client_code
 AND Bills.matter_number = dim_matter_header_current.matter_number
 WHERE 
-dim_matter_header_current.client_code='00756630'
+dim_matter_header_current.client_code='00163012'
 AND (date_closed_practice_management IS NULL OR date_closed_practice_management>'2017-04-01')
 
 ORDER BY 
 dim_matter_header_current.client_code 
 ,dim_matter_header_current.matter_number
+
+
 
 
 END

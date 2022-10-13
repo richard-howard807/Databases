@@ -11,8 +11,10 @@ CREATE TABLE [dbo].[BAR_segment_sector]
 [bill_amount] [numeric] (38, 2) NULL,
 [outstanding_total_bill] [numeric] (38, 2) NULL,
 [outstanding_total_bill_180_days] [numeric] (38, 2) NULL,
+[outstanding_total_bill_90_days] [numeric] (38, 2) NULL,
 [outstanding_costs] [numeric] (38, 2) NULL,
 [outstanding_costs_180_days] [numeric] (38, 2) NULL,
+[outstanding_costs_90_days] [numeric] (38, 2) NULL,
 [wip_minutes] [numeric] (38, 2) NULL,
 [wip_value] [numeric] (38, 2) NULL,
 [wip_over_90_days] [numeric] (38, 2) NULL,
@@ -21,6 +23,7 @@ CREATE TABLE [dbo].[BAR_segment_sector]
 [bill_amount_previous_year_month] [numeric] (38, 2) NULL,
 [outstanding_total_bill_previous_year_month] [numeric] (38, 2) NULL,
 [outstanding_total_bill_180_days_previous_year_month] [numeric] (38, 2) NULL,
+[outstanding_total_bill_90_days_previous_year_month] [numeric] (38, 2) NULL,
 [wip_value_previous_year_month] [numeric] (38, 2) NULL,
 [wip_over_90_days_previous_year_month] [numeric] (38, 2) NULL
 ) ON [PRIMARY]
