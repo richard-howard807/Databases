@@ -30,6 +30,9 @@ GO
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[NPGPreBilling]
 (
 @Team AS NVARCHAR(100)
@@ -161,6 +164,8 @@ SELECT dbFile.fileID AS [ms_fileid]
 IIF(ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0) <0 ,0,ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0))
 ELSE NULL END AS FixedFeeLeft
 ,clName
+,Agent.Agent
+,WAYLEA.WAYLEA
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -192,6 +197,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
 WHERE dim_bill_key=0 AND isactive=1
+AND dim_bill_date_key=0
 AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 GROUP BY ms_fileid,name,hourly_charge_rate 
 ) AS WIP
@@ -206,6 +212,7 @@ INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
 WHERE dim_bill_key=0 AND isactive=1
 AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+AND dim_bill_date_key=0
 GROUP BY ms_fileid
 ) AS TotalWIP
  ON dbFile.fileID=TotalWIP.ms_fileid
@@ -256,6 +263,50 @@ AND arlist  IN ('Bill','BillRev','BILL')
 GROUP BY dbfile.fileid
 ) AS NPGBIlls
 		  ON NPGBIlls.fileid = dbFile.fileID
+LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS Agent
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='AGENT'
+AND assocActive=1
+GROUP BY dbFile.fileID
+) AS Agent
+ ON Agent.fileID = dbFile.fileID
+
+ LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS WAYLEA
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='WAYLEA'
+AND assocActive=1
+GROUP BY dbFile.fileID
+) AS WAYLEA
+ ON WAYLEA.fileID = dbFile.fileID
+
+ 
+
+
+
 
 WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND fileNo<>'0'
@@ -309,6 +360,8 @@ SELECT dbFile.fileID AS [ms_fileid]
 IIF(ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0) <0 ,0,ISNULL(curFixedFeeAmou,0) - ISNULL(NPGBIlls.[Billed To NPG],0))
 ELSE NULL END AS FixedFeeLeft
 ,clName
+,Agent.Agent
+,WAYLEA.WAYLEA
 FROM ms_prod.config.dbFile WITH(NOLOCK)
 INNER JOIN MS_Prod.config.dbClient WITH(NOLOCK)
  ON dbClient.clID = dbFile.clID
@@ -341,6 +394,7 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
 WHERE dim_bill_key=0 AND isactive=1
+AND dim_bill_date_key=0
 AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 GROUP BY ms_fileid,name,hourly_charge_rate 
 ) AS WIP
@@ -401,11 +455,51 @@ INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_all_time_activity.dim_matter_header_curr_key
 WHERE dim_bill_key=0 AND isactive=1
+AND dim_bill_date_key=0
 AND master_client_code IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 GROUP BY ms_fileid
 ) AS TotalWIP
  ON dbFile.fileID=TotalWIP.ms_fileid
- WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
+LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS Agent
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='AGENT'
+AND assocActive=1
+GROUP BY dbFile.fileID
+) AS Agent
+ ON Agent.fileID = dbFile.fileID
+ LEFT OUTER JOIN 
+(
+SELECT  dbFile.fileID,STRING_AGG(contName,',') AS WAYLEA
+FROM ms_prod.config.dbFile
+INNER JOIN ms_prod.config.dbClient
+ ON dbClient.clID = dbFile.clID
+INNER JOIN ms_prod.config.dbAssociates
+ ON dbAssociates.fileID = dbFile.fileID
+INNER JOIN ms_prod.config.dbContact 
+ ON dbContact.contID = dbAssociates.contID
+ WHERE  clNo IN 
+(
+'WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103'
+)
+AND assocType='WAYLEA'
+AND assocActive=1
+GROUP BY dbFile.fileID
+) AS WAYLEA
+ ON WAYLEA.fileID = dbFile.fileID
+
+WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB165103')
 AND fileNo<>'0'
 AND fileClosed IS NULL
 AND cboNPGFileType=@Team
