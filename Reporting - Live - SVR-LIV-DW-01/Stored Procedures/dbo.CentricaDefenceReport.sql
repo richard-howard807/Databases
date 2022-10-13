@@ -2,6 +2,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
+
 -- ===============================================
 -- Author:		Emily Smith
 -- Create date: 2021-03-24
@@ -40,7 +43,7 @@ BEGIN
 		, fact_finance_summary.total_tp_costs_paid AS [TP Costs Paid]
 		, CASE WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL THEN DATEDIFF(DAY, dim_detail_core_details.date_instructions_received,dim_detail_outcome.date_claim_concluded)
 			ELSE NULL END AS [Lifecycle]
-
+			,dim_detail_core_details.[referral_reason]
 	FROM red_dw.dbo.fact_dimension_main
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 	ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -64,7 +67,9 @@ BEGIN
 	AND dim_matter_header_current.master_client_code='W15381'
 	AND dim_matter_header_current.date_opened_case_management>='2017-01-01'
 	AND ISNULL(dim_detail_core_details.referral_reason,'')<>'Recovery'
+	AND work_type_name  NOT IN ('Debt Recovery','Contract')--asked to be removed #172622 
 	AND dim_matter_header_current.date_closed_case_management IS NULL 
+	--AND dim_matter_header_current.master_client_code='W15381' AND master_matter_number='558'
 
 END
 GO
