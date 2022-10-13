@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[CentricaRecoveries]
 
 AS
@@ -254,7 +255,10 @@ WHERE cboPostLitApp IS NOT NULL OR curFTNonFix IS NOT NULL) AS PostLitFee
 WHERE 
 fact_dimension_main.client_code = 'W15381'
 AND reporting_exclusions = 0 
-AND dim_detail_core_details.referral_reason='Recovery'
+AND
+(
+dim_detail_core_details.referral_reason='Recovery'
+OR work_type_name   IN ('Debt Recovery','Contract'))
 --AND ms_only= 1 
 
 ORDER BY master_matter_number
