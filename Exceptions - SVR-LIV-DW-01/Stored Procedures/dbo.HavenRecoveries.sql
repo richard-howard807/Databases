@@ -25,7 +25,8 @@ work_type_name [Worktype (Name) ],
 dim_detail_core_details.[present_position] [Present Position ],
 date_opened_case_management [Date opened ],
 date_closed_case_management[Date Closed ],
-Defendant.[Insurer Name] [Insurer Name ],
+Defendant.[Defendant Name] [Defendant Name ],
+InsurerName.InsurerName [Insurer Name],
 NULL [Insurer Ref],
 dim_detail_core_details.[incident_date] [Date of Accident ],
 NULL AS [Reason for instruction ],
@@ -136,8 +137,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
         (
             SELECT fileID, 
                    assocType,
-                   contName AS [Insurer Name],
-                   dbAssociates.assocRef AS [Insurer Reference],
+                   contName AS [Defendant Name],
+                   dbAssociates.assocRef AS [Defendant Reference],
                    ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
@@ -213,6 +214,27 @@ LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
 		        AS DriverName
             ON dim_matter_header_current.ms_fileid = DriverName.fileID
                AND DriverName.XOrder = 1
+
+LEFT JOIN
+        (
+            SELECT fileID,
+                   assocType,
+                   contName AS InsurerName,
+                   dbAssociates.assocRef AS InsurerRef,
+                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder) AS XOrder
+            --SELECT DISTINCT dbAssociates.assocType
+			FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
+                INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
+                    ON dbAssociates.contID = dbContact.contID
+					LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+					ON dim_matter_header_current.ms_fileid=dbAssociates.fileID
+            WHERE assocType = 'INSURERCLIENT'
+			AND client_code='H00001'
+        )
+
+		        AS InsurerName
+            ON dim_matter_header_current.ms_fileid = InsurerName.fileID
+               AND InsurerName.XOrder = 1
 
 LEFT OUTER JOIN (SELECT client_code,matter_number,SUM(wiphrs) AS HrsWorked
 FROM red_dw.dbo.fact_all_time_activity

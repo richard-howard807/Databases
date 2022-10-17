@@ -32,7 +32,8 @@ THEN 'Closed' ELSE 'Open' END
 ,dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does Claimant have a Personal Injury Claim?]
 ,CASE WHEN dim_detail_core_details.does_claimant_have_personal_injury_claim='No' AND dim_detail_core_details.credit_hire='Yes' THEN 'Credit Hire Only'
 WHEN dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' and dim_detail_core_details.credit_hire='Yes' THEN 'PI and Credit Hire'
-WHEN dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' THEN 'PI Only' END AS [Claim Type]
+WHEN dim_detail_core_details.does_claimant_have_personal_injury_claim='Yes' THEN 'PI Only' 
+WHEN dim_detail_core_details.does_claimant_have_personal_injury_claim='No' AND dim_detail_core_details.credit_hire='No' THEN 'Other' END AS [Claim Type]
 ,CASE WHEN dim_detail_core_details.credit_hire='Yes' THEN dim_detail_core_details.[clients_claims_handler_surname_forename] ELSE NULL END AS [Client's Claims Handler]
 
 
@@ -49,7 +50,10 @@ JOIN red_dw.dbo.dim_detail_outcome ON dim_detail_outcome.dim_detail_outcome_key 
 WHERE 1 = 1 
 
 AND dim_matter_header_current.master_client_code = 'W15396'
-AND (date_opened_case_management >= '2020-01-01' OR dim_detail_core_details.credit_hire='Yes')
+AND (date_opened_case_management >= '2020-01-01' OR (dim_detail_core_details.credit_hire='Yes' AND CASE WHEN date_closed_case_management IS NOT NULL THEN 'Closed'
+     WHEN TRIM(dim_detail_core_details.[present_position])
+IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid', 'To be closed/minor balances to be clear' ) 
+THEN 'Closed' ELSE 'Open' END='Open'))
 AND (reporting_exclusions = 0 OR dim_detail_outcome.[outcome_of_case]= 'Returned to Client')
 
 ORDER BY   date_opened_case_management

@@ -100,36 +100,18 @@ N'Legal Ops - Claims',
 N'Legal Ops - LTA'
 )
 
---AND hierarchylevel4hist IN (
---'Large Loss Liverpool'
---,'Casualty Liverpool 1'
---,'Casualty Liverpool 2'
---,'Disease Liverpool 1'
---,'Casualty Manchester'
---,'Casualty Glasgow'
---,'Disease Birmingham 4'
---,'Disease Birmingham 2 and London'
---,'Casualty Leicester'
---,'Motor Credit Hire'
---,'Disease Birmingham 3'
---,'Large Loss London'
---,'Disease Management'
---,'Clinical Birmingham'
---,'Niche Costs'
---,'Disease Liverpool 3'
---,'Casualty London'
---,'Casualty Birmingham'
---,'Motor Liverpool and Birmingham'
---)
 AND date_closed_practice_management IS NULL
 AND date_opened_case_management >='2019-02-01'
---AND present_position='Final bill due - claim and costs concluded'
---AND UPPER(fee_arrangement) LIKE '%FIXED%'
-AND 
-(
-ISNULL(dim_detail_finance.[output_wip_fee_arrangement],'') <>'Fixed Fee/Fee Quote/Capped Fee'
-OR (dim_detail_finance.[output_wip_fee_arrangement]='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
-)                                                 
+
+AND CASE WHEN ISNULL(TRIM(fee_arrangement),'') <>'Fixed Fee/Fee Quote/Capped Fee' THEN 1 
+                   WHEN TRIM(fee_arrangement)='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(TRIM(present_position),'')='Final bill due - claim and costs concluded' THEN 1 
+ELSE 0 END = 1
+
+--AND 
+--(
+--ISNULL(dim_detail_finance.[output_wip_fee_arrangement],'') <>'Fixed Fee/Fee Quote/Capped Fee'
+--OR (dim_detail_finance.[output_wip_fee_arrangement]='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
+--)                                                 
 AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())

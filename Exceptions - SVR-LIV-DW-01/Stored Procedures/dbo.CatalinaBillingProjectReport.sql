@@ -11,6 +11,7 @@ GO
 --2021-09-03 ES #101252, amended fee arrangment logic to look at dim_detail_finance.[output_wip_fee_arrangement]
 --2021-09-23 JB #115357 added @client_code so sproc can be used for new Gallagher Bassestt Billing Project Report, and any other that are needed in future
 --2022-01-20 MT New Catalina report based on ZurichBillingProjectReport
+--2022-10-14 MT Additional filter as per JB 173273
 
 CREATE PROCEDURE [dbo].[CatalinaBillingProjectReport]
 (
@@ -19,7 +20,7 @@ CREATE PROCEDURE [dbo].[CatalinaBillingProjectReport]
 AS
 
 --Testing
---DECLARE @client_code AS NVARCHAR(8) = 'Z1001'
+--DECLARE @client_code AS NVARCHAR(8) = 'W25984'
 
 BEGIN
 SELECT dim_matter_header_current.client_code AS [Client]
@@ -45,12 +46,22 @@ END  AS ElapsedDays
 ,Proforma.[Proforma Status]
 ,Proforma.[Proforma Elapsed Days]
 ,[Proforma].[Proforma Date]
+,dim_detail_outcome.date_costs_settled 
+,outcome_of_case
+,date_claim_concluded
+--,[Filter_Flag] = CASE WHEN  dim_detail_outcome.date_costs_settled  IS NOT NULL THEN 1 
+ --     WHEN  date_claim_concluded IS NOT NULL AND TRIM(outcome_of_case) IN ('Discontinued - Indemnified by third party', 'Discontinued - indemnified by third party','Discontinued - indemnified by 3rd party' , 'Discontinued - Pre-Lit', 'Discontinued  - pre-lit', 'Discontinued - pre-lit','Discontinued - post lit with no costs order', 'Discontinued - post-lit with no costs order', 'Exclude from Reports', 'Exclude from reports', 'Lost at Trial', 'Lost at trial', 'Lost at trial (damages exceed claimant''s P36 offer)','Struck Out' ,'Struck out','Won At Trial','Won at Trial','Won at trial','discontinued - pre-lit'  , 'exclude from reports'   , 'struck out','won at trial'                                 ) THEN 1 
+--	        ELSE 0 END
+
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN red_dw.dbo.fact_finance_summary
- ON fact_finance_summary.client_code = dim_matter_header_current.client_code
- AND fact_finance_summary.matter_number = dim_matter_header_current.matter_number
+ ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+ LEFT JOIN red_dw.dbo.dim_detail_outcome
+ ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER  JOIN 
 (
 SELECT fileID AS ms_fileid
@@ -100,44 +111,37 @@ N'Legal Ops - Claims',
 N'Legal Ops - LTA'
 )
 
---AND hierarchylevel4hist IN (
---'Large Loss Liverpool'
---,'Casualty Liverpool 1'
---,'Casualty Liverpool 2'
---,'Disease Liverpool 1'
---,'Casualty Manchester'
---,'Casualty Glasgow'
---,'Disease Birmingham 4'
---,'Disease Birmingham 2 and London'
---,'Casualty Leicester'
---,'Motor Credit Hire'
---,'Disease Birmingham 3'
---,'Large Loss London'
---,'Disease Management'
---,'Clinical Birmingham'
---,'Niche Costs'
---,'Disease Liverpool 3'
---,'Casualty London'
---,'Casualty Birmingham'
---,'Motor Liverpool and Birmingham'
---)
 AND date_closed_practice_management IS NULL
 AND date_opened_case_management >='2019-02-01'
---AND present_position='Final bill due - claim and costs concluded'
---AND UPPER(fee_arrangement) LIKE '%FIXED%'
-AND 
-(
-ISNULL(dim_detail_finance.[output_wip_fee_arrangement],'') <>'Fixed Fee/Fee Quote/Capped Fee'
-OR (dim_detail_finance.[output_wip_fee_arrangement]='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(present_position,'')='Final bill due - claim and costs concluded')
-)                                                 
+
+AND CASE WHEN ISNULL(TRIM(fee_arrangement),'') <>'Fixed Fee/Fee Quote/Capped Fee' THEN 1 
+                   WHEN TRIM(fee_arrangement)='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(TRIM(present_position),'')='Final bill due - claim and costs concluded' THEN 1 
+ELSE 0 END = 1
+                                                
 AND wip>=500
 AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)>=90
 
+
+AND 
+/* Additional filter as per JB 173273*/
+CASE WHEN  dim_detail_outcome.date_costs_settled  IS NOT NULL THEN 1 
+      WHEN  date_claim_concluded IS NOT NULL AND TRIM(outcome_of_case) IN ('Discontinued - Indemnified by third party', 'Discontinued - indemnified by third party','Discontinued - indemnified by 3rd party' , 'Discontinued - Pre-Lit', 'Discontinued  - pre-lit', 'Discontinued - pre-lit','Discontinued - post lit with no costs order', 'Discontinued - post-lit with no costs order', 'Exclude from Reports', 'Exclude from reports', 'Lost at Trial', 'Lost at trial', 'Lost at trial (damages exceed claimant''s P36 offer)','Struck Out' ,'Struck out','Won At Trial','Won at Trial','Won at trial','discontinued - pre-lit'  , 'exclude from reports'   , 'struck out','won at trial'                                 ) THEN 1 
+	        ELSE 0 END = 1 
+
+
+
+
+
+
 ORDER BY (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
 END)
+
+
+
+
 END
 
 GO
