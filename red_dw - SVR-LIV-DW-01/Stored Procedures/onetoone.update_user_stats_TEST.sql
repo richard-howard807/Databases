@@ -3,7 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROC [onetoone].[update_user_stats]
+CREATE PROC [onetoone].[update_user_stats_TEST]
 
 AS
 
@@ -12,16 +12,17 @@ DECLARE @fin_year INT,
 		@fin_month_full int
 
 SELECT DISTINCT @fin_year = fin_year, @fin_month = fin_month_no, @fin_month_full = dim_date.fin_month
+-- select *
 FROM dbo.dim_date 
 WHERE calendar_date = CAST(GETDATE()-1 AS DATE)
 
 
 -- Delete data from table if it exists already
- select * from [onetoone].[user_stats]
-IF (SELECT COUNT(*) FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month) > 0
-	BEGIN
-		DELETE FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month
-	END 
+-- select * from [onetoone].[user_stats]
+--IF (SELECT COUNT(*) FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month) > 0
+--	BEGIN
+--		DELETE FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month
+--	END 
 
 DROP TABLE IF EXISTS #Days_in_the_office
 /*Days_in_the_office - new field added MT 20221013 */
@@ -597,8 +598,8 @@ GROUP BY dim_fed_hierarchy_history.fed_code
 
 
 
-INSERT INTO [onetoone].[user_stats]
---select * from [onetoone].[user_stats]
+--INSERT INTO [onetoone].[user_stats]
+
 
 SELECT 
 	CAST(GETDATE() AS DATE) snapshot_date,
