@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Julie Loughlin
 -- Create date: 2022-09-20
@@ -34,10 +35,12 @@ exchange_date,
 ,dim_detail_core_details.[present_position]	AS [Present Position]
 ,chargeable_minutes_recorded/60 AS hours
 ,external_file_notes
+
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange]),103)) AS [Elapsed Days to Exchange]
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate),103))  AS [Elapsed Days to Completion]
 --,WorkedHours.HoursRecorded
 --,WorkedHours.name AS [Fee earner who recorded the time]
+
 
 FROM 
 red_dw.dbo.fact_dimension_main
@@ -82,6 +85,6 @@ AND CAST(date_opened_case_management AS DATE) >='20210101'
 AND chargeable_minutes_recorded/60 >=4.5
 AND reporting_exclusions = 0
 AND dim_matter_header_current.date_closed_case_management IS NULL 
-
+AND dim_detail_property.completion_date IS NULL
 END
 GO
