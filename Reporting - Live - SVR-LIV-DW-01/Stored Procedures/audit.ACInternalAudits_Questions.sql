@@ -91,6 +91,7 @@ SELECT ListValue INTO #Fee_Earner FROM Reporting.dbo.udt_TallySplit('|', @Fee_Ea
 				WHERE dim_ac_audits.created_at >='2021-09-01'
 				and dim_ac_audits.dim_auditee1_hierarchy_history_key <> 0 
 				and audite1.display_name <> 'Unknown'
+				AND ISNULL(dim_ac_audits.status, '') <> 'Deleted'
 				AND (CASE	
 						WHEN LOWER(dim_ac_audits.client_code) LIKE '%test%' THEN
 							1
