@@ -100,10 +100,13 @@ Track  =                      CASE WHEN TRIM(dim_matter_branch.branch_name) = 'G
 [Agreed General Damages] = ISNULL(fact_detail_paid_detail.[personal_injury_paid], 0) +ISNULL(fact_detail_paid_detail.[general_damages_misc_paid], 0),
 [Agreed Special Damages] = ISNULL(fact_detail_paid_detail.[past_care_paid], 0) + ISNULL(fact_detail_paid_detail.[past_loss_of_earnings_paid], 0) + ISNULL(fact_finance_summary.[special_damages_miscellaneous_paid], 0) + ISNULL(fact_detail_paid_detail.[future_care_paid], 0) + ISNULL(fact_detail_paid_detail.[future_loss_of_earnings_paid], 0) + ISNULL(fact_detail_paid_detail.[future_loss_misc_paid], 0),
 [Date final damages agreed] = dim_detail_outcome.[date_claim_concluded],
-[Agreed Claimant Profit costs (inc vat)] = fact_detail_paid_detail.[net_profit_costs_paid],
-[Agreed Claimant Disb (inc VAT)] = fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat],--fact_finance_summary.[claimants_solicitors_disbursements_paid],
-[Panel Sols Total Profit costs (inc VAT)] = ISNULL(fact_finance_summary.defence_costs_billed, 0)  + ISNULL(fact_detail_paid_detail.vat_amount, 0), --Check with CW
-[Panel Sols Total Disbursements (inc VAT)] = ISNULL(fact_finance_summary.disbursements_billed, 0), -- Check with CW
+[Agreed Claimant Profit costs (inc vat)] = ISNULL(fact_detail_paid_detail.[claimant_s_solicitor_s_base_costs_paid_vat],0),
+[Agreed Claimant Disb (inc VAT)] = ISNULL(fact_finance_summary.claimants_solicitors_disbursements_paid, 0),--ISNULL(fact_detail_paid_detail.[claimant_s_solicitor_s_disbursements_paid],0),  --fact_detail_paid_detail[claimant_s_solicitor_s_base_costs_paid_vat]. --fact_finance_summary.[claimants_solicitors_disbursements_paid],
+
+[Panel Sols Total Profit costs (inc VAT)] = ISNULL(fact_finance_summary.defence_costs_billed,0) + ISNULL(fact_finance_summary.defence_costs_vat,0), 
+[Panel Sols Total Disbursements (inc VAT)] = ISNULL(fact_finance_summary.disbursements_billed, 0) + ISNULL(fact_finance_summary.total_billed_disbursements_vat, 0) ,
+
+
 [Settlement Stage] = 
 CASE WHEN LOWER(TRIM(dim_detail_outcome.[outcome_of_case]))= 'returned to client' THEN 'Settled by Insurer'
      WHEN LOWER(TRIM(dim_detail_outcome.[outcome_of_case])) IN  ('settled','settled – claimant accepts p36 offer','settled – claimant accepts p36 offer out of time','settled – defendant accepts p36 offer','settled – defendant accepts p36 offer out of time','settled – early neutral evaluation' ,'settled – jsm', 'settled - defendant accepts p36 offer', 'settled  - claimant accepts p36 offer out of time', 'settled - claimant accepts p36 offer' ) THEN 'Settled'
@@ -129,7 +132,9 @@ CASE WHEN LOWER(TRIM(dim_detail_outcome.[outcome_of_case]))= 'returned to client
 
 [Outcome of Case] =  dim_detail_outcome.[outcome_of_case],
 
-[Track - Internal] =  dim_detail_core_details.[track]
+[Track - Internal] =  dim_detail_core_details.[track],
+
+[File Dealt With in Tesco's LL Team] = dim_detail_client.file_dealt_tesco_ll
 
 
         FROM red_dw.dbo.fact_dimension_main
@@ -181,6 +186,9 @@ AND CASE WHEN COALESCE(dim_detail_outcome.[date_claim_concluded], dim_matter_hea
       WHEN COALESCE(dim_detail_outcome.[date_claim_concluded], dim_matter_header_current.date_closed_case_management) IS NOT NULL AND 
 	  dim_detail_outcome.[date_claim_concluded] >= '2022-07-01' THEN 'SettledClaims'
 	  END IN ('LiveFiles','SettledClaims')
+
+	  --TESTING
+	--AND TRIM(dim_matter_header_current.master_client_code) + '-' + TRIM(dim_matter_header_current.master_matter_number) IN ( 'T3003-1697', 'T3003-1602')
 
 
 GO
