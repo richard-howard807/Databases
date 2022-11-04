@@ -3,21 +3,6 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 CREATE PROCEDURE [CommercialRecoveries].[LCCHosingBenefit]
 AS
 BEGIN
@@ -25,6 +10,7 @@ DECLARE @StartDate AS DATE
 DECLARE @EndDate AS DATE
 SET @StartDate=(SELECT DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0))
 SET @EndDate =(DATEADD(MONTH, DATEDIFF(MONTH, -1, GETDATE())-1, -1) )
+
 
 SELECT dbFile.fileID 
 ,cboLeedsCC
@@ -49,6 +35,16 @@ SELECT dbFile.fileID
 ,txtFileStatus
 ,ISNULL(DisbsCosts.CostsIncurred,0) AS RecoverableCost
 ,ISNULL(DisbsPreviousMonth.CostsIncurred,0) AS RecoverableCostPrevious
+, CASE 
+	WHEN LOWER(udCRCore.txtCurenStatNot) LIKE '%closed%' THEN	
+		'closed'
+	WHEN LOWER(udCRCore.txtCurenStatNot) LIKE '%pif%' THEN	
+		'closed'
+	WHEN LOWER(udCRCore.txtCurenStatNot) LIKE '%paid%' THEN	
+		'closed'
+	ELSE
+		'open'
+ END				AS open_closed_status
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
