@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2020-08-21
@@ -10,6 +11,7 @@ GO
 -- =============================================
 -- ES 2020-02-08 #132189, added new details, updated original details
 -- ES 2022-03-04 #137185, changed length of order to years, and changed niche ref to look at new field
+-- JL 2022-11-03 #176429, added BTP as per ticket 
 -- =============================================
 
 CREATE PROCEDURE [police].[SurreySussexSPO] 
@@ -100,7 +102,7 @@ OR udMIPAPolice.dteOrderExpiry IS NOT NULL
 OR udMIPAPolice.txtWithdrawRea IS NOT NULL
 ) AS udmipapolice ON udmipapolice.fileID=dim_matter_header_current.ms_fileid
 
-WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518','817395')
+WHERE dim_matter_header_current.master_client_code IN ('451638','113147','628518','817395','9008076','72421')
 AND TRIM(work_type_name) ='PL - Pol - Stalking Protection Order'
 AND reporting_exclusions=0
 
