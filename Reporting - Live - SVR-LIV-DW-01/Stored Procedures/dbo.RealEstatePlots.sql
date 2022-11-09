@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Julie Loughlin
 -- Create date: 2022-09-20
@@ -30,11 +31,12 @@ matter_description AS [Matter Description],
 [Date Opened] = CAST(date_opened_case_management AS DATE),
 [Date Instructions Received] = dim_detail_core_details.[date_instructions_received] 
 ,[Date Closed] = CAST(date_closed_case_management AS DATE),
-exchange_date,
-[Completion Date] = CAST(dim_detail_property.[completion_date] AS DATE) 
+dim_detail_property.exchange_date,
+[Completion Date] = ISNULL(dim_detail_property.[completion_date],dim_detail_plot_details.[pscompletion_date])
 ,dim_detail_core_details.[present_position]	AS [Present Position]
 ,chargeable_minutes_recorded/60 AS hours
 ,external_file_notes
+, COALESCE(dim_detail_plot_details.david_wilson_homes_limited_developments, dim_detail_plot_details.barratt_manchester_developments) AS [Developer Name]
 
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange]),103)) AS [Elapsed Days to Exchange]
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate),103))  AS [Elapsed Days to Completion]
@@ -51,6 +53,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details ON dim_detail_core_details.di
 LEFT JOIN red_dw.dbo.dim_detail_property ON dim_detail_property.dim_detail_property_key = fact_dimension_main.dim_detail_property_key
 LEFT JOIN red_dw.dbo.fact_finance_summary ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
 LEFT JOIN red_dw.dbo.dim_file_notes WITH (NOLOCK) ON dim_file_notes.dim_file_notes_key = fact_dimension_main.dim_file_notes_key
+LEFT OUTER JOIN red_dw.dbo.dim_detail_plot_details
+ ON dim_detail_plot_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 	----****HOURS WORKED (JL ADDED AS PER TICKET  57800 1.1)*****
 	--LEFT OUTER JOIN (
@@ -85,6 +89,11 @@ AND CAST(date_opened_case_management AS DATE) >='20210101'
 AND chargeable_minutes_recorded/60 >=4.5
 AND reporting_exclusions = 0
 AND dim_matter_header_current.date_closed_case_management IS NULL 
-AND dim_detail_property.completion_date IS NULL
+AND ISNULL(dim_detail_property.[completion_date],dim_detail_plot_details.[pscompletion_date]) IS NULL
+AND ISNULL(dim_detail_property.status,'') <>'Abortive'
+AND   matter_description NOT LIKE '%Abort%'
+AND ms_fileid NOT IN (SELECT fileID FROM ms_prod.config.dbFile
+WHERE fileNotes LIKE '%Abort%' OR fileExternalNotes LIKE '%Abort%' OR fileAlertMessage LIKE '%Abort%')
+AND matter_description NOT LIKE '%Variation%'
 END
 GO
