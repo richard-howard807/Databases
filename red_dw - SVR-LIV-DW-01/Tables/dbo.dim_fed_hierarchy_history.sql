@@ -65,15 +65,15 @@ CREATE TABLE [dbo].[dim_fed_hierarchy_history]
 GO
 ALTER TABLE [dbo].[dim_fed_hierarchy_history] ADD CONSTRAINT [dim_fed_hierarchy_hist_idx_0] PRIMARY KEY CLUSTERED  ([dim_fed_hierarchy_history_key]) ON [DIM_TAB]
 GO
-CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_p] ON [dbo].[dim_fed_hierarchy_history] ([cost_handler]) INCLUDE ([dim_employee_key], [fed_code], [employeeid]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_p] ON [dbo].[dim_fed_hierarchy_history] ([cost_handler]) INCLUDE ([dim_employee_key], [employeeid], [fed_code]) ON [DIM_IDX]
 GO
 CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_1] ON [dbo].[dim_fed_hierarchy_history] ([dim_employee_key]) ON [DIM_IDX]
 GO
 CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_x] ON [dbo].[dim_fed_hierarchy_history] ([dim_fed_hierarchy_history_key]) INCLUDE ([fed_code]) ON [DIM_IDX]
 GO
-CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_AC_20151125] ON [dbo].[dim_fed_hierarchy_history] ([dss_current_flag]) INCLUDE ([employeeid], [reportingbcmidud], [worksforemployeeid], [hierarchylevel4hist], [fed_code], [name], [activeud]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_AC_20151125] ON [dbo].[dim_fed_hierarchy_history] ([dss_current_flag]) INCLUDE ([activeud], [employeeid], [fed_code], [hierarchylevel4hist], [name], [reportingbcmidud], [worksforemployeeid]) ON [DIM_IDX]
 GO
-CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161102] ON [dbo].[dim_fed_hierarchy_history] ([dss_current_flag]) INCLUDE ([fed_hierarchy_business_key], [fed_code], [display_name], [hierarchylevel5hist], [hierarchylevel4hist], [hierarchylevel3hist], [hierarchylevel2hist], [hierarchylevel1hist], [dss_end_date], [dss_start_date], [employeeid], [hierarchylevel3]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161102] ON [dbo].[dim_fed_hierarchy_history] ([dss_current_flag]) INCLUDE ([display_name], [dss_end_date], [dss_start_date], [employeeid], [fed_code], [fed_hierarchy_business_key], [hierarchylevel1hist], [hierarchylevel2hist], [hierarchylevel3], [hierarchylevel3hist], [hierarchylevel4hist], [hierarchylevel5hist]) ON [DIM_IDX]
 GO
 CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161202] ON [dbo].[dim_fed_hierarchy_history] ([dss_start_date], [dss_end_date]) ON [DIM_IDX]
 GO
@@ -87,7 +87,7 @@ CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_B] ON [dbo].[dim_fed_hiera
 GO
 CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161020] ON [dbo].[dim_fed_hierarchy_history] ([hierarchylevel2hist]) INCLUDE ([dim_fed_hierarchy_history_key], [hierarchylevel3hist], [hierarchylevel4hist]) ON [DIM_IDX]
 GO
-CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161101] ON [dbo].[dim_fed_hierarchy_history] ([hierarchylevel4hist]) INCLUDE ([fed_hierarchy_business_key], [fed_code], [display_name], [hierarchylevel5hist], [hierarchylevel3hist], [hierarchylevel2hist], [hierarchylevel1hist], [dss_current_flag], [dss_end_date], [dss_start_date]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_20161101] ON [dbo].[dim_fed_hierarchy_history] ([hierarchylevel4hist]) INCLUDE ([display_name], [dss_current_flag], [dss_end_date], [dss_start_date], [fed_code], [fed_hierarchy_business_key], [hierarchylevel1hist], [hierarchylevel2hist], [hierarchylevel3hist], [hierarchylevel5hist]) ON [DIM_IDX]
 GO
 CREATE NONCLUSTERED INDEX [dim_fed_hierarchy_hist_idx_5] ON [dbo].[dim_fed_hierarchy_history] ([windowsusername], [dss_start_date], [dss_end_date]) INCLUDE ([hierarchylevel2hist], [hierarchylevel3hist], [hierarchylevel4hist]) ON [DIM_IDX]
 GO
@@ -139,9 +139,17 @@ EXEC sp_addextendedproperty N'Comment', N'Job title', 'SCHEMA', N'dbo', 'TABLE',
 GO
 EXEC sp_addextendedproperty N'Comment', N'indicates if the employee no longer works for Weightmans', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'leaver'
 GO
-EXEC sp_addextendedproperty N'Comment', N'Line manager Business Key', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'linemanageridud'
+EXEC sp_addextendedproperty N'Comment', N'', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'linemanageridud'
+GO
+EXEC sp_addextendedproperty N'Comment', N'', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'linemanagername'
+GO
+EXEC sp_addextendedproperty N'Comment', N'This is the team manager and can differ from who the person reports to. In Cascade, it is called the Team Manager.', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'reportingbcmidud'
+GO
+EXEC sp_addextendedproperty N'Comment', N'This is the team manager and can differ from who the person reports to. In Cascade, it is called the Team Manager.', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'reportingbcmname'
 GO
 EXEC sp_addextendedproperty N'Comment', N'Active directy userid - what they log on with', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'windowsusername'
 GO
-EXEC sp_addextendedproperty N'Comment', N'Manager Employee ID', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'worksforemployeeid'
+EXEC sp_addextendedproperty N'Comment', N'Line Manager, the person the employee reports to directly. In Cascade, this field is also called line manager.', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'worksforemployeeid'
+GO
+EXEC sp_addextendedproperty N'Comment', N'Line Manager, the person the employee reports to directly. In Cascade, this field is also called line manager.', 'SCHEMA', N'dbo', 'TABLE', N'dim_fed_hierarchy_history', 'COLUMN', N'worksforname'
 GO

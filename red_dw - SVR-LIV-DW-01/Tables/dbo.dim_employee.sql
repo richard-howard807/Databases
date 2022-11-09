@@ -42,12 +42,12 @@ CREATE TABLE [dbo].[dim_employee]
 [client_manager] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
 [line_manager_email] [nvarchar] (320) COLLATE Latin1_General_BIN NULL,
 [not_current_active] [bit] NULL,
-[previous_firm] [nvarchar] (50) COLLATE Latin1_General_BIN NULL
+[previous_firm] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
+[main_reason_for_leaving] [nvarchar] (50) COLLATE Latin1_General_BIN NULL,
+[secondary_reason_for_leaving] [nvarchar] (50) COLLATE Latin1_General_BIN NULL
 ) ON [DIM_TAB]
 GO
-ALTER TABLE [dbo].[dim_employee] ADD CONSTRAINT [dim_employee_idx_0] PRIMARY KEY CLUSTERED ([dim_employee_key]) ON [DIM_TAB]
-GO
-CREATE UNIQUE NONCLUSTERED INDEX [dim_employee_idx_A] ON [dbo].[dim_employee] ([employeeid], [payrollid]) ON [DIM_IDX]
+ALTER TABLE [dbo].[dim_employee] ADD CONSTRAINT [dim_employee_idx_0] PRIMARY KEY CLUSTERED  ([dim_employee_key]) ON [DIM_TAB]
 GO
 GRANT SELECT ON  [dbo].[dim_employee] TO [ebilling]
 GO
@@ -65,7 +65,11 @@ EXEC sp_addextendedproperty N'Comment', N'Date and time the row was updated in t
 GO
 EXEC sp_addextendedproperty N'Comment', N'Employee ID from cascade', 'SCHEMA', N'dbo', 'TABLE', N'dim_employee', 'COLUMN', N'employeeid'
 GO
+EXEC sp_addextendedproperty N'Comment', N'Used to calculate attrition rate ', 'SCHEMA', N'dbo', 'TABLE', N'dim_employee', 'COLUMN', N'main_reason_for_leaving'
+GO
 EXEC sp_addextendedproperty N'Comment', N'Payrollid from cascade, used for FEDCode in dim_fed_hierarchy_history', 'SCHEMA', N'dbo', 'TABLE', N'dim_employee', 'COLUMN', N'payrollid'
+GO
+EXEC sp_addextendedproperty N'Comment', N'Used to calculate attrition rate ', 'SCHEMA', N'dbo', 'TABLE', N'dim_employee', 'COLUMN', N'secondary_reason_for_leaving'
 GO
 EXEC sp_addextendedproperty N'Comment', N'Team Manager Email - NOT LINE MANAGER (reportingbcm from dim_fed_hiererchy_history)', 'SCHEMA', N'dbo', 'TABLE', N'dim_employee', 'COLUMN', N'worksforemail'
 GO

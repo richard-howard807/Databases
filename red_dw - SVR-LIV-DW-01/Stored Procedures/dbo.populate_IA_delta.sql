@@ -22,6 +22,8 @@ END
 */
 
 
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
 IF OBJECT_ID ('tempdb.dbo.#offices') IS NOT NULL
 DROP TABLE #offices
 
@@ -108,6 +110,10 @@ and isnull(cm.surname,'') <> ''
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PERSON$1]', GETDATE(), @@ROWCOUNT
+
+
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PERSON$1]
            ([COMP_UCI]
@@ -160,7 +166,8 @@ and isnull(co.dim_client_key,0) <> 0
 --and cm.client_status <> 'Closed'
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
 
-
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PERSON$1]', GETDATE(), @@ROWCOUNT
 
 
 
@@ -201,6 +208,9 @@ and cm.client_status in ('Active','Prospect')
 WHERE cl.dim_client_key IN (SELECT DISTINCT COMP_UCI FROM [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PERSON$1])
 and (cl.push_to_ia = 0 or cl.push_to_ia is null)
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_COMPANY$1]', GETDATE(), @@ROWCOUNT
 
 
 /*FOLDERS*/
@@ -279,6 +289,11 @@ and dim_client_matter_summary.client_status = 'Active'
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
  
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_FOLDER_LINK$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Address
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_STREET_ADDRESS$1] 
 (	
@@ -307,6 +322,13 @@ SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
 AND address_line_1 IS NOT NULL
 and (push_to_ia = 0 or push_to_ia is null)
 
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_STREET_ADDRESS$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Phone
 -- Companies
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PHONE$1]
@@ -329,6 +351,12 @@ WHERE
 [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_COMPANY$1])
 and cli.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
   
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PHONE$1]', GETDATE(), @@ROWCOUNT
+
+
  -- Person Phones
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PHONE$1]
 (
@@ -346,6 +374,11 @@ INNER JOIN [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_PERSON$1 ia ON ia.MAP_UC
 WHERE
 	ISNULL(phone_number,'') != '' 
 and (push_to_ia = 0 or push_to_ia is null)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PHONE$1]', GETDATE(), @@ROWCOUNT
+
 
 
 -- Fax
@@ -371,6 +404,12 @@ WHERE
 and (push_to_ia = 0 or push_to_ia is null)
 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_FAX$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Person
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_FAX$1]
 (
@@ -391,6 +430,12 @@ WHERE
 	addr.current_flag = 'Y' AND
 	ISNULL(addr.fm_addfax,'') != '' 
 and (push_to_ia = 0 or push_to_ia is null)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_FAX$1]', GETDATE(), @@ROWCOUNT
+
+
 
 -- Email
 -- Person
@@ -418,6 +463,11 @@ and client_code NOT like 'EMP%'
 and (push_to_ia = 0 or push_to_ia is null)
 and lower(email) <> 'unknown@sbc.root'
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_EMAIL$1]', GETDATE(), @@ROWCOUNT
+
+
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_EMAIL$1]
 (
 	[ADDRESS_ID]
@@ -436,6 +486,12 @@ LEFT OUTER JOIN [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_EMAIL$1] ON dw2.
 where dw2.client_code like 'EMP%' and leaver = 0 
 and dw2.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND [INT_DTS_EMAIL$1].UCI IS null
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_EMAIL$1]', GETDATE(), @@ROWCOUNT
+
+
 
 -- Mobile
 -- Doesn't exist
@@ -464,6 +520,13 @@ WHERE
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_WEBSITE$1]', GETDATE(), @@ROWCOUNT
+
+
+
+
 -- client group code
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1]
         ( [CLIENT_GROUP_CODE], [UCI] )
@@ -482,7 +545,14 @@ WHERE
 	--SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) AND cli.client_group_code IS NOT NULL AND cli.client_group_code <> ''
  and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
-  
+ 
+ 
+ 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPCODE$1]', GETDATE(), @@ROWCOUNT
+
+
+
 
 -- client group name
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPNAME$1]
@@ -501,6 +571,13 @@ WHERE
 	--SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) AND cli.client_group_code IS NOT NULL AND cli.client_group_code <> ''
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPNAME$1]', GETDATE(), @@ROWCOUNT
+
+
 
 /*client group partner*/
 
@@ -521,6 +598,13 @@ WHERE latest_hierarchy_flag = 'Y'
           push_to_ia = 0
           OR push_to_ia IS NULL
       ) AND [INT_DTS_CLIENTGRPPARTNER$1].UCI IS null
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPPARTNER$1]', GETDATE(), @@ROWCOUNT
+
+
 
 	
 	/******************************************************************************************************************************************************/
@@ -547,6 +631,12 @@ and dim_client_key not in (select dim_client_key from dbo.dim_client where push_
 AND [INT_DTS_SECTOR$1].UCI IS null
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_SECTOR$1]', GETDATE(), @@ROWCOUNT
+
+
+
+
 -- SubSector
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_SUBSECTOR$1]
            (SUB_SECTOR
@@ -566,6 +656,13 @@ WHERE
 	) 
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND [INT_DTS_SUBSECTOR$1].UCI IS null
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_SUBSECTOR$1]', GETDATE(), @@ROWCOUNT
+
+
 
 
 -- Segment
@@ -590,6 +687,11 @@ and dim_client_key not in (select dim_client_key from dbo.dim_client where push_
 AND [INT_DTS_SEGMENT$1].UCI IS null
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_SEGMENT$1]', GETDATE(), @@ROWCOUNT
+
+
+
 
 -- Client Group Rev   HERE*******************************************
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVENUEYTD$1]
@@ -601,6 +703,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVENUEYTD$
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
 		 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPREVENUEYTD$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Client Group Rev -1
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVLASTYEAR$1]
            ([CLIENT_GROUP_REVENUE_LAST_YEAR]
@@ -611,6 +719,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVLASTYEAR
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPREVLASTYEAR$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Client Group Rev -2
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVYRBEFORE$1]
            ([CLIENT_GROUP_REVENUE_YEAR_BEFORE_LAST]
@@ -619,6 +733,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPREVYRBEFORE
 		   SELECT ISNULL(costs_to_date_ytd2,0), UCI
 		   FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPREVYRBEFORE$1]', GETDATE(), @@ROWCOUNT
+
+
 		 
 -- Client Group WIP
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPWIP$1]
@@ -631,6 +751,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPWIP$1]
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
 		   
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPWIP$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Client Group Rolling
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPROLLINGREV$1]
@@ -641,6 +767,12 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPROLLINGREV$
 	  SELECT ISNULL(costs_to_date_running,0), UCI
 		   FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPROLLINGREV$1]', GETDATE(), @@ROWCOUNT
+
+
 
 -- Client Rev
 INSERT INTO  [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYTD$1]
@@ -663,6 +795,10 @@ INSERT INTO  [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYTD$1]
 	AND [INT_DTS_REVENUEYTD$1].UCI IS null
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_REVENUEYTD$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Rolling Rev
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ROLLINGREVTWELVEMNTH$1]
         ( [REVENUE_ROLLING__12_MONTHS_] ,
@@ -682,6 +818,11 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ROLLINGREVTWELVEMNTH
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_ROLLINGREVTWELVEMNTH$1].UCI IS null
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_ROLLINGREVTWELVEMNTH$1]', GETDATE(), @@ROWCOUNT
 
 
 
@@ -707,6 +848,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUELASTYEAR$1]
 	
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_REVENUELASTYEAR$1]', GETDATE(), @@ROWCOUNT
+
 
 -- Client Rev -2
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYRBEFORELAST$1]
@@ -729,6 +873,10 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_REVENUEYRBEFORELAST$
 	AND [INT_DTS_REVENUEYRBEFORELAST$1].UCI IS null
 	
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_REVENUEYRBEFORELAST$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Client WIP
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTWIP$1]
            ([WIP]
@@ -750,6 +898,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTWIP$1]
 	AND [INT_DTS_CLIENTWIP$1].UCI IS null
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTWIP$1]', GETDATE(), @@ROWCOUNT
+
 
 -- Date Became Client
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATEBECAMECLIENT$1]
@@ -768,6 +919,12 @@ SELECT open_date, dim_client_key FROM dbo.dim_client_matter_summary cli
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DATEBECAMECLIENT$1]', GETDATE(), @@ROWCOUNT
+
+
+
 -- Date Last Matter Closed
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTCLOSEDMATTER$1]
            ([DATE_OF_LAST_CLOSED_MATTER] /************************************************/
@@ -784,6 +941,11 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTCLOSEDMATTER$
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DATELSTCLOSEDMATTER$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Date Last Matter Opened
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTOPENMATTER$1]
            ([DATE_OF_LAST_OPENED_MATTER]
@@ -799,6 +961,11 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELSTOPENMATTER$1]
 	--SELECT CAST(vwContacts.COMPANY_UCI  AS NVARCHAR(50)) FROM [SVR-LIV-IASQ-01].InterAction.[weightmans].[vwContacts] WHERE vwContacts.COMPANY_UCI IS NOT NULL AND ISNUMERIC(vwContacts.COMPANY_UCI) = 1
 	) 
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DATELSTOPENMATTER$1]', GETDATE(), @@ROWCOUNT
+
 
 -- Num Opened Matters
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_NUMOPENMATTERS$1]
@@ -818,6 +985,10 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_NUMOPENMATTERS$1]
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_NUMOPENMATTERS$1]', GETDATE(), @@ROWCOUNT
+
+
 	/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 --Aged Debt Client Group
@@ -831,6 +1002,10 @@ INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_CLIENTGRPREVAGEDDE
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
 		 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPREVAGEDDEBT$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Total Debt Client Group
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPTOTALDEBT$1]
 			([CLIENT_GROUP_TOTAL_DEBT]
@@ -840,6 +1015,10 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPTOTALDEBT$1
 			select ISNULL(debt_total,0), UCI 
 			  FROM dbo.fact_client_group_matter_summary INNER JOIN 
 		   [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTGRPCODE$1] ON client_group_code =  CAST([CLIENT_GROUP_CODE] COLLATE Latin1_General_BIN AS varchar)
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTGRPTOTALDEBT$1]', GETDATE(), @@ROWCOUNT
 
 
 --Aged Debt Client 
@@ -862,6 +1041,10 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_AGEDDEBT$1]
 			and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_AGEDDEBT$1]', GETDATE(), @@ROWCOUNT
+
+
 -- Total Debt Client 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_TOTAL_DEBT$1]
 			([TOTAL_DEBT]
@@ -882,6 +1065,11 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_TOTAL_DEBT$1]
 	)
 	and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 	AND [INT_DTS_TOTAL_DEBT$1].UCI IS NULL -- added to stop sending data more than once
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_TOTAL_DEBT$1]', GETDATE(), @@ROWCOUNT
+
 
 -- Matters
 --USE [InterAction]
@@ -940,11 +1128,21 @@ and t1.dim_client_key not in (select dim_client_key from dbo.dim_client where pu
 
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PROJECT$1]', GETDATE(), @@ROWCOUNT
+
+
+
+
 INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_DEPARTMENT$1]
            ([CODE]
            ,[DESCRIPTION])
 
 		   SELECT  RTRIM(LTRIM(department_code)), RTRIM(LTRIM(department_name))  FROM dbo.dim_department
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DEPARTMENT$1]', GETDATE(), @@ROWCOUNT
 
 
 
@@ -966,6 +1164,9 @@ INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_OFFICE$1]
 		   FROM	[#offices] AS [o]
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_OFFICE$1]', GETDATE(), @@ROWCOUNT
+
 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ALLCLIENTNUMBERS$1]
@@ -986,6 +1187,9 @@ INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ALLCLIENTNUMBERS$1]
 	AND [INT_DTS_ALLCLIENTNUMBERS$1].UCI IS null
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_ALLCLIENTNUMBERS$1]', GETDATE(), @@ROWCOUNT
+
 
  --Primary Client Number
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_PRIMARYCLIENTNUMBER$1]
@@ -997,6 +1201,12 @@ FROM dim_client_matter_summary cli where cli.dim_client_key IN
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PRIMARYCLIENTNUMBER$1]', GETDATE(), @@ROWCOUNT
+
 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_COMPANYHOUSENUM$1]
@@ -1011,6 +1221,13 @@ SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1
 and company_house_number is not null 
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 AND [INT_DTS_COMPANYHOUSENUM$1].UCI IS null
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_COMPANYHOUSENUM$1]', GETDATE(), @@ROWCOUNT
+
+
 
 
 insert into [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_ORGANISATIONTYPE$1]
@@ -1038,6 +1255,12 @@ where Organisation <> ''
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_ORGANISATIONTYPE$1]', GETDATE(), @@ROWCOUNT
+
+
+
 /* client partner */ 
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_CLIENTPARTNER$1]
@@ -1059,6 +1282,13 @@ and dim_client.dim_client_key in		   	(	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].In
 and dim_client.dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
 
 AND [INT_DTS_CLIENTPARTNER$1].UCI IS null
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_CLIENTPARTNER$1]', GETDATE(), @@ROWCOUNT
+
+
 
 /* relationship partner */
 
@@ -1082,6 +1312,11 @@ and dim_client.dim_client_key not in (select dim_client_key from dbo.dim_client 
 
 
 
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_RELATIONSHIPPARTNER$1]', GETDATE(), @@ROWCOUNT
+
+
+
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_GENERATORLEVEL$1]
            ([GENERATOR_LEVEL]
            ,[UCI])
@@ -1092,6 +1327,11 @@ where dim_client.dim_client_key in		   	(SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].I
 	UNION
 	SELECT MAP_UCI FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.INT_DTS_COMPANY$1)
 and dim_client_key not in (select dim_client_key from dbo.dim_client where push_to_ia = 1)
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_GENERATORLEVEL$1]', GETDATE(), @@ROWCOUNT
 
 
 --SELECT * FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATEJOINED$3]
@@ -1116,6 +1356,11 @@ AND dim_employee.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 -- exclude entries already in stage table to avoid duplications
 AND [INT_DTS_DATEJOINED$3].UCI IS NULL
 AND dim_employee.deleted_from_cascade = 0
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DATEJOINED$3]', GETDATE(), @@ROWCOUNT
 
 
 --SELECT * FROM [SVR-LIV-IASQ-01].InterAction.[IDCAPP].[INT_DTS_DATELEFT$3]
@@ -1143,6 +1388,12 @@ AND dim_employee.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 AND [INT_DTS_DATELEFT$3].UCI IS NULL
 AND dim_employee.deleted_from_cascade = 0
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DATELEFT$3]', GETDATE(), @@ROWCOUNT
+
+
+
 --SELECT * FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_PRACTICEGROUPPRIMARY$3]
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_PRACTICEGROUPPRIMARY$3]
@@ -1167,6 +1418,12 @@ and (push_to_ia = 0 or push_to_ia is null)
 AND [INT_DTS_PRACTICEGROUPPRIMARY$3].UCI IS NULL
 AND dim_fed_hierarchy_history.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 AND dim_employee.deleted_from_cascade = 0
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PRACTICEGROUPPRIMARY$3]', GETDATE(), @@ROWCOUNT
+
+
 
 --SELECT * FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_STAFFOFFICE$3]
 
@@ -1193,6 +1450,12 @@ AND dim_employee.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 AND dim_employee.deleted_from_cascade = 0
 
 
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_STAFFOFFICE$3]', GETDATE(), @@ROWCOUNT
+
+
+
 --SELECT * FROM [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_LEVEL$3]
 
 INSERT INTO [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_LEVEL$3]
@@ -1216,6 +1479,11 @@ and (push_to_ia = 0 or push_to_ia is null)
 AND dim_employee.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 AND [INT_DTS_LEVEL$3].UCI IS NULL
 AND dim_employee.deleted_from_cascade = 0
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_LEVEL$3]', GETDATE(), @@ROWCOUNT
+
 
 --INSERT INTO [SVR-LIV-IASQ-01].InterAction.IDCAPP.[INT_DTS_PRACTICEGROUPALL$3]
 --(
@@ -1263,6 +1531,14 @@ and (push_to_ia = 0 or push_to_ia is null)
 AND [INT_DTS_PRATICEGROUPDIVISION$3].UCI IS NULL
 AND dim_fed_hierarchy_history.dss_update_time >= DATEADD(DAY, -7, @dim_max_date)
 AND dim_employee.deleted_from_cascade = 0
+
+
+
+--audit check to make sure insert was run
+INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_PRATICEGROUPDIVISION$3]', GETDATE(), @@ROWCOUNT
+
+
+
 
 /*ADD ANY NEW INSERTS BEFORE THIS POINT*/ 
 

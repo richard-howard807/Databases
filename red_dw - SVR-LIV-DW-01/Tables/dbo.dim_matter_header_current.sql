@@ -64,9 +64,9 @@ CREATE TABLE [dbo].[dim_matter_header_current]
 [opt_out_reason_desc] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [DIM_TAB]
 GO
-ALTER TABLE [dbo].[dim_matter_header_current] ADD CONSTRAINT [dim_matt_header_curren_idx_0] PRIMARY KEY CLUSTERED ([dim_matter_header_curr_key]) ON [DIM_TAB]
+ALTER TABLE [dbo].[dim_matter_header_current] ADD CONSTRAINT [dim_matt_header_curren_idx_0] PRIMARY KEY CLUSTERED  ([dim_matter_header_curr_key]) ON [DIM_TAB]
 GO
-CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_4] ON [dbo].[dim_matter_header_current] ([case_id]) INCLUDE ([source_system_id], [client_code], [matter_number]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_4] ON [dbo].[dim_matter_header_current] ([case_id]) INCLUDE ([client_code], [matter_number], [source_system_id]) ON [DIM_IDX]
 GO
 CREATE UNIQUE NONCLUSTERED INDEX [dim_matt_header_curren_idx_A] ON [dbo].[dim_matter_header_current] ([client_code], [matter_number]) ON [DIM_IDX]
 GO
@@ -84,7 +84,9 @@ CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_2] ON [dbo].[dim_matter_he
 GO
 CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_fileid] ON [dbo].[dim_matter_header_current] ([ms_fileid]) ON [DIM_IDX]
 GO
-CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_w] ON [dbo].[dim_matter_header_current] ([reporting_exclusions], [present_position], [fee_arrangement]) INCLUDE ([dim_matter_worktype_key], [date_opened_case_management], [client_group_code], [matter_description], [matter_owner_full_name], [fixed_fee_amount], [master_client_code], [master_matter_number]) ON [DIM_IDX]
+CREATE NONCLUSTERED INDEX [INX_dmhc_dim_matter_worktype_key] ON [dbo].[dim_matter_header_current] ([reporting_exclusions]) INCLUDE ([client_name], [date_closed_case_management], [date_opened_case_management], [dim_instruction_type_key], [dim_matter_worktype_key], [master_client_code], [master_matter_number], [matter_description], [ms_fileid]) ON [DIM_TAB]
+GO
+CREATE NONCLUSTERED INDEX [dim_matt_header_curren_idx_w] ON [dbo].[dim_matter_header_current] ([reporting_exclusions], [present_position], [fee_arrangement], [dim_matter_worktype_key]) INCLUDE ([client_code], [client_group_code], [client_group_name], [client_name], [date_closed_case_management], [date_closed_practice_management], [date_opened_case_management], [dim_instruction_type_key], [fixed_fee_amount], [master_client_code], [master_matter_number], [matter_description], [matter_number], [matter_owner_full_name]) ON [DIM_IDX]
 GO
 GRANT SELECT ON  [dbo].[dim_matter_header_current] TO [ebilling]
 GO
