@@ -4,6 +4,8 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
 --============================================
 -- ES 11-03-2021 #90787, amended some field logic and added key dates
 -- JB 04-08-2021 #109308, added external_filter, font_colour and reserve/settlement columns
@@ -23,6 +25,8 @@ SELECT
 'Weightmans' AS [Law Firm]
 ,name AS [Fee Earner]
 ,claimant_name AS [Claimant]
+,dim_matter_header_current.client_name AS [Client Name]
+,dim_detail_claim.dst_insured_client_name AS [Insured Client Name]
 ,dim_detail_core_details.[incident_date] AS  [Date of Loss]
 ,dim_detail_core_details.[incident_location] AS  [Location]
 ,ISNULL(dim_defendant_involvement.defendant_name, '')+' '+ISNULL(dim_client_involvement.insurerclient_reference,'') AS  [Defendant]
@@ -31,6 +35,7 @@ SELECT
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]
 ,dim_detail_core_details.[present_position]
 ,dim_detail_core_details.[referral_reason]
+,outcome_of_case
 ,CASE WHEN dim_detail_core_details.[present_position] IN ('Final bill due - claim and costs concluded','Final bill sent - unpaid') THEN  'Own costs only'
 WHEN dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding' THEN 'Recovery'
 WHEN dim_detail_core_details.[present_position]='Claim concluded but costs outstanding' THEN 'Claim concluded - costs outstanding'
@@ -42,6 +47,7 @@ WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and c
 WHEN ISNULL(dim_detail_core_details.[present_position],'Blank') IN ('Claim and costs outstanding','Blank') AND CONVERT(DATE,dim_detail_court.[date_of_trial],103)>=CONVERT(DATE,GETDATE(),103) THEN 'Trial or listing windows or awaiting either'
 END AS [Position of claim]
 ,COALESCE(dim_detail_core_details.cambridgeshire_cc_handler,dim_detail_core_details.[clients_claims_handler_surname_forename]+' ('+dim_matter_header_current.client_name+')') AS [LGSS Handler]
+,CASE WHEN COALESCE(dim_detail_core_details.cambridgeshire_cc_handler,dim_detail_core_details.[clients_claims_handler_surname_forename]+' ('+dim_matter_header_current.client_name+')') IN ('Squires, Abigail (CCC)','Galway, Angela (CCC)','Davis, Michael (CCC)','Teahon, Steve (CCC)','Greenall, Mark (CCC)','John, Pamela (CCC)') THEN 1 ELSE 0 END  [LGSS Handler Excl]
   
 ,CASE WHEN dim_detail_core_details.[is_there_an_issue_on_liability]='No' THEN 'Yes' ELSE 'No' END AS [Admitted?] 
 ,CASE WHEN CMC IS NOT NULL THEN 'Yes' ELSE 'No' END AS [Conference?]
@@ -71,20 +77,21 @@ ELSE 'Closed' END AS Tab
 , [CMCDate].key_date AS [CMC Due]
 , [Disclosure].key_date AS [Disclosure]
 , [WitEvidence].key_date AS [Witness evidence]
-, [TrialWindow].key_date AS [Trial window]
+, CASE WHEN CONVERT(DATE,[TrialWindow].key_date,103)<CONVERT(DATE,GETDATE(),103) THEN NULL ELSE [TrialWindow].key_date END  AS [Trial window]
 , [Trial].key_date AS [Trial Date]
 , IIF(ISNULL(fact_finance_summary.wip, 0) + ISNULL(fact_finance_summary.unpaid_bill_balance, 0) = 0, 'Exclude', 'Ok')		AS [external_filter]
 , IIF(dim_detail_core_details.[present_position]='Claim and costs concluded but recovery outstanding', 'Red', 'Black')			AS [font_colour]
 , fact_detail_reserve_detail.damages_reserve		AS [Damages Reserve]
-, fact_detail_reserve_detail.claimant_costs_reserve_current			AS [TP Costs Reserve]
+, CASE WHEN fact_detail_reserve_detail.claimant_costs_reserve_current=0 THEN NULL ELSE fact_detail_reserve_detail.claimant_costs_reserve_current END 			AS [TP Costs Reserve]
 , fact_detail_reserve_detail.defence_costs_reserve				AS [Own Costs Reserve]
 , dim_detail_outcome.date_claim_concluded				AS [Date Claim Concluded]
 , dim_detail_outcome.date_costs_settled				AS [Date Costs Concluded]
 --, fact_detail_claim.damages_paid_by_client			AS [Damages Paid]
 , fact_finance_summary.damages_paid			AS [Damages Paid]
-, fact_finance_summary.total_tp_costs_paid			AS [TP Costs Paid]
+, CASE WHEN fact_finance_summary.total_tp_costs_paid =0 THEN NULL ELSE fact_finance_summary.total_tp_costs_paid END 			AS [TP Costs Paid]
 , fact_finance_summary.defence_costs_billed				AS [Revenue(total)]
-
+,CASE WHEN dim_detail_claim.referral_reason='Advice only' THEN 1 ELSE 0 END AS AdviceCase
+,CASE WHEN dim_detail_claim.referral_reason='Pre-action disclosure' THEN 1 ELSE 0 END AS PAD
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fee_earner_code=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -228,7 +235,7 @@ AND work_type_group IN
 
 AND NOT RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) IN ('A1001-11582','A1001-11662','G1001-5826','W21390-2','W19220-21')
 --AND RTRIM(master_client_code) + '-' + RTRIM(master_matter_number) = 'W16648-13'
-
+AND master_client_code<>'W17427'
 END
 
 
