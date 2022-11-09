@@ -4,22 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-CREATE PROCEDURE [dbo].[FSPPerformance] -- EXEC FSPPerformance '2022-05-01','2022-08-14'
+CREATE PROCEDURE [dbo].[EPPerformance] 
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
@@ -34,7 +19,7 @@ BEGIN
 --DECLARE @EndDate AS DATE
 
 --SET @StartDate='2022-05-01'
---SET @EndDate='2022-08-14'
+--SET @EndDate='2022-11-01'
 
 SELECT ListValue  INTO #Division FROM Reporting.dbo.[udt_TallySplit]('|', @Division)
 SELECT ListValue  INTO #Segment FROM Reporting.dbo.[udt_TallySplit]('|', @Segment)
@@ -165,16 +150,16 @@ FixedSharePartners.fed_code AS [Cascade No]
 , CASE WHEN ContractedHours.ContractedHours>0 THEN (ChargeableHours/ContractedHours.ContractedHours) END AS [Utilisation %]
 ,FSPHrsTarget.HrsAnnualTarget
 ,FSPHrsTarget.HrsYTDTarget
-,CASE WHEN FSPHrsTarget.HrsYTDTarget IS NOT NULL
+,CASE WHEN FSPHrsTarget.HrsYTDTarget >0
 THEN ChargeableHrs.ChargeableHours/FSPHrsTarget.HrsYTDTarget ELSE NULL END AS [YTDHrsTargetAchieved]
-,CASE WHEN FSPHrsTarget.HrsAnnualTarget IS NOT NULL
+,CASE WHEN FSPHrsTarget.HrsAnnualTarget  >0
 THEN ChargeableHrs.ChargeableHours/FSPHrsTarget.HrsAnnualTarget ELSE NULL END AS [AnnualHrsTargetAchieved]
 
 ,FSPRevTarget.RevenueYTDTarget
 ,FSPRevTarget.RevenueAnnualTarget
-,CASE WHEN RevenueYTDTarget IS NOT NULL
+,CASE WHEN RevenueYTDTarget >0
 THEN FeeRev.RevenueYTD/RevenueYTDTarget ELSE NULL END AS [YTDRevTargetAchieved]
-,CASE WHEN RevenueAnnualTarget IS NOT NULL
+,CASE WHEN RevenueAnnualTarget >0
 THEN FeeRev.RevenueYTD/RevenueAnnualTarget ELSE NULL END AS [AnnualRevTargetAchieved]
 ,FixedSharePartners.Segment
 ,DebtOver90
@@ -193,7 +178,7 @@ INNER JOIN red_dw.dbo.dim_employee
 WHERE dss_current_flag='Y' AND activeud=1
 AND leftdate IS NULL 
 AND deleted_from_cascade=0
-AND (levelidud IN ('Fixed Share Partner'))
+AND (levelidud IN ('Equity Partner'))
 ) FixedSharePartners 
 INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel2hist COLLATE DATABASE_DEFAULT
 INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = FixedSharePartners.Segment COLLATE DATABASE_DEFAULT

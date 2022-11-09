@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2020-08-13
@@ -67,13 +68,14 @@ SELECT dim_matter_header_current.[master_client_code] AS [Client Code],
 		dim_detail_hire_details.[date_copley_offer_sent] AS [Date of Copley Offer Sent],
 		dim_detail_hire_details.[chm_third_party_vehicle_make_and_model] AS [Third Party Vehicle (make, model],
 		dim_detail_hire_details.[credit_hire_vehicle_make_and_model] AS [Credit Hire Vehicle (make, model],
-		CASE WHEN date_closed_case_management IS NULL OR date_claim_concluded IS NULL OR fact_detail_paid_detail.[amount_hire_paid] IS null THEN 'Open' ELSE 'Concluded' END AS [Status],
+		CASE WHEN --date_closed_case_management IS NULL OR 
+		date_claim_concluded IS NULL OR fact_detail_paid_detail.[amount_hire_paid] IS NULL THEN 'Open' ELSE 'Concluded' END AS [Status],
 		DATEDIFF(DAY, date_of_accident, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date])) AS [Days til Hire],
 		CASE WHEN dim_detail_hire_details.[credit_hire_organisation_cho]='ClaimsFast' THEN 'Claims Fast'
 			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'Enterprise Rent%' THEN 'Enterprise Rent-a-Car'
 			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'Kindertons%' THEN 'Kindertons'
 			WHEN dim_detail_hire_details.[credit_hire_organisation_cho] LIKE 'OnHire%' THEN 'On Hire'
-			ELSE dim_detail_hire_details.[credit_hire_organisation_cho] end
+			ELSE dim_detail_hire_details.[credit_hire_organisation_cho] END
 			AS [CHO],
 		CAST(CAST([Claimant_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Claimant Postcode Latitude],
 		CAST(CAST([Claimant_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Claimant Postcode Longitude],
@@ -144,23 +146,23 @@ ON fact_finance_summary.master_fact_key=fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.Doogal AS [CHO_Postcode] ON [CHO_Postcode].Postcode=dim_detail_hire_details.[cho_postcode]
 LEFT OUTER JOIN red_dw.dbo.dim_court_involvement
 ON dim_court_involvement.dim_court_involvement_key = fact_dimension_main.dim_court_involvement_key
-LEFT OUTER JOIN (select dim_involvement_full.client_code
+LEFT OUTER JOIN (SELECT dim_involvement_full.client_code
 , dim_involvement_full.matter_number
 , dim_involvement_full.name
 , dim_client.postcode
-from red_dw.dbo.dim_involvement_full
-inner join (
-select dim_involvement_full.client_code, dim_involvement_full.matter_number,
-max(dim_involvement_full.dim_involvement_full_key) last_court_key
+FROM red_dw.dbo.dim_involvement_full
+INNER JOIN (
+SELECT dim_involvement_full.client_code, dim_involvement_full.matter_number,
+MAX(dim_involvement_full.dim_involvement_full_key) last_court_key
 -- select *
-from red_dw.dbo.dim_involvement_full
-where lower(dim_involvement_full.capacity_description) like '%court'
-and dim_involvement_full.entity_code <> ''
-and dim_involvement_full.entity_code is not null
-group by dim_involvement_full.client_code
+FROM red_dw.dbo.dim_involvement_full
+WHERE LOWER(dim_involvement_full.capacity_description) LIKE '%court'
+AND dim_involvement_full.entity_code <> ''
+AND dim_involvement_full.entity_code IS NOT NULL
+GROUP BY dim_involvement_full.client_code
 , dim_involvement_full.matter_number
-) last_court on last_court.last_court_key = dim_involvement_full.dim_involvement_full_key
-left outer join red_dw.dbo.dim_client on dim_involvement_full.dim_client_key = dim_client.dim_client_key) AS Court 
+) last_court ON last_court.last_court_key = dim_involvement_full.dim_involvement_full_key
+LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_involvement_full.dim_client_key = dim_client.dim_client_key) AS Court 
 ON Court.client_code=dim_court_involvement.client_code
 AND Court.matter_number=dim_court_involvement.matter_number
 

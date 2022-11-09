@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[LandRegAlert]
 (
 @EmailAddress NVARCHAR(200)
@@ -43,8 +45,8 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_property
  AND dim_detail_property.matter_number = dim_matter_header_current.matter_number
 WHERE dim_bill_key=0
 AND LOWER(costype_description) LIKE '%land registry%'
-AND workdate=CONVERT(DATE,GETDATE()-1)--'2021-01-25'
-AND hierarchylevel3hist='Real Estate'
+--AND workdate=CONVERT(DATE,GETDATE()-1)--'2021-01-25'
+--AND hierarchylevel3hist='Real Estate'
 END
 
 ELSE 

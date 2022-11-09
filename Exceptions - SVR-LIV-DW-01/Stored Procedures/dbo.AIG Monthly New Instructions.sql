@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		<Orlagh Kelly>
 -- Create date: 09-07-2019
@@ -16,9 +17,8 @@ CREATE  PROCEDURE [dbo].[AIG Monthly New Instructions]
 
 AS
 
---DECLARE @Startdate AS DATETIME  = GETDATE() -30
---, @EndDate AS DATETIME  = GETDATE()
-
+--DECLARE @Startdate AS DATETIME  = (SELECT MIN(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.current_cal_month = 'Previous')
+--, @EndDate AS DATETIME  = (SELECT MAX(dim_date.calendar_date) FROM red_dw.dbo.dim_date WHERE dim_date.current_cal_month = 'Previous')
 
 
 
@@ -173,6 +173,8 @@ dim_matter_header_current.billing_arrangement [Rate Arrangement],
                 AND TRIM(dim_instruction_type.instruction_type) = 'Casualty' THEN 'PAD - Casualty'
            WHEN TRIM(referral_reason) = 'Pre-action disclosure'
                 AND TRIM(dim_instruction_type.instruction_type) = 'Disease' THEN 'PAD - Disease'
+			WHEN TRIM(referral_reason) = 'Pre-action disclosure'
+                AND TRIM(dim_matter_worktype.work_type_group) = 'Motor' THEN 'PAD - Motor'
            WHEN track = 'Small Claims' THEN'Small Claims'
            WHEN TRIM(referral_reason) IN ( 'Infant approval', 'Infant approval',  'Infant Approval') THEN 'Infant Approval'
            
@@ -270,7 +272,7 @@ dim_matter_header_current.billing_arrangement [Rate Arrangement],
 [SLA Acknowledgement_Flag] = CASE WHEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_instructions_received, dim_detail_core_details.[aig_grp_date_initial_acknowledgement_to_claims_handler]) <0  THEN 'Yellow'
                                   WHEN [dbo].[ReturnElapsedDaysExcludingBankHolidays](date_instructions_received, dim_detail_core_details.[aig_grp_date_initial_acknowledgement_to_claims_handler]) > 2 THEN 'Yellow'  
 							      ELSE 'Transparent' END
-,[Track Flag] = CASE WHEN TRIM(red_dw.dbo.dim_detail_core_details.referral_reason)  = 'Costs dispute' THEN 'Transparent'
+,[Track Flag] = CASE WHEN TRIM(red_dw.dbo.dim_detail_core_details.referral_reason)   IN ('Pre-action disclosure','Costs dispute') THEN 'Transparent'
                      WHEN dim_detail_core_details.track IS NULL THEN 'Red'
 					 ELSE 'Transparent' END
 
@@ -327,7 +329,9 @@ AND fact_dimension_main.client_code = 'A2002'
 --AND red_dw.dbo.dim_fed_hierarchy_history.hierarchylevel3hist = @Team
 AND ISNULL(LOWER(RTRIM(outcome_of_case)),'') <> 'exclude from reports'
 AND dim_matter_header_current.date_closed_practice_management IS NULL
-				 
+
+--AND dim_matter_header_current.master_matter_number = '17000'				 
+
 END
 
 

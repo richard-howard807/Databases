@@ -132,9 +132,9 @@ CASE WHEN LOWER(TRIM(dim_detail_outcome.[outcome_of_case]))= 'returned to client
 
 [Outcome of Case] =  dim_detail_outcome.[outcome_of_case],
 
-[Track - Internal] =  dim_detail_core_details.[track]
+[Track - Internal] =  dim_detail_core_details.[track],
 
-
+[File Dealt With in Tesco's LL Team] = dim_detail_client.file_dealt_tesco_ll
 
 
         FROM red_dw.dbo.fact_dimension_main

@@ -4,6 +4,9 @@ SET ANSI_NULLS ON
 GO
 
 
+
+
+
 /*
 		So we can't use a cte because the teams may not be fee earning any more
 		need a way to include all teams in both queries, so may need to use a hierarchy query 
@@ -121,7 +124,9 @@ SELECT
 		,SUM(Data.previous_bill_amount) previous_bill_amount
 		,SUM(Data.bill_amount) bill_amount
 		,SUM(Data.billed_time/60) billed_time
-
+		,SUM(Data.[hours_billed Pre]/60) [hours_billed Pre]
+		,SUM(Data.Matters) AS [Matters]
+		,SUM(Data.[Matters Pre]) AS [Matters Pre]
 			 
 FROM
 (
@@ -135,6 +140,9 @@ SELECT
 	,SUM(CASE WHEN bill_date.calendar_date BETWEEN @PreviousDateFrom AND @PreviousDateTo THEN finance.bill_amount ELSE 0 END)  previous_bill_amount
 	,SUM(CASE WHEN bill_date.calendar_date BETWEEN @DateFrom AND @DateTo THEN finance.bill_amount ELSE 0 END  ) [bill_amount]
 	,0 [billed_time]
+	,0 [hours_billed Pre]
+	,0 [Matters]
+	,0 [Matters Pre]
 FROM red_dw.dbo.fact_bill_activity finance
 INNER JOIN red_dw.dbo.dim_date bill_date ON finance.dim_bill_date_key = bill_date.dim_date_key
 INNER JOIN #ClientCodes ON #ClientCodes.client_code = finance.client_code AND #ClientCodes.matter_number = finance.matter_number
@@ -163,6 +171,9 @@ SELECT		#ClientCodes.client_group_name
 						,0 previous_bill_amount
 						,0 bill_amount
 						,SUM(minutes_recorded) [hours_billed]
+						,0 [hours_billed Pre]
+						,0 [Matters]
+						,0 [Matters Pre]
 			FROM red_dw.dbo.fact_bill_billed_time_activity minutes_recorded
 			INNER JOIN red_dw.dbo.dim_date bill_date ON minutes_recorded.dim_bill_date_key  = bill_date.dim_date_key
 			INNER JOIN red_dw.dbo.dim_client client ON client.dim_client_key = minutes_recorded.dim_client_key
@@ -174,8 +185,128 @@ SELECT		#ClientCodes.client_group_name
 						,fee_earner.hierarchylevel2hist 
 						,fee_earner.hierarchylevel3hist 
 						,fee_earner.hierarchylevel4hist
-					
-	
+UNION ALL 
+		
+SELECT		#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist [division]
+						,fee_earner.hierarchylevel3hist [department]
+						,fee_earner.hierarchylevel4hist [team]
+						,' Profit Costs - Previous Period' [fin_month_display]
+						,0 previous_bill_amount
+						,0 bill_amount
+						,0 [hours_billed]
+						,SUM(minutes_recorded) [hours_billed Pre]
+						,0 [Matters]
+						,0 [Matters Pre]
+			FROM red_dw.dbo.fact_bill_billed_time_activity minutes_recorded
+			INNER JOIN red_dw.dbo.dim_date bill_date ON minutes_recorded.dim_bill_date_key  = bill_date.dim_date_key
+			INNER JOIN red_dw.dbo.dim_client client ON client.dim_client_key = minutes_recorded.dim_client_key
+			INNER JOIN #ClientCodes ON #ClientCodes.dim_matter_header_curr_key = minutes_recorded.dim_matter_header_curr_key
+			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history fee_earner ON fee_earner.dim_fed_hierarchy_history_key = minutes_recorded.dim_fed_hierarchy_history_key
+			WHERE bill_date.calendar_date BETWEEN @PreviousDateFrom AND @PreviousDateTo
+			GROUP BY  
+					#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist 
+						,fee_earner.hierarchylevel3hist 
+						,fee_earner.hierarchylevel4hist
+
+UNION ALL 
+SELECT		#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist [division]
+						,fee_earner.hierarchylevel3hist [department]
+						,fee_earner.hierarchylevel4hist [team]
+						,' Profit Costs - Previous Period' [fin_month_display]
+						,0 previous_bill_amount
+						,0 bill_amount
+						,0 [hours_billed]
+						,0 [hours_billed Pre]
+						,0 [Matters]
+						,COUNT(1) [Matters Pre]
+			FROM red_dw.dbo.dim_matter_header_current
+			INNER JOIN red_dw.dbo.dim_client client  ON client.client_code = dim_matter_header_current.client_code
+			INNER JOIN #ClientCodes ON #ClientCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+INNER JOIN red_dw.dbo.fact_dimension_main
+ ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fee_earner
+ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=fee_earner.dim_fed_hierarchy_history_key
+WHERE CONVERT(DATE,date_opened_case_management,103) BETWEEN @PreviousDateFrom AND @PreviousDateTo
+			GROUP BY  
+					#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist 
+						,fee_earner.hierarchylevel3hist 
+						,fee_earner.hierarchylevel4hist			
+--SELECT		#ClientCodes.client_group_name
+--						,fee_earner.hierarchylevel2hist [division]
+--						,fee_earner.hierarchylevel3hist [department]
+--						,fee_earner.hierarchylevel4hist [team]
+--						,' Profit Costs - Previous Period' [fin_month_display]
+--						,0 previous_bill_amount
+--						,0 bill_amount
+--						,0 [hours_billed]
+--						,0 [hours_billed Pre]
+--						,0 [Matters]
+--						,COUNT(1) [Matters Pre]
+--			FROM red_dw.dbo.dim_matter_header_current
+--			INNER JOIN red_dw.dbo.dim_client client  ON client.client_code = dim_matter_header_current.client_code
+--			INNER JOIN #ClientCodes ON #ClientCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+--			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fee_earner
+--			 ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
+--			WHERE CONVERT(DATE,date_opened_case_management,103) BETWEEN @PreviousDateFrom AND @PreviousDateTo
+--			GROUP BY  
+--					#ClientCodes.client_group_name
+--						,fee_earner.hierarchylevel2hist 
+--						,fee_earner.hierarchylevel3hist 
+--						,fee_earner.hierarchylevel4hist	
+UNION ALL 
+SELECT		#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist [division]
+						,fee_earner.hierarchylevel3hist [department]
+						,fee_earner.hierarchylevel4hist [team]
+						,' Profit Costs - Previous Period' [fin_month_display]
+						,0 previous_bill_amount
+						,0 bill_amount
+						,0 [hours_billed]
+						,0 [hours_billed Pre]
+						,COUNT(1) [Matters]
+						,0 [Matters Pre]
+			FROM red_dw.dbo.dim_matter_header_current
+			INNER JOIN red_dw.dbo.dim_client client  ON client.client_code = dim_matter_header_current.client_code
+			INNER JOIN #ClientCodes ON #ClientCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+INNER JOIN red_dw.dbo.fact_dimension_main
+ ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fee_earner
+ON dim_fed_hierarchy_history_key_original_matter_owner_dopm=fee_earner.dim_fed_hierarchy_history_key
+			WHERE CONVERT(DATE,date_opened_case_management,103) BETWEEN @DateFrom AND @DateTo
+			GROUP BY  
+					#ClientCodes.client_group_name
+						,fee_earner.hierarchylevel2hist 
+						,fee_earner.hierarchylevel3hist 
+						,fee_earner.hierarchylevel4hist	
+--SELECT		#ClientCodes.client_group_name
+--						,fee_earner.hierarchylevel2hist [division]
+--						,fee_earner.hierarchylevel3hist [department]
+--						,fee_earner.hierarchylevel4hist [team]
+--						,' Profit Costs - Previous Period' [fin_month_display]
+--						,0 previous_bill_amount
+--						,0 bill_amount
+--						,0 [hours_billed]
+--						,0 [hours_billed Pre]
+--						,COUNT(1) [Matters]
+--						,0 [Matters Pre]
+--			FROM red_dw.dbo.dim_matter_header_current
+--			INNER JOIN red_dw.dbo.dim_client client  ON client.client_code = dim_matter_header_current.client_code
+--			INNER JOIN #ClientCodes ON #ClientCodes.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+--			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history AS fee_earner
+--			 ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
+--			WHERE CONVERT(DATE,date_opened_case_management,103) BETWEEN @DateFrom AND @DateTo
+--			GROUP BY  
+--					#ClientCodes.client_group_name
+--						,fee_earner.hierarchylevel2hist 
+--						,fee_earner.hierarchylevel3hist 
+--						,fee_earner.hierarchylevel4hist	
 ) Data
 	
 	

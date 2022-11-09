@@ -404,7 +404,6 @@ SELECT
 ,[Zurich Intro Date] 
 ,MaxValue
 , grpageas_motor_date_of_receipt_of_clients_file_of_papers
-
 , CountPhoneCallNotComplete
 , claimants_costs_paid
 , NULLIF(total_amount_billed,0)	- NULLIF(vat_billed,0)  AS [total_amount_billed]
@@ -434,6 +433,7 @@ SELECT
 ,zurich_no_call_made
 ,zurich_introductory_call
 ,[Have we had an extension for Initial Report]
+,dateadd(mm, -1, getdate())
 FROM #MainData
 
 

@@ -4,25 +4,14 @@ SET ANSI_NULLS ON
 GO
 
 
---2019-08-07 ES added Casualty Liverpool 2 requested by JB 
---2020-01-13 ES added Casualty Birmingham requested by JB
---2020-05-04 JB removed team filter due to the new hierarchy change of team names. Added in filter to include Legal Ops - Claims only, ticket #57448 
---2021-05-07 OK currently only brings in claims, changed to bring in LTA & Claims 
---2021-09-03 ES #101252, amended fee arrangment logic to look at dim_detail_finance.[output_wip_fee_arrangement]
---2021-09-23 JB #115357 added @client_code so sproc can be used for new Gallagher Bassestt Billing Project Report, and any other that are needed in future
---2022-01-20 MT New Catalina report based on ZurichBillingProjectReport
---2022-10-14 MT Additional filter as per JB 173273
 
-CREATE PROCEDURE [dbo].[CatalinaBillingProjectReport]
-(
-	@client_code AS NVARCHAR(8)
-)
+
+
+CREATE PROCEDURE [dbo].[MMIBillingProjectReport]
+
 AS
 
---Testing
---DECLARE @client_code AS NVARCHAR(8) = 'W25984'
 
-BEGIN
 SELECT dim_matter_header_current.client_code AS [Client]
 ,dim_matter_header_current.matter_number AS [Matter]
 , dim_matter_header_current.master_client_code +'-'+ dim_matter_header_current.master_matter_number AS [Client/Matter Number]
@@ -49,19 +38,58 @@ END  AS ElapsedDays
 ,dim_detail_outcome.date_costs_settled 
 ,outcome_of_case
 ,date_claim_concluded
---,[Filter_Flag] = CASE WHEN  dim_detail_outcome.date_costs_settled  IS NOT NULL THEN 1 
- --     WHEN  date_claim_concluded IS NOT NULL AND TRIM(outcome_of_case) IN ('Discontinued - Indemnified by third party', 'Discontinued - indemnified by third party','Discontinued - indemnified by 3rd party' , 'Discontinued - Pre-Lit', 'Discontinued  - pre-lit', 'Discontinued - pre-lit','Discontinued - post lit with no costs order', 'Discontinued - post-lit with no costs order', 'Exclude from Reports', 'Exclude from reports', 'Lost at Trial', 'Lost at trial', 'Lost at trial (damages exceed claimant''s P36 offer)','Struck Out' ,'Struck out','Won At Trial','Won at Trial','Won at trial','discontinued - pre-lit'  , 'exclude from reports'   , 'struck out','won at trial'                                 ) THEN 1 
---	        ELSE 0 END
+,delegated 
 
+
+/* •	Casualty (regardless of DA or non-DA) – when WIP hits £500
+plus 90 days have passed since i) file open date or ii) 
+last bill date, excluding credit and re-bill. */
+,[Filter] = CASE WHEN 
+hierarchylevel3hist = 'Casualty'  
+AND wip >= 500
+AND CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
+END > 90 THEN 1 
+/*•	Casualty (regardless of DA or non-DA) – 
+when present position is changed to ‘final bill due’
+, no minimum WIP value. */
+  WHEN 
+hierarchylevel3hist = 'Casualty' 
+AND wip>0
+AND present_position LIKE 'Final bill due%' THEN 1 
+
+/*•	Disease DA files – 5 days since file opening, regardless of WIP value. */
+ WHEN 
+hierarchylevel3hist = 'Disease' 
+AND TRIM(delegated) = 'Y' 
+AND wip>0
+AND DATEDIFF(DAY,date_opened_case_management,GETDATE()) > 5 THEN 1 
+
+/*•	Disease non-DA files - when WIP hits £500 plus 90 days have passed since i) file open date or ii) last bill date, 
+excluding credit and re-bill.*/
+ WHEN 
+hierarchylevel3hist = 'Disease' 
+AND TRIM(delegated) = 'N'         
+AND wip >= 500
+AND CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
+END > 90 THEN 1 
+
+ELSE 0 END
+,work_type_name
 
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
 INNER JOIN red_dw.dbo.fact_finance_summary
  ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
+ LEFT JOIN red_dw.dbo.dim_matter_worktype
+ ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
  LEFT JOIN red_dw.dbo.dim_detail_outcome
  ON dim_detail_outcome.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT JOIN red_dw.dbo.dim_instruction_type
+ ON dim_instruction_type.dim_instruction_type_key = dim_matter_header_current.dim_instruction_type_key
+
 LEFT OUTER  JOIN 
 (
 SELECT fileID AS ms_fileid
@@ -91,7 +119,7 @@ INNER JOIN red_dw.dbo.fact_bill
  ON fact_bill.dim_bill_key = dim_bill.dim_bill_key
 INNER JOIN red_dw.dbo.dim_bill_date
  ON dim_bill_date.dim_bill_date_key = fact_bill.dim_bill_date_key
-WHERE client_code=@client_code
+WHERE TRIM(client_code)='M00001'
 AND fees_total <>0
 AND dim_bill.bill_number <>'PURGE'
 AND bill_reversed=0
@@ -102,7 +130,7 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
  LEFT OUTER JOIN red_dw.dbo.dim_detail_finance
  ON dim_detail_finance.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-WHERE dim_matter_header_current.client_code=@client_code
+WHERE TRIM(dim_matter_header_current.client_code)='M00001'
 AND date_opened_case_management>='2019-02-01'
 --AND dim_matter_header_current.matter_number NOT IN ('00079227')
 AND dim_fed_hierarchy_history.hierarchylevel2hist IN
@@ -114,22 +142,40 @@ N'Legal Ops - LTA'
 AND date_closed_practice_management IS NULL
 AND date_opened_case_management >='2019-02-01'
 
-AND CASE WHEN ISNULL(TRIM(fee_arrangement),'') <>'Fixed Fee/Fee Quote/Capped Fee' THEN 1 
-                   WHEN TRIM(fee_arrangement)='Fixed Fee/Fee Quote/Capped Fee' AND ISNULL(TRIM(present_position),'')='Final bill due - claim and costs concluded' THEN 1 
-				   /* Additional filter as per 173273*/
-                   WHEN  dim_detail_outcome.date_costs_settled  IS NOT NULL THEN 1 
-                   WHEN  date_claim_concluded IS NOT NULL AND TRIM(outcome_of_case) IN ('Discontinued - Indemnified by third party', 'Discontinued - indemnified by third party','Discontinued - indemnified by 3rd party' , 'Discontinued - Pre-Lit', 'Discontinued  - pre-lit', 'Discontinued - pre-lit','Discontinued - post lit with no costs order', 'Discontinued - post-lit with no costs order', 'Exclude from Reports', 'Exclude from reports', 'Lost at Trial', 'Lost at trial', 'Lost at trial (damages exceed claimant''s P36 offer)','Struck Out' ,'Struck out','Won At Trial','Won at Trial','Won at trial','discontinued - pre-lit'  , 'exclude from reports'   , 'struck out','won at trial'                                 ) THEN 1 
-	   
-ELSE 0 END = 1
-                                                
-AND wip>=500
-AND (CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+AND 
+
+CASE WHEN 
+hierarchylevel3hist = 'Casualty'  
+AND wip >= 500
+AND CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
 DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
-END)>=90
+END > 90 THEN 1 
+/*•	Casualty (regardless of DA or non-DA) – 
+when present position is changed to ‘final bill due’
+, no minimum WIP value. */
+  WHEN 
+hierarchylevel3hist = 'Casualty' 
+AND wip>0
+AND present_position LIKE 'Final bill due%' THEN 1 
 
+/*•	Disease DA files – 5 days since file opening, regardless of WIP value. */
+ WHEN 
+hierarchylevel3hist = 'Disease' 
+AND TRIM(delegated) = 'Y' 
+AND wip>0
+AND DATEDIFF(DAY,date_opened_case_management,GETDATE()) > 5 THEN 1 
 
+/*•	Disease non-DA files - when WIP hits £500 plus 90 days have passed since i) file open date or ii) last bill date, 
+excluding credit and re-bill.*/
+ WHEN 
+hierarchylevel3hist = 'Disease' 
+AND TRIM(delegated) = 'N'         
+AND wip >= 500
+AND CASE WHEN LastBillNonDisbBill.LastBillDate IS NULL THEN DATEDIFF(DAY,date_opened_case_management,GETDATE()) ELSE 
+DATEDIFF(DAY,LastBillNonDisbBill.LastBillDate,GETDATE())
+END > 90 THEN 1 
 
-
+ELSE 0 END = 1 
 
 
 
@@ -143,6 +189,5 @@ END)
 
 
 
-END
 
 GO

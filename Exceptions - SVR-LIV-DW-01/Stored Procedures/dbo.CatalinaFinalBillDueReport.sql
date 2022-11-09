@@ -33,4 +33,6 @@ task_desccription
 , 'Catalina 15 Day Bill Reminder - Due tomorrow'
  )
 
+ AND dim_matter_header_current.master_client_code <> '30645'
+
 GO

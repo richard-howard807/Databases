@@ -3,12 +3,6 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-
-
-
-
-
 CREATE   PROCEDURE [dbo].[AXAXLDataSubmissionPost-COG]
 
 AS 
@@ -23,13 +17,15 @@ SELECT  DISTINCT
 
 ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim_matter_header_current.ms_fileid  ) AS RN
 ,dim_matter_header_current.ms_fileid
-, [AXA XL Claim Number] = COALESCE(client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA')
+, [AXA XL Claim Number] = COALESCE(assocref.assocRef, client_reference, insurerclient_reference, AXAXLClaimNumber COLLATE DATABASE_DEFAULT, 'TBA')
 , [Law Firm Matter Number] = RTRIM(dim_matter_header_current.master_client_code)+ '-' + RTRIM(dim_matter_header_current.master_matter_number) 
 , [Line of Business] = hierarchylevel3hist 
 , [New Line of Business] = cboLineofBus.cdDesc --LineofBus.[CaseText] -- Needs Correcting 20210909 - MT
 
 , [Product Type] = work_type_name   
-, [Product Type New] =  ProdType.[CaseText] -- Needs Correcting 20210909 - MT
+
+/*Update to look at dim_detail_client[axa_product_type] unless dim_detail_client[axa_line_of_business] is “Motor” then populate product type as “Motor”.*/
+, [Product Type New] = CASE WHEN TRIM(dim_detail_client.[axa_line_of_business]) = 'Motor' THEN 'Motor' ELSE dim_detail_client.[axa_product_type] END--ProdType.[CaseText] -- Needs Correcting 20210909 - MT
 
 , [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name ELSE dim_detail_claim.[dst_insured_client_name] END  
 , [Insured Name from Associates] = assoccontname.contName  -- dim_client_involvement.insuredclient_name
@@ -40,7 +36,8 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , [AXA XL Claims Handler] = dim_detail_core_details.[clients_claims_handler_surname_forename]                                       
 , [Third Party Administrator]  = Brokername 
 , [Coverage / defence?]  = cboCovDef.cdDesc  -- API.[cboCovDef_CaseText]  -- udMICoreAXA
-, [Law firm handling office (city)] = branch_name 
+, [Law firm handling office (city)] = CASE WHEN TRIM(dim_matter_header_current.branch_name) IN ('London (Fleet Street)', 'London (Hallmark)') THEN 'London' ELSE    dim_matter_header_current.branch_name END                    
+
 , [Date Instructed] = COALESCE(dim_detail_core_details.[date_instructions_received], dim_matter_header_current.date_opened_case_management) 
 
 , [Date Full File of Papers Received (if different from date instructed)] = dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers]
@@ -55,7 +52,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , [Does the client require an initial report?] = 	dim_detail_core_details.[do_clients_require_an_initial_report]
 , [Date Initial Report Sent] =	dim_detail_core_details.[date_initial_report_sent]
 , [Date of First Subsequent SLA Report] = 	CASE WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN NULL ELSE CAST(REPLACE(RIGHT(dim_detail_concat_cases.[date_subsequent_sla_report_sent], 11), ']', '') AS DATE) END 
-, [Date of Latest Subsequent SLA Report] =	CASE WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN NULL ELSE CAST(REPLACE(LEFT(dim_detail_concat_cases.[date_subsequent_sla_report_sent], 11), '[', '') AS DATE) END 
+, [Date of Latest Subsequent SLA Report] =	CASE WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN NULL ELSE dim_detail_core_details.date_subsequent_sla_report_sent  END 
 
 
 , [Report Date] = ISNULL(dim_detail_core_details.date_subsequent_sla_report_sent,date_initial_report_sent) 
@@ -84,7 +81,7 @@ CASE WHEN dim_detail_core_details.[proceedings_issued] = 'Yes' THEN
 , [Counsel Paid] = Disbursements.[Disbs - Counsel fees] 
 , [Other Disbursements Paid] = ISNULL(Disbursements.DisbAmount, 0) - ISNULL(Disbursements.[Disbs - Counsel fees], 0)
 
-, [Opposing side's Costs Claimed] = fact_detail_reserve_detail.[claimant_costs_reserve_current] --fact_finance_summary.[tp_total_costs_claimed]  
+, [Opposing side's Costs Claimed] = fact_finance_summary.[tp_total_costs_claimed] 
 
 , [Timekeepers - Details of anyone who worked on the case during the time period.] = NULL 
 , [Name] = BilledTime.Name 
@@ -201,6 +198,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_outcome WITH(NOLOCK)
  ON  dim_detail_outcome.dim_detail_outcome_key = fact_dimension_main.dim_detail_outcome_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_paid_detail WITH(NOLOCK)
  ON  fact_detail_paid_detail.master_fact_key = fact_dimension_main.master_fact_key
+
+LEFT JOIN ms_prod.config.dbAssociates assocref
+ON fileID = ms_fileid AND assocType = 'INSURERCLIENT'
+
 LEFT OUTER JOIN (SELECT dim_matter_header_current.dim_matter_header_curr_key,MIN(bill_date) AS [Date first invoice sent] FROM red_dw.dbo.fact_bill_matter
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill_matter.dim_matter_header_curr_key
@@ -223,7 +224,6 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS FirstBill
  ON dim_detail_concat_cases.dim_detail_concat_case_key = fact_dimension_main.dim_detail_concat_case_key
 LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
  ON fact_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-
 LEFT OUTER JOIN 
 (
 SELECT ms_fileid,MAX(tskDue) AS TrialDate FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
@@ -548,6 +548,7 @@ AND dim_matter_header_current.master_client_code + '-' + master_matter_number NO
 
 SELECT DISTINCT * FROM #AXAXLDataSubmission
 WHERE RN = 1
+--AND [Law Firm Matter Number] IN ('A1001-10451', 'A1001-12655')
 ORDER BY ms_fileid
 
 

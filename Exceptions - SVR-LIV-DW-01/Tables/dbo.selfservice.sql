@@ -65,7 +65,6 @@ CREATE TABLE [dbo].[selfservice]
 [Total FIC Point Calc] [float] NULL,
 [Credit Hire] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Organisation] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
-[Credit Hire Org HF] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Organisation Detail] [varchar] (500) COLLATE Latin1_General_BIN NULL,
 [Hire Start Date] [datetime] NULL,
 [Hire End Date] [datetime] NULL,
@@ -268,6 +267,7 @@ CREATE TABLE [dbo].[selfservice]
 [VAT non-comp] [numeric] (16, 2) NULL,
 [Name of Instructing Insurer] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Incident Postcode Latitude] [decimal] (8, 6) NULL,
-[Incident Postcode Longitude] [decimal] (9, 6) NULL
+[Incident Postcode Longitude] [decimal] (9, 6) NULL,
+[File Dealt with in Tesco's Large Loss Team?] [nvarchar] (255) COLLATE Latin1_General_BIN NULL
 ) ON [PRIMARY]
 GO

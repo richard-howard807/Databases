@@ -71,7 +71,7 @@ AS [Elapsed days]
 ,wip AS [WIP]
 ,disbursement_balance AS [Unbilled Disbursements]
 ,dim_detail_core_details.[date_letter_of_claim]
-
+, CASE dim_detail_claim.[stw_work_type] WHEN 'Third Party Recoveries' THEN 'STW TP Recoveries' ELSE 'STW DG Transfer' END AS page_name
 
 FROM red_dw.dbo.dim_matter_header_current
 LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
@@ -113,7 +113,7 @@ GROUP BY dim_matter_header_current.dim_matter_header_curr_key) AS LastBill
  ON LastBill.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE master_client_code='257248'
-AND  dim_detail_claim.[stw_work_type] ='Third Party Recoveries'
+AND  dim_detail_claim.[stw_work_type] IN ('Third Party Recoveries', 'DG Transfer')
 
 ORDER BY master_matter_number
 

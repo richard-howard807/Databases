@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 25/10/2018
@@ -29,12 +31,16 @@ AS
 		   TD.TrustDisbStatus,
 		   TD.IsReversed,
 		   TD.ReverseDate,
-		   TD.Comment
+		   TD.Comment,
+		   TD.RecipientBank
+,BankAcct.Name AS BankName,BankAcct.Description AS BankDesc
 	FROM TE_3E_Prod.dbo.TRUSTDISBURSEMENT TD WITH (NOLOCK)
 		INNER JOIN TE_3E_Prod.dbo.MATTER M WITH (NOLOCK)
 			ON M.MATTINDEX = TD.MATTER
 		LEFT JOIN TE_3E_Prod.dbo.TRUSTCHECK TC WITH (NOLOCK)
 			ON TC.TRUSTCHKINDEX = TD.TRUSTCHECK
+		LEFT OUTER JOIN TE_3E_Prod.dbo.BankAcct
+		 ON TD.BankAcctTrust=BankAcct.BankAcctIndex
 	WHERE TC.CkNum IS NULL
 		  AND ReverseDate IS NULL
 

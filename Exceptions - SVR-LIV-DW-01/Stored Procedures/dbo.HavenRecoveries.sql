@@ -58,7 +58,8 @@ fact_bill_detail_summary.disbursements_billed_exc_vat + fact_finance_summary.vat
 fact_bill_detail_summary.disbursements_billed_exc_vat + fact_finance_summary.vat_billed +   fact_finance_summary.[defence_costs_billed] [Total PC billed inc recovery],
 --dim_detail_claim.[notes_on_recovery] 
 ISNULL(recovery_notes,'')  AS Notes1,
-ISNULL(detailed_recovery_notes,'') AS [Notes2],
+--ISNULL(detailed_recovery_notes,'') AS [Notes2],
+dim_file_notes.external_file_notes AS [Notes2],
 red_dw.dbo.dim_detail_core_details.incident_date,
 red_dw.dbo.dim_matter_header_current.matter_owner_full_name  [Matter Owner],
 red_dw..dim_detail_finance.output_wip_fee_arrangement  [Fee Type],
@@ -131,7 +132,9 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
  AND fact_detail_reserve_detail.matter_number = dim_matter_header_current.matter_number
 LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
             ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = red_dw.dbo.fact_dimension_main.dim_claimant_thirdpart_key
-
+LEFT OUTER JOIN red_dw.dbo.dim_file_notes
+ON dim_file_notes.client_code = fact_dimension_main.client_code
+AND dim_file_notes.matter_number = fact_dimension_main.matter_number
 
         LEFT JOIN
         (

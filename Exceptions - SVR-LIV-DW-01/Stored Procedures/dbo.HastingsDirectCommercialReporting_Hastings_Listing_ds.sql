@@ -362,4 +362,7 @@ ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_
 WHERE
 	hastings_listing_table.[Supplier Reference] <> '4908-19'
 	--AND hastings_listing_table.[Supplier Reference] = '4908-17'
+
+
+	ORDER BY date_opened_case_management
 GO

@@ -201,16 +201,30 @@ SELECT
 	, #employee_dates.cal_month
 	, SUM(IIF(fact_employee_attendance.category = 'In Office', 1, 0))		AS days_in_office_per_month
 	, SUM(IIF(ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home'), 1, 0))		AS worked_days
-	, COUNT(*)				AS total_working_days 
+	, total_working_days.total_working_days				AS total_working_days 
 INTO #office_days_filter
 FROM #employee_dates
 LEFT OUTER JOIN red_dw.dbo.fact_employee_attendance
 		ON fact_employee_attendance.employeeid = #employee_dates.employeeid
 			AND fact_employee_attendance.startdate = #employee_dates.calendar_date
 				AND fact_employee_attendance.attendancekey <> 'Dummy'
+INNER JOIN (--This join deals with the total working days in the months selected incl the current month 
+			SELECT 
+				dim_date.cal_month
+				, COUNT(*)	AS total_working_days
+			FROM red_dw.dbo.dim_date
+			WHERE 1 = 1
+				AND dim_date.trading_day_flag = 'Y'
+				AND dim_date.holiday_flag = 'N'
+				AND dim_date.calendar_date BETWEEN @start_cal_date AND @end_cal_date
+			GROUP BY
+				dim_date.cal_month
+			) AS total_working_days
+	ON total_working_days.cal_month = #employee_dates.cal_month
 GROUP BY
 	#employee_dates.employeeid
 	, #employee_dates.cal_month
+	, total_working_days.total_working_days
 
 
 

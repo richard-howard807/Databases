@@ -2,17 +2,33 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
+
+
 CREATE PROCEDURE [dbo].[NewInstructionsReport]
 ( 
 @StartDate AS DATE
 ,@EndDate AS DATE
+,@Division AS NVARCHAR(MAX)
+,@Department AS NVARCHAR(MAX)
+,@Team AS NVARCHAR(MAX)
+,@FeeEarner AS NVARCHAR(MAX)
 )
 AS 
 
 
 BEGIN
 
+	IF OBJECT_ID('tempdb..#Division') IS NOT NULL   DROP TABLE #Division
+	IF OBJECT_ID('tempdb..#Department') IS NOT NULL   DROP TABLE #Department
+	IF OBJECT_ID('tempdb..#Team') IS NOT NULL   DROP TABLE #Team
+	IF OBJECT_ID('tempdb..#FeeEarner') IS NOT NULL   DROP TABLE #FeeEarner
 
+SELECT ListValue  INTO #Division FROM Reporting.dbo.[udt_TallySplit]('|', @Division)
+SELECT ListValue  INTO #Department FROM Reporting.dbo.[udt_TallySplit]('|', @Department)
+SELECT ListValue  INTO #Team FROM Reporting.dbo.[udt_TallySplit]('|', @Team)
+SELECT ListValue  INTO #FeeEarner FROM Reporting.dbo.[udt_TallySplit]('|', @FeeEarner)
 
 SELECT AllData.Ref AS [Client and matter number]
 ,ClientName
@@ -141,7 +157,6 @@ FROM
 									WHERE current_cal_week='Current') THEN 'Weekly' ELSE 'Monthly' END AS [Filter]
 									, 1 AS [Number of Matters]
 		
-		
 				, CASE WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)=0 THEN '£0'
 				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=50000 THEN '£1-£50,000'
 				WHEN (CASE WHEN LOWER(work_type_name)='claims handling' THEN COALESCE(fact_detail_reserve_detail.[el_tp_injury_reserve],fact_detail_reserve_detail.[motor_tp_injury_reserve],fact_detail_reserve_detail.[pl_tp_injury_reserve]) ELSE fact_finance_summary.[damages_reserve] END)<=100000 THEN '£50,000-£100,000'
@@ -216,25 +231,25 @@ FROM
 		ELSE
 			'No Reserve' 
 	END					AS [Damages Banding - Extended Version]
-	,CASE WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Ageas' then 'Ageas'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='AIG' then 'AIG'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='AXA XL' then 'AXA XL'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Co-op/Markerstudy' then 'Co-op/Markerstudy'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Hiscox Group' then 'Hiscox Group'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Markel' then 'Markel'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='NHS Resolution' then 'NHS Resolution'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Northern Powergrid' then 'Northern Powergrid'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='pwc' then 'pwc'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Royal Mail' then 'Royal Mail'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Sabre' then 'Sabre'
-WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Zurich' then 'Zurich'
-WHEN dim_client.client_code='00134912' then 'Medical Protection Society'
-WHEN dim_client.client_code='T15069' then 'Medical Protection Society'
-WHEN dim_client.client_code='00756630' then 'Clarion Housing Group'
-WHEN dim_client.client_code='91958C' then 'Clarion Housing Group'
-WHEN dim_client.client_code='T3003' then 'Tesco'
-WHEN dim_client.client_code='00004908' then 'Hastings Direct'
-else '* Non-Patron Clients'
+	,CASE WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Ageas' THEN 'Ageas'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='AIG' THEN 'AIG'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='AXA XL' THEN 'AXA XL'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Co-op/Markerstudy' THEN 'Co-op/Markerstudy'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Hiscox Group' THEN 'Hiscox Group'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Markel' THEN 'Markel'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='NHS Resolution' THEN 'NHS Resolution'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Northern Powergrid' THEN 'Northern Powergrid'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='pwc' THEN 'pwc'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Royal Mail' THEN 'Royal Mail'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Sabre' THEN 'Sabre'
+WHEN ISNULL(dim_client.client_group_name, dim_client.client_name)='Zurich' THEN 'Zurich'
+WHEN dim_client.client_code='00134912' THEN 'Medical Protection Society'
+WHEN dim_client.client_code='T15069' THEN 'Medical Protection Society'
+WHEN dim_client.client_code='00756630' THEN 'Clarion Housing Group'
+WHEN dim_client.client_code='91958C' THEN 'Clarion Housing Group'
+WHEN dim_client.client_code='T3003' THEN 'Tesco'
+WHEN dim_client.client_code='00004908' THEN 'Hastings Direct'
+ELSE '* Non-Patron Clients'
 END AS PatronClient
 ,ISNULL(CASE WHEN dim_client.client_group_name='' THEN NULL ELSE dim_client.client_group_name END , dim_client.client_name) AS ClientName
 	,fact_finance_summary.fixed_fee_amount AS fixed_fee_amount
@@ -288,7 +303,13 @@ ON dim_matter_worktype.[work_type_name] = [MatterGroupList].[Matter Type] COLLAT
 AND NOT dim_matter_worktype.work_type_name IN ('Wills Archive','Deeds Archive')
 
 ) AS AllData
+INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = AllData.Division COLLATE DATABASE_DEFAULT
+INNER JOIN #Department AS Department  ON Department.ListValue COLLATE DATABASE_DEFAULT = AllData.Department COLLATE DATABASE_DEFAULT
+INNER JOIN #Team AS Team ON Team.ListValue   COLLATE DATABASE_DEFAULT = AllData.Team COLLATE DATABASE_DEFAULT
+INNER JOIN #FeeEarner AS FeeEarner ON FeeEarner.ListValue   COLLATE DATABASE_DEFAULT = AllData.[Matter Owner] COLLATE DATABASE_DEFAULT
+
 WHERE AllData.calendar_date BETWEEN @StartDate AND @EndDate
+		
 
 
 END

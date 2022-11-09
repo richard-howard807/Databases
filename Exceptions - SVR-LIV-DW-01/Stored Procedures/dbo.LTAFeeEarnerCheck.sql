@@ -30,6 +30,7 @@ SELECT RTRIM(master_client_code)+'-' + RTRIM(master_matter_number) AS [File]
 ,CASE WHEN tskComplete=1 THEN 'Yes' ELSE 'No' END AS [Task Completed]
 ,workemail AS [Email]
 ,hierarchylevel3hist AS [Department]
+,hierarchylevel4hist AS Team
  FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT
@@ -88,6 +89,7 @@ SELECT RTRIM(master_client_code)+'-' + RTRIM(master_matter_number) AS [File]
 ,CASE WHEN tskComplete=1 THEN 'Yes' ELSE 'No' END AS [Task Completed]
 ,workemail AS [Email]
 ,hierarchylevel3hist AS [Department]
+,hierarchylevel4hist AS Team
  FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history  WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT

@@ -7,6 +7,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -471,18 +472,18 @@ DROP TABLE IF EXISTS #Disbursements
                    dim_agents_involvement.cho_name
                ) AS [Credit Hire Organisation] --dim_agents_involvement.cho_name AS [Credit Hire Organisation] 27/01/2021 - MT as per 86052,
 
-       ,CASE
-           WHEN credit_hire_organisation_cho = 'Other                                                       ' THEN
-               other
-           WHEN other IS NULL THEN
-               'Other'
-           WHEN
-           (
-               other IS NULL
-               AND credit_hire_organisation_cho IS NULL
-           ) THEN
-               COALESCE(cho, hirecompany_name)
-       END AS [Credit Hire Org HF]
+       --,CASE
+       --    WHEN credit_hire_organisation_cho = 'Other                                                       ' THEN
+       --        other
+       --    WHEN other IS NULL THEN
+       --        'Other'
+       --    WHEN
+       --    (
+       --        other IS NULL
+       --        AND credit_hire_organisation_cho IS NULL
+       --    ) THEN
+       --        COALESCE(cho, hirecompany_name)
+       --END AS [Credit Hire Org HF]
        ,dim_detail_hire_details.[cho] AS [Credit Hire Organisation Detail]
 	   ,dim_detail_hire_details.cho_hire_start_date AS [Hire Start Date]
 		,dim_detail_hire_details.chp_hire_end_date AS [Hire End Date]
@@ -838,6 +839,7 @@ WHEN
 		, dim_detail_claim.[name_of_instructing_insurer] AS [Name of Instructing Insurer]
 		, CAST(CAST([Incident_Postcode].Latitude AS FLOAT) AS DECIMAL(8,6)) AS [Incident Postcode Latitude]
 		, CAST(CAST([Incident_Postcode].Longitude AS FLOAT) AS DECIMAL(9,6)) AS [Incident Postcode Longitude]
+		,dim_detail_client.file_dealt_tesco_ll AS [File Dealt with in Tesco's Large Loss Team?]
 
 INTO Reporting.dbo.selfservice
 FROM red_dw.dbo.fact_dimension_main WITH(NOLOCK)

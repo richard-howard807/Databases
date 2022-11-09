@@ -2,6 +2,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
+
 CREATE PROCEDURE [dbo].[RLBChargeableHours]
 (
 @Period AS NVARCHAR(MAX)
@@ -36,10 +39,45 @@ AND tworkdt<=CONVERT(DATE,GETDATE(),103)
 GROUP BY tkfirst + ' ' + tklast,
          tworkdt,
 		 ttk
-        
+  
+ IF OBJECT_ID(N'tempdb..#ContractedHrs') IS NOT NULL
+BEGIN
+DROP TABLE #ContractedHrs
+END
+ SELECT DailyContractedHours.employeeid,
+        DailyContractedHours.fin_year,
+        DailyContractedHours.fin_month_no,
+        DailyContractedHours.contacted_hours_day * TradingDays.TradingDays AS ContractedHrsMonth
+		INTO #ContractedHrs
+		FROM
+ (SELECT DISTINCT    load_cascade_employee_jobs.employeeid,
+    stage_fact_3e_contracted_hours_02_dates.fin_year,
+    stage_fact_3e_contracted_hours_02_dates.fin_month_no,
+    load_cascade_employee_jobs.normalhours / 5 contacted_hours_day
+	,previousfirmud
+
+  FROM red_dw.dbo.load_cascade_employee_jobs
+  INNER JOIN red_dw.dbo.load_cascade_employee ON load_cascade_employee_jobs.employeeid = load_cascade_employee.employeeid
+ INNER JOIN red_dw.dbo.ds_sh_valid_hierarchy_x AS load_cascade_valid_hierarchy_x
+  ON load_cascade_valid_hierarchy_x.hierarchynode = load_cascade_employee_jobs.hierarchynode AND load_cascade_valid_hierarchy_x.dss_current_flag='Y'
+  INNER JOIN red_dw.dbo.stage_fact_3e_contracted_hours_02_dates on stage_fact_3e_contracted_hours_02_dates.calendar_date BETWEEN
+              CASE WHEN load_cascade_employee_jobs.sys_effectivedate <= employeestartdate THEN employeestartdate ELSE load_cascade_employee_jobs.sys_effectivedate end
+                  AND
+              CASE WHEN ISNULL(load_cascade_employee_jobs.sys_calculatedenddate,'20990101') >= leftdate THEN leftdate ELSE ISNULL(load_cascade_employee_jobs.sys_calculatedenddate,'20990101') end
+  WHERE  fin_year='2023'
+  AND previousfirmud='RadcliffesLeBrasseur'
+
+) AS DailyContractedHours
+LEFT OUTER JOIN (  SELECT  fin_year,fin_month_no,COUNT(1) AS TradingDays
+  FROM red_dw.dbo.dim_date
+  WHERE fin_year='2023'
+  AND trading_day_flag='Y'
+  GROUP BY fin_year,
+           fin_month_no) AS TradingDays
+		    ON TradingDays.fin_year = DailyContractedHours.fin_year
+			AND TradingDays.fin_month_no = DailyContractedHours.fin_month_no
 --DECLARE @Period AS NVARCHAR(500)
 --SET @Period=(SELECT bill_fin_period FROM red_dw.dbo.dim_bill_date WHERE CONVERT(DATE,bill_date,103)=CONVERT(DATE,GETDATE(),103))
-
 --PRINT @Period
 
 DECLARE @FinYear AS INT
@@ -62,8 +100,13 @@ SELECT AllData.FE,
        AllData.Team,
        AllData.CurrentMonth,
        AllData.YTD
-, CASE WHEN ContractedHours.ContractedHours>0 THEN (CurrentMonth/ContractedHours.ContractedHours) END AS [Utilisation % Month]
-	   
+, CASE WHEN ISNULL(ContractedHours.ContractedHoursMTD,0)>0 THEN (CurrentMonth/ContractedHours.ContractedHoursMTD) END AS [Utilisation % Month]
+, CASE WHEN ISNULL(ContractedHours.ContractedHoursYTD,0)>0 THEN (YTD/ContractedHours.ContractedHoursYTD) END AS [Utilisation % YTD]
+,ContractedHours.ContractedHoursMTD
+,ContractedHours.ContractedHoursYTD
+,CASE WHEN ContractedHours.ContractedHoursMTD>0 THEN AllData.CurrentMonth ELSE NULL END AS ChargebleMTD
+,CASE WHEN ContractedHours.ContractedHoursYTD>0 THEN AllData.YTD ELSE NULL END AS ChargebleYTD
+
 	   FROM 
 (SELECT #RLBData.FE
 ,#RLBData.[Fe Name]
@@ -93,11 +136,12 @@ GROUP BY #RLBData.FE,
 ) AS AllData
 LEFT OUTER JOIN 
 (
-SELECT employeeid, SUM(contracted_hours_in_month) AS [ContractedHours] 
-				FROM  red_dw.dbo.fact_budget_activity WITH(NOLOCK)
-				LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
-				ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_budget_activity.dim_fed_hierarchy_history_key
-				WHERE financial_budget_year=@FinYear
+SELECT employeeid
+,SUM(ContractedHrsMonth) AS [ContractedHoursYTD] 
+,SUM(CASE WHEN fin_month_no=@FinMonth THEN ContractedHrsMonth ELSE 0 END) [ContractedHoursMTD] 
+				FROM  #ContractedHrs
+				WHERE fin_year=@FinYear
+				AND @FinMonth <=@FinMonth
 				GROUP BY employeeid
 ) AS ContractedHours
  ON  ContractedHours.employeeid = AllData.employeeid
