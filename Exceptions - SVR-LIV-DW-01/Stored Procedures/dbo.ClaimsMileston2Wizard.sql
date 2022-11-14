@@ -5,13 +5,6 @@ GO
 
 
 
-
-
-
-
-
-
-
 CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 (
 @StartDate AS DATE
@@ -19,8 +12,13 @@ CREATE PROCEDURE  [dbo].[ClaimsMileston2Wizard]
 )
 AS 
 
+--DECLARE @StartDate AS DATE = '2022-01-17'
+--		,@EndDate AS DATE = CAST(CONVERT(DATE,GETDATE(),103) AS DATE)
+
+
+
 BEGIN
-SELECT hierarchylevel2hist AS Division
+SELECT DISTINCT hierarchylevel2hist AS Division
 ,hierarchylevel3hist AS [Department]
 ,hierarchylevel4hist AS [Team]
 ,name AS [Fee Earner]
@@ -165,6 +163,7 @@ AND dim_matter_worktype.work_type_code NOT IN ('0008'
 --AND master_client_code='W20218' AND master_matter_number='517'
 AND name <>'Steve Hassall'
 AND hierarchylevel4hist <>'Niche Costs'
+
 
 END
 GO

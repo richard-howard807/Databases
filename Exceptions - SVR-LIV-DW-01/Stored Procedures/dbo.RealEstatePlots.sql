@@ -36,7 +36,7 @@ dim_detail_property.exchange_date,
 ,dim_detail_core_details.[present_position]	AS [Present Position]
 ,chargeable_minutes_recorded/60 AS hours
 ,external_file_notes
-, COALESCE(dim_detail_plot_details.david_wilson_homes_limited_developments, dim_detail_plot_details.barratt_manchester_developments) AS [Developer Name]
+, dim_detail_plot_details.developer AS [Developer Name]
 
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.exchange_date, udPlotSalesExchange.dteExchangeDate, ExchangeDateCompleted, dim_detail_property.[exchange_date], dim_detail_plot_details.[date_of_exchange], dim_detail_property.[residential_date_of_exchange]),103)) AS [Elapsed Days to Exchange]
 --,DATEDIFF(DAY,CONVERT(DATE,date_instructions_received,103),CONVERT(DATE,COALESCE(dim_detail_plot_details.pscompletion_date, udPlotSalesExchange.dteCompDate),103))  AS [Elapsed Days to Completion]

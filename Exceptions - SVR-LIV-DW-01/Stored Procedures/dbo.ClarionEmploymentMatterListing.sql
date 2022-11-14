@@ -110,6 +110,7 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_advice.[advice_function] AS [Function]
 ,dim_claimant_thirdparty_involvement.claimant_name AS [Claimant Name]
 ,HoursRecorded.[Hours Recorded] AS [Hours Posted]
+,dim_detail_advice.[advice_function]  AS [Advice Function]
 
 
 FROM red_dw.dbo.dim_matter_header_current

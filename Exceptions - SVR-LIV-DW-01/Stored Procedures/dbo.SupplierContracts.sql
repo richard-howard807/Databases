@@ -2,6 +2,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2021-07-16
@@ -23,11 +26,11 @@ BEGIN
 	SELECT dim_matter_header_current.master_client_code AS [Client Code]
 	, dim_matter_header_current.master_matter_number AS [Matter Number]
 	, dim_matter_header_current.matter_description AS [Matter Description]
-	, [annual_review_questionnaire_complete] AS [Annual Review Questionnaire Complete]
+	, MS.[Annual Review Questionnaire complete] AS [Annual Review Questionnaire Complete]
 	, [billing_frequency] AS [Billing Frequency]
 	, [budget_holder] AS [Budget Holder]
-	, [business_services_dept] AS [Business Services Dept]
-	, [signed_supplier_code_of_conduct] AS [Signed Supplier Code of Conduct]
+	, [Business Services Dept] AS [Business Services Dept]
+	, MS.[Signed Supplier Code of Conduct] AS [Signed Supplier Code of Conduct]
 	, [currency] AS [Currency]
 	, [formal_contract_agreed] AS [Formal Contract Agreed]
 	, [pqq_complete] AS [PQQ Complete]
@@ -70,7 +73,9 @@ BEGIN
 	--, dim_matter_header_current.client_balance_review AS [Client Balance Review]
 	--, dim_matter_header_current.client_balance_review_comments AS [Client Balance Review Comments]
 	--, dim_matter_header_current.date_client_balance_review AS [Date of last Client Balance Review]
-
+	,MS.[Date Contract Reviewed]
+	,MS.[Risk Captured]
+	,MS.[Risk Classification]
 FROM red_dw.dbo.fact_dimension_main
 LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
 ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -80,7 +85,26 @@ LEFT OUTER JOIN red_dw.dbo.fact_detail_suppliers
 ON fact_detail_suppliers.master_fact_key = fact_dimension_main.master_fact_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_audit
 ON dim_detail_audit.dim_detail_audit_key = fact_dimension_main.dim_detail_audit_key
+LEFT OUTER JOIN 
+(
 
+SELECT fileID,txtRiskCaptured AS [Risk Captured]
+,cboRiskClass AS [Risk Classification]
+,dteContRe AS [Date Contract Reviewed]
+,Description	AS [Business Services Dept]
+,CASE WHEN cboCodeOfCond='Y' THEN 'Yes' WHEN cboCodeOfCond='N' THEN 'No' WHEN cboCodeOfCond='V' THEN 'Varied'  WHEN cboCodeOfCond='R' THEN 'Refused'  ELSE cboCodeOfCond END AS	[Signed Supplier Code of Conduct]
+,CASE WHEN cboAnnuRevComp='Y' THEN 'Yes' WHEN cboAnnuRevComp='N' THEN 'No' WHEN cboAnnuRevComp='V' THEN 'Varied'  WHEN cboAnnuRevComp='R' THEN 'Rejected'  ELSE cboAnnuRevComp END  AS [Annual Review Questionnaire complete]
+FROM  ms_prod.dbo.udMISupplierContracts
+LEFT OUTER JOIN  TE_3E_Prod.dbo.SectionGroup 
+ON cboBusServSup=Code COLLATE DATABASE_DEFAULT
+WHERE txtRiskCaptured IS NOT NULL OR 
+cboRiskClass IS NOT NULL OR 
+dteContRe IS NOT NULL OR 
+cboBusServSup IS NOT NULL OR 
+cboCodeOfCond IS NOT NULL OR 
+cboAnnuRevComp IS NOT NULL 
+) AS MS
+ ON ms_fileid=ms.fileID
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND dim_matter_header_current.master_client_code='W04776'
     

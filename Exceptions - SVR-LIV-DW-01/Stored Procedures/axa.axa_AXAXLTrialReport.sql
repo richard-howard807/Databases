@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 24/03/2021
@@ -21,8 +22,9 @@ BEGIN
 
     SELECT DISTINCT
 	
+	dim_matter_header_current.ms_fileid,
 	
-		   [Client Ref] = COALESCE(dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference,dim_involvement_full.reference),
+		   [Client Ref] = COALESCE(ClientRef.ClientRefMS,dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference,dim_involvement_full.reference) COLLATE DATABASE_DEFAULT,
 		   [AXA XL Handler] = dim_detail_core_details.clients_claims_handler_surname_forename,
 		   [Matter Description] = dim_matter_header_current.matter_description,
            [Weightmans Ref] = dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number,
@@ -37,7 +39,7 @@ BEGIN
 		   ,work_type_group
 		   ,DATEDIFF(DAY,GETDATE(),COALESCE(dim_detail_court.[date_of_trial], MAX(dim_key_dates.key_date) OVER (PARTITION BY fact_dimension_main.master_fact_key))) AS [Number of Days until Trial]
 		   ,dim_detail_claim.[date_pretrial_report_sent] AS [Date Pre-Trial Report Sent]
-		
+		,dim_client_involvement.client_reference,dim_client_involvement.insurerclient_reference,dim_involvement_full.reference
     FROM red_dw.dbo.fact_dimension_main
         INNER JOIN red_dw.dbo.dim_matter_header_current AS dim_matter_header_current
             ON dim_matter_header_current.dim_matter_header_curr_key = fact_dimension_main.dim_matter_header_curr_key
@@ -67,7 +69,14 @@ BEGIN
 			ON dim_detail_court.dim_detail_court_key = fact_dimension_main.dim_detail_court_key
 		LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 			ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
- 
+ LEFT OUTER JOIN (SELECT fileID,assocRef AS ClientRefMS
+FROM ms_prod.config.dbAssociates
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON fileID=ms_fileid
+WHERE  assocRef IS NOT NULL
+AND assocType IN ('CLIENT')
+AND assocActive=1) AS ClientRef
+ ON dim_matter_header_current.ms_fileid=ClientRef.fileID
  WHERE  1 = 1
  
           AND ISNULL(LOWER(dim_detail_outcome.outcome_of_case), '') <> 'exclude from reports'

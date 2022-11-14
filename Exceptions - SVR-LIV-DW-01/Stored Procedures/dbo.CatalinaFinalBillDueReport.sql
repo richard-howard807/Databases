@@ -13,6 +13,7 @@ SELECT
 ClientMatter = dim_matter_header_current.master_client_code + '-' + master_matter_number,
 created,
 task_desccription
+, dim_tasks.tskdue
 ,completed
 ,CASE WHEN completed IS NOT NULL THEN 1 ELSE 0 END AS CompletedFlag
 , name AS [Fee Earner]

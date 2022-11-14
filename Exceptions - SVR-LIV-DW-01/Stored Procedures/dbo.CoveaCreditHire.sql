@@ -34,10 +34,24 @@ BEGIN
 	, dim_detail_core_details.track AS [Court Track]
 	, Court.[Court Name] AS [Location of Court]
 	--, dim_court_involvement.court_name AS [Location of Court]
-	, NULL AS [Settlement Stage]
+	--, proceedings_issued
+	--, dim_detail_outcome.date_claim_concluded
+	--, defence_due_date
+	--, trial_key_date
+	--, trial_window_key_date
+	--, DATEADD(MONTH, -3, trial_key_date) AS [3monthbeforetrial]
+	, CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN 'Ongoing'
+		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND (dim_detail_core_details.proceedings_issued ='No' OR dim_detail_core_details.proceedings_issued IS NULL) THEN 'Pre-lit'
+		WHEN dim_detail_core_details.proceedings_issued='Yes' AND (defence_due_key_date.defence_due_date > dim_detail_outcome.date_claim_concluded OR defence_due_key_date.defence_due_date IS null) THEN 'Before Filing Defence'
+		WHEN dim_detail_outcome.date_claim_concluded = trial_key_date THEN 'At Trial'
+		WHEN date_claim_concluded BETWEEN DATEADD(MONTH, -3, trial_key_date) AND trial_key_date THEN 'Pre Trial'
+		WHEN (date_claim_concluded >= defence_due_key_date.defence_due_date) AND (trial_key_date IS NULL AND trial_window_key_date IS null) THEN 'In Directions'
+		WHEN (date_claim_concluded >= defence_due_key_date.defence_due_date) AND (date_claim_concluded<trial_window_key_date OR date_claim_concluded<DATEADD(MONTH, -3, trial_key_date)) THEN 'In Directions'
+		END AS [Settlement Stage]
+
 	--, DATEDIFF(DAY, dim_detail_hire_details.hire_start_date, dim_detail_hire_details.hire_end_date) AS [Period of Hire Claimed] 
 	, DATEDIFF(DAY, ISNULL(dim_detail_hire_details.[cho_hire_start_date], dim_detail_hire_details.[hire_start_date]),ISNULL(dim_detail_hire_details.[hire_end_date], GETDATE())) AS [Period of Hire Claimed] 
-	, NULL AS [Period of Hire Settled]
+	, CASE WHEN bhrr_accepted='Yes' THEN 'BHR' ELSE NULL END AS [Period of Hire Settled]
 	, fact_detail_recovery_detail.cht_daily_rate_claimed AS [Credit Hire Rate Claimed]
 	, NULL AS [Credit Hire Rate Paid]
 	, fact_detail_recovery_detail.cht_daily_rate_claimed AS [Total Credit Hire Claimed]
@@ -87,6 +101,7 @@ LEFT OUTER JOIN red_dw.dbo.dim_agents_involvement
 ON dim_agents_involvement.dim_agents_involvement_key = fact_dimension_main.dim_agents_involvement_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
   LEFT JOIN
         (
             SELECT fileID, 
@@ -106,6 +121,48 @@ ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_m
 		        AS Court
             ON dim_matter_header_current.ms_fileid = Court.fileID
                AND Court.XOrder = 1
+
+	LEFT OUTER JOIN (
+						SELECT 
+							dim_key_dates.dim_matter_header_curr_key
+							, MAX(CAST(dim_key_dates.key_date AS DATE)) AS defence_due_date
+						FROM red_dw.dbo.dim_key_dates
+						WHERE 1 = 1
+							AND dim_key_dates.client_code = 'W15396'
+							AND dim_key_dates.type = 'DEFENCE'
+							AND dim_key_dates.is_active = 1
+						GROUP BY
+							dim_key_dates.dim_matter_header_curr_key
+					) AS defence_due_key_date
+		ON defence_due_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+			LEFT OUTER JOIN (
+						SELECT 
+							dim_key_dates.dim_matter_header_curr_key
+							, MAX(CAST(dim_key_dates.key_date AS DATE)) AS trial_key_date
+						FROM red_dw.dbo.dim_key_dates
+						WHERE 1 = 1
+							AND dim_key_dates.client_code = 'W15396'
+							AND dim_key_dates.type = 'TRIAL'
+							AND dim_key_dates.is_active = 1
+						GROUP BY
+							dim_key_dates.dim_matter_header_curr_key
+					) AS trial_key_date
+		ON trial_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+
+					LEFT OUTER JOIN (
+						SELECT 
+							dim_key_dates.dim_matter_header_curr_key
+							, MAX(CAST(dim_key_dates.key_date AS DATE)) AS trial_window_key_date
+						FROM red_dw.dbo.dim_key_dates
+						WHERE 1 = 1
+							AND dim_key_dates.client_code = 'W15396'
+							AND dim_key_dates.type = 'TRIALWINDOW'
+							AND dim_key_dates.is_active = 1
+						GROUP BY
+							dim_key_dates.dim_matter_header_curr_key
+					) AS trial_window_key_date
+		ON trial_window_key_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND dim_matter_header_current.master_client_code='W15396'

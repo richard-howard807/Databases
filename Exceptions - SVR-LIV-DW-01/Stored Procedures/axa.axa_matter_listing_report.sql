@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		Lucy Dickinson
 -- Create date: 16/02/2018
@@ -36,7 +37,7 @@ BEGIN
 		   [Department] = fee_earner.hierarchylevel3hist,
            [Weightmans Reference ] = RTRIM(fact_dimension_main.client_code) + '-' + fact_dimension_main.matter_number,
            [AXA CS Handler] = dim_detail_core_details.clients_claims_handler_surname_forename,
-           [AXA CS Reference] = COALESCE(client_ref.insurerclient_reference,insrref.reference, client_ref.client_reference),
+           [AXA CS Reference] = COALESCE(ClientRefMS,client_ref.insurerclient_reference,insrref.reference, client_ref.client_reference) COLLATE DATABASE_DEFAULT ,
            [Date of Accident] = dim_detail_core_details.incident_date,
            [Claimant Solicitors] = COALESCE(tp_ref.claimantsols_name,clsol.name,tp_ref.claimantrep_name),
            [Injury Type ] = dim_detail_core_details.brief_description_of_injury,
@@ -215,7 +216,14 @@ BEGIN
 			ON dim_detail_previous_details.dim_detail_previous_details_key = fact_dimension_main.dim_detail_previous_details_key
 		
 		
-		
+		LEFT OUTER JOIN (SELECT fileID,assocRef AS ClientRefMS
+FROM ms_prod.config.dbAssociates
+INNER JOIN red_dw.dbo.dim_matter_header_current
+ ON fileID=ms_fileid
+WHERE  assocRef IS NOT NULL
+AND assocType IN ('CLIENT')
+AND assocActive=1) AS ClientRef
+ ON dim_matter_header_current.ms_fileid=ClientRef.fileID
 
     WHERE ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from reports'
           AND ISNULL(dim_detail_outcome.outcome_of_case, '') <> 'Exclude from Reports'
