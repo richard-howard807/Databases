@@ -88,6 +88,7 @@ SELECT
 		, dim_matter_header_current.[fee_arrangement] AS [Fee Arrangement]
 		, fact_finance_summary.[fixed_fee_amount] AS [Fixed Fee Amount]
 		, dim_detail_outcome.[are_we_pursuing_a_recovery] AS [Are we pursing a recovery?]
+		, dim_detail_core_details.do_clients_require_an_initial_report AS [Do Clients Require an Initial Report?]
 		, dim_detail_core_details.[date_initial_report_sent] AS [Date Initial Report Sent]
 		, dim_detail_core_details.[date_subsequent_sla_report_sent] AS [Date Subsequent Report Sent]
 		, fact_detail_paid_detail.[cru_paid_by_all_parties] AS [CRU Paid]
@@ -333,6 +334,7 @@ AND dim_detail_core_details.coop_client_branch IN ('Complex Claims Manchester','
 AND ISNULL(dim_detail_claim.msg_instruction_type,'') <>'MSG Project 3'
 AND ISNULL(dim_matter_worktype.work_type_name,'')<>'PPO Administration'
 AND ISNULL(dim_detail_core_details.[referral_reason],'')<>'Advice only'
+AND ISNULL(dim_detail_core_details.[referral_reason],'')<>'Costs dispute'
 AND dim_fed_hierarchy_history.hierarchylevel4hist<>'Regulatory Core'
 
 END

@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[IAPatronClient]
 
 AS 
@@ -58,6 +59,8 @@ SELECT CASE WHEN ISNULL(dim_client.client_group_name,dim_client.client_name)  IN
 ,SUM(LastYRDebt) AS LastYRDebt
 ,SUM(Opportunities.Numb) AS CurrentOpportunities
 ,SUM(PrevOpportunities.Numb) AS LastOpportunities
+,SUM(Ops.[Number Live Opportunities]) AS [Number Live Opportunities]
+,SUM(Ops.[Number Closed Opportunities]) AS [Number Closed Opportunities]
 FROM red_dw.dbo.dim_client
 
 LEFT OUTER JOIN
@@ -200,7 +203,14 @@ WHERE fin_year=@PreFinYear
 AND ActualClosedDate IS NOT NULL
 GROUP BY dim_client_key) AS PrevOpportunities
  ON PrevOpportunities.dim_client_key = dim_client.dim_client_key
-
+LEFT OUTER JOIN 
+(
+SELECT dim_client_key
+,SUM(CASE WHEN ActualClosedDate IS NULL THEN 1 ELSE 0 END) AS [Number Live Opportunities]
+,SUM(CASE WHEN ActualClosedDate IS NOT NULL THEN 1 ELSE 0 END) AS [Number Closed Opportunities]
+ FROM dbo.IA_Client_Data
+GROUP BY dim_client_key 
+) AS Ops ON Ops.dim_client_key = dim_client.dim_client_key
 
 WHERE dim_client.client_group_code IN
       (

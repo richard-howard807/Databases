@@ -69,15 +69,26 @@ SELECT DISTINCT dim_matter_header_current.master_client_code+'-'+dim_matter_head
 	WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent])
 	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent]) 
 	END AS [Days to Initial Report]
-	, CASE WHEN dim_detail_claim.date_90_day_post_instruction_plan_sent IS NOT NULL 
-	THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent)
+	, CASE WHEN ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent) IS NOT NULL 
+	THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent))
 	WHEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received), GETDATE())<=90 THEN NULL 
-	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent) 
+	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent))
 	END AS [Days to Updated Management Plan]
+	, FirstSubsequentDate.SubsequentReportDate AS [First Subsequent Report]
+	, dim_detail_claim.date_90_day_post_instruction_plan_sent AS [Date 90 day post instruction plan sent]
 	--, [SubsequentDate].[SubsequentReportDate]
 	--, [LatestBillDate]
 	--, wip
-	, CASE WHEN [SubsequentDate].[LatestBillDate] IS NULL AND wip<250 THEN 1 ELSE SubsequentDate.DaysFromSubsequentReport END AS [Days From Susequent Report to Invoice]
+	, CASE WHEN dim_matter_header_current.date_opened_case_management>='2022-06-01' THEN 1
+	WHEN [SubsequentDate].[LatestBillDate] IS NULL AND wip<250 THEN 1 ELSE SubsequentDate.DaysFromSubsequentReport END AS [Days From Susequent Report to Invoice]
+	, CASE WHEN [SubsequentDate].[LatestBillDate] IS NULL AND wip<250 THEN 1 ELSE SubsequentDate.DaysFromSubsequentReport END AS [Days From Susequent Report to Invoice - Actual]
+	, dim_detail_client.[axa_reason_bill_not_sent_within_three_days] AS [Reason bill not sent within -/+3 days of a subsquent report]
+	, dim_detail_client.[axa_reason_final_bill_not_sent_within_thirty_days] AS [Reason final bill not sent within 30 days of final disposition]
+	, dim_detail_client.[axa_reason_instr_not_ack_within_seventy_two_hours] AS [Reason intsructions not acknowledged within 72 hours]
+	, dim_detail_client.[axa_reason_initial_report_not_sent_within_thirty_days] AS [Reason initial report not sent within 30 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_lit_mgmt_plan_not_sent_within_ninety_days] AS [Reason litigation management plan not sent within 90 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_pretrial_report_not_sent_sixty_days] AS [Reason pre-trial report not sent within 60 days ahead of trial]
+	, dim_detail_client.[axa_reason_wip_disbs_billed_exceeds_budget] AS [Reason WIP/disbs billed exceeds budget]
 	, 1 AS [Cases]
 	, 'Open' AS [Level]
 	, ISNULL(dim_detail_core_details.date_instructions_received, dim_matter_header_current.date_opened_case_management) AS [Date]
@@ -148,6 +159,24 @@ WHERE data.LatestBillDate IS NOT NULL
 AND data.RN=1) AS [SubsequentDate]
 ON SubsequentDate.master_client_code = dim_matter_header_current.master_client_code
 AND SubsequentDate.master_matter_number = dim_matter_header_current.master_matter_number
+
+LEFT OUTER JOIN (SELECT * FROM (
+SELECT  udSubSLARep.fileId
+, dim_matter_header_current.master_client_code
+, dim_matter_header_current.master_matter_number
+, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) AS [SubsequentReportDate]
+--, ABS(DATEDIFF(DAY, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL), LastBillDate.LatestBillDate)) AS [DaysFromSubsequentReport]
+, ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY udSubSLARep.dteSubSLARepSSL asc) AS RN
+FROM MS_Prod.dbo.udSubSLARep
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ON udSubSLARep.fileId=dim_matter_header_current.ms_fileid
+WHERE red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) IS NOT NULL ) AS data
+WHERE data.RN=1
+AND data.master_client_code='A1001'
+--AND data.master_matter_number='6474'
+) AS [FirstSubsequentDate]
+ON [FirstSubsequentDate].master_client_code = dim_matter_header_current.master_client_code
+AND [FirstSubsequentDate].master_matter_number = dim_matter_header_current.master_matter_number
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
@@ -224,12 +253,18 @@ SELECT DISTINCT dim_matter_header_current.master_client_code+'-'+dim_matter_head
 	WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent])
 	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent]) 
 	END AS [Days to Initial Report]
-	, CASE WHEN dim_detail_claim.date_90_day_post_instruction_plan_sent IS NOT NULL 
-	THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent)
-	WHEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received), GETDATE())<=90 THEN NULL 
-	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent) 
-	END AS [Days to Updated Management Plan]
+	, NULL AS [Days to Updated Management Plan]
+	, NULL AS [First Subsequent Report]
+	, NULL AS [Date 90 day post instruction plan sent]
 	, NULL AS [Days From Susequent Report to Invoice]
+	, NULL AS [Days From Susequent Report to Invoice - Actual]
+	, dim_detail_client.[axa_reason_bill_not_sent_within_three_days] AS [Reason bill not sent within -/+3 days of a subsquent report]
+	, dim_detail_client.[axa_reason_final_bill_not_sent_within_thirty_days] AS [Reason final bill not sent within 30 days of final disposition]
+	, dim_detail_client.[axa_reason_instr_not_ack_within_seventy_two_hours] AS [Reason intsructions not acknowledged within 72 hours]
+	, dim_detail_client.[axa_reason_initial_report_not_sent_within_thirty_days] AS [Reason initial report not sent within 30 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_lit_mgmt_plan_not_sent_within_ninety_days] AS [Reason litigation management plan not sent within 90 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_pretrial_report_not_sent_sixty_days] AS [Reason pre-trial report not sent within 60 days ahead of trial]
+	, dim_detail_client.[axa_reason_wip_disbs_billed_exceeds_budget] AS [Reason WIP/disbs billed exceeds budget]
 	, 1 AS [Cases]
 	, 'Closed' AS [Level]
 	, CASE WHEN (dim_detail_core_details.present_position='Final bill sent - unpaid' OR dim_detail_core_details.present_position='To be closed/minor balances to be clear')
@@ -354,12 +389,22 @@ SELECT DISTINCT dim_matter_header_current.master_client_code+'-'+dim_matter_head
 	WHEN dim_detail_core_details.[date_initial_report_sent] IS NOT NULL THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent])
 	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_core_details.[date_initial_report_sent]) 
 	END AS [Days to Initial Report]
-	, CASE WHEN dim_detail_claim.date_90_day_post_instruction_plan_sent IS NOT NULL 
-	THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent)
+	, CASE WHEN ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent) IS NOT NULL 
+	THEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent))
 	WHEN DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received), GETDATE())<=90 THEN NULL 
-	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),dim_detail_claim.date_90_day_post_instruction_plan_sent) 
+	ELSE DATEDIFF(DAY, ISNULL(dim_detail_core_details.[grpageas_motor_date_of_receipt_of_clients_file_of_papers],dim_detail_core_details.date_instructions_received),ISNULL(FirstSubsequentDate.SubsequentReportDate, dim_detail_claim.date_90_day_post_instruction_plan_sent)) 
 	END AS [Days to Updated Management Plan]
+	, FirstSubsequentDate.SubsequentReportDate AS [First Subsequent Report]
+	, dim_detail_claim.date_90_day_post_instruction_plan_sent AS [Date 90 day post instruction plan sent]
 	, NULL AS [Days From Susequent Report to Invoice]
+	, NULL AS [Days From Susequent Report to Invoice - Actual]
+	, dim_detail_client.[axa_reason_bill_not_sent_within_three_days] AS [Reason bill not sent within -/+3 days of a subsquent report]
+	, dim_detail_client.[axa_reason_final_bill_not_sent_within_thirty_days] AS [Reason final bill not sent within 30 days of final disposition]
+	, dim_detail_client.[axa_reason_instr_not_ack_within_seventy_two_hours] AS [Reason intsructions not acknowledged within 72 hours]
+	, dim_detail_client.[axa_reason_initial_report_not_sent_within_thirty_days] AS [Reason initial report not sent within 30 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_lit_mgmt_plan_not_sent_within_ninety_days] AS [Reason litigation management plan not sent within 90 days of receiving instructions/file of papers]
+	, dim_detail_client.[axa_reason_pretrial_report_not_sent_sixty_days] AS [Reason pre-trial report not sent within 60 days ahead of trial]
+	, dim_detail_client.[axa_reason_wip_disbs_billed_exceeds_budget] AS [Reason WIP/disbs billed exceeds budget]
 	, 1 AS [Cases]
 	, 'Trial' AS [Level]
 	, COALESCE(dim_detail_court.[date_of_trial], MAX(dim_key_dates.key_date) OVER (PARTITION BY fact_dimension_main.master_fact_key)) AS [Date]
@@ -397,6 +442,24 @@ ON dim_key_dates.dim_matter_header_curr_key = dim_matter_header_current.dim_matt
 --ON _20210909_AXA_ProductsandBusinessType.ClNo=dim_matter_header_current.master_client_code COLLATE DATABASE_DEFAULT
 --AND _20210909_AXA_ProductsandBusinessType.FileNo=master_matter_number COLLATE DATABASE_DEFAULT
 --AND MSCode='cboLineofBus'
+
+LEFT OUTER JOIN (SELECT * FROM (
+SELECT  udSubSLARep.fileId
+, dim_matter_header_current.master_client_code
+, dim_matter_header_current.master_matter_number
+, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) AS [SubsequentReportDate]
+--, ABS(DATEDIFF(DAY, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL), LastBillDate.LatestBillDate)) AS [DaysFromSubsequentReport]
+, ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY udSubSLARep.dteSubSLARepSSL asc) AS RN
+FROM MS_Prod.dbo.udSubSLARep
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ON udSubSLARep.fileId=dim_matter_header_current.ms_fileid
+WHERE red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) IS NOT NULL ) AS data
+WHERE data.RN=1
+AND data.master_client_code='A1001'
+--AND data.master_matter_number='6474'
+) AS [FirstSubsequentDate]
+ON [FirstSubsequentDate].master_client_code = dim_matter_header_current.master_client_code
+AND [FirstSubsequentDate].master_matter_number = dim_matter_header_current.master_matter_number
 
 WHERE dim_matter_header_current.reporting_exclusions=0
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'

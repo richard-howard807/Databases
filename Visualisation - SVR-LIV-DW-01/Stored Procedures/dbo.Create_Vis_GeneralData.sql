@@ -6,6 +6,7 @@ GO
 
 
 
+
 /*
 ===================================================
 ===================================================
@@ -29,6 +30,7 @@ Current Version:	Initial Create
 -- ES 22/08/2022, A-M requested the data source go back 6 years for insurance client dashboards rather than 3 years
 -- JB 30/08/2022, #164996 added new revenue/hours/disb years. Changed them to pivoted temp tables to avoid multiple joins
 -- JB 22/09/2022, #169375 changed Revenue column to look at bill_amount in fact_bill_activity
+-- JL 18/10/2022, Christa requested dim_detail_client.file_dealth_tesco_ll AS to be added 
 ====================================================
 
 */
@@ -184,6 +186,7 @@ RTRIM(dim_matter_header_current.master_client_code)+'-'+dim_matter_header_curren
 		, CASE WHEN dim_matter_header_current.date_closed_case_management IS NULL THEN 'Open' ELSE 'Closed' END AS [Open/Closed Case Status]
 		, dim_instruction_type.instruction_type AS [Instruction Type]
 		, dim_detail_core_details.date_instructions_received AS [Date Instructions Received]
+		, dim_detail_outcome.date_claimants_costs_received AS [Date claimant's costs received] --#174181
 		, dim_detail_outcome.date_costs_settled AS [Date Costs Settled]
 		, dim_detail_outcome.date_claim_concluded AS [Date Claim Concluded]
 		, dim_fed_hierarchy_history.[name] AS [Case Manager]
@@ -589,7 +592,7 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 		, [LeaseAgreedTasks].[DateTaskCreated] AS [Date Lease In]
 		, dim_detail_property.completion_date AS [Property Completion Date]
 		, dim_file_notes.external_file_notes AS [Matter Notes]
-		, dim_file_notes.file_notes		as [Internal File Notes]
+		, dim_file_notes.file_notes		AS [Internal File Notes]
 		, dim_detail_property.[exchange_date] AS [Property Exchange Date]
 
 		--Archibald Bathgate
@@ -827,8 +830,8 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 			, fact_detail_recovery_detail.amount_recovery_sought AS [Amount Recovery Sought]
 
 		--AXA
-		, dim_detail_core_details.[axa_pas_status] as [AXA PAS Status]
-		, dim_detail_claim.[comments] as [Comments]
+		, dim_detail_core_details.[axa_pas_status] AS [AXA PAS Status]
+		, dim_detail_claim.[comments] AS [Comments]
 		, dim_detail_client.[axa_line_of_business] AS [AXA Line of Business]
 		, dim_detail_claim.[axa_coverage_defence] AS [AXA Coverage Defence]
 		, dim_detail_claim.[axa_first_acknowledgement_date] AS [AXA First Acknowledgement Date]
@@ -850,7 +853,6 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 		, dim_detail_client.[tesco_reason_for_instruction] AS [Tesco Claim Type]
 		, dim_detail_client.[tesco_track] AS [Tesco Track]
 		, dim_detail_fraud.[fraud_current_fraud_type] AS [Fraud Type]
-
 		, dim_detail_claim.ageas_office AS [Tesco Office]
 		, dim_detail_core_details.grpageas_case_handler AS [Tesco Handler]
 		, dim_detail_client.settlement_stage AS [Settlement Stage]
@@ -859,6 +861,7 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 		, dim_detail_claim.[name_of_instructing_insurer] AS [Name of Instructing Insurer]
 		, dim_detail_core_details.[grpageas_motor_moj_stage] AS [MOJ Stage]
 		, fact_detail_elapsed_days.days_to_first_report_lifecycle AS [Days to First Report Lifecycle]
+		,dim_detail_client.file_dealt_tesco_ll AS [File Dealt with in Tesco's Large Loss Team?]
 
 				--Recovery 
 		, fact_finance_summary.[recovery_claimants_damages_via_third_party_contribution] AS [Recovery Claimants Damages Third Party]
@@ -1018,6 +1021,7 @@ WHEN dim_detail_core_details.[brief_description_of_injury] = 'N01 Neck injury - 
 , dim_detail_core_details.[does_claimant_have_personal_injury_claim] AS [Does the Claimant have a Personal Injury Claim?]
 
 
+
 INTO dbo.Vis_GeneralData
 
 
@@ -1142,27 +1146,27 @@ LEFT OUTER JOIN (SELECT fact_dimension_main.master_fact_key,
 						INNER JOIN red_dw.dbo.dim_client WITH (NOLOCK) ON dim_client.dim_client_key = dim_involvement_full.dim_client_key
 						WHERE dim_client.dim_client_key != 0) AS [Claimant Address] ON [Claimant Address].master_fact_key=fact_dimension_main.master_fact_key
 
-LEFT OUTER JOIN (select dim_involvement_full.client_code
+LEFT OUTER JOIN (SELECT dim_involvement_full.client_code
 , dim_involvement_full.matter_number
 , dim_client.postcode AS [Claimant Solicitors Postcode]
 , Doogal.Latitude AS [Claimant Solicitors Postcode Latitude]
 , Doogal.Longitude AS [Claimant Solicitors Postcode Longitude]
 --, *
-from red_dw.dbo.dim_involvement_full
-inner join (
-select dim_involvement_full.client_code, dim_involvement_full.matter_number,
-max(dim_involvement_full.dim_involvement_full_key) last_key
+FROM red_dw.dbo.dim_involvement_full
+INNER JOIN (
+SELECT dim_involvement_full.client_code, dim_involvement_full.matter_number,
+MAX(dim_involvement_full.dim_involvement_full_key) last_key
 -- select *
-from red_dw.dbo.dim_involvement_full
-where dim_involvement_full.capacity_code='CLAIMANTSOLS'
-and dim_involvement_full.entity_code <> ''
-and dim_involvement_full.entity_code is not null
+FROM red_dw.dbo.dim_involvement_full
+WHERE dim_involvement_full.capacity_code='CLAIMANTSOLS'
+AND dim_involvement_full.entity_code <> ''
+AND dim_involvement_full.entity_code IS NOT NULL
 --and dim_involvement_full.client_code = 'W15373'
 --and dim_involvement_full.matter_number = '00006977'
-group by dim_involvement_full.client_code
+GROUP BY dim_involvement_full.client_code
 , dim_involvement_full.matter_number
-) last_record on last_record.last_key = dim_involvement_full.dim_involvement_full_key
-left outer join red_dw.dbo.dim_client on dim_involvement_full.dim_client_key = dim_client.dim_client_key
+) last_record ON last_record.last_key = dim_involvement_full.dim_involvement_full_key
+LEFT OUTER JOIN red_dw.dbo.dim_client ON dim_involvement_full.dim_client_key = dim_client.dim_client_key
 LEFT OUTER JOIN red_dw.dbo.Doogal ON Doogal.Postcode = dim_client.postcode) AS [Claimant Solicitor Postcode] ON [Claimant Solicitor Postcode].client_code=dim_matter_header_current.client_code
 AND [Claimant Solicitor Postcode].matter_number=dim_matter_header_current.matter_number
 
