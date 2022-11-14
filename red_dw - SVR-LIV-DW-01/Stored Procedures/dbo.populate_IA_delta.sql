@@ -24,8 +24,8 @@ END
 
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
-IF OBJECT_ID ('tempdb.dbo.#offices') IS NOT NULL
-DROP TABLE #offices
+--IF OBJECT_ID ('tempdb.dbo.#offices') IS NOT NULL
+--DROP TABLE #offices
 
 DECLARE @process INT 
 
@@ -1145,23 +1145,28 @@ INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_DEPARTMENT$1]
 INSERT INTO dbo.populate_IA_delta_audit SELECT '[IDCAPP].[INT_DTS_DEPARTMENT$1]', GETDATE(), @@ROWCOUNT
 
 
-
-SELECT DISTINCT
-       RTRIM(LTRIM([branch_code])) AS branch_code,
-       RTRIM(LTRIM([branch_name])) AS [branch_name]
-			into #offices
-FROM [dbo].[dim_matter_header_current] (nolock) AS [mat]
-INNER JOIN  [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PROJECT$1] AS [ia]
-ON [mat].[branch_code] = CAST([LOCATION_CD] COLLATE Latin1_General_BIN AS VARCHAR)
-WHERE [branch_code] IS NOT null
-and mat.client_code not in (select client_code from dbo.dim_client where push_to_ia = 1)
+--SELECT DISTINCT
+--       RTRIM(LTRIM([branch_code])) AS branch_code,
+--       RTRIM(LTRIM([branch_name])) AS [branch_name]
+--into #offices
+--FROM [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PROJECT$1] AS [ia]
+--INNER JOIN dbo.dim_matter_branch
+--	ON dim_matter_branch.branch_code = ia.LOCATION_CD COLLATE Latin1_General_BIN
+--INNER JOIN dbo.dim_client 
+--	ON dim_client.client_code COLLATE DATABASE_DEFAULT = ia.CLIENT_CD 
+--WHERE 1 = 1 
+--and ISNULL(push_to_ia, 0) = 0
 
 
 INSERT INTO [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_OFFICE$1]
            ([CODE]
            ,[DESCRIPTION])
-		   SELECT 	* 
-		   FROM	[#offices] AS [o]
+SELECT DISTINCT
+	RTRIM(LTRIM([branch_code])) AS branch_code, 
+    RTRIM(LTRIM([branch_name])) AS [branch_name]
+FROM [SVR-LIV-IASQ-01].[InterAction].[IDCAPP].[INT_DTS_PROJECT$1] AS [ia]
+INNER JOIN dbo.dim_matter_branch
+	ON dim_matter_branch.branch_code = ia.LOCATION_CD COLLATE Latin1_General_BIN
 
 
 --audit check to make sure insert was run
