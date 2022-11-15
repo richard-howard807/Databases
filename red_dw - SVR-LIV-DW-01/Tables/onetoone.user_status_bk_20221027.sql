@@ -1,4 +1,4 @@
-CREATE TABLE [onetoone].[user_stats]
+CREATE TABLE [onetoone].[user_status_bk_20221027]
 (
 [snapshot_date] [date] NULL,
 [fin_year] [int] NULL,
@@ -76,8 +76,4 @@ CREATE TABLE [onetoone].[user_stats]
 [Days_in_the_office] [int] NULL,
 [utilisation_target_percent] [float] NULL
 ) ON [WRK_TAB]
-GO
-GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL - DataReader access to DW-01 For Software Tester]
-GO
-GRANT SELECT ON  [onetoone].[user_stats] TO [SBC\SQL ROLE - DS_MI_ANALYST]
 GO

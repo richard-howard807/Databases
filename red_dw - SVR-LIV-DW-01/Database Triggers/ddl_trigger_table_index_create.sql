@@ -5,66 +5,64 @@ GO
 
 
 
+CREATE TRIGGER [ddl_trigger_table_index_create]
 
+ON DATABASE
 
+FOR CREATE_INDEX, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, CREATE_TABLE
+AS
 
+SET NOCOUNT ON;
 
-
-
-
-
-
-
-CREATE trigger [ddl_trigger_table_index_create]
-
-on database
-
-for create_index, CREATE_FULLTEXT_INDEX, CREATE_SPATIAL_INDEX, CREATE_XML_INDEX, create_table
-as
-
-set nocount on;
-
-declare @ddltriggerxml xml,
+DECLARE @ddltriggerxml XML,
         @body NVARCHAR(2000),
         @subject NVARCHAR(1000);
-select @ddltriggerxml = eventdata();
+SELECT @ddltriggerxml = EVENTDATA();
 
-select sysutcdatetime() as [Time],
-       original_login() as [Login],
-       @ddltriggerxml.value('(/EVENT_INSTANCE/SchemaName)[1]', 'nvarchar(128)') as [SchemaName],
-       @ddltriggerxml.value('(/EVENT_INSTANCE/TargetObjectName)[1]', 'nvarchar(128)') as [TableName],
-       @ddltriggerxml.value('(/EVENT_INSTANCE/ObjectName)[1]', 'nvarchar(128)') as [IndexName]
-into #temp;
+SELECT SYSUTCDATETIME() AS [Time],
+       ORIGINAL_LOGIN() AS [Login],
+       @ddltriggerxml.value('(/EVENT_INSTANCE/SchemaName)[1]', 'nvarchar(128)') AS [SchemaName],
+       @ddltriggerxml.value('(/EVENT_INSTANCE/TargetObjectName)[1]', 'nvarchar(128)') AS [TableName],
+       @ddltriggerxml.value('(/EVENT_INSTANCE/ObjectName)[1]', 'nvarchar(128)') AS [IndexName]
+INTO #temp;
 
-set @subject = 'Alert: New index has been created on ' + db_name() + ' on ' + @@SERVERNAME;
+SET @subject = 'Alert: New index has been created on ' + DB_NAME() + ' on ' + @@SERVERNAME;
 
-select @body
-    = N'A new index has been created on ' + @@SERVERNAME + ' database ' + db_name() + char(13) + char(13) + char(13)
-        + 'Index name: ' + IndexName + char(13) + char(13) + 'Table name: ' + TableName + char(13) + char(13)
-        + 'Schema name: ' + SchemaName + char(13) + char(13) + 'Created on: ' + cast([Time] as NVARCHAR(255))
-        + char(13) + char(13) + 'Created by: ' + [Login] + char(13)
-from #temp;
+SELECT @body
+    = N'A new index has been created on ' + @@SERVERNAME + ' database ' + DB_NAME() + CHAR(13) + CHAR(13) + CHAR(13)
+        + 'Index name: ' + IndexName + CHAR(13) + CHAR(13) + 'Table name: ' + TableName + CHAR(13) + CHAR(13)
+        + 'Schema name: ' + SchemaName + CHAR(13) + CHAR(13) + 'Created on: ' + CAST([Time] AS NVARCHAR(255))
+        + CHAR(13) + CHAR(13) + 'Created by: ' + [Login] + CHAR(13)
+FROM #temp;
 
-if @body not like '%SBC\dwh01redservice%'
-begin
-	if @body not like '%SBC\6237%'
-	begin
-		if @body not like '%SBC\esmith01%'
-			begin
-				if @body not like '%SBC\jbonne%'
-					begin
+IF @body NOT LIKE '%SBC\dwh01redservice%'
+BEGIN
+	IF @body NOT LIKE '%SBC\7242%'
+	BEGIN
+		IF @body NOT LIKE '%SBC\esmith01%'
+			BEGIN
+				IF @body NOT LIKE '%SBC\jbonne%'
+					BEGIN
+					IF @body NOT LIKE '%SBC\rhowaradmin1%'
+					BEGIN
+					IF @body NOT LIKE '%SBC\jbonneadmin1%'
+					BEGIN
+					IF @body NOT LIKE '%SBC\esmith01admin1%'
+					BEGIN
 			
-						exec [msdb].[dbo].[sp_send_dbmail] 
+						EXEC [msdb].[dbo].[sp_send_dbmail] 
 							@profile_name = 'DBMail',
 							@recipients = 'Richard.Howard@weightmans.com;Emily.Smith@weightmans.com;jamie.bonner@weightmans.com',
 							@body = @body,
 							@subject = @subject;
-					end;			
-			end;
-	end;
-end;
-GO
-ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
+					END;			
+			END;
+	END;
+END;
+END;
+END;
+END;
+
 GO
 ENABLE TRIGGER ddl_trigger_table_index_create ON DATABASE
 GO

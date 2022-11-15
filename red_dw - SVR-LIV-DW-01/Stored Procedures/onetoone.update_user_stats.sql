@@ -7,17 +7,20 @@ CREATE PROC [onetoone].[update_user_stats]
 
 AS
 
+
+
+
 DECLARE @fin_year INT,
 		@fin_month INT,
-		@fin_month_full int
-
+		@fin_month_full INT
+        
 SELECT DISTINCT @fin_year = fin_year, @fin_month = fin_month_no, @fin_month_full = dim_date.fin_month
 FROM dbo.dim_date 
 WHERE calendar_date = CAST(GETDATE()-1 AS DATE)
 
 
--- Delete data from table if it exists already
- select * from [onetoone].[user_stats]
+-- Delete data from table if it exists alSELECT
+ -- sFROMt * from [onetoone].[user_stats]
 IF (SELECT COUNT(*) FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month) > 0
 	BEGIN
 		DELETE FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND data_for_month = @fin_month
@@ -26,7 +29,7 @@ IF (SELECT COUNT(*) FROM [onetoone].[user_stats] WHERE fin_year = @fin_year AND 
 DROP TABLE IF EXISTS #Days_in_the_office
 /*Days_in_the_office - new field added MT 20221013 */
 
-   SELECT x.*  
+   SELECT distinct x.*  
    INTO #Days_in_the_office
    FROM 
    
@@ -46,8 +49,9 @@ DROP TABLE IF EXISTS #Days_in_the_office
 	GROUP BY dim_fed_hierarchy_history.fed_code
 
 	UNION 
+
 	SELECT 
-    dim_fed_hierarchy_history.fed_code, 'Month' fin_month,
+    dim_fed_hierarchy_history.fed_code, CAST(dim_date.fin_month_no AS NVARCHAR(3)) fin_month,
     SUM(IIF(fact_employee_attendance.category = 'In Office', 1, 0))		AS Days_in_the_office
     
 	FROM red_dw.dbo.fact_employee_attendance
@@ -58,8 +62,8 @@ DROP TABLE IF EXISTS #Days_in_the_office
  	AND cal_month = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + CAST(MONTH(GETDATE()) AS VARCHAR(4))
 	AND TRIM(attendancekey) <> 'Dummy'
 	AND fact_employee_attendance.category = 'In Office'
-	AND fed_code = '1405'
-	GROUP BY dim_fed_hierarchy_history.fed_code
+	--AND fed_code = '5702'
+	GROUP BY dim_fed_hierarchy_history.fed_code,CAST(dim_date.fin_month_no AS NVARCHAR(3))
 
 	) x 
 -- Matters capable of closure -- Claims
@@ -541,16 +545,40 @@ Exceptions AS (
 RR_PY AS (
 
 SELECT fed_code, 'YTD' fin_month,	
-		IIF(SUM(ISNULL(billed_minutes_recorded,0)) = 0, null, SUM(bill_amount) / SUM(billed_minutes_recorded / 60)) Actual_Recovery_Rate_PY
+		IIF(SUM(ISNULL(billed_minutes_recorded,0)) = 0, NULL, SUM(bill_amount) / SUM(billed_minutes_recorded / 60)) Actual_Recovery_Rate_PY
 	
 		-- select dim_employee.leftdate
 	FROM dbo.fact_agg_kpi_monthly_rollup 
 	INNER JOIN dim_date ON fact_agg_kpi_monthly_rollup.dim_gl_date_key = dim_date.dim_date_key
 	INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_agg_kpi_monthly_rollup.dim_fed_hierarchy_history_key
-	WHERE  dim_date.fin_year = 2020 --@fin_year - 1
-	AND billed_minutes_recorded IS NOT null
+	WHERE  dim_date.fin_year = @fin_year - 1
+	AND billed_minutes_recorded IS NOT NULL
 	GROUP BY fed_code
 	),
+    
+
+Utilisation_target AS (
+
+SELECT fed_code,  ISNULL(CAST (dim_date.fin_month_no AS VARCHAR(3)), 'YTD') fin_month, 
+		
+		IIF( cast (dim_date.fin_month_no AS VARCHAR(3)) = @fin_month, MAX(fed_level_utilistation_target_percent), sum(fed_level_utilistation_target_percent) / @fin_month) fed_level_utilistation_target_percent
+		
+	
+	-- select dim_employee.leftdate
+FROM dbo.fact_budget_activity 
+INNER JOIN dim_date ON fact_budget_activity.dim_gl_date_key = dim_date.dim_date_key
+WHERE  dim_date.fin_year = @fin_year
+AND  dim_date.fin_month_no <= @fin_month 
+--AND fact_budget_activity.fed_code = '2009'
+AND fed_level_utilistation_target_percent <> 0 
+GROUP BY
+	 GROUPING SETS (
+	 (cast (dim_date.fin_month_no AS VARCHAR(3)), fact_budget_activity.fed_code),
+	 ( fact_budget_activity.fed_code)
+	 )
+
+	),
+
 
 LTA_Exceptions AS (
 
@@ -685,10 +713,8 @@ SELECT
 	Debt_90.Debt_90_Days,
 	main.Utilisation_Percent,
 	main.Actaul_chargable_hours,
-	MAX(ISNULL(CASE WHEN main.fin_month IS NULL AND #Days_in_the_office.fin_month =  'YTD' THEN  Days_in_the_office 
-	     WHEN IIF(main.fin_month IS NULL,'YTD', 'Month') = 'Month' AND  #Days_in_the_office.fin_month =  'Month' THEN  Days_in_the_office  END, 0)) OVER (PARTITION BY dim_fed_hierarchy_history.fed_code, IIF(main.fin_month IS NULL,'YTD', 'Month')) AS Days_in_the_office
-	   
-
+	#Days_in_the_office .Days_in_the_office
+	, Utilisation_target.fed_level_utilistation_target_percent
 FROM (
 
 	SELECT dim_fed_hierarchy_history.fed_code,
@@ -724,14 +750,13 @@ FROM (
 	 --  , MAX(CASE WHEN Days_in_the_office) Days_in_the_office --OVER (Partition BY dim_fed_hierarchy_history.fed_code)  Days_in_the_office
 
 		-- select dim_employee.leftdate
+		-- select *
 	FROM dbo.fact_agg_kpi_monthly_rollup 
 	INNER JOIN dim_date ON fact_agg_kpi_monthly_rollup.dim_gl_date_key = dim_date.dim_date_key
 	INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_agg_kpi_monthly_rollup.dim_fed_hierarchy_history_key
 	INNER JOIN dbo.dim_employee ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key 
 	
 	
-
- /* Days_in_the_office */	
 	
 
 
@@ -772,14 +797,13 @@ LEFT OUTER JOIN LTA_Exceptions ON LTA_Exceptions.fed_code = main.fed_code AND LT
 INNER JOIN dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.fed_code = main.fed_code AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.activeud = 1
 LEFT OUTER JOIN DebtTarget ON DebtTarget.team = dim_fed_hierarchy_history.hierarchylevel4hist AND DebtTarget.fin_month = ISNULL(main.fin_month,'YTD') 
 LEFT OUTER JOIN Debt_90 ON Debt_90.fed_code = main.fed_code AND Debt_90.fin_month = ISNULL(main.fin_month,'YTD')
-LEFT JOIN #Days_in_the_office ON #Days_in_the_office.fed_code = dim_fed_hierarchy_history.fed_code 
-
+LEFT JOIN #Days_in_the_office ON #Days_in_the_office.fed_code = dim_fed_hierarchy_history.fed_code AND #Days_in_the_office.fin_month = ISNULL(main.fin_month,'YTD') 
+LEFT OUTER JOIN Utilisation_target ON Utilisation_target.fed_code = main.fed_code AND Utilisation_target.fin_month = ISNULL(main.fin_month,'YTD') 
 
 WHERE ISNULL(main.fin_month,'YTD') IN ('YTD',CAST(@fin_month AS VARCHAR(2)))
 AND main.fed_code <> 'Unknown'
 
 ORDER BY 3, 2
-
 
 
 /*

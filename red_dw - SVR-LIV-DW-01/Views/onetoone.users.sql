@@ -4,13 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
-
-
-
 CREATE VIEW [onetoone].[users]
 
 AS
@@ -29,7 +22,8 @@ SELECT emp.windowsusername employee_username,
 	ISNULL(mgr.name, '') mgr_name,
 	hsd.windowsusername hds_username,
 	hsd.name hsd_name,
-	dbo.dim_employee.employeestartdate
+	dbo.dim_employee.employeestartdate,
+	 IIF( dim_employee.client_manager LIKE '%:%', LEFT(dim_employee.client_manager, CHARINDEX(':', dim_employee.client_manager, 0) - 1), null) client_manager_fed_code
 -- select *
 FROM dbo.dim_fed_hierarchy_current emp (NOLOCK)
 INNER JOIN dbo.dim_employee   (NOLOCK) ON dim_employee.employeeid = emp.employeeid
@@ -38,7 +32,6 @@ LEFT OUTER JOIN dim_fed_hierarchy_current hsd  (NOLOCK) ON mgr.worksforemployeei
 WHERE emp.activeud = 1
 AND emp.windowsusername IS NOT NULL
 AND ISNULL(dim_employee.deleted_from_cascade,0) <> 1
-
 
 
 GO

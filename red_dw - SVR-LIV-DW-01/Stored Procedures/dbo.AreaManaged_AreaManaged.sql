@@ -9,11 +9,14 @@ CREATE procedure [dbo].[AreaManaged_AreaManaged] @Username varchar(100) as
 
 --DECLARE @Username AS NVARCHAR(100) = 'asteve'
 
-declare @UsernameTbl table (employeeid varchar(100), management_role_one varchar(100),  team varchar(100), department varchar(100), division varchar(100), firm varchar(100))
+--SET @Username = IIF (@Username = '7242', 'agill', @Username)
+--SET @Username = IIF (@Username = '7242', 'nodono', @Username)
 
-insert into @UsernameTbl 
-select distinct employeeid, management_role_one, RTRIM(hierarchylevel4hist) AS hierarchylevel4hist, RTRIM(hierarchylevel3hist) AS hierarchylevel3hist, RTRIM(hierarchylevel2hist) AS hierarchylevel2hist, RTRIM(hierarchylevel1hist) AS hierarchylevel1hist from dim_fed_hierarchy_history
-where windowsusername = @Username and activeud = 1 and dss_current_flag = 'Y'
+DECLARE @UsernameTbl TABLE (employeeid VARCHAR(100), management_role_one VARCHAR(100),  team VARCHAR(100), department VARCHAR(100), division VARCHAR(100), firm VARCHAR(100))
+
+INSERT INTO @UsernameTbl 
+SELECT DISTINCT employeeid, management_role_one, RTRIM(hierarchylevel4hist) AS hierarchylevel4hist, RTRIM(hierarchylevel3hist) AS hierarchylevel3hist, RTRIM(hierarchylevel2hist) AS hierarchylevel2hist, RTRIM(hierarchylevel1hist) AS hierarchylevel1hist FROM dim_fed_hierarchy_history
+WHERE windowsusername = @Username and activeud = 1 and dss_current_flag = 'Y'
 
 	
 -- Added 27/01/2022 to handle people who now manage more than one team	

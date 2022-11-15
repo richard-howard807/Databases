@@ -8,13 +8,16 @@ GO
 CREATE proc [dbo].[AreaManaged_Level] @Username nvarchar(100) as
 set nocount on 
 
+--SET @Username = IIF (@Username = '7242', 'agill', @Username)
+--SET @Username = IIF (@Username = '7242', 'nodono', @Username)
+
 
 --DECLARE @Username AS NVARCHAR(100) = 'asteve'
 
-declare @Path NVARCHAR(1024)
-declare @Query nvarchar(max)
-declare @Query2 NVARCHAR(MAX)
-declare @Path2 NVARCHAR(1024)
+DECLARE @Path NVARCHAR(1024)
+DECLARE @Query NVARCHAR(MAX)
+DECLARE @Query2 NVARCHAR(MAX)
+DECLARE @Path2 NVARCHAR(1024)
 
 
 
@@ -89,6 +92,7 @@ WHEN Name = 'Restricted - Operations - Risk & Compliance' THEN 'Firm'
 WHEN Name = 'Restricted - Operations - Marketing' THEN 'Firm'
 WHEN Name = 'Restricted - Operations - HR&D' THEN 'Firm'
 WHEN Name = 'CascadeDepartment - Business Process' then 'Firm'
+WHEN Name = 'People - All Legal Directors' THEN 'Firm'
 WHEN Name = 'Reports_Testers' THEN 'Firm'
 WHEN Name = 'People - All PAs' THEN 'Firm'
 WHEN Name = 'People - Governance staff' THEN 'Firm'
