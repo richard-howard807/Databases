@@ -2,10 +2,13 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[DebtByClientOver90Days] --EXEC dbo.DebtByClientOver90Days '202306','202206','LTA'
 (@Month AS INT
 ,@PreviousMonth AS INT
 ,@Division AS NVARCHAR(MAX)
+,@Segment AS NVARCHAR(MAX)
+,@Sector AS NVARCHAR(Max)
 )
 AS 
 
@@ -20,6 +23,11 @@ BEGIN
 IF OBJECT_ID('tempdb..#Division') IS NOT NULL   DROP TABLE #Division
 SELECT ListValue  INTO #Division FROM Reporting.dbo.[udt_TallySplit]('|', @Division)
 
+IF OBJECT_ID('tempdb..#Segment') IS NOT NULL   DROP TABLE #Segment
+SELECT ListValue  INTO #Segment FROM Reporting.dbo.[udt_TallySplit]('|', @Segment)
+
+IF OBJECT_ID('tempdb..#Sector') IS NOT NULL   DROP TABLE #Sector
+SELECT ListValue  INTO #Sector FROM Reporting.dbo.[udt_TallySplit]('|', @Sector)
 
 SELECT AllData.Dim_Days_Banding_Key,
        AllData.Days_Banding,
@@ -48,6 +56,8 @@ master_client_code AS [Client Code]
 ,client_name AS ClientName
 ,SUM(fact_debt_monthly.outstanding_total_bill) AS CurrentPeriod
 ,NULL AS PreviousPeriod
+,segment
+,sector
 
  
 
@@ -85,7 +95,8 @@ GROUP BY CASE
          hierarchylevel3hist,
          hierarchylevel2hist,
          master_client_code,
-         client_name
+         client_name,segment
+,sector
 UNION
 SELECT  
 CASE WHEN daysbanding ='0 - 30 Days' THEN 1 
@@ -103,7 +114,8 @@ master_client_code AS [Client Code]
 ,client_name AS ClientName
 ,NULL AS CurrentPeriod
 ,SUM(fact_debt_monthly.outstanding_total_bill) AS PreviousPeriod
-
+,segment
+,sector
  
 
 FROM red_dw.dbo.fact_debt_monthly
@@ -140,10 +152,11 @@ GROUP BY CASE
          hierarchylevel3hist,
          hierarchylevel2hist,
          master_client_code,
-         client_name
+         client_name,segment
+,sector
 		 ) AS AllData
 		 INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = [Business Line] COLLATE DATABASE_DEFAULT
-
-
+		 INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Segment,'Unknown') COLLATE DATABASE_DEFAULT
+		 INNER JOIN #Sector AS Sector  ON Sector.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Sector,'Unknown') COLLATE DATABASE_DEFAULT
 		 END 
 GO

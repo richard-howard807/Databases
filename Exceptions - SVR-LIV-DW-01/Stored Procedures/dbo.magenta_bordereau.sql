@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 01-09-2022
@@ -35,6 +36,7 @@ SELECT
 	, ISNULL(fact_bill.paid_disbursements, 0) + ISNULL(fact_bill.unpaid_disbursements, 0)			AS [Disbursements]
 	, fact_bill.vat_amount		AS [VAT]
 	, fact_bill.admin_charges_total
+	,DisbDesc
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
 		ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -44,7 +46,27 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON dim_bill.bill_sequence = fact_bill.bill_sequence
 	INNER JOIN red_dw.dbo.dim_date
 		ON fact_bill.dim_bill_date_key = dim_date.dim_date_key
-WHERE
+LEFT OUTER JOIN
+(
+SELECT InvNumber,STRING_AGG(RTRIM(CostCard.Narrative),'|') AS DisbDesc 
+
+FROM TE_3E_Prod.dbo.InvMaster
+INNER JOIN TE_3E_Prod.dbo.Matter
+ ON LeadMatter=MattIndex
+INNER JOIN TE_3E_Prod.dbo.CostBill
+ ON InvMaster=InvIndex
+INNER JOIN TE_3E_Prod.dbo.CostCard
+ ON costcard=CostIndex
+WHERE Number LIKE 'W15498%'
+AND InvMaster.IsReversed=0
+AND CostBill.IsReversed=0
+AND InvNumber<>'PURGE'
+GROUP BY InvNumber
+) AS DisbDesc
+ ON fact_bill.bill_number=DisbDesc.InvNumber COLLATE DATABASE_DEFAULT
+ 
+ 
+ WHERE
 	dim_matter_header_current.master_client_code = 'W15498'
 	AND (dim_matter_header_current.matter_description LIKE 'GAS%'
 		OR	dim_matter_header_current.matter_description LIKE 'ELEC%')

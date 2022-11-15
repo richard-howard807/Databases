@@ -53,6 +53,10 @@ SELECT dim_matter_header_current.date_opened_case_management AS [Date Case Opene
 ,[Revenue Q2 2021/2022]
 ,[Revenue Q3 2021/2022]
 ,[Revenue Q4 2021/2022]
+,[Revenue Q1 2022/2023]
+,[Revenue Q2 2022/2023]
+,[Revenue Q3 2022/2023]
+,[Revenue Q4 2022/2023]
 FROM dbo.ProtectorMatters
 INNER JOIN red_dw.dbo.dim_matter_header_current
  ON dim_matter_header_current.dim_matter_header_curr_key = ProtectorMatters.dim_matter_header_curr_key
@@ -85,6 +89,10 @@ LEFT OUTER JOIN
  ,SUM(CASE WHEN bill_fin_year='2022' AND bill_fin_quarter_no=2 THEN fees_total ELSE 0 END) AS [Revenue Q2 2021/2022]
  ,SUM(CASE WHEN bill_fin_year='2022' AND bill_fin_quarter_no=3 THEN fees_total ELSE 0 END) AS [Revenue Q3 2021/2022]
  ,SUM(CASE WHEN bill_fin_year='2022' AND bill_fin_quarter_no=4 THEN fees_total ELSE 0 END) AS [Revenue Q4 2021/2022]
+ ,SUM(CASE WHEN bill_fin_year='2023' AND bill_fin_quarter_no=1 THEN fees_total ELSE 0 END) AS [Revenue Q1 2022/2023]
+ ,SUM(CASE WHEN bill_fin_year='2023' AND bill_fin_quarter_no=2 THEN fees_total ELSE 0 END) AS [Revenue Q2 2022/2023]
+ ,SUM(CASE WHEN bill_fin_year='2023' AND bill_fin_quarter_no=3 THEN fees_total ELSE 0 END) AS [Revenue Q3 2022/2023]
+ ,SUM(CASE WHEN bill_fin_year='2023' AND bill_fin_quarter_no=4 THEN fees_total ELSE 0 END) AS [Revenue Q4 2022/2023]
  FROM red_dw.dbo.fact_bill
  INNER JOIN red_dw.dbo.dim_matter_header_current
   ON dim_matter_header_current.dim_matter_header_curr_key = fact_bill.dim_matter_header_curr_key

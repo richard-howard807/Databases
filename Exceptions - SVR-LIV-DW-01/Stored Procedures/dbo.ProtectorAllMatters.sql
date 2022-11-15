@@ -131,6 +131,7 @@ SELECT date_opened_case_management [Date Opened ] ,
 	  --,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE elapsed_days - days_to_first_report_lifecycle END AS [Days to first report]
 	   	   ,CASE WHEN date_initial_report_sent IS NULL THEN NULL ELSE days_to_first_report_lifecycle END [Days to first report]
 
+
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN (SELECT	* FROM dbo.ProtectorMatters) AS Clients
  ON Clients.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
@@ -169,9 +170,13 @@ LEFT OUTER JOIN #KeyDates AS KeyDates
  ON KeyDates.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
  ON  dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+ LEFT OUTER JOIN MS_Prod.config.dbFile
+ ON dbFile.fileID=dim_matter_header_current.ms_fileid
+ 
  WHERE (date_closed_case_management IS NULL OR date_closed_case_management>='2018-07-01')
  AND master_matter_number <>'0'
  AND ISNULL(outcome_of_case,'')<>'Exclude from reports'
+ AND ISNULL(dbFile.fileStatus,'')<>'OPENERROR'
 
 
  END 

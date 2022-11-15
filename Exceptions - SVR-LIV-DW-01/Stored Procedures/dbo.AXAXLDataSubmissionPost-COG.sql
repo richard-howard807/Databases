@@ -25,7 +25,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , [Product Type] = work_type_name   
 
 /*Update to look at dim_detail_client[axa_product_type] unless dim_detail_client[axa_line_of_business] is “Motor” then populate product type as “Motor”.*/
-, [Product Type New] = CASE WHEN TRIM(dim_detail_client.[axa_line_of_business]) = 'Motor' THEN 'Motor' ELSE dim_detail_client.[axa_product_type] END--ProdType.[CaseText] -- Needs Correcting 20210909 - MT
+, [Product Type New] = CASE WHEN TRIM(dim_detail_client.[axa_line_of_business]) = 'Motor' THEN 'Motor' ELSE ProdType.[CaseText] END-- -- Needs Correcting 20210909 - MT
 
 , [Insured Name]  = CASE WHEN ISNULL(dim_detail_claim.[dst_insured_client_name], '') = '' THEN dim_client_involvement.insuredclient_name ELSE dim_detail_claim.[dst_insured_client_name] END  
 , [Insured Name from Associates] = assoccontname.contName  -- dim_client_involvement.insuredclient_name
@@ -53,6 +53,7 @@ ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY dim
 , [Date Initial Report Sent] =	dim_detail_core_details.[date_initial_report_sent]
 , [Date of First Subsequent SLA Report] = 	CASE WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN NULL ELSE CAST(REPLACE(RIGHT(dim_detail_concat_cases.[date_subsequent_sla_report_sent], 11), ']', '') AS DATE) END 
 , [Date of Latest Subsequent SLA Report] =	CASE WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN NULL ELSE dim_detail_core_details.date_subsequent_sla_report_sent  END 
+ , dim_detail_core_details.[date_subsequent_sla_report_sent] AS [Date Subsequent Report Sent]
 
 
 , [Report Date] = ISNULL(dim_detail_core_details.date_subsequent_sla_report_sent,date_initial_report_sent) 

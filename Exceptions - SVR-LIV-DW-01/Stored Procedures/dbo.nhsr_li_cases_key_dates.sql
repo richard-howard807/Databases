@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 /*
 ===================================================
 ===================================================
@@ -47,7 +48,7 @@ FROM MS_Prod..dbTasks
 		ON dim_detail_health.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 WHERE
 	dim_matter_header_current.master_client_code = 'N1001'
-	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+', '2022: LIQ100') 
+	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+', '2022: LIQ100','2022: LIQ250','2022: LIQ250+') 
 	AND dbTasks.tskComplete = 0
 	AND dbTasks.tskActive = 1
 	AND dbTasks.tskType = 'KEYDATE'
@@ -129,7 +130,7 @@ FROM red_dw.dbo.dim_matter_header_current
 WHERE
 	dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_client_code = 'N1001'
-	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+', '2022: LIQ100')
+	AND dim_detail_health.nhs_instruction_type IN ('2022: LI250', '2022: LI100', '2022: LI250+', '2022: LIQ100','2022: LIQ250','2022: LIQ250+')
 	--AND dim_matter_header_current.master_matter_number = '21910'
 
 

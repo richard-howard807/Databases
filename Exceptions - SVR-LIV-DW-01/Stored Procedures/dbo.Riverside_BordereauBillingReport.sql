@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Max Taylor
 -- Create date: 2022-09-07
@@ -11,6 +12,9 @@ GO
 CREATE PROCEDURE [dbo].[Riverside_BordereauBillingReport] 
 
 AS
+
+
+
 
 SELECT 
 	 [Client Code] =            dim_matter_header_current.master_client_code 
@@ -25,6 +29,7 @@ SELECT
 	,[Revenue Total] = SUM(fact_bill_matter_detail.fees_total) 
 	,Disbursements	= SUM(fact_bill_matter_detail.hard_costs) + SUM(fact_bill_matter_detail.soft_costs)
 	,VAT  =           SUM(red_dw.dbo.fact_bill_matter_detail.vat)
+	,DisbDesc
 
 	
 
@@ -52,7 +57,24 @@ FROM red_dw.dbo.dim_matter_header_current
 
 	LEFT JOIN red_dw.dbo.fact_bill_matter_detail
 	ON fact_bill_matter_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN
+(
+SELECT InvNumber,STRING_AGG(RTRIM(CostCard.Narrative),'|') AS DisbDesc 
 
+FROM TE_3E_Prod.dbo.InvMaster
+INNER JOIN TE_3E_Prod.dbo.Matter
+ ON LeadMatter=MattIndex
+INNER JOIN TE_3E_Prod.dbo.CostBill
+ ON InvMaster=InvIndex
+INNER JOIN TE_3E_Prod.dbo.CostCard
+ ON costcard=CostIndex
+WHERE Number LIKE 'W15603%'
+AND InvMaster.IsReversed=0
+AND CostBill.IsReversed=0
+AND InvNumber<>'PURGE'
+GROUP BY InvNumber
+) AS DisbDesc
+ ON bill_number=DisbDesc.InvNumber COLLATE DATABASE_DEFAULT
 
 
 
@@ -73,7 +95,7 @@ WHERE 1 = 1
 	,dim_detail_claim.[gascomp_current_status]
 	,bill_number
 	,bill_date
-
+	,DisbDesc
 	ORDER BY bill_date
 	
 
