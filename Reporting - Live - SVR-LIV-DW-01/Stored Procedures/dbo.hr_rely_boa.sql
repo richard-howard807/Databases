@@ -34,7 +34,7 @@ WHERE
 	Matter.MattStatus = 'OP'
 	AND (LOWER(Matter.DisplayName) LIKE '%hr%rely%'
 		OR LOWER(Matter.DisplayName) LIKE '%hrr%'
-		OR Matter.Number IN ('HRR00076-5','HRR00080-29','HRR00083-12','HRR00088-15','HRR00088-17','HRR00093-4','HRR00123-10','HRR00123-6','HRR00133-13','HRR00136-11','HRR00151-5','834944-3','216775-12'))
+		OR Matter.Number IN ('HRR00055-10', 'HRR00076-5','HRR00080-29','HRR00083-12','HRR00088-15','HRR00088-17','HRR00093-4','HRR00123-10','HRR00123-6','HRR00133-13','HRR00136-11','HRR00151-5','834944-3','216775-12'))
 	AND Client.Number <> '30645'
 	--AND Matter.Number = '173588-30'
 
@@ -127,6 +127,8 @@ SELECT
 			#original_fee.OrgBOA - #allocations.allocated_to_date
 		WHEN (#original_fee.OrgBOA - #allocations.allocated_to_date) < #original_fee.monthly_figure THEN
 			#original_fee.OrgBOA - #allocations.allocated_to_date
+		WHEN #allocations.months_since_last_allocation IS NULL THEN
+			#original_fee.monthly_figure
 		ELSE
 			#original_fee.monthly_figure * #allocations.months_since_last_allocation
 	  END										AS amount_to_be_allocated
@@ -136,10 +138,11 @@ FROM #hr_rely_matters
 			AND #wip.wip > 0
 	INNER JOIN #original_fee
 		ON #original_fee.Number = #hr_rely_matters.Number
-	INNER JOIN #allocations
+	LEFT OUTER JOIN #allocations
 		ON #allocations.Number = #hr_rely_matters.Number
-WHERE
-	#original_fee.OrgBOA - #allocations.allocated_to_date > 0
+WHERE 1 = 1
+	AND #original_fee.OrgBOA - ISNULL(#allocations.allocated_to_date, 0) > 0
+	--AND #hr_rely_matters.Number = 'HRR00055-10'
 
 END
 GO
