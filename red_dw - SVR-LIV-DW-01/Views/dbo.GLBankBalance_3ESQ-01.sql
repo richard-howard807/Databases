@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE VIEW [dbo].[GLBankBalance_3ESQ-01]
 AS
 SELECT        SUM(total_balance) AS total_balance
@@ -19,7 +20,9 @@ FROM            (SELECT        GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.Fisca
                                           TE_3E_PROD.dbo.GLAcct AS GLA WITH (NOLOCK) ON GLA.AcctIndex = GTS.GLAcct INNER JOIN
                                           TE_3E_PROD.dbo.GLNatural AS GLN WITH (NOLOCK) ON GLN.GLNaturalID = GLA.GLNatural INNER JOIN
                                           TE_3E_PROD.dbo.GLAcctClass AS GLC WITH (NOLOCK) ON GLC.Code = GLN.GLAcctClass
-                          WHERE        (GLC.Code = 'OffBank') AND (GTS.FiscalYear = '2022')
+                          WHERE        (GLC.Code = 'OffBank') 
+						  AND (GTS.FiscalYear=(SELECT DISTINCT fin_year FROM red_dw.dbo.dim_date WHERE dim_date.current_fin_year='Current'))
+						  --AND (GTS.FiscalYear = '2022')
                           GROUP BY GLA.Description, GLN.GLNat, GTS.GLAcct, GTS.GLAcct, GTS.FiscalYear) AS total
 GO
 EXEC sp_addextendedproperty N'MS_DiagramPane1', N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
