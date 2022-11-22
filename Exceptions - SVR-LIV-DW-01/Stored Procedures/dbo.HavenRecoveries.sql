@@ -33,6 +33,7 @@ NULL AS [Reason for instruction ],
 dim_detail_client.[fee_arrangement] [Fee Arrangement ], 
 dim_detail_outcome.[date_claim_concluded] [Date claim concluded],
 dim_detail_outcome.[outcome_of_case] [Reason for recovery/outcome],
+dim_detail_core_details.[proceedings_issued], 
 NULL AS [Costs/ QOCS position],
 NULL AS[Reason indemnity refused ],
 NULL AS [Date PH/driver notified re indemnity ],
@@ -110,6 +111,9 @@ AS SuccessChance
 	ELSE
 		'Closed'
   END						AS [status]
+  ,ClaimantSolicitor.[ Claimant Solicitor]
+  ,DefendantSolicitor.[ Defendant Solicitor]
+  ,DefendantAss.[ Defendant Ass]
 
 
 FROM 
@@ -238,6 +242,48 @@ LEFT JOIN
 		        AS InsurerName
             ON dim_matter_header_current.ms_fileid = InsurerName.fileID
                AND InsurerName.XOrder = 1
+ 
+ --	Defendant Solicitor
+LEFT JOIN 
+
+ (SELECT name AS[ Defendant Solicitor]
+ ,dim_involvement_full.client_code
+ ,dim_involvement_full.matter_number
+ 
+ FROM red_dw.dbo.dim_involvement_full
+ WHERE 	 		capacity_code = 'DEFSOLICITOR'AND client_code = 'H00001'
+AND is_active = '1') as	[DefendantSolicitor] 
+
+ ON fact_dimension_main.client_code=[DefendantSolicitor].client_code
+ AND fact_dimension_main.matter_number=[DefendantSolicitor].matter_number
+
+  --	CLAIMANTSOLS'
+  LEFT JOIN 
+
+ (SELECT 
+ claimantsols_name AS[ Claimant Solicitor]
+ ,client_code
+ ,matter_number
+FROM red_dw.dbo.dim_claimant_thirdparty_involvement
+ WHERE 	  client_code = 'H00001' AND claimantsols_name IS NOT null
+) as	[ClaimantSolicitor] 
+
+ ON fact_dimension_main.client_code=[ClaimantSolicitor].client_code
+ AND fact_dimension_main.matter_number=[ClaimantSolicitor].matter_number
+
+
+   --	Defendant'
+  LEFT JOIN 
+
+ (SELECT defendant_name AS[ Defendant Ass]
+,dim_defendant_involvem_key
+ 
+ FROM red_dw.dbo.dim_defendant_involvement
+ WHERE client_code = 'H00001'
+) as	[DefendantAss] 
+
+
+ON [DefendantAss].dim_defendant_involvem_key = fact_dimension_main.dim_defendant_involvem_key
 
 LEFT OUTER JOIN (SELECT client_code,matter_number,SUM(wiphrs) AS HrsWorked
 FROM red_dw.dbo.fact_all_time_activity

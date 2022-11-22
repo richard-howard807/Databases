@@ -64,11 +64,11 @@ WHERE
 		OR LOWER(dim_matter_header_current.matter_description) LIKE '%university%'
 		OR LOWER(dim_matter_header_current.matter_description) LIKE '%college%'
 		OR LOWER(dim_matter_header_current.matter_description) LIKE '%academy%'
-		OR LOWER(dim_matter_header_current.matter_description) LIKE '%school%'
+		OR LOWER(dim_matter_header_current.matter_description) LIKE '% school %'
 		OR LOWER(dim_client_involvement.insuredclient_name) LIKE '%university%'
 		OR LOWER(dim_client_involvement.insuredclient_name) LIKE '%college%'
 		OR LOWER(dim_client_involvement.insuredclient_name) LIKE '%academy%'
-		OR LOWER(dim_client_involvement.insuredclient_name) LIKE '%school%'
+		OR LOWER(dim_client_involvement.insuredclient_name) LIKE '% school %'
 		)
 
 END

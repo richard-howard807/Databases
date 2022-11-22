@@ -2,15 +2,17 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 CREATE PROCEDURE [dbo].[EWICOpenRecoveries]
 
 AS 
 
 BEGIN 
 
-Select GETDATE() As [Report Date]
-,Case When [Loss Number] = '' Then a.Claim_Number
-Else [Loss Number] End As [EWIC Ref] 
+SELECT GETDATE() AS [Report Date]
+,CASE WHEN [Loss Number] = '' THEN a.Claim_Number
+ELSE [Loss Number] END AS [EWIC Ref] 
 ,a.Claim_Number AS ClaimNumber
 ,a.Claim_Handler_Code AS Claim_Handler
 ,[Customer Reference] [Customer Reference]
@@ -30,7 +32,7 @@ Else [Loss Number] End As [EWIC Ref]
 --,Development_Total_Incurred
 ,Development_Code  AS [Large Loss Name of Development]
 ,CASE WHEN a.Claim_Status = 'REOPEN' AND b.Reopened_Date != '' THEN 'Reopened' ELSE 'Open' END AS ClaimStatus
-,a.Loss_Type AS[Category/type of claim ]
+,a.Incident AS[Category/type of claim ]
 ,a.Policy_Wording AS [Policy Wording]
 ,a.New_or_Rectification_Work AS[New / Rectification Work]
 ,a.RoM_Recoveries_Status AS [RoM Recovery Status]
@@ -112,6 +114,7 @@ WHEN TargetThree.TARGETS_Type_Of_Target='ZS' THEN 'Zurich appointed Surveyor'
 ,zvwClaimDetail.[Loss Name] AS Loss_name
 ,Projected_contribution_value
 ,Total_contribution_made
+,a.Claim_Status AS [Polygonal Claim Status]
 FROM [SVR-LIV-3PTY-01].Wellington_Live.dbo.dqvwCustomClaimFields AS a WITH(NOLOCK)
 INNER JOIN  [SVR-LIV-3PTY-01].[Wellington_Live].[dbo].[dqvwClaim_Register] AS b WITH(NOLOCK)
  ON b.Claim_Number = a.Claim_Number

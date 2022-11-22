@@ -3,12 +3,14 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 CREATE PROCEDURE [dbo].[DebtByClientOver90Days] --EXEC dbo.DebtByClientOver90Days '202306','202206','LTA'
 (@Month AS INT
 ,@PreviousMonth AS INT
 ,@Division AS NVARCHAR(MAX)
 ,@Segment AS NVARCHAR(MAX)
-,@Sector AS NVARCHAR(Max)
+,@Sector AS NVARCHAR(MAX)
 )
 AS 
 
@@ -38,6 +40,7 @@ SELECT AllData.Dim_Days_Banding_Key,
        AllData.[Business Line],
        CASE WHEN AllData.[Client Code] IS NULL THEN 'Unknown' ELSE AllData.[Client Code] END AS [Client Code] ,
        CASE WHEN AllData.ClientName IS NULL THEN 'Unknown' ELSE AllData.ClientName END AS [Client Name],
+	   client_partner_name,
        AllData.CurrentPeriod,
        AllData.PreviousPeriod
 FROM (SELECT  
@@ -52,7 +55,8 @@ name AS    [Display_Name],
 hierarchylevel4hist AS Team,
 hierarchylevel3hist AS [Practice Area],
 hierarchylevel2hist AS [Business Line],
-master_client_code AS [Client Code]
+dim_client.client_code AS [Client Code]
+,client_partner_name
 ,client_name AS ClientName
 ,SUM(fact_debt_monthly.outstanding_total_bill) AS CurrentPeriod
 ,NULL AS PreviousPeriod
@@ -94,8 +98,8 @@ GROUP BY CASE
          hierarchylevel4hist,
          hierarchylevel3hist,
          hierarchylevel2hist,
-         master_client_code,
-         client_name,segment
+         dim_client.client_code,
+         client_name,segment,client_partner_name
 ,sector
 UNION
 SELECT  
@@ -110,7 +114,8 @@ name AS    [Display_Name],
 hierarchylevel4hist AS Team,
 hierarchylevel3hist AS [Practice Area],
 hierarchylevel2hist AS [Business Line],
-master_client_code AS [Client Code]
+dim_client.client_code AS [Client Code]
+,client_partner_name
 ,client_name AS ClientName
 ,NULL AS CurrentPeriod
 ,SUM(fact_debt_monthly.outstanding_total_bill) AS PreviousPeriod
@@ -151,8 +156,8 @@ GROUP BY CASE
          hierarchylevel4hist,
          hierarchylevel3hist,
          hierarchylevel2hist,
-         master_client_code,
-         client_name,segment
+         dim_client.client_code,
+         client_name,segment,client_partner_name
 ,sector
 		 ) AS AllData
 		 INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = [Business Line] COLLATE DATABASE_DEFAULT

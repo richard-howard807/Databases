@@ -54,7 +54,7 @@ BEGIN
 	, CASE WHEN bhrr_accepted='Yes' THEN 'BHR' ELSE NULL END AS [Period of Hire Settled]
 	, fact_detail_recovery_detail.cht_daily_rate_claimed AS [Credit Hire Rate Claimed]
 	, NULL AS [Credit Hire Rate Paid]
-	, fact_detail_recovery_detail.cht_daily_rate_claimed AS [Total Credit Hire Claimed]
+	, fact_detail_paid_detail.hire_claimed AS [Total Credit Hire Claimed]
 	, fact_detail_paid_detail.amount_hire_paid AS [Total Credit Hire Paid]
 	, NULL AS [Impecuniosity Proved]
 	, fact_detail_paid_detail.personal_injury_paid AS [Total General Damages Settlement Amount]

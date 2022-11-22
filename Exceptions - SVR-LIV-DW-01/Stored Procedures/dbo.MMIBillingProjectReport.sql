@@ -132,6 +132,7 @@ GROUP BY client_code,matter_number) AS LastBillNonDisbBill
 
 WHERE TRIM(dim_matter_header_current.client_code)='M00001'
 AND date_opened_case_management>='2019-02-01'
+AND dim_matter_header_current.fixed_fee <>'Fixed Fee'
 --AND dim_matter_header_current.matter_number NOT IN ('00079227')
 AND dim_fed_hierarchy_history.hierarchylevel2hist IN
 (

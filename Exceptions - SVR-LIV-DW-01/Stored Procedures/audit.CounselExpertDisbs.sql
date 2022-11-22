@@ -4,13 +4,37 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE PROCEDURE [audit].[CounselExpertDisbs]
+
+CREATE PROCEDURE [audit].[CounselExpertDisbs] --[audit].[CounselExpertDisbs] '2022-10-01','2022-10-17'
 (
 @StartDate AS DATE
 ,@EndDate AS DATE
 )
 AS
 BEGIN
+
+IF OBJECT_ID('tempdb..#Payee') IS NOT NULL   DROP TABLE #Payee
+SELECT PayeeIndex,Name,Entity 
+, REPLACE(
+                                      REPLACE(
+                                          ( ISNULL(RTRIM(Street), '') + ' '
+                                            + ISNULL(RTRIM(Additional1), '')
+                                            + ' ' + ISNULL(RTRIM(City), '')
+                                            + ' ' + ISNULL(RTRIM(County), '')
+                                            + ' ' + ISNULL(RTRIM(ZipCode), '')) ,
+                                          '  ' ,
+                                          ' ') ,
+                                      '  ' ,
+                                      ' ') AS [3EAddress]
+INTO #Payee
+FROM TE_3E_Prod.dbo.Payee WITH(NOLOCK)
+LEFT JOIN TE_3E_Prod.dbo.Relate 
+  ON Entity=Relate.SbjEntity
+LEFT JOIN TE_3E_Prod.dbo.Site
+ ON TE_3E_Prod.dbo.Relate.RelIndex=Site.Relate AND site.IsDefault=1
+LEFT JOIN TE_3E_Prod.dbo.Address a WITH ( NOLOCK ) ON site.Address = a.AddrIndex
+
+
 DECLARE @Directory AS NVARCHAR(MAX)
 SET @Directory='\\svr-liv-3efn-01\TE_3E_Share\TE_3E_PROD\Inetpub\Attachment\Voucher\' --LIVE
 DECLARE @test AS INT
@@ -31,6 +55,7 @@ SELECT[Client Code]
 ,[Bill Amount] AS [Invoice Total Amount]
 ,[Invoice Link] AS [Invoice Link]
 ,AutoDibs.Entity
+,AutoDibs.[3EAddress]
 FROM 
 (
 SELECT 
@@ -56,6 +81,7 @@ dbfile.fileID
 ,hierarchylevel3hist
 ,hierarchylevel4hist
 ,Payee.Entity
+,Payee.[3EAddress]
  FROM  TE_3E_Prod.dbo.Voucher WITH(NOLOCK)
  INNER JOIN TE_3E_Prod.dbo.VchrDetail WITH(NOLOCK)
   ON Voucher.VchrIndex=VchrDetail.Voucher
@@ -66,7 +92,7 @@ INNER JOIN MS_PROD.config.dbClient WITH(NOLOCK) ON dbFile.clID=dbClient.clID
 INNER JOIN MS_PROD.dbo.udExtFile WITH(NOLOCK) ON dbFile.fileID=udExtFile.fileID
 INNER JOIN MS_PROD.dbo.dbUser WITH(NOLOCK) ON dbFile.filePrincipleID=dbUser.usrID
 LEFT OUTER JOIN [red_dw].[dbo].[dim_fed_hierarchy_history] WITH(NOLOCK)  ON usrAlias=fed_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
-LEFT OUTER JOIN (SELECT PayeeIndex,Name,Entity FROM TE_3E_Prod.dbo.Payee WITH(NOLOCK) ) AS Payee
+LEFT OUTER JOIN #Payee AS Payee
  ON Voucher.Payee=Payee.PayeeIndex
 LEFT  JOIN TE_3E_Prod.dbo.NxAttachment WITH(NOLOCK)
  ON Voucher.VoucherID=NxAttachment.ParentItemID
@@ -80,8 +106,8 @@ AND CONVERT(DATE,Voucher.TranDate,103)  BETWEEN  @StartDate AND @EndDate --DATEA
 --,'5265','5467','5848','1580','5635','5131','5386','4558','3709','4348'
 --,'5508','642','2043','579','3080','594','4797','1590','1687','1785','6032')
 ) AS AutoDibs
-LEFT OUTER JOIN (SELECT client,matter,case_id FROM axxia01.dbo.cashdr) AS b
- ON [Client Code]=b.client COLLATE DATABASE_DEFAULT
-AND [Matter Number]=b.matter COLLATE DATABASE_DEFAULT
+--LEFT OUTER JOIN (SELECT client,matter,case_id FROM axxia01.dbo.cashdr) AS b
+-- ON [Client Code]=b.client COLLATE DATABASE_DEFAULT
+--AND [Matter Number]=b.matter COLLATE DATABASE_DEFAULT
 END
 GO
