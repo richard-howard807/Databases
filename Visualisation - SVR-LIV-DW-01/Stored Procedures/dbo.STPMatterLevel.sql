@@ -124,9 +124,9 @@ client_code AS [client_code]
 	,SUM(CASE WHEN  DATEDIFF(dd,tskDue, getdate()) >=5 THEN 1 ELSE 0 END)  AS [No. of red 5+ days old Paperlite]
 
 FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN MS_Prod.dbo.dbTasks
+INNER JOIN MS_Prod.dbo.dbTasks	WITH (NOLOCK) 
  ON ms_fileid=fileID
-LEFT OUTER JOIN MS_Prod.dbo.dbUser ON dbTasks.UpdatedBy=dbUser.usrid
+LEFT OUTER JOIN MS_Prod.dbo.dbUser WITH (NOLOCK)  ON dbTasks.UpdatedBy=dbUser.usrid
 WHERE 
 --fileID = '5237307' 
  tskComplete=0 
@@ -149,10 +149,10 @@ client_code AS [client_code]
 	,matter_number AS [matter_number]
 	,COUNT(CASE WHEN  tskType <>'PAPERLITE' THEN 1 ELSE NULL END) AS [No. of red Other]
 	,SUM(CASE WHEN  DATEDIFF(dd,tskDue, getdate()) >=5 THEN 1 ELSE 0 END)  AS [No. of red 5+ days old Other]
-FROM red_dw.dbo.dim_matter_header_current
-INNER JOIN MS_Prod.dbo.dbTasks
+FROM red_dw.dbo.dim_matter_header_current  WITH (NOLOCK) 
+INNER JOIN MS_Prod.dbo.dbTasks	  WITH (NOLOCK) 
  ON ms_fileid=fileID
-LEFT OUTER JOIN MS_Prod.dbo.dbUser ON dbTasks.UpdatedBy=dbUser.usrid
+LEFT OUTER JOIN MS_Prod.dbo.dbUser WITH (NOLOCK)  ON dbTasks.UpdatedBy=dbUser.usrid
 WHERE 
 --fileID = '5078349'
   tskComplete=0 
