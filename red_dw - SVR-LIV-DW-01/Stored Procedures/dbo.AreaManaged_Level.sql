@@ -111,6 +111,7 @@ WHEN Name = 'People - Team Managers' THEN 'Area Managed'
 WHEN Name = 'SSRS - Team Managers' THEN 'Area Managed'
 WHEN Name = 'SSRSPARAMS - Team Level permission'  THEN 'Area Managed'
 WHEN Name = 'SSRSPARAM - Firm Level permissions' THEN 'Firm'
+WHEN Name = 'All Principal Associates' THEN 'Area Managed'
 
 END
 from #ADGroups
