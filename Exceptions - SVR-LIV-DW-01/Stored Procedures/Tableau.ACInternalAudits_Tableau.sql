@@ -84,7 +84,8 @@ BEGIN
                                                                         134, --LTA Audit 
                                                                         133, --LTA (No CDD) Audit 
                                                                         141, --New Starter Audit 
-                                                                        153  --Real Estate Audit 
+                                                                        153,  --Real Estate Audit
+																		292  --LTA Short Form Audit 
                                                                     );
 
 
