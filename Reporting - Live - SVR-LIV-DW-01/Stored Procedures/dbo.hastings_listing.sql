@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 -- =============================================
 -- Author:		Jamie Bonner
 -- Create date: 24/08/2021
@@ -752,6 +753,7 @@ WHERE 1 = 1
 	AND dim_matter_header_current.master_client_code = '4908'
 	AND dim_matter_header_current.reporting_exclusions = 0
 	AND dim_matter_header_current.master_matter_number >= 6 --excludes ML matter and earlier matters opened in 1990s
+	AND ISNULL(dim_detail_core_details.[referral_reason], '') <> 'Recovery'
 ORDER BY
 	dim_matter_header_current.master_matter_number
 

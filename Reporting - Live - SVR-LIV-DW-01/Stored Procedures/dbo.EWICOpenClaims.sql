@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[EWICOpenClaims]
 
 AS 
@@ -46,7 +47,7 @@ ELSE [Loss Number] END AS [EWIC Ref]
 ,CAST(CONVERT(DATE,CASE WHEN Reopened_Date ='' THEN NULL ELSE Reopened_Date END,103) AS DATETIME) AS Reopened_Date
 ,Initial_Potential_Estimate AS[Initial Potential Estimate]
 ,CAST(CONVERT(DATE,CASE WHEN Date_IPE_likely_to_be_updated='' THEN NULL ELSE Date_IPE_likely_to_be_updated END,103) AS DATETIME) AS[Date on which IPE likely to be updated to Reserve]
-,NULL AS[Category/type of claim ]
+
 ,Policy_Wording AS[Policy Wording]
 ,New_or_Rectification_Work AS[New / Rectification Work]
 ,CASE WHEN Cunningham_Lindsay_as_Previous_Contractor='Y' THEN 'Yes' WHEN Cunningham_Lindsay_as_Previous_Contractor='N' THEN 'No' ELSE Cunningham_Lindsay_as_Previous_Contractor END AS[Cunningham Lindsay (Previous Contractor)]
