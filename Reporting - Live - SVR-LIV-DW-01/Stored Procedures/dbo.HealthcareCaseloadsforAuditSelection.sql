@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 CREATE PROCEDURE [dbo].[HealthcareCaseloadsforAuditSelection]
 
 AS 
@@ -26,6 +28,7 @@ SELECT
 ,last_bill_date AS [Date of Last Bill]
 ,CASE WHEN master_client_code='N1001' THEN 1 ELSE 0 END AS NHSRCases
 ,1 AS NumberMatters
+,Auditor.usrFullName
 FROM red_dw.dbo.dim_matter_header_current
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -43,9 +46,22 @@ WHERE bitActive=1
 ) AS Audits
 GROUP BY Audits.fileID) AS AuditData
 ON AuditData.fileID=ms_fileid
+LEFT OUTER JOIN (SELECT FileID,STRING_AGG(CAST(usrFullName AS NVARCHAR(MAX)),'|') usrFullName
+FROM (
+										SELECT fileID,usrFullName
+										FROM ms_prod.dbo.udMIAuditNHSSearchList
+INNER JOIN ms_prod.dbo.dbUser
+ ON cboAuditee1=usrID
+WHERE bitActive=1
+) AS Auditor
+GROUP BY Auditor.fileID
+) AS Auditor
+ ON Auditor.fileID = ms_fileid
+
  WHERE hierarchylevel3hist='Healthcare'
  AND ms_only=1
  AND dim_matter_header_current.date_closed_case_management IS NULL
+ AND UPPER(matter_description) NOT LIKE '%GENERAL FILE%'
 END 
 
 GO
