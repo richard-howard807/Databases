@@ -161,7 +161,7 @@ where Level = 'Area Managed'
 
 update @FinalTbl 
 set mdx = '[Dim Fed Hierarchy History].[Hierarchy].AllMembers',
-    [sql] = '(select dim_fed_hierarchy_history_key from dim_fed_hierarchy_history)',
+    [sql] = '(select dim_fed_hierarchy_history_key from red_dw.dbo.dim_fed_hierarchy_history)',
 	dax = 'Firm'
 where Level = 'Firm'
 
