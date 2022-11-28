@@ -2,6 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE PROCEDURE [dbo].[MercantileIndemnityBillingProject]
 
 AS 
@@ -30,6 +31,7 @@ END  AS ElapsedDays
 ,Proforma.[Proforma Status]
 ,Proforma.[Proforma Elapsed Days]
 ,[Proforma].[Proforma Date]
+,disbursement_balance
 
 --SELECT DISTINCT dim_matter_header_current.master_client_code
 FROM red_dw.dbo.dim_matter_header_current

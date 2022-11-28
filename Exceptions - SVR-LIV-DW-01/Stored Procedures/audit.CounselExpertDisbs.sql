@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [audit].[CounselExpertDisbs] --[audit].[CounselExpertDisbs] '2022-10-01','2022-10-17'
 (
 @StartDate AS DATE
@@ -26,6 +27,7 @@ SELECT PayeeIndex,Name,Entity
                                           ' ') ,
                                       '  ' ,
                                       ' ') AS [3EAddress]
+									  ,a.ZipCode AS [Postcode]
 INTO #Payee
 FROM TE_3E_Prod.dbo.Payee WITH(NOLOCK)
 LEFT JOIN TE_3E_Prod.dbo.Relate 
@@ -56,6 +58,7 @@ SELECT[Client Code]
 ,[Invoice Link] AS [Invoice Link]
 ,AutoDibs.Entity
 ,AutoDibs.[3EAddress]
+,[Postcode]
 FROM 
 (
 SELECT 
@@ -82,6 +85,7 @@ dbfile.fileID
 ,hierarchylevel4hist
 ,Payee.Entity
 ,Payee.[3EAddress]
+,[Postcode]
  FROM  TE_3E_Prod.dbo.Voucher WITH(NOLOCK)
  INNER JOIN TE_3E_Prod.dbo.VchrDetail WITH(NOLOCK)
   ON Voucher.VchrIndex=VchrDetail.Voucher

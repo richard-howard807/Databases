@@ -64,6 +64,7 @@ CREATE TABLE [dbo].[selfservice]
 [fic_score] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Total FIC Point Calc] [float] NULL,
 [Credit Hire] [varchar] (255) COLLATE Latin1_General_BIN NULL,
+[Are we dealing with the credit hire?] [varchar] (255) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Organisation] [varchar] (2000) COLLATE Latin1_General_BIN NULL,
 [Credit Hire Organisation Detail] [varchar] (500) COLLATE Latin1_General_BIN NULL,
 [Hire Start Date] [datetime] NULL,

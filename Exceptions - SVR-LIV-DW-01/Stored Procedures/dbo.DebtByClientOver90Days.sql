@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[DebtByClientOver90Days] --EXEC dbo.DebtByClientOver90Days '202306','202206','LTA'
 (@Month AS INT
 ,@PreviousMonth AS INT
@@ -66,15 +67,17 @@ dim_client.client_code AS [Client Code]
  
 
 FROM red_dw.dbo.fact_debt_monthly
-LEFT OUTER JOIN  red_dw.dbo.fact_dimension_main
+INNER JOIN  red_dw.dbo.fact_dimension_main
 ON fact_debt_monthly.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_days_banding
+INNER JOIN red_dw.dbo.dim_days_banding
 ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
-LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-LEFT OUTER JOIN red_dw.dbo.dim_client
+INNER JOIN red_dw.dbo.dim_client
 ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
-
+INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel2hist COLLATE DATABASE_DEFAULT
+	--INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = ISNULL(segment,'Unknown') COLLATE DATABASE_DEFAULT
+	--INNER JOIN #Sector AS Sector  ON Sector.ListValue COLLATE DATABASE_DEFAULT = ISNULL(sector,'Unknown') COLLATE DATABASE_DEFAULT
 
 WHERE fact_debt_monthly.outstanding_total_bill <> 0 
 
@@ -124,20 +127,23 @@ dim_client.client_code AS [Client Code]
  
 
 FROM red_dw.dbo.fact_debt_monthly
-LEFT OUTER JOIN  red_dw.dbo.fact_dimension_main
+INNER JOIN   red_dw.dbo.fact_dimension_main
 ON fact_debt_monthly.master_fact_key = fact_dimension_main.master_fact_key
-LEFT OUTER JOIN red_dw.dbo.dim_days_banding
+INNER JOIN red_dw.dbo.dim_days_banding
 ON dim_days_banding.dim_days_banding_key = fact_debt_monthly.dim_days_banding_key
-LEFT OUTER JOIN red_dw.dbo.dim_fed_hierarchy_history
+INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-LEFT OUTER JOIN red_dw.dbo.dim_client
+INNER JOIN red_dw.dbo.dim_client
 ON dim_client.dim_client_key = fact_dimension_main.dim_client_key
-
+INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = hierarchylevel2hist COLLATE DATABASE_DEFAULT
+		 --INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = ISNULL(segment,'Unknown') COLLATE DATABASE_DEFAULT
+		 --INNER JOIN #Sector AS Sector  ON Sector.ListValue COLLATE DATABASE_DEFAULT = ISNULL(sector,'Unknown') COLLATE DATABASE_DEFAULT
 
 WHERE fact_debt_monthly.outstanding_total_bill <> 0 
 
 AND debt_month =   @PreviousMonth
 AND daysbanding  ='Greater than 90 Days' 
+
 
 --(SELECT fin_month FROM red_dw.dbo.dim_date WHERE calendar_date = cast(getdate() - 1 as date) )
 
@@ -160,8 +166,8 @@ GROUP BY CASE
          client_name,segment,client_partner_name
 ,sector
 		 ) AS AllData
-		 INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = [Business Line] COLLATE DATABASE_DEFAULT
-		 INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Segment,'Unknown') COLLATE DATABASE_DEFAULT
-		 INNER JOIN #Sector AS Sector  ON Sector.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Sector,'Unknown') COLLATE DATABASE_DEFAULT
+		 --INNER JOIN #Division AS Division  ON Division.ListValue COLLATE DATABASE_DEFAULT = [Business Line] COLLATE DATABASE_DEFAULT
+		 --INNER JOIN #Segment AS Segment  ON Segment.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Segment,'Unknown') COLLATE DATABASE_DEFAULT
+		 --INNER JOIN #Sector AS Sector  ON Sector.ListValue COLLATE DATABASE_DEFAULT = ISNULL(Sector,'Unknown') COLLATE DATABASE_DEFAULT
 		 END 
 GO

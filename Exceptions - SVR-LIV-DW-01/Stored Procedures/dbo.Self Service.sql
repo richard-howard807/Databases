@@ -8,6 +8,7 @@ GO
 
 
 
+
 -- =============================================
 -- Author:		<orlagh Kelly >
 -- Create date: <2018-10-11>
@@ -464,6 +465,7 @@ DROP TABLE IF EXISTS #Disbursements
        ,dim_detail_claim.fic_score              --JL added as per #99701
        ,dim_detail_fraud.total_points_calc AS [Total FIC Point Calc]
        ,dim_detail_core_details.credit_hire AS [Credit Hire]
+	   ,dim_detail_core_details.[are_we_dealing_with_the_credit_hire]  AS [Are we dealing with the credit hire?]
        ,COALESCE(
                    IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other',
                        NULL,

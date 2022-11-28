@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 CREATE PROCEDURE [dbo].[HastingsMITemplate–LLandComplexClaims]
 
 AS
@@ -21,7 +23,7 @@ SELECT
 [Injury Category] =                               hastings_child_details.hastings_injury_category,	                         
 [Prognosis Time] = 	                              hastings_child_details.hastings_prognosis_time,
 [PD Type] = 		                              dim_detail_outcome.[hastings_pd_type],
-[Credit Hire Duration]   =                        CASE WHEN dim_detail_hire_details.[hastings_credit_hire_duration] = 0 THEN NULL ELSE dim_detail_hire_details.[hastings_credit_hire_duration] END,    --	Integer	Show as blank if zero is entered	
+[Credit Hire Duration]   =                        CASE WHEN dim_detail_hire_details.[hastings_credit_hire_duration] = '0' THEN NULL ELSE dim_detail_hire_details.[hastings_credit_hire_duration] END,    --	Integer	Show as blank if zero is entered	
 [Loss Date] =                                     dim_detail_core_details.[incident_date],
 [SCNF / LOC Date]=		                          dim_detail_claim.[hastings_scnf_loc_date] ,   
 [Date of Instruction] =                		      dim_detail_core_details.[date_instructions_received] ,
@@ -82,9 +84,9 @@ SELECT
 
 
  CASE 
-     WHEN TRIM(dim_detail_claim.[hastings_jurisdiction]) = 'England & Wales' then dim_detail_core_details.[track] 
+     WHEN TRIM(dim_detail_claim.[hastings_jurisdiction]) = 'England & Wales' THEN dim_detail_core_details.[track] 
 	 WHEN TRIM(dim_detail_core_details.[track]) =  'Small claims' THEN 'Small Claims Track'
-	 WHEN ISNULL(TRIM(dim_detail_claim.[hastings_jurisdiction]),'') <> 'England & Wales' then dim_detail_court.[hastings_assumed_court_track_at_instruction]
+	 WHEN ISNULL(TRIM(dim_detail_claim.[hastings_jurisdiction]),'') <> 'England & Wales' THEN dim_detail_court.[hastings_assumed_court_track_at_instruction]
      ELSE dim_detail_court.[hastings_assumed_court_track_at_instruction] END,
 
 [Court Track Current] = 			        
@@ -271,6 +273,8 @@ LEFT OUTER JOIN ms_prod.dbo.dbAddress
  AND reporting_exclusions = 0 
  AND dim_matter_header_current.master_client_code +'-' + master_matter_number <> '4908-19'
  AND ISNULL(dim_detail_core_details.[referral_reason], '') <> 'Advice only'
+ AND ISNULL(dim_detail_core_details.[referral_reason], '') <> 'Recovery'
+
 
  ORDER BY ms_fileid 
 

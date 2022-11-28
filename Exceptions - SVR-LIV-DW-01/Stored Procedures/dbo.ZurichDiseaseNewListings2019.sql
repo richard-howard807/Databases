@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:	Orlagh kelly 
 -- Create date: 07-2-19
@@ -31,118 +32,118 @@ BEGIN
 
 	SET NOCOUNT ON;
 
-select distinct
+SELECT DISTINCT
 
- case
-			when WPS387 is not null then rtrim(WPS387)
-           when dim_detail_critical_mi.[claim_status] is null then
+ CASE
+			WHEN WPS387 IS NOT NULL THEN RTRIM(WPS387)
+           WHEN dim_detail_critical_mi.[claim_status] IS NULL THEN
                'Open'
-           when dim_detail_critical_mi.[claim_status] in ( 'Re-opened', 'Re-Opened' ) then
+           WHEN dim_detail_critical_mi.[claim_status] IN ( 'Re-opened', 'Re-Opened' ) THEN
                'Open'
-           else
-               rtrim(dim_detail_critical_mi.[claim_status])
-           end ClaimParameter,
-      rtrim( dim_claimant_thirdparty_involvement.client_code) client_code,
-       rtrim(matter_description) [Matter Description],
-      rtrim( zurich_instruction_type) zurich_instruction_type,
-       rtrim(dim_employee.locationidud) [Office],
-       rtrim(name) [Case handler Weightmans],
-       'Weightmans' as [Solicitor Firm ],
-       case
-           when rtrim(dim_detail_core_details.[injury_type_code]) like 'D17%' then
+           ELSE
+               RTRIM(dim_detail_critical_mi.[claim_status])
+           END ClaimParameter,
+      RTRIM( dim_claimant_thirdparty_involvement.client_code) client_code,
+       RTRIM(matter_description) [Matter Description],
+      RTRIM( zurich_instruction_type) zurich_instruction_type,
+       RTRIM(dim_employee.locationidud) [Office],
+       RTRIM(name) [Case handler Weightmans],
+       'Weightmans' AS [Solicitor Firm ],
+       CASE
+           WHEN RTRIM(dim_detail_core_details.[injury_type_code]) LIKE 'D17%' THEN
                'NIHL'
-           when rtrim(dim_detail_core_details.[injury_type_code]) like 'D31%' then
+           WHEN RTRIM(dim_detail_core_details.[injury_type_code]) LIKE 'D31%' THEN
                'HAVS'
-           else
-               rtrim(dim_detail_core_details.[injury_type])
-       end as [Disease type],
+           ELSE
+               RTRIM(dim_detail_core_details.[injury_type])
+       END AS [Disease type],
        dim_matter_header_current.date_opened_case_management [Date Opened ],
        dim_matter_header_current.date_closed_case_management [Date Closed ],
-       rtrim(dim_detail_client.[zurich_instruction_type]) [Instruction Type ],
-       rtrim(LitigatedRef) LitigatedRef,
+       RTRIM(dim_detail_client.[zurich_instruction_type]) [Instruction Type ],
+       RTRIM(LitigatedRef) LitigatedRef,
        dim_detail_core_details.[date_instructions_received] [Date Recieved],
-       replace(ltrim(replace(rtrim(fact_dimension_main.client_code), '0', ' ')), ' ', '0') + '.'
-       + replace(ltrim(replace(rtrim(fact_dimension_main.matter_number), '0', ' ')), ' ', '0') [Solicitor Reference],
+       REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.client_code), '0', ' ')), ' ', '0') + '.'
+       + REPLACE(LTRIM(REPLACE(RTRIM(fact_dimension_main.matter_number), '0', ' ')), ' ', '0') [Solicitor Reference],
 	   dim_matter_header_current.master_client_code + '.' + dim_matter_header_current.master_matter_number		AS [MS Reference],
-	   rtrim(WPS275) [Zurich claim number], 
-       rtrim(dim_detail_health.[case_handler_review_comment]) [case_handler_review_comment],
-       upper(rtrim(dim_detail_claim.[zurich_claimants_name])) [Claimant ],
-       case
-	   when  isnull(WPS344,'') <> ''  then WPS344  
-           when upper(dim_detail_claim.[policyholder_name_of_insured]) is null then
-               upper(rtrim(dim_detail_core_details.[zurich_policy_holdername_of_insured]))
-           else
-               upper(rtrim(dim_detail_claim.[policyholder_name_of_insured]))
-       end as [Policy Holder ],
-       upper(rtrim(dim_detail_claim.[location_of_claimants_workplace])) as [Claimant work location],
-       upper(rtrim(dim_detail_client.[zurich_claimants_sols_firm])) as [Claimant solicitors],
-       upper(rtrim(dim_detail_claim.[location_of_claimant_solicitors])) [location of claimant lawyer],
-       upper(rtrim(WPS276)) as [lead/follow],
-       rtrim(dim_detail_core_details.[is_this_the_lead_file]) [is_this_the_lead_file],
-       rtrim(dim_detail_core_details.[pp_lead_follow]) [pp_lead_follow],
-       case
-			when WPS387 is not null then rtrim(WPS387)
-           when dim_detail_critical_mi.[claim_status] is null then
+	   RTRIM(WPS275) [Zurich claim number], 
+       RTRIM(dim_detail_health.[case_handler_review_comment]) [case_handler_review_comment],
+       UPPER(RTRIM(dim_detail_claim.[zurich_claimants_name])) [Claimant ],
+       CASE
+	   WHEN  ISNULL(WPS344,'') <> ''  THEN WPS344  
+           WHEN UPPER(dim_detail_claim.[policyholder_name_of_insured]) IS NULL THEN
+               UPPER(RTRIM(dim_detail_core_details.[zurich_policy_holdername_of_insured]))
+           ELSE
+               UPPER(RTRIM(dim_detail_claim.[policyholder_name_of_insured]))
+       END AS [Policy Holder ],
+       UPPER(RTRIM(dim_detail_claim.[location_of_claimants_workplace])) AS [Claimant work location],
+       UPPER(RTRIM(dim_detail_client.[zurich_claimants_sols_firm])) AS [Claimant solicitors],
+       UPPER(RTRIM(dim_detail_claim.[location_of_claimant_solicitors])) [location of claimant lawyer],
+       UPPER(RTRIM(WPS276)) AS [lead/follow],
+       RTRIM(dim_detail_core_details.[is_this_the_lead_file]) [is_this_the_lead_file],
+       RTRIM(dim_detail_core_details.[pp_lead_follow]) [pp_lead_follow],
+       CASE
+			WHEN WPS387 IS NOT NULL THEN RTRIM(WPS387)
+           WHEN dim_detail_critical_mi.[claim_status] IS NULL THEN
                'Open'
-           when dim_detail_critical_mi.[claim_status] in ( 'Re-opened', 'Re-Opened' ) then
+           WHEN dim_detail_critical_mi.[claim_status] IN ( 'Re-opened', 'Re-Opened' ) THEN
                'Open'
-           else
-               rtrim(dim_detail_critical_mi.[claim_status])
-           end [claim_status],
-       rtrim(dim_detail_core_details.[suspicion_of_fraud]) [Fraud Identified],
-       fact_detail_claim.[potential_fraud_saving] as [Potential fraud saving],
-       fact_detail_reserve_detail.[converge_disease_reserve] as [current reserve],
+           ELSE
+               RTRIM(dim_detail_critical_mi.[claim_status])
+           END [claim_status],
+       RTRIM(dim_detail_core_details.[suspicion_of_fraud]) [Fraud Identified],
+       fact_detail_claim.[potential_fraud_saving] AS [Potential fraud saving],
+       fact_detail_reserve_detail.[converge_disease_reserve] AS [current reserve],
        WPS277 [WPS277 Current Reserve],
        WPS278 [WPS278 General  Damages Paid],
        WPS279 [WPS279 Special Damages Paid],
        WPS280 [WPS280  Claimants Costs Paid],
        WPS281 [WPS281  CRU paid],
-       fact_detail_recovery_detail.[monies_recovered_if_applicable] as [Monies recovered if applicable],
+       fact_detail_recovery_detail.[monies_recovered_if_applicable] AS [Monies recovered if applicable],
        WPS282 [WPS282 Monies recovered if applicable],
-       rtrim(wp_type) [WP Type ],
-      cast(WPS283 as varchar(250)) + '%' as [WPS283  Our proportion % of damages],
-       cast(WPS284 as varchar(250)) + '%' as [WPS284   Our proportion % of costs],
-       rtrim(WPS276) [WPS276  LeadFollow ],
+       RTRIM(wp_type) [WP Type ],
+      CAST(WPS283 AS VARCHAR(250)) + '%' AS [WPS283  Our proportion % of damages],
+       CAST(WPS284 AS VARCHAR(250)) + '%' AS [WPS284   Our proportion % of costs],
+       RTRIM(WPS276) [WPS276  LeadFollow ],
        CASE
-			WHEN UPPER(rtrim(ISNULL(dim_detail_litigation.[litigated], ''))) = 'YES' THEN
-				UPPER(rtrim(dim_detail_litigation.[litigated]))
+			WHEN UPPER(RTRIM(ISNULL(dim_detail_litigation.[litigated], ''))) = 'YES' THEN
+				UPPER(RTRIM(dim_detail_litigation.[litigated]))
 			WHEN RTRIM(ISNULL(dim_detail_core_details.proceedings_issued, '')) = 'Yes' THEN
 				UPPER(RTRIM(dim_detail_core_details.proceedings_issued)) 
 			ELSE
 				'NO'
 		END								AS [Litigated],
-       upper(rtrim(dim_detail_litigation.[reason_for_litigation])) as [Litigated Reason],
+       UPPER(RTRIM(dim_detail_litigation.[reason_for_litigation])) AS [Litigated Reason],
        date_settlement_form_sent_to_zurich [Date settlement form sent to Zurich ],
-      isnull(WPS386,date_settlement_form_sent_to_zurich) [WPS386   Date settlement form sent to Zurich ],
-       isnull(dim_detail_client.[weightmans_comments], '-') [Weightmans Comments ],
+      ISNULL(WPS386,date_settlement_form_sent_to_zurich) [WPS386   Date settlement form sent to Zurich ],
+       ISNULL(dim_detail_client.[weightmans_comments], '-') [Weightmans Comments ],
        dim_detail_fraud.[previous_claims_form_sent_out] [Previous Claims form sent out ],
        dim_detail_fraud.[previous_claims_form_returned] [Previous Claims form returned ],
-       isnull(WPS340, 0) [WPS340 Fee Billed by Panel],
-       isnull(WPS341, 0) [WPS341 Own Disbursements],
-       rtrim(dim_detail_client.[old_zurich_reporting_category]) [old_zurich_reporting_category],
+       ISNULL(WPS340, 0) [WPS340 Fee Billed by Panel],
+       ISNULL(WPS341, 0) [WPS341 Own Disbursements],
+       RTRIM(dim_detail_client.[old_zurich_reporting_category]) [old_zurich_reporting_category],
 	   ClaimDetails.catalina_claim_number		AS [Catalina Claim Number],
 	   ClaimDetails.is_this_a_catalina_claim_no	AS [Is this a Catalina Claim Number],
-       rtrim(WPS332) [WPS332 Old Zurich Reporting Category],
-	   (isnull(WPS278,0) + isnull(WPS279,0) +isnull(WPS280,0) + isnull(WPS281,0) 
-	   + isnull(WPS340,0)+ isnull(WPS341,0) - isnull(WPS282,0) ) as [Total Paid to Date ] ,
-       rtrim(worktype) [Worktype], 
-       rtrim(dim_detail_client.[zurich_mfu]) [Zurich MFU ],
-       rtrim(WPS335) [WPS335    Zurich MFU ],
-       rtrim(dim_detail_practice_area.[supervisor_comment]) [Supervisor Comment],
+       RTRIM(WPS332) [WPS332 Old Zurich Reporting Category],
+	   (ISNULL(WPS278,0) + ISNULL(WPS279,0) +ISNULL(WPS280,0) + ISNULL(WPS281,0) 
+	   + ISNULL(WPS340,0)+ ISNULL(WPS341,0) - ISNULL(WPS282,0) ) AS [Total Paid to Date ] ,
+       RTRIM(worktype) [Worktype], 
+       RTRIM(dim_detail_client.[zurich_mfu]) [Zurich MFU ],
+       RTRIM(WPS335) [WPS335    Zurich MFU ],
+       RTRIM(dim_detail_practice_area.[supervisor_comment]) [Supervisor Comment],
        dim_detail_practice_area.[supervisor_review_date] [Supervisor Review Date],
        red_dw.dbo.fact_finance_summary.defence_costs_billed [Fees Paid Up Front ] ,
-       upper(rtrim(LitigatedRef.client_code)) + '.' + upper(rtrim(LitigatedRef.matter_number)) as [Litigated Matter Number ],
-	   	     case 
-	   when isnull(date_reopened_5,'') <> '' then date_reopened_5
-	   when isnull(date_reopened_4,'') <> '' then date_reopened_4
-	   when isnull(date_reopened_3,'') <> '' then date_reopened_3
-	   when isnull(date_reopened_2,'') <> '' then date_reopened_2
-	   when isnull(date_reopened_1,'') <> '' then date_reopened_1
-	   else null	end [date_reopened_text],
+       UPPER(RTRIM(LitigatedRef.client_code)) + '.' + UPPER(RTRIM(LitigatedRef.matter_number)) AS [Litigated Matter Number ],
+	   	     CASE 
+	   WHEN ISNULL(date_reopened_5,'') <> '' THEN date_reopened_5
+	   WHEN ISNULL(date_reopened_4,'') <> '' THEN date_reopened_4
+	   WHEN ISNULL(date_reopened_3,'') <> '' THEN date_reopened_3
+	   WHEN ISNULL(date_reopened_2,'') <> '' THEN date_reopened_2
+	   WHEN ISNULL(date_reopened_1,'') <> '' THEN date_reopened_1
+	   ELSE NULL	END [date_reopened_text],
 	dim_detail_critical_mi.[date_reopened]  [date_reopened_date],
 	dim_detail_claim.[reason_for_reopening_request] [reason_for_reopening_request],
-	case when dim_detail_claim.[reason_for_reopening_request] = 'Closed in error by panel' then 'Yes' else 'No' end [Re_opening_avoidable],
-	coalesce(dim_detail_core_details.[was_litigation_avoidable],dim_detail_core_details.[zurich_grp_rmg_was_litigation_avoidable]) [Litigation avoidable],
+	CASE WHEN dim_detail_claim.[reason_for_reopening_request] = 'Closed in error by panel' THEN 'Yes' ELSE 'No' END [Re_opening_avoidable],
+	COALESCE(dim_detail_core_details.[was_litigation_avoidable],dim_detail_core_details.[zurich_grp_rmg_was_litigation_avoidable]) [Litigation avoidable],
 	dim_detail_litigation.are_weightmans_on_the_court_record, 
 	[Defence Cost Reserve], 
 	[Claimants Cost Reserve] [Claimants Cost Reserve ]
@@ -159,44 +160,44 @@ select distinct
 	, recorded.hours_recorded AS [Hours Recorded]
 	, billed.hours_billed AS [Hours Billed to Client]
 
-from red_dw.dbo.fact_dimension_main
-    inner join red_dw.dbo.dim_fed_hierarchy_history
-        on dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
-    inner join red_dw.dbo.dim_client
-        on dim_client.client_code = fact_dimension_main.client_code
-    left outer join red_dw.dbo.dim_detail_client
-        on fact_dimension_main.client_code = dim_detail_client.client_code
-           and dim_detail_client.matter_number = fact_dimension_main.matter_number
-    inner join red_dw.dbo.dim_matter_header_current
-        on dim_matter_header_current.client_code = fact_dimension_main.client_code
-           and dim_matter_header_current.matter_number = fact_dimension_main.matter_number
-    left outer join red_dw.dbo.dim_claimant_thirdparty_involvement
-        on dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
-    inner join red_dw.dbo.fact_finance_summary
-        on fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
-    left outer join red_dw.dbo.dim_detail_core_details
-        on dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
-    left outer join red_dw.dbo.fact_detail_recovery_detail
-        on fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
-    left outer join red_dw.dbo.dim_matter_worktype
-        on dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
-    left outer join red_dw.dbo.dim_detail_claim
-        on red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
-    left outer join red_dw.dbo.dim_detail_health
-        on dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
-    left outer join red_dw.dbo.fact_detail_claim
-        on fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
-    left outer join red_dw.dbo.fact_detail_reserve_detail
-        on fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
-    left outer join red_dw.dbo.dim_detail_litigation
-        on dim_detail_litigation.dim_detail_litigation_key = fact_dimension_main.dim_detail_litigation_key
-    left outer join red_dw.dbo.dim_detail_fraud
-        on dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
-    left outer join red_dw.dbo.dim_employee
-        on dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
-    left outer join red_dw.dbo.dim_detail_practice_area
-        on dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
-		left outer join red_dw.dbo.dim_detail_critical_mi on dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
+FROM red_dw.dbo.fact_dimension_main
+    INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
+        ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_dimension_main.dim_fed_hierarchy_history_key
+    INNER JOIN red_dw.dbo.dim_client
+        ON dim_client.client_code = fact_dimension_main.client_code
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_client
+        ON fact_dimension_main.client_code = dim_detail_client.client_code
+           AND dim_detail_client.matter_number = fact_dimension_main.matter_number
+    INNER JOIN red_dw.dbo.dim_matter_header_current
+        ON dim_matter_header_current.client_code = fact_dimension_main.client_code
+           AND dim_matter_header_current.matter_number = fact_dimension_main.matter_number
+    LEFT OUTER JOIN red_dw.dbo.dim_claimant_thirdparty_involvement
+        ON dim_claimant_thirdparty_involvement.dim_claimant_thirdpart_key = fact_dimension_main.dim_claimant_thirdpart_key
+    INNER JOIN red_dw.dbo.fact_finance_summary
+        ON fact_finance_summary.master_fact_key = fact_dimension_main.master_fact_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details
+        ON dim_detail_core_details.dim_detail_core_detail_key = fact_dimension_main.dim_detail_core_detail_key
+    LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
+        ON fact_detail_recovery_detail.master_fact_key = fact_dimension_main.master_fact_key
+    LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
+        ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_claim
+        ON red_dw.dbo.dim_detail_claim.dim_detail_claim_key = fact_dimension_main.dim_detail_claim_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_health
+        ON dim_detail_health.dim_detail_health_key = fact_dimension_main.dim_detail_health_key
+    LEFT OUTER JOIN red_dw.dbo.fact_detail_claim
+        ON fact_detail_claim.master_fact_key = fact_dimension_main.master_fact_key
+    LEFT OUTER JOIN red_dw.dbo.fact_detail_reserve_detail
+        ON fact_detail_reserve_detail.master_fact_key = fact_dimension_main.master_fact_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_litigation
+        ON dim_detail_litigation.dim_detail_litigation_key = fact_dimension_main.dim_detail_litigation_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_fraud
+        ON dim_detail_fraud.dim_detail_fraud_key = fact_dimension_main.dim_detail_fraud_key
+    LEFT OUTER JOIN red_dw.dbo.dim_employee
+        ON dim_employee.dim_employee_key = dim_fed_hierarchy_history.dim_employee_key
+    LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area
+        ON dim_detail_practice_area.dim_detail_practice_ar_key = fact_dimension_main.dim_detail_practice_ar_key
+		LEFT OUTER JOIN red_dw.dbo.dim_detail_critical_mi ON dim_detail_critical_mi.dim_detail_critical_mi_key = fact_dimension_main.dim_detail_critical_mi_key
  --   LEFT JOIN  red_dw.dbo.dim_parent_detail parent ON parent.client_code = fact_dimension_main.client_code AND parent.matter_number = fact_dimension_main.matter_number
 	--LEFT JOIN red_dw.dbo.fact_child_detail child ON child.dim_parent_key = parent.dim_parent_key AND child.parent = parent.sequence_no
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_court
@@ -247,43 +248,43 @@ from red_dw.dbo.fact_dimension_main
 	--)	AS claimants_address
 	--	ON claimants_address.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 
-    left outer join
+    LEFT OUTER JOIN
     (
-        select client_code,
+        SELECT client_code,
                matter_number,
-               Reporting.dbo.Concatenate(ClaimNumber, ',') as LitigatedRef,
-               sum(NumberClaimants) as NoRef
-        from
+               Reporting.dbo.Concatenate(ClaimNumber, ',') AS LitigatedRef,
+               SUM(NumberClaimants) AS NoRef
+        FROM
         (
-            select invol_full.client_code,
+            SELECT invol_full.client_code,
                    invol_full.matter_number,
-                   isnull(rtrim(thisfirm_reference), '') as ClaimNumber,
-                   1 as NumberClaimants
-            from red_dw.dbo.dim_involvement_full as invol_full
-                inner join red_dw.dbo.dim_defendant_involvement invol
-                    on invol.thisfirm_1_key = invol_full.dim_involvement_full_key
-            where invol_full.capacity_code = 'THISFIRM'
-                  and invol_full.entity_code is not null
-                  and invol_full.entity_code <> '        '
-                  and invol_full.client_code in ( 'Z00002', 'Z00004', 'Z00018', 'Z00006', 'Z00008', 'Z00014', 'Z1001' )
-        ) as AllData
-        group by AllData.client_code,
+                   ISNULL(RTRIM(thisfirm_reference), '') AS ClaimNumber,
+                   1 AS NumberClaimants
+            FROM red_dw.dbo.dim_involvement_full AS invol_full
+                INNER JOIN red_dw.dbo.dim_defendant_involvement invol
+                    ON invol.thisfirm_1_key = invol_full.dim_involvement_full_key
+            WHERE invol_full.capacity_code = 'THISFIRM'
+                  AND invol_full.entity_code IS NOT NULL
+                  AND invol_full.entity_code <> '        '
+                  AND invol_full.client_code IN ( 'Z00002', 'Z00004', 'Z00018', 'Z00006', 'Z00008', 'Z00014', 'Z1001' )
+        ) AS AllData
+        GROUP BY AllData.client_code,
                  AllData.matter_number
-    ) as LitigatedRef
-        on fact_dimension_main.client_code = LitigatedRef.client_code
-           and fact_dimension_main.matter_number = LitigatedRef.matter_number
-    left outer join
+    ) AS LitigatedRef
+        ON fact_dimension_main.client_code = LitigatedRef.client_code
+           AND fact_dimension_main.matter_number = LitigatedRef.matter_number
+    LEFT OUTER JOIN
      (
         
-        select Parent.client_code,
+        SELECT Parent.client_code,
                Parent.matter_number,
                Parent.dim_parent_key,
-               row_number() over (partition by Parent.client_code,
+               ROW_NUMBER() OVER (PARTITION BY Parent.client_code,
                                                Parent.matter_number
-                                  order by Parent.client_code,
+                                  ORDER BY Parent.client_code,
                                            Parent.matter_number,
-                                           Parent.dim_parent_key asc
-                                 ) as xorder,
+                                           Parent.dim_parent_key ASC
+                                 ) AS xorder,
                WPS275,
                WPS276,
                WPS277,
@@ -310,70 +311,71 @@ from red_dw.dbo.fact_dimension_main
 			   dim_child.closed_as_part_of_bulk_review
 			   -- select *
 
-        from
+        FROM
 
          (
-            select client_code,
+            SELECT client_code,
                    matter_number,                   
-                   max(dim_parent_key) dim_parent_key,
-				   zurich_rsa_claim_number as WPS275
-            from red_dw.dbo.dim_parent_detail
-            where client_code in ( 'Z00002', 'Z00004', 'Z00018', 'Z00006', 'Z00008', 'Z00014', 'Z1001' )
-			group by client_code,
+                   MAX(dim_parent_key) dim_parent_key,
+				   zurich_rsa_claim_number AS WPS275
+            FROM red_dw.dbo.dim_parent_detail
+            WHERE client_code IN ( 'Z00002', 'Z00004', 'Z00018', 'Z00006', 'Z00008', 'Z00014', 'Z1001' )
+			AND dim_parent_key <>463687 --##180375
+			GROUP BY client_code,
                    matter_number,
 				   zurich_rsa_claim_number
-        ) as Parent
-	    left outer join 
+        ) AS Parent
+	    LEFT OUTER JOIN 
             (
-                select client_code,
+                SELECT client_code,
                        matter_number,
                        dim_parent_key,
-                       lead_follow as WPS276,
-                       policy_holder_name_of_insured as WPS344,
-                       mfu as WPS335,
-                       wp_type as WPS332,
-                       date_settlement_form_sent_to_zurich as WPS386,
-                       claim_status as WPS387
+                       lead_follow AS WPS276,
+                       policy_holder_name_of_insured AS WPS344,
+                       mfu AS WPS335,
+                       wp_type AS WPS332,
+                       date_settlement_form_sent_to_zurich AS WPS386,
+                       claim_status AS WPS387
 					   , dim_child_detail.date_policy_start
 					   , dim_child_detail.date_policy_end
 					   , dim_child_detail.catalina_claim_number
 					   , dim_child_detail.is_this_a_catalina_claim_no
 					   , dim_child_detail.[closed_as_part_of_bulk_review]
-                from red_dw.dbo.dim_child_detail
-            ) as dim_child
-              on Parent.dim_parent_key = dim_child.dim_parent_key
+                FROM red_dw.dbo.dim_child_detail
+            ) AS dim_child
+              ON Parent.dim_parent_key = dim_child.dim_parent_key
             /*--------*/
-            left outer join
+            LEFT OUTER JOIN
             (
-                select client_code,
+                SELECT client_code,
                        matter_number,
                        dim_parent_key,
-                       max(current_reserve) as WPS277,
-					   max(nihl_defence_costs_reserve_net) [Defence Cost Reserve],
-					   isnull(max(nihl_damages_reserve_net),0) + isnull(max(nihl_claimants_costs_reserve_net),0) [Claimants Cost Reserve],
-					   max(general_damages_paid) as WPS278,
-                       max(special_damages_paid) as WPS279,
-                       max(claimants_costs_paid) as WPS280,
-                       max(cru_paid) as WPS281,
-                       max(monies_recovered_if_applicable) as WPS282,
-                       max(our_proportion_per_of_damages) as WPS283,
-                       max(our_proportion_per_of_costs) as WPS284,
-                       max(fee_billed_by_panel) as WPS340,
-                       max(own_disbursements) as WPS341
-                from  red_dw.dbo.fact_child_detail  
-				group by client_code,
+                       MAX(current_reserve) AS WPS277,
+					   MAX(nihl_defence_costs_reserve_net) [Defence Cost Reserve],
+					   ISNULL(MAX(nihl_damages_reserve_net),0) + ISNULL(MAX(nihl_claimants_costs_reserve_net),0) [Claimants Cost Reserve],
+					   MAX(general_damages_paid) AS WPS278,
+                       MAX(special_damages_paid) AS WPS279,
+                       MAX(claimants_costs_paid) AS WPS280,
+                       MAX(cru_paid) AS WPS281,
+                       MAX(monies_recovered_if_applicable) AS WPS282,
+                       MAX(our_proportion_per_of_damages) AS WPS283,
+                       MAX(our_proportion_per_of_costs) AS WPS284,
+                       MAX(fee_billed_by_panel) AS WPS340,
+                       MAX(own_disbursements) AS WPS341
+                FROM  red_dw.dbo.fact_child_detail  
+				GROUP BY client_code,
                        matter_number,
                        dim_parent_key
-            ) as fact_child
-            on Parent.dim_parent_key = fact_child.dim_parent_key
+            ) AS fact_child
+            ON Parent.dim_parent_key = fact_child.dim_parent_key
 				--LEFT JOIN red_Dw.dbo.dim_matter_header_current ON dim_matter_header_current.client_code = Parent.client_code
 				--AND dim_matter_header_current.client_code = Parent.client_code
-				where WPS275 is not null
+				WHERE WPS275 IS NOT NULL
                 --AND Parent.ms_only IS NOT NULL
 				
-    ) as ClaimDetails
-        on rtrim(fact_dimension_main.client_code) = rtrim(ClaimDetails.client_code)
-           and rtrim(fact_dimension_main.matter_number) = rtrim(ClaimDetails.matter_number)
+    ) AS ClaimDetails
+        ON RTRIM(fact_dimension_main.client_code) = RTRIM(ClaimDetails.client_code)
+           AND RTRIM(fact_dimension_main.matter_number) = RTRIM(ClaimDetails.matter_number)
     LEFT OUTER JOIN (
 						SELECT --TOP 1000
 							fact_all_time_activity.dim_matter_header_curr_key
@@ -394,11 +396,11 @@ from red_dw.dbo.fact_dimension_main
 							--, dim_matter_header_current.master_client_code + '-' + dim_matter_header_current.master_matter_number
 					) AS last_transaction_date
 		ON last_transaction_date.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
-where (
+WHERE (
 		(
-          red_dw.dbo.fact_dimension_main.client_code in ( 'Z1001','Z00002', 'Z00004', 'Z00018', 'Z00014' )
-		  or		  
-			red_dw.dbo.dim_matter_header_current.case_id in 
+          red_dw.dbo.fact_dimension_main.client_code IN ( 'Z1001','Z00002', 'Z00004', 'Z00018', 'Z00014' )
+		  OR		  
+			red_dw.dbo.dim_matter_header_current.case_id IN 
 			(22358,25009,20520,20691,20916,23882,21282,
 									21380,24414,25488,24735,21367,21361,21602,
 									24893,21867,23579,22159,22500,22245,22321
@@ -406,24 +408,24 @@ where (
 									,382964,389385,393324,411937)
 									)
          
-             and dim_detail_client.[zurich_instruction_type] like 'Outsource%'
-             and dim_detail_client.[zurich_instruction_type] <> 'Outsource - Mesothelioma'
+             AND dim_detail_client.[zurich_instruction_type] LIKE 'Outsource%'
+             AND dim_detail_client.[zurich_instruction_type] <> 'Outsource - Mesothelioma'
       
-      and reporting_exclusions =0
-      and
+      AND reporting_exclusions =0
+      AND
       (
           dim_detail_client.[zurich_data_admin_exclude_from_reports] = 'No'
-          or dim_detail_client.[zurich_data_admin_exclude_from_reports] is null
+          OR dim_detail_client.[zurich_data_admin_exclude_from_reports] IS NULL
       )
 
 	    -- zurich ref not deleted from MS
-		and (WPS275 in (select txtClaimNum collate Latin1_General_BIN from MS_Prod..udClaimsClNumber 
-			where fileID =   dim_matter_header_current.ms_fileid)
-			or WPS275 is null
-			or ms_only = 0
+		AND (WPS275 IN (SELECT txtClaimNum COLLATE Latin1_General_BIN FROM MS_Prod..udClaimsClNumber 
+			WHERE fileID =   dim_matter_header_current.ms_fileid)
+			OR WPS275 IS NULL
+			OR ms_only = 0
 			)
 
-	  	or ms_fileid in (
+	  	OR ms_fileid IN (
 		4867697,4867731,4867770,4867821,4867837,4867868,4867866,4867886,4867910,4867963,4867965,4867983,4867986,4875783,4867970,4867814,4867843,4867846,4867891,4867844,4867681,4880231,4872876,4872946,4872978,4846633,4880416,4880569,4880623,4873223,4880692,4889902,4859810,4885808,4885809,4885810,4885824,4885811,4885818,4885919,
 		4885920,4885921,4885922,4885923,4885924,4885925,4885926,4885927,4885928,4885819,4885930,4885931,4885932,4885933,4885934,4885935,4885936,4885937,4885938,4885939,4885820,4885942,4885943,4885944,4885945,4885946,4885947,4885948,4885949,4885952,4885953,4885954,4885955,4885956,4885957,4885958,4885959,4885960,4885961,4885822,
 		4885963,4885964,4885965,4885966,4885967,4885968,4885969,4885970,4885971,4885972,4885823,4885975,4885977,4885978,4885979,4885980,4885981,4885982,4885983,4885984,4885986,4885987,4885988,4885989,4885990,4885991,4885992,4885993,4885994,4885995,4885825,4885997,4885998,4885999,4886000,4886001,4886002,4886003,4886004,4886005,
@@ -445,15 +447,15 @@ where (
 		4886621,4886622,4886623,4886624,4981851,4984089,4985408,4886002,4859922,4849998,4861830,4886061,4886336,4865908,4860354)
 		
 		 -- zurich ref not deleted from MS
-		and (WPS275 in (select txtClaimNum collate Latin1_General_BIN from MS_Prod..udClaimsClNumber 
-			where fileID =  dim_matter_header_current.ms_fileid)
-			or WPS275 is null
-			or ms_only = 0
+		AND (WPS275 IN (SELECT txtClaimNum COLLATE Latin1_General_BIN FROM MS_Prod..udClaimsClNumber 
+			WHERE fileID =  dim_matter_header_current.ms_fileid)
+			OR WPS275 IS NULL
+			OR ms_only = 0
 			)
 		
 		)
 		
-		and red_dw.dbo.dim_matter_header_current.ms_fileid <> 4861439  -- Excluded at request of Jamie, ticket #28655
+		AND red_dw.dbo.dim_matter_header_current.ms_fileid <> 4861439  -- Excluded at request of Jamie, ticket #28655
 
 
 	-- AND WPS275 IS NOT null

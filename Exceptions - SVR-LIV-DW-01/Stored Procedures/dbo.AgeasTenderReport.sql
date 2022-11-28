@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[AgeasTenderReport]
 AS 
 
@@ -104,6 +105,13 @@ WHEN
 'Exclude from reports                                        ',
 'Returned to Client', 'Other', 'Exclude from Reports   ', 'Other'
 ) THEN 'Other' END AS [Repudiated/Paid]
+
+,DueDate AS [Ddefence due key date]
+,[Interim damages paid] =fact_detail_paid_detail.[interim_damages_paid_by_client_preinstruction]
+,[date instructions received] =  dim_detail_core_details.[date_instructions_received]
+,[Fixed fee]= dim_detail_core_details.[fixed_fee]
+,[Fixed fee amount]= fact_finance_summary.[fixed_fee_amount]
+
 FROM red_dw.dbo.dim_matter_header_current WITH(NOLOCK)
 INNER JOIN red_dw.dbo.dim_fed_hierarchy_history WITH(NOLOCK)
  ON fed_code=fee_earner_code COLLATE DATABASE_DEFAULT AND dss_current_flag='Y'
@@ -133,7 +141,10 @@ LEFT OUTER JOIN red_dw.dbo.dim_detail_core_details WITH(NOLOCK)
  ON dim_detail_core_details.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 LEFT OUTER JOIN ms_prod.dbo.udMIHire
  ON ms_fileid=fileID
-
+LEFT OUTER JOIN (SELECT fileID,MIN(tskDue) AS DueDate FROM ms_prod.dbo.dbTasks
+WHERE tskDesc LIKE '%Defence due - today%'
+AND tskActive=1 GROUP BY fileID) AS Defendue
+ ON Defendue.fileID = ms_fileid
 WHERE master_client_code='A3003'
 AND date_opened_case_management>='2018-01-01'
 AND ISNULL(name_of_instructing_insurer,'') <>'Tesco Underwriting (TU)'

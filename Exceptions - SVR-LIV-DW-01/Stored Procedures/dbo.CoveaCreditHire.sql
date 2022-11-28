@@ -2,6 +2,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2022-10-20
@@ -24,7 +26,7 @@ BEGIN
 	, COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho])
 		,dim_detail_hire_details.[other],dim_agents_involvement.cho_name)[Credit Hire Company]
 	--, dim_claimant_thirdparty_involvement.claimantsols_name AS [Claimant Solicitor]
-	, dim_detail_claim.dst_claimant_solicitor_firm AS [Claimant Solicitor]
+	, ISNULL(dim_detail_claim.dst_claimant_solicitor_firm,dim_claimant_thirdparty_involvement.claimantsols_name) AS [Claimant Solicitor]
 	, dim_detail_hire_details.gta_group_like_for_like AS [Claimant Vehicle ABI GTA Group]
 	, dim_detail_hire_details.[credit_hire_vehicle_make_and_model] AS [Hire Vehicle ABI GTA Category]
 	, NULL AS [GTA/Non GTA]
@@ -42,10 +44,10 @@ BEGIN
 	--, DATEADD(MONTH, -3, trial_key_date) AS [3monthbeforetrial]
 	, CASE WHEN dim_detail_outcome.date_claim_concluded IS NULL THEN 'Ongoing'
 		WHEN dim_detail_outcome.date_claim_concluded IS NOT NULL AND (dim_detail_core_details.proceedings_issued ='No' OR dim_detail_core_details.proceedings_issued IS NULL) THEN 'Pre-lit'
-		WHEN dim_detail_core_details.proceedings_issued='Yes' AND (defence_due_key_date.defence_due_date > dim_detail_outcome.date_claim_concluded OR defence_due_key_date.defence_due_date IS null) THEN 'Before Filing Defence'
+		WHEN dim_detail_core_details.proceedings_issued='Yes' AND (defence_due_key_date.defence_due_date > dim_detail_outcome.date_claim_concluded OR defence_due_key_date.defence_due_date IS NULL) THEN 'Before Filing Defence'
 		WHEN dim_detail_outcome.date_claim_concluded = trial_key_date THEN 'At Trial'
 		WHEN date_claim_concluded BETWEEN DATEADD(MONTH, -3, trial_key_date) AND trial_key_date THEN 'Pre Trial'
-		WHEN (date_claim_concluded >= defence_due_key_date.defence_due_date) AND (trial_key_date IS NULL AND trial_window_key_date IS null) THEN 'In Directions'
+		WHEN (date_claim_concluded >= defence_due_key_date.defence_due_date) AND (trial_key_date IS NULL AND trial_window_key_date IS NULL) THEN 'In Directions'
 		WHEN (date_claim_concluded >= defence_due_key_date.defence_due_date) AND (date_claim_concluded<trial_window_key_date OR date_claim_concluded<DATEADD(MONTH, -3, trial_key_date)) THEN 'In Directions'
 		END AS [Settlement Stage]
 
@@ -108,7 +110,7 @@ ON dim_detail_claim.dim_matter_header_curr_key = dim_matter_header_current.dim_m
                    assocType,
                    contName AS [Court Name],
                    dbAssociates.assocRef AS [Court Reference],
-                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder desc) AS XOrder--,*
+                   ROW_NUMBER() OVER (PARTITION BY dbAssociates.fileID ORDER BY assocOrder DESC) AS XOrder--,*
             FROM MS_Prod.config.dbAssociates WITH (NOLOCK)
                 INNER JOIN MS_Prod.config.dbContact WITH (NOLOCK)
                     ON dbAssociates.contID = dbContact.contID
@@ -169,6 +171,8 @@ AND dim_matter_header_current.master_client_code='W15396'
 AND dim_detail_core_details.credit_hire='Yes'
 AND dim_matter_header_current.date_opened_case_management>='2019-01-01'
 AND ISNULL(dim_detail_outcome.outcome_of_case,'')<>'Exclude from reports'
-
+AND ISNULL(dim_detail_core_details.[are_we_dealing_with_the_credit_hire],'')  <>'No'
+AND ISNULL(outcome_of_case,'') <>'Returned to Client'
+--AND master_matter_number='1919'
 END
 GO

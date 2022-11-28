@@ -103,7 +103,7 @@ BEGIN
                                                   ),
            [Does the client require an initial report?] = dim_detail_core_details.[do_clients_require_an_initial_report],
            [Date Initial Report Sent] = dim_detail_core_details.[date_initial_report_sent],
-		   [SubsequentReportDate] as	   [Date of First Subsequent SLA Report],
+		   [FirstSubsequentDate].[SubsequentReportDate] as	   [Date of First Subsequent SLA Report],
         --[Date of First Subsequent SLA Report] = CASE
         --                                            WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN
         --                                                NULL
@@ -114,12 +114,7 @@ BEGIN
         --                                                                ''
         --                                                            ) AS DATE)
         --                                        END,
-           [Date of Latest Subsequent SLA Report] = CASE
-                                                        WHEN dim_detail_concat_cases.[date_subsequent_sla_report_sent] = 'Unknown' THEN
-                                                            NULL
-                                                        ELSE
-                                                            dim_detail_core_details.date_subsequent_sla_report_sent
-                                                    END,
+           [Date of Latest Subsequent SLA Report] = [LatestSubsequentDate].[SubsequentReportDate],
            dim_detail_core_details.[date_subsequent_sla_report_sent] AS [Date Subsequent Report Sent],
            [Report Date] = ISNULL(dim_detail_core_details.date_subsequent_sla_report_sent, date_initial_report_sent),
            [Date Proceedings Issued] = CASE
@@ -535,7 +530,7 @@ BEGIN
 
 	    /*[SubsequentReportDate]    - #177206 */
 
-		LEFT OUTER JOIN (SELECT * FROM (SELECT  udSubSLARep.fileId
+LEFT OUTER JOIN (SELECT * FROM (SELECT  udSubSLARep.fileId
 , dim_matter_header_current.master_client_code
 , dim_matter_header_current.master_matter_number
 , red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) AS [SubsequentReportDate]
@@ -551,6 +546,23 @@ AND data.master_client_code='A1001'
 ) AS [FirstSubsequentDate]
 ON [FirstSubsequentDate].master_client_code = dim_matter_header_current.master_client_code
 AND [FirstSubsequentDate].master_matter_number = dim_matter_header_current.master_matter_number
+
+LEFT OUTER JOIN (SELECT * FROM (SELECT  udSubSLARep.fileId
+, dim_matter_header_current.master_client_code
+, dim_matter_header_current.master_matter_number
+, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) AS [SubsequentReportDate]
+--, ABS(DATEDIFF(DAY, red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL), LastBillDate.LatestBillDate)) AS [DaysFromSubsequentReport]
+, ROW_NUMBER() OVER (PARTITION BY dim_matter_header_current.ms_fileid ORDER BY udSubSLARep.dteSubSLARepSSL desc) AS RN
+FROM MS_Prod.dbo.udSubSLARep
+LEFT OUTER JOIN red_dw.dbo.dim_matter_header_current
+ON udSubSLARep.fileId=dim_matter_header_current.ms_fileid
+WHERE red_dw.dbo.datetimelocal(udSubSLARep.dteSubSLARepSSL) IS NOT NULL ) AS data
+WHERE data.RN=1
+AND data.master_client_code='A1001'
+--AND data.master_matter_number='10644'
+) AS [LatestSubsequentDate]
+ON [LatestSubsequentDate].master_client_code = dim_matter_header_current.master_client_code
+AND [LatestSubsequentDate].master_matter_number = dim_matter_header_current.master_matter_number
 
 
         /*Reason for Instruction    - cboReaIns */

@@ -5,6 +5,7 @@ GO
 
 
 
+
 -- =============================================  
 -- Author:  Jamie Bonner  
 -- Create date: 31/08/2022
@@ -83,9 +84,15 @@ SELECT
 	, fact_detail_reserve_detail.total_current_reserve		AS [Total Current Reserve]
 	, #last_reserve_update.last_updated AS [Date Reserve Last Amended]
 	, LastReserveUpdate.LastReservePostingDate				AS [Date Reserve Last Reviewed]
+	,CASE WHEN dim_detail_core_details.present_position LIKE '%To be closed%' THEN last_bill_date ELSE NULL END IFClosedSt
+	,ISNULL(defence_costs_billed,0)+ISNULL(wip,0) AS [Defence Legal Fees]
+	,ISNULL(disbursements_billed,0)+ISNULL(fact_finance_summary.disbursement_balance,0) AS [Defence Disbursements]
+	,CASE WHEN COUNSEL.fileID IS NULL THEN 'No' ELSE  COUNSEL.contName END  AS [CounselUsed]
 FROM red_dw.dbo.dim_matter_header_current
 	LEFT OUTER JOIN red_dw.dbo.dim_matter_worktype
 		ON dim_matter_worktype.dim_matter_worktype_key = dim_matter_header_current.dim_matter_worktype_key
+	LEFT OUTER JOIN red_dw.dbo.fact_finance_summary
+	 ON fact_finance_summary.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_client_involvement
 		ON dim_client_involvement.client_code = dim_matter_header_current.client_code
 			AND dim_client_involvement.matter_number = dim_matter_header_current.matter_number
@@ -106,6 +113,8 @@ FROM red_dw.dbo.dim_matter_header_current
 		ON fact_detail_reserve_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.fact_detail_recovery_detail
 		ON fact_detail_recovery_detail.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+	LEFT OUTER	JOIN red_dw.dbo.fact_matter_summary_current ON
+	 fact_matter_summary_current.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN #last_reserve_update
 		ON #last_reserve_update.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 			AND #last_reserve_update.rw_num = 1
@@ -128,6 +137,18 @@ WHERE
  ON LastReserveUpdate.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
 	LEFT OUTER JOIN red_dw.dbo.dim_detail_practice_area
 		ON dim_detail_practice_area.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key
+LEFT OUTER JOIN (SELECT  fileID,STRING_AGG(CAST(contName AS NVARCHAR(MAX)),',') AS contName FROM  red_dw.dbo.dim_matter_header_current
+INNER JOIN ms_prod.config.dbAssociates
+ ON fileID=ms_fileid
+INNER JOIN ms_prod.config.dbContact
+ ON dbContact.contID = dbAssociates.contID
+LEFT OUTER JOIN ms_prod.dbo.dbCodeLookup ON assocType=cdCode AND cdType='SUBASSOC' 
+WHERE master_client_code='W26065'
+AND assocActive=1
+AND assocType='COUNSEL'
+GROUP BY fileID) AS COUNSEL
+ ON ms_fileid=COUNSEL.fileID
+
 WHERE
 	dim_matter_header_current.master_client_code = 'W26065'
 	AND dim_matter_header_current.reporting_exclusions = 0

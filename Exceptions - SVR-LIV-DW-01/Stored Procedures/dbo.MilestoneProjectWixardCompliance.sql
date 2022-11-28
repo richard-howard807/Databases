@@ -8,6 +8,7 @@ GO
 
 
 
+
 --JL 06-10-2020 - I have excluded "In House" as per Bob's request 
 --JL 19-01-2021 - Excluded client 30645 as per ticket #85254
 --JL 20-01-2021 - #85340 - excluded clients as per ticket 
@@ -381,6 +382,8 @@ AND dim_matter_worktype.work_type_code NOT IN ('0008'
 ,'9000'
 )
 
+AND dim_matter_header_current.dim_matter_header_curr_key NOT IN (SELECT dim_detail_claim.dim_matter_header_curr_key FROM red_dw.dbo.dim_detail_claim
+WHERE stw_work_type  IN ('Commercial Recoveries','DG Transfer','Recovery','Third Party Recoveries')) --#179779
 END
 
 
