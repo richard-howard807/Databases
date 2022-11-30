@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 CREATE PROCEDURE [dbo].[NHSKeyDates]
 
 AS 
@@ -65,7 +66,7 @@ AND header.master_client_code='N1001'
       (
           --CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103) BETWEEN DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
 		 --AND CONVERT(DATE,EOMONTH(GETDATE()),103)
-		 CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103) BETWEEN CONVERT(DATE,GETDATE(),103) AND   CONVERT(DATE,GETDATE()+14,103)
+		 CONVERT(DATE,[red_dw].[dbo].[datetimelocal](tskdue),103) BETWEEN CONVERT(DATE,GETDATE(),103) AND   CONVERT(DATE,GETDATE()+28,103)
       )
       --  AND tskRelatedID IS NOT NULL -- exclude the manual tasks
       AND header.ms_only = 1 -- files are on MS only

@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
+
 -- =============================================
 -- Author:		Emily Smith
 -- Create date: 2022-10-20
@@ -20,7 +21,7 @@ BEGIN
     SELECT
 	dim_detail_core_details.[date_instructions_received] AS [Date of Instruction]
 	, dim_client_involvement.insurerclient_reference AS [Covea Reference]
-	, dim_matter_header_current.master_matter_number AS [Matter Number]
+	, RTRIM(dim_matter_header_current.master_client_code)+'-'+RTRIM(dim_matter_header_current.master_matter_number) AS [Matter Number]
 	, dim_detail_core_details.clients_claims_handler_surname_forename AS [Covea Handler]
 	, dim_matter_header_current.matter_owner_full_name AS [Panel Handler]
 	, COALESCE(IIF(dim_detail_hire_details.[credit_hire_organisation_cho] = 'Other', NULL, dim_detail_hire_details.[credit_hire_organisation_cho])

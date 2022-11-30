@@ -95,7 +95,13 @@ SELECT
 	  END																AS costs_savings_percent
 	, COALESCE(NULLIF(fact_detail_cost_budgeting.hastings_claimant_schedule_value, 0), fact_finance_summary.damages_reserve, 0) + ISNULL(fact_finance_summary.tp_total_costs_claimed, 0)		AS total_claimed
 	, ISNULL(fact_finance_summary.damages_paid, 0) + ISNULL(fact_finance_summary.claimants_costs_paid, 0)			AS total_paid
-	, ISNULL(fact_finance_summary.damages_paid, 0) + ISNULL(fact_finance_summary.claimants_costs_paid, 0) 
+	, ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
+		+ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
+		+ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
+		+ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
+		+ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
+		+ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
+		+ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
 		+ ISNULL(fact_finance_summary.total_amount_billed, 0)					AS total_claim_cost
 INTO #hastings_financials
 FROM red_dw.dbo.dim_matter_header_current

@@ -75,7 +75,7 @@ CREATE TABLE [dbo].[hastings_listing_table]
 [Suppliers Billing Paid] [decimal] (38, 2) NULL,
 [VAT on Suppliers Billing Paid] [decimal] (38, 2) NULL,
 [Suppliers Disbursements Paid] [decimal] (38, 2) NULL,
-[Total Claim Cost] [numeric] (15, 2) NULL,
+[Total Claim Cost] [numeric] (20, 2) NULL,
 [Total Claim Saving £] [varchar] (3) COLLATE Latin1_General_CI_AS NOT NULL,
 [Total Claim Saving (percent)] [varchar] (3) COLLATE Latin1_General_CI_AS NOT NULL,
 [Date Supplier Closed File] [date] NULL,
