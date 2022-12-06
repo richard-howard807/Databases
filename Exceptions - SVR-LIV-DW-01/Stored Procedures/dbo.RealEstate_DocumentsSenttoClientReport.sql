@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE  PROCEDURE [dbo].[RealEstate_DocumentsSenttoClientReport] 
 
 
@@ -55,7 +56,7 @@ LEFT JOIN ms_prod.config.dbAssociates
 ON ms_fileid = fileID AND assocType = 'PURCHASERSOLS'
 JOIN ms_prod.config.dbContact ON dbContact.contID = dbAssociates.contID
 
-WHERE dim_matter_header_current.master_client_code IN ('190593P','848629','W15353')
+WHERE dim_matter_header_current.master_client_code IN ('61955B|165769B|00648125|W15353|174502M|177451B|118361B|161818D|177450B|117776T|113768B|190593P|00101439|00785070|153838M|W23852|00848629')
 --AND (completion_date>='2021-01-01' OR completion_date IS NULL)
 --AND (date_closed_case_management>='2021-01-01' OR date_closed_case_management IS NULL)
 AND work_type_name LIKE '%Plot Sales%'

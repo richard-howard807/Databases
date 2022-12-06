@@ -13,6 +13,7 @@ GO
 -- JL 25-02-2022 #135931, changed the LGSS Handler field 
 -- ES 03-03-2022 amended damages paid, requested by BH
 -- MT 22-03-2022 updated defendant logic with isnulls
+-- JB 02-12-2022 #180912 changed Defendant to look at defendant_reference
 --============================================
 
 CREATE PROCEDURE [dbo].[LGSSListings]
@@ -30,7 +31,7 @@ SELECT
 ,dim_detail_claim.dst_insured_client_name AS [Insured Client Name]
 ,dim_detail_core_details.[incident_date] AS  [Date of Loss]
 ,dim_detail_core_details.[incident_location] AS  [Location]
-,ISNULL(dim_defendant_involvement.defendant_name, '')+' '+ISNULL(dim_client_involvement.insurerclient_reference,'') AS  [Defendant]
+,ISNULL(dim_defendant_involvement.defendant_name, '')+' '+ISNULL(dim_defendant_involvement.defendant_reference,'') AS  [Defendant]
 ,fact_finance_summary.[total_reserve] AS  [Reserve total (gross)]
 ,ISNULL(total_amount_billed,0) - ISNULL(vat_billed,0) AS  [Own costs (exc. VAT)]
 ,CASE WHEN ISNULL(fact_finance_summary.[damages_interims],0) + ISNULL(fact_finance_summary.[claimants_costs_interims],0)>0 THEN 'Yes' ELSE 'No' END AS [Interim payments yes/no]

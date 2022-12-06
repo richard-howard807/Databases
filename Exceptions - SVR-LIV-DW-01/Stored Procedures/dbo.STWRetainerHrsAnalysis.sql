@@ -13,6 +13,10 @@ CREATE PROCEDURE [dbo].[STWRetainerHrsAnalysis] -- EXEC STWRetainerHrsAnalysis '
 ,@EndDate AS DATE
 )
 AS
+
+--DECLARE @StartDate AS DATE = '2022-11-01'
+--,@EndDate AS DATE = '2022-11-30'
+
 BEGIN
 SELECT  master_client_code AS Client
 ,master_matter_number AS Matter
@@ -36,24 +40,28 @@ ON dim_bill.dim_bill_key = fact_bill_billed_time_activity.dim_bill_key
         LEFT OUTER JOIN TE_3E_Prod.dbo.TimeBill
             ON TimeCard = fact_bill_billed_time_activity.transaction_sequence_number
                AND TimeBill.timebillindex = fact_bill_billed_time_activity.timebillindex
-
-
 WHERE bill_date BETWEEN  @StartDate AND @EndDate
 
 AND bill_number COLLATE DATABASE_DEFAULT  IN 
 (
-SELECT DISTINCT InvNumber FROM TE_3E_Prod.dbo.InvMaster
-WHERE InvDate BETWEEN  @StartDate AND @EndDate
+SELECT DISTINCT InvMaster.InvNumber FROM TE_3E_Prod.dbo.InvMaster
+LEFT OUTER JOIN TE_3E_Prod.dbo.ProfMaster
+ON ProfMaster.InvMaster = InvMaster.InvIndex
+AND InvMaster.LeadMatter = ProfMaster.LeadMatter
+WHERE InvMaster.InvDate BETWEEN  @StartDate AND @EndDate
 AND
 (
-Narrative IN (
-'STW Escrow - 74% water'
-,'STW Escrow & 74% Water'
-,'Balance Sheet Fund & 100% Water'
-,'Balance Sheet Fund - 100% water'
-,'Derwent Fund - 86% water'
-,'Derwent Fund & 86% Water'
-) 
+LOWER(COALESCE(ProfMaster.InvNarrative_UnformattedText, InvMaster.Narrative_UnformattedText)) LIKE '%stw%escrow%74%water%'
+ OR LOWER(COALESCE(ProfMaster.InvNarrative_UnformattedText, InvMaster.Narrative_UnformattedText)) LIKE '%balance%sheet%fund%100%water%'
+ OR LOWER(COALESCE(ProfMaster.InvNarrative_UnformattedText, InvMaster.Narrative_UnformattedText)) LIKE '%derwent%fund%86%water%'
+--Narrative IN (
+--'STW Escrow - 74% water'
+--,'STW Escrow & 74% Water'
+--,'Balance Sheet Fund & 100% Water'
+--,'Balance Sheet Fund - 100% water'
+--,'Derwent Fund - 86% water'
+--,'Derwent Fund & 86% Water'
+--) 
 )
 )
 AND IsReversed=0

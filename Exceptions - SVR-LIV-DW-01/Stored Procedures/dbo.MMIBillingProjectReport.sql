@@ -7,6 +7,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[MMIBillingProjectReport]
 
 AS
@@ -38,7 +39,7 @@ END  AS ElapsedDays
 ,dim_detail_outcome.date_costs_settled 
 ,outcome_of_case
 ,date_claim_concluded
-,delegated 
+,CASE WHEN delegated='Y' THEN 'Yes' WHEN delegated='N' THEN 'No' ELSE delegated END AS delegated 
 
 
 /* •	Casualty (regardless of DA or non-DA) – when WIP hits £500

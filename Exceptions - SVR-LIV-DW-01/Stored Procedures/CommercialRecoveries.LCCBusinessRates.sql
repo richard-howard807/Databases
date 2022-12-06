@@ -11,6 +11,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [CommercialRecoveries].[LCCBusinessRates]
 AS
 BEGIN
@@ -83,13 +84,13 @@ INNER JOIN MS_PROD.config.dbContact
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID
-WHERE (CRSystemSourceID  LIKE '33832-%' OR cboLeedsCC='LC1' --OR clNo='W15471' Need fules applying
+WHERE (CRSystemSourceID  LIKE '33832-%' OR cboLeedsCC='LC1' --OR clNo='W15471' --Need fules applying
 )
 AND fileType='2038'
-AND CRSystemSourceID NOT IN ('33832-5','33832-6')
+AND ISNULL(CRSystemSourceID,'') NOT IN ('33832-5','33832-6')
 
 
-ORDER BY dbFile.Created
+ORDER BY dbFile.fileNo
 
 
 

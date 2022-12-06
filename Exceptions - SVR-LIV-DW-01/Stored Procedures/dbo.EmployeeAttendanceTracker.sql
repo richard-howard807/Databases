@@ -27,12 +27,15 @@ BEGIN
 
 
 --testing
---DECLARE @start_date AS INT = 202204
---		, @end_date AS INT = 202206
+--DECLARE @start_date AS INT = 202211
+--		, @end_date AS INT = 202211
 --		, @division AS NVARCHAR(MAX) = 'Business Services'
---		, @department AS NVARCHAR(MAX) = 'Data Services'
---		, @team AS NVARCHAR(MAX) = 'BI Development'
---		, @employee_id AS NVARCHAR(MAX) = (SELECT STRING_AGG(CAST(dim_fed_hierarchy_history.employeeid AS NVARCHAR(MAX)), '|') FROM red_dw.dbo.dim_fed_hierarchy_history WHERE	dim_fed_hierarchy_history.activeud = 1	AND dim_fed_hierarchy_history.dss_current_flag = 'Y' AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Data Services' AND dim_fed_hierarchy_history.leaver = 0 AND dim_fed_hierarchy_history.windowsusername IS NOT NULL) 
+--		, @department AS NVARCHAR(MAX) = 'Finance'
+--		, @team AS NVARCHAR(MAX) = 'Finance Management'--'MI Insights & Governance'
+--		, @employee_id AS NVARCHAR(MAX) = (SELECT STRING_AGG(CAST(dim_fed_hierarchy_history.employeeid AS NVARCHAR(MAX)), '|') FROM red_dw.dbo.dim_fed_hierarchy_history 
+--		WHERE	dim_fed_hierarchy_history.activeud = 1	AND dim_fed_hierarchy_history.dss_current_flag = 'Y' 
+--		AND dim_fed_hierarchy_history.hierarchylevel3hist = 'Finance' AND dim_fed_hierarchy_history.leaver = 0 
+--		AND dim_fed_hierarchy_history.windowsusername IS NOT NULL) 
 --		, @category AS NVARCHAR(MAX) = (SELECT STRING_AGG(CAST(all_data.category AS NVARCHAR(MAX)), '|') FROM (SELECT DISTINCT fact_employee_attendance.category AS category FROM red_dw.dbo.fact_employee_attendance UNION SELECT 'Working From Home') AS all_data)
 --		, @jobrole AS NVARCHAR(MAX) = (
 --										SELECT STRING_AGG(CAST(job_title_data.jobrole AS NVARCHAR(MAX)), '|')
@@ -107,6 +110,7 @@ CROSS APPLY
 			, dim_employee.leftdate
 			, dim_fed_hierarchy_history.leaver
 			, dim_employee.levelidud job_role
+			, dim_employee.fte
 		FROM red_dw.dbo.dim_employee
 			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 				ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -163,6 +167,7 @@ CROSS APPLY
 			, dim_employee.employeestartdate
 			, dim_employee.leftdate
 			, dim_fed_hierarchy_history.leaver
+			, dim_employee.fte
 		FROM red_dw.dbo.dim_employee
 			INNER JOIN red_dw.dbo.dim_fed_hierarchy_history
 				ON dim_fed_hierarchy_history.dim_employee_key = dim_employee.dim_employee_key
@@ -200,7 +205,7 @@ SELECT
 	#employee_dates.employeeid
 	, #employee_dates.cal_month
 	, SUM(IIF(fact_employee_attendance.category = 'In Office', 1, 0))		AS days_in_office_per_month
-	, SUM(IIF(ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home'), 1, 0))		AS worked_days
+	, SUM(IIF(ISNULL(fact_employee_attendance.category, 'Working From Home') IN ('In Office', 'Working From Home'), 1, 0))	*#employee_dates.fte	AS worked_days
 	, total_working_days.total_working_days				AS total_working_days 
 INTO #office_days_filter
 FROM #employee_dates
@@ -225,6 +230,7 @@ GROUP BY
 	#employee_dates.employeeid
 	, #employee_dates.cal_month
 	, total_working_days.total_working_days
+	, #employee_dates.fte
 
 
 

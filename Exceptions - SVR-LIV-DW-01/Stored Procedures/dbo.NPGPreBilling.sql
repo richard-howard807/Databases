@@ -34,7 +34,8 @@ GO
 
 
 
-CREATE PROCEDURE [dbo].[NPGPreBilling]
+
+CREATE PROCEDURE [dbo].[NPGPreBilling] --[dbo].[NPGPreBilling]'All'
 (
 @Team AS NVARCHAR(100)
 )
@@ -313,7 +314,8 @@ WHERE clno IN ('WB164102','W24159','WB164104','WB164106','W22559','WB170376','WB
 AND fileNo<>'0'
 AND fileClosed IS NULL
 AND ISNULL(cboNPGFileType,'')<>'COMLIT'
---AND fileNo='120'
+--AND fileNo='2308' 
+--AND ISNULL(TotalWIP,0)=0 AND ISNULL(UnbilledDisbs.NotVatDisbs,0)+ISNULL(UnbilledDisbs.DisbsWithVat,0)+ISNULL(UnbilledDisbs.VatDisbursements,0) >0
 
 END 
 

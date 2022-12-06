@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE PROCEDURE [dbo].[EWICOpenClaims]
 
 AS 
@@ -66,6 +67,7 @@ ELSE [Loss Number] END AS [EWIC Ref]
 ,Hardship_Indicator
 ,a.Incident AS [Category/type of claim]
 ,a.Claim_Status AS [Polygonal Claim Status]
+,a.Claim_Category AS [Polygonal Claim Category]
 FROM [SVR-LIV-3PTY-01].Wellington_Live.dbo.dqvwCustomClaimFields AS a WITH(NOLOCK)
 INNER JOIN  [SVR-LIV-3PTY-01].[Wellington_Live].[dbo].[dqvwClaim_Register] AS b WITH(NOLOCK)
  ON b.Claim_Number = a.Claim_Number

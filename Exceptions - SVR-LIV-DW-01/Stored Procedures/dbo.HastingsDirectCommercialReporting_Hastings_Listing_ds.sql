@@ -72,23 +72,24 @@ THEN NULL
 
  ,fact_detail_cost_budgeting.[hastings_claimant_schedule_value] 
 
-,[Damages Settlement Saving (percent) - Update] = NULL --
---CASE 
---WHEN fact_detail_cost_budgeting.[hastings_claimant_schedule_value] > 0 
---AND dim_detail_outcome.[date_claim_concluded] IS NOT NULL
--- THEN (ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0) - 
--- (
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
---+ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
---+ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
---+ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
---+ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
---+ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
---)) 
+,[Damages Settlement Saving (percent) - Update] =
+CASE 
+WHEN fact_detail_cost_budgeting.[hastings_claimant_schedule_value] > 0 
+AND dim_detail_outcome.[date_claim_concluded] IS NOT NULL
+ THEN (ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0) - 
+ (
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
++ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
++ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
++ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
++ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
++ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
+)) 
 
---WHEN ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0
---AND dim_detail_outcome.[date_claim_concluded] IS NOT NULL
---THEN 
+WHEN ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0
+AND dim_detail_outcome.[date_claim_concluded] IS NOT NULL
+
+THEN NULL
 -- (
 --ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
 --+ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
@@ -105,8 +106,8 @@ THEN NULL
 --+ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
 --+ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
 --+ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
---)
--- END  / ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0)
+--) / ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0)
+ END  
 
 
 ,[Total Costs of Claim Presented - Update] = 
@@ -172,56 +173,65 @@ ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved],
 
 END
 
-, [Total Claim Costs Savings (percent) - Update] = NULL --
---CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL 
---     AND fact_detail_cost_budgeting.[hastings_claimant_schedule_value]  > 0 
---	     THEN (
---((ISNULL(CAST(fact_detail_cost_budgeting.[hastings_claimant_schedule_value] AS INT), 0)
---+ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)))
--- - 
--- (
---  ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
---+ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
---)) / (ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0)+ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0))
+, [Total Claim Costs Savings (percent) - Update] =
+CASE WHEN dim_detail_outcome.[date_costs_settled] IS NOT NULL 
+     AND fact_detail_cost_budgeting.[hastings_claimant_schedule_value]  > 0 
+	     THEN (
+((ISNULL(CAST(fact_detail_cost_budgeting.[hastings_claimant_schedule_value] AS INT), 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)))
+ - 
+ (
+  ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
++ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
+)) / (ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value],0)+ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0))
 
---WHEN ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0 
--- AND dim_detail_outcome.[date_costs_settled] IS NOT NULL 
--- THEN 
--- ((
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
---+ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
---+ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)
---)
----
---(
---  ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
---+ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
---) ) 
---/ (
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
---+ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
---+ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)
---)
+WHEN ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0 
+ AND dim_detail_outcome.[date_costs_settled] IS NOT NULL 
+ AND (
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)
+)<>0
+ THEN 
+ ((
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)
+)
+-
+(
+  ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
++ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
+) ) 
+/ (
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed], 0)
+)
 
---END
+END
 
 ,[Total Claim Cost - Update] = 
 CASE WHEN dim_detail_client.[hastings_closure_date] IS NOT NULL THEN [Total Claim Cost] END -- Need to check logic
@@ -273,66 +283,75 @@ ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
 
 		END
 
-, [Total Claim Savings (percent) - Update] = NULL --
---CASE 
---WHEN dim_detail_client.[hastings_closure_date]  IS NOT NULL      -- THEN [Total Claim Savings (money)]
---     AND  fact_detail_cost_budgeting.[hastings_claimant_schedule_value] > 0 
+, [Total Claim Savings (percent) - Update] =
+CASE 
+WHEN dim_detail_client.[hastings_closure_date]  IS NOT NULL      -- THEN [Total Claim Savings (money)]
+     AND  fact_detail_cost_budgeting.[hastings_claimant_schedule_value] > 0 
 
---THEN ISNULL(((ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) 
---	    + ISNULL(fact_finance_summary.[tp_total_costs_claimed] ,0)
---		--+ 3E costs and disbs billed
---		) 
---		- 
---(
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
---+ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
-----+ 3E costs and disbs billed
---		)),0) 
---/ ISNULL((ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) 
---	    + ISNULL(fact_finance_summary.[tp_total_costs_claimed] ,0)
---		--+ ISNULL(fact_finance_summary.total_amount_billed,0)
---		),0)
+THEN ISNULL(((ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) 
+	    + ISNULL(fact_finance_summary.[tp_total_costs_claimed] ,0)
+		--+ 3E costs and disbs billed
+		) 
+		- 
+(
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
++ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
+--+ 3E costs and disbs billed
+		)),0) 
+/ ISNULL((ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) 
+	    + ISNULL(fact_finance_summary.[tp_total_costs_claimed] ,0)
+		--+ ISNULL(fact_finance_summary.total_amount_billed,0)
+		),0)
 
---WHEN  ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0
---AND dim_detail_client.[hastings_closure_date]  IS NOT NULL
---THEN 
---ISNULL(((
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
---+ ISNULL(fact_finance_summary.[tp_total_costs_claimed] , 0)
-----3E costs and disbs billed
---)
---- 
---(
---ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
---+ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
---+ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
-----+ 3E costs and disbs billed
---) ),0)
---/ (ISNULL(ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
---+ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
---+ ISNULL(fact_finance_summary.[tp_total_costs_claimed] , 0),0)
-----+ ISNULL(fact_finance_summary.total_amount_billed,0)
---)
+WHEN  ISNULL(fact_detail_cost_budgeting.[hastings_claimant_schedule_value], 0) = 0
+AND dim_detail_client.[hastings_closure_date]  IS NOT NULL
+AND (ISNULL(ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed] , 0),0)
+--+ ISNULL(fact_finance_summary.total_amount_billed,0)
+)<>0
+THEN 
+ISNULL(((
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed] , 0)
+--3E costs and disbs billed
+)
+- 
+(
+ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_general_damages_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_hire_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_loe_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_other_specials_to_be_paid], 0)
++ ISNULL(fact_detail_paid_detail.[hastings_total_treatment_to_be_paid], 0)
++ ISNULL(fact_finance_summary.[claimants_costs_paid], 0)
+--+ 3E costs and disbs billed
+) ),0)
+/ (ISNULL(ISNULL(fact_detail_cost_budgeting.[hastings_total_damages_costs_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_general_damages_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_hire_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_loe_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_other_specials_to_be_reserved], 0)
++ ISNULL(fact_detail_cost_budgeting.[hastings_total_treatment_to_be_reserved], 0)
++ ISNULL(fact_finance_summary.[tp_total_costs_claimed] , 0),0)
+--+ ISNULL(fact_finance_summary.total_amount_billed,0)
+)
 
---END
+END
 
 
 

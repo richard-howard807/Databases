@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
+
 /*
 ===================================================
 ===================================================
@@ -52,7 +54,13 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_core_details.[emp_litigatednonlitigated] AS [Litigated/Non-Litigated]
 ,dim_detail_practice_area.[emp_present_position] AS [Present position]
 ,dim_detail_practice_area.[date_et3_due] AS [Date ET3 due]
-,dim_detail_practice_area.[emp_prospects_of_success] AS [Prospects of success]
+,CASE 
+WHEN dim_detail_practice_area.[emp_prospects_of_success] ='0-19%' THEN '25% or less'
+WHEN dim_detail_practice_area.[emp_prospects_of_success] ='20-50%' THEN '26-49%'
+WHEN dim_detail_practice_area.[emp_prospects_of_success] ='51-60%' THEN '51-75%'
+WHEN dim_detail_practice_area.[emp_prospects_of_success] ='50-75%' THEN '51-75%'
+ELSE dim_detail_practice_area.[emp_prospects_of_success]  END
+AS [Prospects of success]
 ,fact_detail_reserve_detail.[potential_compensation] AS [Potential compensation/pension loss]
 ,dim_detail_court.[emp_date_of_preliminary_hearing_case_management] AS [Date of preliminary hearing (case management)]
 ,dim_detail_court.[emp_date_of_preliminary_hearing_jurisdictionprospects] AS [Date of preliminary hearing (jurisdiction/prospects)]
@@ -107,10 +115,10 @@ dim_matter_header_current.client_code AS [Client Number]
 ,dim_detail_client.[peel_ports_manager] AS [Peel Ports Manager]
 ,dim_detail_core_details.[brief_details_of_claim] AS [Brief Details of Claim]
 ,dim_detail_court.[date_proceedings_issued] AS [Date Proceedings Issued]
-,dim_detail_advice.[advice_function] AS [Function]
+,dim_detail_advice.[pa_emp_function] AS [Function]
 ,dim_claimant_thirdparty_involvement.claimant_name AS [Claimant Name]
 ,HoursRecorded.[Hours Recorded] AS [Hours Posted]
-,dim_detail_advice.[advice_function]  AS [Advice Function]
+,dim_detail_advice.[pa_emp_function]  AS [Advice Function]
 
 
 FROM red_dw.dbo.dim_matter_header_current
