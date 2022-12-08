@@ -91,7 +91,14 @@ SELECT
 		ELSE 
 			NULL
 	  END												AS [Total Billed]
-	, IIF(ISNULL(dim_detail_outcome.date_claim_concluded, '2022-11-14') >= '2022-11-14' , 'pilot', 'benchmark')	AS pilot_scheme
+	, CASE
+		WHEN ISNULL(dim_detail_outcome.date_claim_concluded, '2022-11-14') >= '2022-11-14' AND pv_usage.ml_launched IS NOT NULL THEN
+			'pv_run'
+		WHEN dim_detail_outcome.date_claim_concluded >= '2022-11-14' THEN
+			'eligible'
+		ELSE
+			'benchmark'
+	 END							AS pilot_scheme
 	, pv_usage.ml_launched
 	, pv_usage.ml_data_used
 	, CASE
@@ -102,6 +109,7 @@ SELECT
 		ELSE	
 			DATEDIFF(DAY, dim_matter_header_current.date_opened_case_management, dim_detail_outcome.date_claim_concluded)
 	  END			AS lifecycle
+	, 1			AS matter_count
 FROM red_dw.dbo.dim_matter_header_current
 	INNER JOIN red_dw.dbo.fact_dimension_main
 		ON fact_dimension_main.dim_matter_header_curr_key = dim_matter_header_current.dim_matter_header_curr_key

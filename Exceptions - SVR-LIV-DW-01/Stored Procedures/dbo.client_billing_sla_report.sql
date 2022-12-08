@@ -247,6 +247,8 @@ SELECT
 	, CASE	
 		WHEN all_data.[Interim or Final] = 'final' AND all_data.[Bill Type] = 'no bill' THEN
 			'Close?'
+		WHEN all_data.bill_rule_num = 'Rule 25' AND all_data.WIP = 0 AND all_data.[Disbs Balance] = 0 AND all_data.[Interim or Final] = 'final' THEN
+			'Close?'
 		WHEN LOWER(all_data.[Outcome of Case]) = 'exclude from reports' THEN
 			'Exclude from reports'
 		WHEN all_data.bill_rule_num = 'Rule 20' THEN
@@ -279,6 +281,8 @@ SELECT
 		WHEN (
 				 CASE	
 					WHEN all_data.[Interim or Final] = 'final' AND all_data.[Bill Type] = 'no bill' THEN
+						'Close?'
+					WHEN all_data.bill_rule_num = 'Rule 25' AND all_data.WIP = 0 AND all_data.[Disbs Balance] = 0 AND all_data.[Interim or Final] = 'final' THEN
 						'Close?'
 					WHEN LOWER(all_data.[Outcome of Case]) = 'exclude from reports' THEN
 						'Exclude from reports'
