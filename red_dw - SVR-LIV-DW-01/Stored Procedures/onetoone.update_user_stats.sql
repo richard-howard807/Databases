@@ -45,7 +45,7 @@ DROP TABLE IF EXISTS #Days_in_the_office
  	AND fin_year IN (@fin_year)
 	AND TRIM(attendancekey) <> 'Dummy'
 	AND fact_employee_attendance.category = 'In Office'
-	--AND fed_code = '1405'
+--	AND fed_code = '3501'
 	GROUP BY dim_fed_hierarchy_history.fed_code
 
 	UNION 
@@ -53,19 +53,22 @@ DROP TABLE IF EXISTS #Days_in_the_office
 	SELECT 
     dim_fed_hierarchy_history.fed_code, CAST(dim_date.fin_month_no AS NVARCHAR(3)) fin_month,
     SUM(IIF(fact_employee_attendance.category = 'In Office', 1, 0))		AS Days_in_the_office
-    
+    -- select *
 	FROM red_dw.dbo.fact_employee_attendance
 	JOIN red_dw.dbo.dim_fed_hierarchy_history ON dim_fed_hierarchy_history.dim_fed_hierarchy_history_key = fact_employee_attendance.dim_fed_hierarchy_history_key
-	JOIN red_dw.dbo.dim_date
-	ON dim_attendance_date_key = dim_date_key
+	JOIN red_dw.dbo.dim_date	ON dim_attendance_date_key = dim_date_key
 	WHERE 1 =1 
- 	AND cal_month = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + CAST(MONTH(GETDATE()) AS VARCHAR(4))
+ 	AND fin_year IN (@fin_year)
+	AND dim_date.fin_month_no = @fin_month
 	AND TRIM(attendancekey) <> 'Dummy'
 	AND fact_employee_attendance.category = 'In Office'
-	--AND fed_code = '5702'
+	--AND fed_code = '3501'
 	GROUP BY dim_fed_hierarchy_history.fed_code,CAST(dim_date.fin_month_no AS NVARCHAR(3))
 
 	) x 
+
+
+
 -- Matters capable of closure -- Claims
 DROP TABLE IF EXISTS #matterscapableofclosure
 

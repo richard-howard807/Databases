@@ -203,6 +203,9 @@ from @FinalTbl where Level is not null
 --insert into #user
 --exec AreaManaged_Level 'sparke01'
 
+
 GO
 GRANT EXECUTE ON  [dbo].[AreaManaged_Level] TO [db_ssrs_dynamicsecurity]
+GO
+GRANT EXECUTE ON  [dbo].[AreaManaged_Level] TO [SBC\SQL ROLE - DS_BI_TRAINEE]
 GO

@@ -62,6 +62,9 @@ STUFF(
 STUFF(@SqlString, LEN(@SqlString), 1, '') as sql,
 STUFF(@DaxString, LEN(@DaxString), 1, '') as dax
 end
+
 GO
 GRANT EXECUTE ON  [dbo].[AreaManaged_Individual] TO [db_ssrs_dynamicsecurity]
+GO
+GRANT EXECUTE ON  [dbo].[AreaManaged_Individual] TO [SBC\SQL ROLE - DS_BI_TRAINEE]
 GO

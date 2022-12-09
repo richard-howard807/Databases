@@ -230,6 +230,9 @@ from @UsernameTbl end
 end 
 
 
+
 GO
 GRANT EXECUTE ON  [dbo].[AreaManaged_AreaManaged] TO [db_ssrs_dynamicsecurity]
+GO
+GRANT EXECUTE ON  [dbo].[AreaManaged_AreaManaged] TO [SBC\SQL ROLE - DS_BI_TRAINEE]
 GO
