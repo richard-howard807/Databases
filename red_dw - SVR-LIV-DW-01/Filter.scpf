@@ -108,7 +108,7 @@
       </ServiceBinding>
       <StoredProcedure version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA LIKE 'onetoone%') OR (@NAME LIKE 'populate_IA%') OR (@NAME LIKE 'areamanaged%') OR (@NAME LIKE 'dynamic%')</Expression>
+        <Expression>(@SCHEMA LIKE 'onetoone%') OR (@NAME LIKE 'populate[_]IA%') OR (@NAME LIKE 'areamanaged%') OR (@NAME LIKE 'dynamic%')</Expression>
       </StoredProcedure>
       <SymmetricKey version="1">
         <Include>True</Include>
@@ -120,7 +120,7 @@
       </Synonym>
       <Table version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA LIKE 'onetoone%') OR (@NAME LIKE 'ds[_]sh[_]3e[_]user%')</Expression>
+        <Expression>(@SCHEMA LIKE 'onetoone%') OR (@NAME LIKE 'ds[_]sh[_]3e[_]user%') OR (@NAME LIKE 'ws[_]wrk[_]job[_]ctr%')</Expression>
       </Table>
       <User version="1">
         <Include>True</Include>
