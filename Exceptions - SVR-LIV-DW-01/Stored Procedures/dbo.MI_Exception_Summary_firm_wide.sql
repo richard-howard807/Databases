@@ -71,12 +71,12 @@ WHERE fact_dimension_main.client_code <> 'ml'
     and  referral_reason LIKE 'Dispute%' AND 
 (
 	date_claim_concluded IS NULL  OR 
-	date_claim_concluded >= '2017-01-01'  
+	date_claim_concluded >= CAST(CAST(YEAR(DATEADD(YEAR, -3, GETDATE())) AS NVARCHAR(4)) + '-01-01' AS DATE)  
 )  AND 
 dim_matter_header_current.reporting_exclusions = 0    AND 
 LOWER(ISNULL(outcome_of_case, '')) NOT in ('exclude from reports','returned to client')  AND 
 (
-	date_closed_case_management >= '2017-01-01' OR date_closed_case_management IS NULL
+	date_closed_case_management >= CAST(CAST(YEAR(DATEADD(YEAR, -3, GETDATE())) AS NVARCHAR(4)) + '-01-01' AS DATE) OR date_closed_case_management IS NULL
 )       
 AND 
 employeeid NOT IN 
@@ -85,7 +85,7 @@ employeeid NOT IN
 	dim_matter_header_current.ms_only = 1  
 
 )
-AND hierarchylevel2hist = 'Legal Ops - Claims' AND work_type_code <> '0032'
+AND hierarchylevel2hist = 'Legal Ops - Claims' AND work_type_code NOT IN ('0032', '1597')
 
 GROUP BY dim_fed_hierarchy_history.employeeid,date_closed_case_management
 

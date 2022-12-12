@@ -6,6 +6,7 @@ GO
 
 
 
+
 -- =============================================  
 -- Author:  Jamie Bonner  
 -- Create date: 31/08/2022
@@ -78,10 +79,14 @@ SELECT
 		ELSE 
 			'n/a' 
 	  END								AS [Successful Recovery Made]
-	, fact_detail_reserve_detail.damages_reserve		AS [Damages Reserve]
-	, fact_detail_reserve_detail.claimant_costs_reserve_current		AS [Claimant Costs Reserve]
+,fact_finance_summary.damages_reserve_net AS [Damages Reserve] 
+,fact_finance_summary.tp_costs_reserve_net AS [Claimant Costs Reserve]
+--,fact_finance_summary.defence_costs_reserve_net AS [Defence Costs Reserve]
+,fact_finance_summary.total_reserve_net AS [Total Current Reserve]
+	--, fact_detail_reserve_detail.damages_reserve		AS [Damages Reserve]
+	--, fact_detail_reserve_detail.claimant_costs_reserve_current		AS [Claimant Costs Reserve]
 	, fact_detail_reserve_detail.defence_costs_reserve			AS [Defence Costs Reserve]
-	, fact_detail_reserve_detail.total_current_reserve		AS [Total Current Reserve]
+	--, fact_detail_reserve_detail.total_current_reserve		AS [Total Current Reserve]
 	, #last_reserve_update.last_updated AS [Date Reserve Last Amended]
 	, LastReserveUpdate.LastReservePostingDate				AS [Date Reserve Last Reviewed]
 	,CASE WHEN dim_detail_core_details.present_position LIKE '%To be closed%' THEN last_bill_date ELSE NULL END IFClosedSt

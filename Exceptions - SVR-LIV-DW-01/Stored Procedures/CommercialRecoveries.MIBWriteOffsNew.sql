@@ -19,6 +19,9 @@ CREATE PROCEDURE [CommercialRecoveries].[MIBWriteOffsNew]
 ,	@EndDate	DATE    
 AS 
 
+--DECLARE @StartDate AS DATE = '2022-11-01'
+--		, @EndDate AS DATE = '2022-12-10'
+
 SELECT
 Clients.MIB_ClaimNumber									             AS [File]
 ,name AS [Fee Earner]
@@ -32,6 +35,7 @@ Clients.MIB_ClaimNumber									             AS [File]
 WHEN [ADA28]  IN ('2nd Placement','Yes') THEN 'Defendant' 
 WHEN  ISNULL(ADA.ADA28,'No') IN ('','No','1st Placement') THEN 'Defendant' END [Placement]
 --,ISNULL(ADA.ADA28,'No') AS [ADA28]
+, Clients.MIB_DefendantSurname
 FROM  [VFile_streamlined].dbo.Accountinformation AS AccountInfo
  INNER JOIN [VFile_streamlined].dbo.ClientScreens AS Clients
     ON   AccountInfo.mt_int_code = Clients.mt_int_code 
@@ -63,6 +67,7 @@ FROM  [VFile_streamlined].dbo.Accountinformation AS AccountInfo
 			WHEN cboPlacement='CLAIMANT' THEN 'Claimant'
 			WHEN cboPlacement='DEFENDANT' THEN 'Defendant'
 			WHEN cboPlacement='INSURER' THEN 'Insurer'  ELSE 'Missing' END [Placement]
+, Defendant.contSurname		AS [Defendant Surname]
 FROM [MS_PROD].config.dbFile
 INNER JOIN [MS_PROD].config.dbClient
  ON dbClient.clID = dbFile.clID
@@ -74,11 +79,13 @@ LEFT OUTER JOIN [MS_PROD].dbo.udCRSOLADM
  ON udCRSOLADM.fileID = dbFile.fileID
 LEFT OUTER JOIN [MS_PROD].dbo.dbUser
  ON filePrincipleID=usrID
-LEFT OUTER JOIN (SELECT fileID,contName AS [Defendant] FROM [MS_PROD].config.dbAssociates
+LEFT OUTER JOIN (SELECT fileID,contName AS [Defendant], dbContactIndividual.contSurname FROM [MS_PROD].config.dbAssociates
 INNER JOIN [MS_PROD].dbo.udExtAssociate
  ON udExtAssociate.assocID = dbAssociates.assocID
 INNER JOIN MS_PROD.config.dbContact
  ON dbContact.contID = dbAssociates.contID
+ LEFT OUTER JOIN MS_Prod..dbContactIndividual
+ ON dbContactIndividual.contID = dbContact.contID
 WHERE assocType='DEFENDANT'
 AND cboDefendantNo='1') AS Defendant
  ON Defendant.fileID = dbFile.fileID

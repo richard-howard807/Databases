@@ -244,6 +244,14 @@ WHERE 1 = 1
 		
 SELECT 
 	all_data.*
+	, CASE
+		WHEN all_data.[Client Code] IN ('257248', '9008076', 'R1001', 'W15572') THEN
+			'Billed Centrally'
+		WHEN all_data.billing_project = 'BOA' AND all_data.[Fee Arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' AND all_data.[Matter Owner Team] IN ('Motor Credit Hire', 'Motor Mainstream') THEN
+			'BOA'
+		ELSE 
+			ISNULL(all_data.billing_project, 'No')
+	  END								AS billing_project_filter
 	, CASE	
 		WHEN all_data.[Interim or Final] = 'final' AND all_data.[Bill Type] = 'no bill' THEN
 			'Close?'
@@ -269,15 +277,23 @@ SELECT
 	  END										AS [Can We Bill]
 	-- row colour in report needs to be blue if clients are billed centrally
 	, CASE
-		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572', 'W24438') THEN
+		WHEN all_data.[Client Code] IN ('257248', '9008076', 'R1001', 'W15572') THEN
 			'LightSkyBlue'
+		WHEN all_data.billing_project = 'Yes' THEN	
+			'Plum'
+		WHEN all_data.billing_project = 'BOA' AND all_data.[Fee Arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' AND all_data.[Matter Owner Team] IN ('Motor Credit Hire', 'Motor Mainstream') THEN
+			'Khaki'
 		ELSE
 			'Transparent'
 	  END										AS [centrally_billed_row_colour]
 	-- The Can We Bill column cells need to be blue for centrally billed clients, green for bills, orange for query.
 	, CASE	
-		WHEN all_data.[Client Code] IN ('C1001', '257248', '9008076', 'R1001', 'W15572','W24438') THEN
+		WHEN all_data.[Client Code] IN ('257248', '9008076', 'R1001', 'W15572') THEN
 			'LightSkyBlue'
+		WHEN all_data.billing_project = 'Yes' THEN	
+			'Plum'
+		WHEN all_data.billing_project = 'BOA' AND all_data.[Fee Arrangement] = 'Fixed Fee/Fee Quote/Capped Fee' AND all_data.[Matter Owner Team] IN ('Motor Credit Hire', 'Motor Mainstream') THEN
+			'Khaki'
 		WHEN (
 				 CASE	
 					WHEN all_data.[Interim or Final] = 'final' AND all_data.[Bill Type] = 'no bill' THEN
@@ -345,6 +361,7 @@ FROM (
 		, RTRIM(dim_detail_outcome.outcome_of_case)										AS [Outcome of Case]
 		, CAST(dim_detail_outcome.date_costs_settled AS DATE)							AS [Date Costs Settled]
 		, dim_matter_header_current.billing_arrangement_description						AS [Billing Arrangement Description]
+		, dim_matter_header_current.billing_rate_description							AS [Billing Rate Description]
 		, RTRIM(dim_detail_finance.output_wip_fee_arrangement)							AS [Fee Arrangement]
 		, dim_client_involvement.insurerclient_reference								AS [Insurer Client Reference]
 		, dim_client_involvement.insuredclient_reference								AS [Insured Client Reference]
@@ -371,6 +388,7 @@ FROM (
 		, #sla_billing.bill_type														AS [Bill Type]
 		, client_billing_sla.bill_rule_num												
 		, client_billing_sla.fixed_fee_success_fee
+		, client_billing_sla.billing_project
 
 		-- query reasons
 		, CASE	
